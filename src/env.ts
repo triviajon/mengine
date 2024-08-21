@@ -6,15 +6,15 @@ interface EnvEntry {
 }
 
 // Immutable
-export class Envirnoment {
+export class Environment {
     private env: Array<EnvEntry>;
 
     constructor() {
         this.env = [];
     }
 
-    public extend(key: VarExpression, value: string): Envirnoment {
-        const newEnv = new Envirnoment();
+    public extend(key: VarExpression, value: string): Environment {
+        const newEnv = new Environment();
         newEnv.env = [...this.env, { key, value }];
         return newEnv;
     }
@@ -30,6 +30,31 @@ export class Envirnoment {
 }
 
 export class Closure {
-    constructor(public env: Envirnoment, public variable: VarExpression, public body: any) {
+    constructor(public env: Environment, public variable: VarExpression, public body: any) {
+    }
+
+    public toString(): string {
+        return `Closure { var: ${this.variable}, body: ${this.body} }`;
     }
 }
+
+export class NVar {
+    constructor(public name: string) {
+    }
+
+    public toString(): string {
+        return `NVar { name: ${this.name} }`;
+    }
+}
+
+export class NApp {
+    constructor(public func: Neutral, public arg: string) {
+
+    }
+
+    public toString(): string {
+        return `NAppp { func: ${this.func}, arg: ${this.arg} }`
+    }
+}
+
+export type Neutral = NVar | NApp

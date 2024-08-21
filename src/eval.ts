@@ -1,8 +1,9 @@
-import { Closure, Envirnoment } from "./env";
+import { Closure, Environment } from "./env";
 import { Expression, VarExpression, LambdaExpression, AppExpression, DefineExpression } from "./Expression";
 
 
-export function evaluate(env: Envirnoment, expression: Expression): any {
+export function evaluate(env: Environment, expression: Expression): any {
+    console.log("Evaluating:", expression, "Under:", env);
     if (expression instanceof VarExpression) {
         return env.lookup(expression);
     } else if (expression instanceof LambdaExpression) {
@@ -14,7 +15,7 @@ export function evaluate(env: Envirnoment, expression: Expression): any {
     }
 }
 
-export function apply(clos: Closure, arg: any): any {
+export function apply(clos: any, arg: any): any {
     if (clos instanceof Closure) {
         const extendedEnv = clos.env.extend(clos.variable, arg);
         return evaluate(extendedEnv, clos.body);
@@ -23,15 +24,26 @@ export function apply(clos: Closure, arg: any): any {
     }
 }
 
-export function runProgram(env: Envirnoment, expressions: Array<Expression>): void {
+export function runProgram(env: Environment, expressions: Array<Expression>): void {
     let currentEnv = env;
     for (const expr of expressions) {
-        console.log(currentEnv);
         if (expr instanceof DefineExpression) {
             currentEnv = currentEnv.extend(expr.var, evaluate(env, expr.definition));
         } else {
             const evalResult = evaluate(currentEnv, expr);
-            console.log("Result:", evalResult);
+            console.log("Result:", evalResult.toString());
         }
     }
+}
+
+function addPrime(x: string): string {
+    return x + "'";
+}
+
+function freshen(used: Array<string>, x: string) {
+    let new_x = x;
+    while (used.indexOf(new_x) !== -1) {
+        new_x = addPrime(x);
+    }
+    return new_x;
 }
