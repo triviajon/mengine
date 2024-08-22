@@ -17,6 +17,7 @@ interface IDoublyLinkedList<T> {
     isEmpty(): boolean;
     size(): number;
     clear(): void;
+    [Symbol.iterator](): Iterator<T>;
 }
 
 
@@ -165,5 +166,21 @@ class DoublyLinkedList<T> implements IDoublyLinkedList<T> {
         this.checkRep();
         this.head = null;
         this.tail = null;
+    }
+
+    [Symbol.iterator](): Iterator<T> {
+        let currentNode = this.head;
+
+        return {
+            next: (): IteratorResult<T> => {
+                if (currentNode !== null) {
+                    const value = currentNode.value;
+                    currentNode = currentNode.next;
+                    return { value, done: false };
+                } else {
+                    return { value: undefined, done: true };
+                }
+            }
+        };
     }
 }
