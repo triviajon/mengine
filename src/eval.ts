@@ -1,13 +1,14 @@
 import { Closure, Environment } from "./env";
 import { Expression, VarExpression, LambdaExpression, AppExpression, DefineExpression } from "./Expression";
+import { normalise } from "./reduce";
 
 
 export function evaluate(env: Environment, expression: Expression): any {
-    console.log("Evaluating:", expression, "Under:", env);
+    // console.log("Evaluating:", expression, "Under:", env);
     if (expression instanceof VarExpression) {
         return env.lookup(expression);
     } else if (expression instanceof LambdaExpression) {
-        return new Closure(env, expression.var, expression.body);
+        return new Closure(env, expression.variable, expression.body);
     } else if (expression instanceof AppExpression) {
         return apply(evaluate(env, expression.func), evaluate(env, expression.arg));
     } else {
@@ -28,9 +29,9 @@ export function runProgram(env: Environment, expressions: Array<Expression>): vo
     let currentEnv = env;
     for (const expr of expressions) {
         if (expr instanceof DefineExpression) {
-            currentEnv = currentEnv.extend(expr.var, evaluate(env, expr.definition));
+            currentEnv = currentEnv.extend(expr.variable, evaluate(env, expr.definition));
         } else {
-            const evalResult = evaluate(currentEnv, expr);
+            const evalResult = evaluate(currentEnv, normalise(expr));
             console.log("Result:", evalResult.toString());
         }
     }

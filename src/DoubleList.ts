@@ -1,4 +1,4 @@
-interface DoublyLinkedListNode<T> {
+export interface DoublyLinkedListNode<T> {
     value: T;
     next: DoublyLinkedListNode<T> | null;
     prev: DoublyLinkedListNode<T> | null;
@@ -10,22 +10,31 @@ interface IDoublyLinkedList<T> {
 
     addBefore(node: DoublyLinkedListNode<T>, newNode: DoublyLinkedListNode<T>): void;
     addAfter(node: DoublyLinkedListNode<T>, newNode: DoublyLinkedListNode<T>): void;
-    addBeginning(newValue: T): void;
-    remove(node: DoublyLinkedListNode<T>): boolean;
+    addBeginning(newValue: T): DoublyLinkedListNode<T>;
+    remove(node: DoublyLinkedListNode<T>): [DoublyLinkedListNode<T> | null, DoublyLinkedListNode<T> | null] | null;
     app<U>(f: (value: T) => U): DoublyLinkedList<U>;
     // find(value: T): DoublyLinkedListNode<T> | null;
     isEmpty(): boolean;
     size(): number;
     clear(): void;
+    toString(): string;
     [Symbol.iterator](): Iterator<T>;
 }
 
 
-class DoublyLinkedList<T> implements IDoublyLinkedList<T> {
+export class DoublyLinkedList<T> implements IDoublyLinkedList<T> {
+    public formatter: (item: T) => string;
+
     constructor(
         public head: DoublyLinkedListNode<T> | null,
         public tail: DoublyLinkedListNode<T> | null,
+        formatter: ((item: T) => string) | undefined
     ) {
+        if (formatter === undefined) {
+            this.formatter = (item => `${item}`); 
+        } else {
+            this.formatter = formatter; 
+        }
         this.checkRep();
      }
 
@@ -38,11 +47,11 @@ class DoublyLinkedList<T> implements IDoublyLinkedList<T> {
             throw new Error("Invariant violated: tail is null but head is not null.");
         }
 
-        if (this.head?.prev !== null) {
+        if (this.head !== null && this.head.prev !== null) {
             throw new Error("Invariant violated: head.prev should be null.");
         }
 
-        if (this.tail?.next !== null) {
+        if (this.tail !== null && this.tail.next !== null) {
             throw new Error("Invariant violated: tail.next should be null.");
         }
 
@@ -65,6 +74,7 @@ class DoublyLinkedList<T> implements IDoublyLinkedList<T> {
 
 
     public addBefore(node: DoublyLinkedListNode<T>, newNode: DoublyLinkedListNode<T>): void {
+        
         this.checkRep();
         newNode.next = node
         if (node.prev === null) {
@@ -79,6 +89,7 @@ class DoublyLinkedList<T> implements IDoublyLinkedList<T> {
     }
 
     public addAfter(node: DoublyLinkedListNode<T>, newNode: DoublyLinkedListNode<T>): void {
+        
         this.checkRep();
         newNode.prev = node
         if (node.next === null) {
@@ -92,7 +103,8 @@ class DoublyLinkedList<T> implements IDoublyLinkedList<T> {
         this.checkRep();
     }
 
-    public addBeginning(newValue: T): void {
+    public addBeginning(newValue: T): DoublyLinkedListNode<T> {
+        
         this.checkRep();
         const newNode: DoublyLinkedListNode<T> = {
             value: newValue,
@@ -103,18 +115,18 @@ class DoublyLinkedList<T> implements IDoublyLinkedList<T> {
         if (this.head === null) {
             this.head = newNode;
             this.tail = newNode;
-            newNode.prev = null;
-            newNode.next = null;
         } else {
             this.addBefore(this.head, newNode);
         }
         this.checkRep();
+        return newNode;
     }
 
-    public remove(node: DoublyLinkedListNode<T>): boolean {
+    public remove(node: DoublyLinkedListNode<T>): [DoublyLinkedListNode<T> | null, DoublyLinkedListNode<T> | null] | null {
+        
         this.checkRep();
         if (node.prev === null && node.next === null) {
-            return false;
+            return null;
         }
 
         if (node.prev === null) {
@@ -130,45 +142,58 @@ class DoublyLinkedList<T> implements IDoublyLinkedList<T> {
         }
 
         this.checkRep();
-        return true;
+        return [node.prev, node.next];
     }
 
     public app<U>(f: (value: T) => U): DoublyLinkedList<U> {
+        
         this.checkRep();
-        let currentNode = this.tail;
-        const newList = new DoublyLinkedList<U>(null, null);
-        while (currentNode !== null) {
-            newList.addBeginning(f(currentNode.value));
-            currentNode = currentNode.prev;
+        const newList = new DoublyLinkedList<U>(null, null, undefined); // TO-DO: Fix this later
+        for (const currentNode of this) {
+            newList.addBeginning(f(currentNode));
         }
         this.checkRep();
         return newList;
     }
 
     public isEmpty(): boolean {
+        
         this.checkRep();
         return this.tail === null;
     }
 
     public size(): number {
+        
         this.checkRep();
-        let currentNode = this.head;
         let count = 0;
-        while (currentNode !== null) {
+    
+        for (const _ of this) {
             count++;
-            currentNode = currentNode.next;
         }
+    
         this.checkRep();
         return count;
     }
 
     public clear(): void {
+        
         this.checkRep();
         this.head = null;
         this.tail = null;
     }
 
+    public toString(): string {
+        
+        let output = "";
+        for (const item of this) {
+            // console.debug(this.formatter(item))
+            output += ((this.formatter !== undefined) ? this.formatter(item) : item) + ", ";
+        }
+        return output;
+    }
+
     [Symbol.iterator](): Iterator<T> {
+        
         let currentNode = this.head;
 
         return {

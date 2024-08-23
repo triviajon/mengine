@@ -29,6 +29,20 @@ function startREPL() {
                     console.error(`Error: ${err.message}`);
                 }
             }
+        } else if (line == "pre") {
+            const x = new VarExpression("x");
+            const y = new VarExpression("y");
+            const z = new VarExpression("z");
+            const expr = new AppExpression(
+                new LambdaExpression(x, 
+                    new LambdaExpression(y, 
+                        new AppExpression(x, y)
+                    )
+                ),
+                z
+            );
+            console.log("Using preloaded:", expr.toString());
+            runProgram(env, [expr]);
         } else if (line == "clear") {
             console.log("Program has been cleared.")
             expressions = [];
@@ -37,7 +51,7 @@ function startREPL() {
                 const tokens = tokenize(line);
                 const expr = parse(tokens);
                 expressions.push(expr);
-                console.log("Added expression:", expr);
+                console.log("Added expression:", expr.toString());
             } catch (err) {
                 if (err instanceof Error) {
                     console.error(`Error: ${err.message}`);
