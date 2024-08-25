@@ -30,18 +30,8 @@ function startREPL() {
                 }
             }
         } else if (line == "pre") {
-            const x = new VarExpression("x");
-            const y = new VarExpression("y");
-            const z = new VarExpression("z");
-            const expr = new AppExpression(
-                new LambdaExpression(x, 
-                    new LambdaExpression(y, 
-                        new AppExpression(x, y)
-                    )
-                ),
-                z
-            );
-            console.log("Using preloaded:", expr.toString());
+            const expr = parse(tokenize("((\\x. x) (\\y. y))"));
+            console.log("Using preloaded test value:", expr);
             runProgram(env, [expr]);
         } else if (line == "clear") {
             console.log("Program has been cleared.")

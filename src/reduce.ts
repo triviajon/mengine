@@ -24,9 +24,14 @@ export function clearCopies(reducedLambda: LambdaExpression, topApp: AppExpressi
             if (expression.copy === undefined) {
                 return;
             }
+            const arg = expression.copy.arg;
+            const argRef = expression.copy.argRef!;
+            const func = expression.copy.func;
+            const funcRef = expression.copy.funcRef!;
             expression.copy = undefined;
-            expression.arg.addToParents({ parent: expression, relation: Relation.APP_ARG });
-            expression.func.addToParents({ parent: expression, relation: Relation.APP_FUNC });
+
+            arg.addToParents(argRef.value);
+            func.addToParents(funcRef.value);
             for (const cc of expression.getParents()) {
                 cleanUp(cc.parent, cc.relation);
             }
@@ -46,8 +51,9 @@ export function clearCopies(reducedLambda: LambdaExpression, topApp: AppExpressi
 }
 
 function reduce(a: AppExpression) {
-    console.log("Starting reduce with", a.toString());
     assert(a.func instanceof LambdaExpression);
+
+
     const lambda: LambdaExpression = a.func;
     const variable = lambda.variable;
 
@@ -70,13 +76,13 @@ function reduce(a: AppExpression) {
         }
     }
 
-
     let answer;
+    console.log("Entering reduce with:", a);
+    console.log("Conditions:", lambda.getParents().size(), variable.getParents().size());
     if (lambda.getParents().size() === 1) {
-        console.log(variable.getParents().toString());
         replaceChild(variable.getParents(), a.arg);
         answer = lambda.body;
-    } else if (variable.getParents().isEmpty()) {
+    } else if (variable.getParents().size() === 1) { // differs from SML implementation since we add LAMBDA_VAR relation
         answer = lambda.body;
     } else {
         const [result, topApp] = scandown(lambda.body, a.arg, variable.getParents());
@@ -85,10 +91,9 @@ function reduce(a: AppExpression) {
             clearCopies(lambda, topApp);
         }
     }
-
     replaceChild(a.getParents(), answer);
     freeDeadExpr(a);
-    console.log("Returning", answer.toString());
+    console.log("Answer:", answer);
     return answer;
 }
 
@@ -110,20 +115,15 @@ export function normalise(expression: Expression): Expression {
         const funcValue = app.func;
 
         if (funcValue instanceof LambdaExpression) {
-            console.log("Normalize/reducing app:", app.toString());
-            normalise(reduce(app));
-            console.log("Result of normalize/reducing app:", app.toString());
+            return normalise(reduce(app));
         } else if (funcValue instanceof VarExpression) {
-            normalise(app.arg);
+            return  normalise(app.arg);
         } else {
             normalise(funcValue);
-            normalise(app.arg);
+            return normalise(app.arg);
         }
     } else if (expression instanceof LambdaExpression) {
-        normalise(expression.body);
+        return normalise(expression.body);
     }
-
-    console.log("Final result:", expression.toString());
-
     return expression;
 }

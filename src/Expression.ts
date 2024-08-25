@@ -64,8 +64,8 @@ export class LambdaExpression implements Expression {
         this.parents = new DoublyLinkedList<ChildCell>(null, null, formatChildCell);
 
         // Install uplinks
-        this.bodyRef = this.body.addToParents({relation: Relation.LAMBDA_BODY, parent: this});
-        this.variable.addToParents({relation: Relation.LAMBDA_VAR, parent: this});
+        this.bodyRef = this.body.addToParents({ relation: Relation.LAMBDA_BODY, parent: this });
+        this.variable.addToParents({ relation: Relation.LAMBDA_VAR, parent: this });
     }
 
     public toString(): string {
@@ -102,9 +102,9 @@ export class AppExpression implements Expression {
         this.parents = new DoublyLinkedList<ChildCell>(null, null, formatChildCell);
 
         // Install uplinks
-        this.funcRef = this.func.addToParents({relation: Relation.APP_FUNC, parent: this});
-        this.argRef = this.arg.addToParents({relation: Relation.APP_ARG, parent: this});
-    
+        this.funcRef = this.func.addToParents({ relation: Relation.APP_FUNC, parent: this });
+        this.argRef = this.arg.addToParents({ relation: Relation.APP_ARG, parent: this });
+
     }
 
     public toString(): string {
@@ -162,18 +162,39 @@ export function freeDeadExpr(expr: Expression) {
 
     function delParent(expr: Expression, cclink: DoublyLinkedListNode<ChildCell>) {
         const exprParents = expr.getParents();
-        const _ = exprParents.remove(cclink);
+        const [before, after] = exprParents.remove(cclink);
+
         if (exprParents.isEmpty()) {
+
             free(expr);
         }
     }
 
+    function delParent2(childExpr: Expression, childParentRelation: Relation, parentExprToRemove: Expression) {
+
+        function eq(cc1: ChildCell, cc2: ChildCell) {
+            return cc1.relation === cc2.relation && cc1.parent.equalValue(cc2.parent);
+        }
+
+        const exprParents = childExpr.getParents();
+
+
+        exprParents.findAndRemove({ relation: childParentRelation, parent: parentExprToRemove }, eq);
+    }
+
     function free(expr: Expression) {
         if (expr instanceof AppExpression) {
-            delParent(expr.func, expr.funcRef!);
-            delParent(expr.arg, expr.argRef!);
+            // 
+            // delParent(expr.func, expr.funcRef!);
+            // 
+            // delParent(expr.arg, expr.argRef!);
+            delParent2(expr.func, Relation.APP_FUNC, expr);
+            delParent2(expr.arg, Relation.APP_ARG, expr);
         } else if (expr instanceof LambdaExpression) {
-            delParent(expr.body, expr.bodyRef!);
+
+            // delParent(expr.body, expr.bodyRef!);
+            delParent2(expr.body, Relation.LAMBDA_BODY, expr);
+            delParent2(expr.variable, Relation.LAMBDA_VAR, expr);
         }
     }
 
@@ -194,7 +215,10 @@ export function replaceChild(oldpref: DoublyLinkedList<ChildCell>, newExpr: Expr
             cc.parent.func = newExpr;
         } else if (cc.relation === Relation.APP_ARG && cc.parent instanceof AppExpression) {
             cc.parent.arg = newExpr;
-        } 
+        } else if (cc.relation === Relation.LAMBDA_VAR) {
+            assert(cc.parent instanceof LambdaExpression);
+            continue;
+        }
 
         newExpr.addToParents(cc);
     }
@@ -243,6 +267,11 @@ export function upcopy(newChild: Expression, parRef: ChildCell) {
         } else {
             app.copy.arg = newChild;
         }
+    } else if (parRef.relation === Relation.LAMBDA_VAR) {
+        // const lambda = parRef.parent;
+        // assert(lambda instanceof LambdaExpression);
+        // assert(newChild instanceof VarExpression);
+        // lambda.getParents().app(cc => upcopy(newLambda(newChild, lambda.body), cc))
     } else {
         throw new Error(`Unexpected relation type: ${parRef.relation}`);
     }

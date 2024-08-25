@@ -4,7 +4,6 @@ import { normalise } from "./reduce";
 
 
 export function evaluate(env: Environment, expression: Expression): any {
-    // console.log("Evaluating:", expression, "Under:", env);
     if (expression instanceof VarExpression) {
         return env.lookup(expression);
     } else if (expression instanceof LambdaExpression) {
@@ -31,8 +30,13 @@ export function runProgram(env: Environment, expressions: Array<Expression>): vo
         if (expr instanceof DefineExpression) {
             currentEnv = currentEnv.extend(expr.variable, evaluate(env, expr.definition));
         } else {
-            const evalResult = evaluate(currentEnv, normalise(expr));
-            console.log("Result:", evalResult.toString());
+            const normalized = normalise(expr);
+            const evalResult = evaluate(currentEnv, normalized);
+            try {
+                console.log("Result (-unbound):", evalResult.toString());
+            } catch (e) {
+                console.log("Result (+unbound):", normalized.toString());
+            }
         }
     }
 }

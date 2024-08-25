@@ -59,8 +59,6 @@ export function parse(tokens: Token[]): Expression {
 
     const contextStack: Array<Map<string, VarExpression>> = [new Map()];
 
-    console.log(tokens);
-
     function peek(): Token {
         return tokens[pos];
     }
@@ -68,7 +66,7 @@ export function parse(tokens: Token[]): Expression {
     function consume(expectedType: TokenType): Token {
         const token = tokens[pos];
         if (token.type !== expectedType) {
-            throw new Error(`Expected ${expectedType}, but found ${token.type} at position ${pos}: ` + 
+            throw new Error(`Expected ${expectedType}, but found ${token.type} at position ${pos}: ` +
                 tokens.map(token => token.value).reduce((value, current) => value + " " + current));
         }
         pos++;
@@ -80,22 +78,35 @@ export function parse(tokens: Token[]): Expression {
         const currentContext = contextStack[contextStack.length - 1];
 
         // Check if this variable already exists in the current scope
+        // If it doesn't, generate a fresh variable. If it does, we
+        // should use that variable object instead of a new one.
         if (!currentContext.has(token.value)) {
             currentContext.set(token.value, new VarExpression(token.value));
         }
         return currentContext.get(token.value)!;
     }
 
+    function parseLambdaVar(): VarExpression {
+        const token = consume('VAR');
+        const currentContext = contextStack[contextStack.length - 1];
+
+        // If we have a name collision, we should consider this to be a fresh variable
+        // and overwrite the previous variable, since this is a new scope.
+        currentContext.set(token.value, new VarExpression(token.value));
+        return currentContext.get(token.value)!;
+    }
+
     function parseLambdaExpr(): Expression {
         let expr: Expression;
-    
+
         if (peek().type === 'LPAREN') {
             consume('LPAREN');
             expr = parseLambdaExpr();
             consume('RPAREN');
         } else if (peek().type === 'LAMBDA') {
             consume('LAMBDA');
-            const variable = parseVar();
+            contextStack.push(new Map(contextStack[contextStack.length - 1]));
+            const variable = parseLambdaVar();
             consume('DOT');
             const body = parseLambdaExpr();
 
@@ -108,13 +119,13 @@ export function parse(tokens: Token[]): Expression {
         } else {
             throw new Error(`Unexpected token at position ${pos}: ${peek().value}`);
         }
-    
+
         // Handle function application
         while (peek().type === 'VAR' || peek().type === 'LPAREN') {
             const arg = parseLambdaExpr();
             expr = new AppExpression(expr, arg);
         }
-    
+
         return expr;
     }
 
@@ -136,6 +147,6 @@ export function parse(tokens: Token[]): Expression {
             return expr;
         }
     }
-    console.log(contextStack);
+
     return parseBase();
 }
