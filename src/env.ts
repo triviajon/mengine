@@ -21,11 +21,16 @@ export class Environment {
 
     public lookup(key: VarExpression): string | undefined {
         for (const envEntry of this.env) {
-            if (envEntry.key.equalValue(key)) {
+            // Note: we don't want to use eqaulValue here
+            if (envEntry.key.name === key.name) {
                 return envEntry.value;
             }
         }
         return undefined;
+    }
+
+    public toString(): string {
+        return this.env.map(entry => `(${entry.key.toString}, ${entry.value})`).join(", ");
     }
 }
 

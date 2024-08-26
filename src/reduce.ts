@@ -1,5 +1,5 @@
 import assert from "assert";
-import { AppExpression, ChildCell, Expression, freeDeadExpr, LambdaExpression, newApp, newLambda, Relation, replaceChild, upcopy, VarExpression } from "./Expression";
+import { AppExpression, ChildCell, Expression, freeDeadExpr, LambdaExpression, newApp, newLambda, prettifyToString, Relation, replaceChild, upcopy, VarExpression } from "./Expression";
 import { DoublyLinkedList } from "./DoubleList";
 
 export function clearCopies(reducedLambda: LambdaExpression, topApp: AppExpression): void {
@@ -53,7 +53,6 @@ export function clearCopies(reducedLambda: LambdaExpression, topApp: AppExpressi
 function reduce(a: AppExpression) {
     assert(a.func instanceof LambdaExpression);
 
-
     const lambda: LambdaExpression = a.func;
     const variable = lambda.variable;
 
@@ -77,7 +76,7 @@ function reduce(a: AppExpression) {
     }
 
     let answer;
-    console.log("Entering reduce with:", a);
+    console.log("Entering reduce with:", prettifyToString(a.toString()));
     console.log("Conditions:", lambda.getParents().size(), variable.getParents().size());
     if (lambda.getParents().size() === 1) {
         replaceChild(variable.getParents(), a.arg);
@@ -91,9 +90,10 @@ function reduce(a: AppExpression) {
             clearCopies(lambda, topApp);
         }
     }
+    console.log("Post getting answer:", prettifyToString(a.toString()));
     replaceChild(a.getParents(), answer);
     freeDeadExpr(a);
-    console.log("Answer:", answer);
+    console.log("Answer:", prettifyToString(answer.toString()));
     return answer;
 }
 
@@ -108,22 +108,21 @@ function normaliseWeakHead(expression: Expression): void {
     }
 }
 
-export function normalise(expression: Expression): Expression {
+export function normalise(expression: Expression): void{
     if (expression instanceof AppExpression) {
         const app = expression;
         normaliseWeakHead(app.func);
         const funcValue = app.func;
 
         if (funcValue instanceof LambdaExpression) {
-            return normalise(reduce(app));
+            normalise(reduce(app));
         } else if (funcValue instanceof VarExpression) {
-            return  normalise(app.arg);
+            normalise(app.arg);
         } else {
             normalise(funcValue);
-            return normalise(app.arg);
+            normalise(app.arg);
         }
     } else if (expression instanceof LambdaExpression) {
-        return normalise(expression.body);
+        normalise(expression.body);
     }
-    return expression;
 }

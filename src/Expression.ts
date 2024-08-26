@@ -17,31 +17,71 @@ function formatChildCell(cc: ChildCell): string {
     return `ChildCell { relation: '${cc.relation}', parent: '${cc.parent.toString()}' }`;
 }
 
+let counter = 0;
+
+function generateSimpleId(): number {
+    return (counter++);
+}
+
+export function prettifyToString(input: string): string {
+    let depth = 0;
+    let inQuotes = false;
+    const indent = (depth: number) => '  '.repeat(depth);
+
+    const jsonLikeRegex = /({|}|\[|\]|,|:\s+|'[^']*'|})/g;
+
+    return input.replace(jsonLikeRegex, (match) => {
+        if (match.startsWith("'") && match.endsWith("'")) {
+            // Inside single quotes, return as-is
+            return match;
+        }
+
+        switch (match) {
+            case '{':
+            case '[':
+                depth++;
+                return `${match}\n${indent(depth)}`;
+            case '}':
+            case ']':
+                depth = Math.max(0, depth - 1);
+                return `\n${indent(depth)}${match}`;
+            case ',':
+                return `${match}\n${indent(depth)}`;
+            case ': ':
+                return ': ';
+            default:
+                return match;
+        }
+    }).replace(/\n\s*\n/g, '\n');
+}
+
 export interface Expression {
     toString(): string;
     equalValue(that: Expression): boolean;
     getParents(): DoublyLinkedList<ChildCell>;
     addToParents(cclink: ChildCell | undefined): DoublyLinkedListNode<ChildCell> | undefined;
+    id: number;
 }
 
 export class VarExpression implements Expression {
     private parents: DoublyLinkedList<ChildCell>;
+    public id;
 
     constructor(public name: string) {
         this.name = name;
         this.parents = new DoublyLinkedList<ChildCell>(null, null, formatChildCell);
+        this.id = generateSimpleId();
     }
 
     public toString(): string {
-        return `${this.name}`;
-        // return `VarExpression { name: '${this.name}', parents: '${this.parents.toString()}'}`;
+        const parentIds = []
+        for (const cc of this.parents) { parentIds.push(cc.parent.id); }
+        // return `${this.name}`;
+        return `VarExpression { name: '${this.name}', parents: '${parentIds.join()}', id: '${this.id}' }`;
     }
 
     public equalValue(that: Expression): boolean {
-        if (that instanceof VarExpression) {
-            return this.name === that.name;
-        }
-        return false;
+        return this.id === that.id;
     }
 
     public getParents(): DoublyLinkedList<ChildCell> {
@@ -57,11 +97,13 @@ export class VarExpression implements Expression {
 export class LambdaExpression implements Expression {
     private parents: DoublyLinkedList<ChildCell>;
     public bodyRef: DoublyLinkedListNode<ChildCell> | undefined = undefined;
+    public id;
 
     constructor(public variable: VarExpression, public body: Expression) {
         this.variable = variable;
         this.body = body;
         this.parents = new DoublyLinkedList<ChildCell>(null, null, formatChildCell);
+        this.id = generateSimpleId();
 
         // Install uplinks
         this.bodyRef = this.body.addToParents({ relation: Relation.LAMBDA_BODY, parent: this });
@@ -69,15 +111,14 @@ export class LambdaExpression implements Expression {
     }
 
     public toString(): string {
-        return `(\\${this.variable.toString()}. ${this.body.toString()})`;
-        // return `LambdaExpression { variable: ${this.variable}, body: ${this.body}, parents: '${this.parents.toString()}' }`;
+        // return `(\\${this.variable.toString()}. ${this.body.toString()})`;
+        const parentIds = []
+        for (const cc of this.parents) { parentIds.push(cc.parent.id); }
+        return `LambdaExpression { variable: ${this.variable}, body: ${this.body}, parents: '${parentIds.join()}', id: '${this.id}' }`;
     }
 
     public equalValue(that: Expression): boolean {
-        if (that instanceof LambdaExpression) {
-            return this.variable.equalValue(that.variable) && this.body.equalValue(that.body);
-        }
-        return false;
+        return this.id === that.id;
     }
 
     public getParents(): DoublyLinkedList<ChildCell> {
@@ -95,11 +136,13 @@ export class AppExpression implements Expression {
     public funcRef: DoublyLinkedListNode<ChildCell> | undefined = undefined;
     public argRef: DoublyLinkedListNode<ChildCell> | undefined = undefined;
     public copy: AppExpression | undefined;
+    public id;
 
     constructor(public func: Expression, public arg: Expression) {
         this.func = func;
         this.arg = arg;
         this.parents = new DoublyLinkedList<ChildCell>(null, null, formatChildCell);
+        this.id = generateSimpleId();
 
         // Install uplinks
         this.funcRef = this.func.addToParents({ relation: Relation.APP_FUNC, parent: this });
@@ -108,15 +151,14 @@ export class AppExpression implements Expression {
     }
 
     public toString(): string {
-        return `(${this.func.toString()} ${this.arg.toString()})`;
-        // return `AppExpression { func: ${this.func}, arg: ${this.arg}, parents: '${this.parents.toString()}' }`;
+        // return `(${this.func.toString()} ${this.arg.toString()})`;
+        const parentIds = []
+        for (const cc of this.parents) { parentIds.push(cc.parent.id); }
+        return `AppExpression { func: ${this.func}, arg: ${this.arg}, parents: '${parentIds.join()}', id: '${this.id}' }`;
     }
 
     public equalValue(that: Expression): boolean {
-        if (that instanceof AppExpression) {
-            return this.func.equalValue(that.func) && this.arg.equalValue(that.arg);
-        }
-        return false;
+        return this.id === that.id;
     }
 
     public getParents(): DoublyLinkedList<ChildCell> {
@@ -130,21 +172,20 @@ export class AppExpression implements Expression {
 }
 
 export class DefineExpression implements Expression {
+    public id;
 
     constructor(public variable: VarExpression, public definition: Expression) {
         this.variable = variable;
         this.definition = definition;
+        this.id = generateSimpleId();
     }
 
     public toString(): string {
-        return `DefineExpression { var: ${this.variable}, definition: ${this.definition} }`;
+        return `DefineExpression { var: '${this.variable}', definition: '${this.definition}', id: '${this.id}' }`;
     }
 
     public equalValue(that: Expression): boolean {
-        if (that instanceof DefineExpression) {
-            return this.variable.equalValue(that.variable) && this.definition.equalValue(that.definition);
-        }
-        return false;
+        return this.id === that.id;
     }
 
     public getParents(): DoublyLinkedList<ChildCell> {
@@ -154,6 +195,32 @@ export class DefineExpression implements Expression {
     public addToParents(_: ChildCell | undefined): undefined {
         // Intentionally do nothing
         return undefined;
+    }
+}
+
+export class SDefineExpression implements Expression {
+    public id; 
+
+    constructor(public variable: VarExpression, public definition: string) {
+        this.variable = variable;
+        this.definition = definition;
+        this.id = generateSimpleId();
+    }
+
+    public toString(): string {
+        return `SDefineExpression { var: '${this.variable}', definition: '${this.definition}', id: '${this.id}' }`;
+    }
+
+    public equalValue(that: Expression): boolean {
+        return this.id === that.id;
+    }
+
+    public getParents(): DoublyLinkedList<ChildCell> {
+        throw new Error("not implemented yet");
+    }
+
+    public addToParents(cclink: ChildCell | undefined): DoublyLinkedListNode<ChildCell> | undefined {
+        throw new Error("not implemented yet");
     }
 }
 

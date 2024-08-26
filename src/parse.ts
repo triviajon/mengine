@@ -1,14 +1,17 @@
 import assert from "assert";
-import { AppExpression, DefineExpression, Expression, LambdaExpression, VarExpression } from "./Expression";
+import { AppExpression, DefineExpression, Expression, LambdaExpression, SDefineExpression, VarExpression } from "./Expression";
 
 // Grammar for REPL. 
+// Note, that while synatically, symbols and vars are the same, they are treated differently in parsing. 
 // 
 // base         ::= [lambdaExpr | defineExpr]*
 // lambdaExpr   ::= [var | '\' var '. ' lambdaExpr | '(' lambdaExpr ')' | lambdaExpr lambdaExpr]
 // var          ::= [A-Za-z_][\w|']*
 // defineExpr   ::= 'define ' var ' ' lambdaExpr 
+// sdefineExpr  ::= 'sdefine ' var ' ' symbol
+// symbol       ::= var
 
-type TokenType = 'LAMBDA' | 'DOT' | 'VAR' | 'LPAREN' | 'RPAREN' | 'WHITESPACE' | 'DEFINE' | 'EOF';
+type TokenType = 'LAMBDA' | 'DOT' | 'VAR' | 'LPAREN' | 'RPAREN' | 'WHITESPACE' | 'DEFINE' | 'SDEFINE' | 'EOF';
 
 interface Token {
     type: TokenType;
@@ -17,6 +20,7 @@ interface Token {
 
 const tokenSpec: [TokenType, RegExp][] = [
     ['DEFINE', /define/],
+    ['SDEFINE', /sdefine/],
     ['LAMBDA', /\\/],
     ['DOT', /\./],
     ['VAR', /[A-Za-z_][\w|']*/],
@@ -86,6 +90,11 @@ export function parse(tokens: Token[]): Expression {
         return currentContext.get(token.value)!;
     }
 
+    function parseSymbol(): string {
+        const token = consume('VAR'); 
+        return token.value;
+    }
+
     function parseLambdaVar(): VarExpression {
         const token = consume('VAR');
         const currentContext = contextStack[contextStack.length - 1];
@@ -136,11 +145,22 @@ export function parse(tokens: Token[]): Expression {
         return new DefineExpression(variable, body);
     }
 
+    function parseSDefineExpr(): Expression {
+        consume('SDEFINE');
+        const variable = parseVar();
+        const body = parseSymbol();
+        return new SDefineExpression(variable, body);
+    }
+
     function parseBase(): Expression {
         if (peek().type === 'DEFINE') {
             const expr = parseDefineExpr();
             assert(peek().type === 'EOF');
             return expr;
+        } else if (peek().type === 'SDEFINE') {
+          const expr = parseSDefineExpr();
+          assert(peek().type === 'EOF');
+          return expr;
         } else {
             const expr = parseLambdaExpr();
             assert(peek().type === 'EOF');

@@ -1,7 +1,7 @@
 import * as readline from 'readline';
 import { evaluate, runProgram } from './eval';
 import { Environment } from './env';
-import { VarExpression, LambdaExpression, AppExpression, Expression, DefineExpression } from './Expression';
+import { Expression, prettifyToString } from './Expression';
 import { tokenize, parse } from './parse';
 
 function startREPL() {
@@ -30,7 +30,7 @@ function startREPL() {
                 }
             }
         } else if (line == "pre") {
-            const expr = parse(tokenize("((\\x. x) (\\y. y))"));
+            const expr = parse(tokenize("((\\x. x) (\\x. x))"));
             console.log("Using preloaded test value:", expr);
             runProgram(env, [expr]);
         } else if (line == "clear") {
@@ -41,7 +41,7 @@ function startREPL() {
                 const tokens = tokenize(line);
                 const expr = parse(tokens);
                 expressions.push(expr);
-                console.log("Added expression:", expr.toString());
+                console.log("Added expression:", prettifyToString(expr.toString()));
             } catch (err) {
                 if (err instanceof Error) {
                     console.error(`Error: ${err.message}`);
