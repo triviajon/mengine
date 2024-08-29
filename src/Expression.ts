@@ -63,6 +63,14 @@ export interface Expression {
     id: number;
 }
 
+export function isExpression(maybeExpr: any): maybeExpr is Expression {
+    return maybeExpr instanceof VarExpression ||
+        maybeExpr instanceof AppExpression ||
+        maybeExpr instanceof LambdaExpression ||
+        maybeExpr instanceof DefineExpression ||
+        maybeExpr instanceof SDefineExpression
+}
+
 export class VarExpression implements Expression {
     private parents: DoublyLinkedList<ChildCell>;
     public id;

@@ -1,8 +1,6 @@
 import * as readline from 'readline';
-import { evaluate, runProgram } from './eval';
 import { Environment } from './env';
-import { Expression, prettifyToString } from './Expression';
-import { tokenize, parse } from './parse';
+import { runProgram } from './parse';
 
 function startREPL() {
     const env = new Environment();
@@ -12,7 +10,7 @@ function startREPL() {
         prompt: '> '
     });
 
-    let expressions: Array<Expression> = [];
+    let expressions: Array<string> = [];
 
     rl.prompt();
 
@@ -31,9 +29,12 @@ function startREPL() {
             }
         } else if (line == "pre") {
             const exprs = [
-                parse(tokenize(String.raw`define zero \f. (\x. x)`)),
-                parse(tokenize(String.raw`define succ \n. (\f. (\x. f (n f x)))`)),
-                parse(tokenize(String.raw`succ zero`))
+                String.raw`define zero \f. (\x. x)`,
+                String.raw`define succ \n. (\f. (\x. f (n f x)))`,
+                String.raw`succ zero`
+
+                // String.raw`define id \x. x`,
+                // String.raw`(\y. y y) id`
             ]
             runProgram(env, exprs);
         } else if (line == "clear") {
@@ -41,10 +42,7 @@ function startREPL() {
             expressions = [];
         } else if (line) {
             try {
-                const tokens = tokenize(line);
-                const expr = parse(tokens);
-                expressions.push(expr);
-                console.log("Added expression:", prettifyToString(expr.toString()));
+                expressions.push(line);
             } catch (err) {
                 if (err instanceof Error) {
                     console.error(`Error: ${err.message}`);

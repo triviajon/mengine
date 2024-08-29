@@ -1,5 +1,7 @@
 import assert from "assert";
-import { AppExpression, DefineExpression, Expression, LambdaExpression, SDefineExpression, VarExpression } from "./Expression";
+import { AppExpression, DefineExpression, Expression, isExpression, LambdaExpression, prettifyToString, SDefineExpression, VarExpression } from "./Expression";
+import { Closure, Environment } from "./env";
+import { evaluate } from "./eval";
 
 // Grammar for REPL. 
 // Note, that while synatically, symbols and vars are the same, they are treated differently in parsing. 
@@ -29,7 +31,7 @@ const tokenSpec: [TokenType, RegExp][] = [
     ['WHITESPACE', /\s+/],
 ];
 
-export function tokenize(input: string): Token[] {
+function tokenize(input: string): Token[] {
     const tokens: Token[] = [];
     let pos = 0;
 
@@ -58,7 +60,7 @@ export function tokenize(input: string): Token[] {
     return tokens;
 }
 
-export function parse(tokens: Token[]): Expression {
+function parse(env: Environment, tokens: Token[]): Expression {
     let pos = 0;
 
     const contextStack: Array<Map<string, VarExpression>> = [new Map()];
@@ -77,16 +79,29 @@ export function parse(tokens: Token[]): Expression {
         return token;
     }
 
-    function parseVar(): VarExpression {
+    function parseVar(): Expression {
         const token = consume('VAR');
         const currentContext = contextStack[contextStack.length - 1];
 
         // Check if this variable already exists in the current scope
         // If it doesn't, generate a fresh variable. If it does, we
         // should use that variable object instead of a new one.
-        if (!currentContext.has(token.value)) {
-            currentContext.set(token.value, new VarExpression(token.value));
+        if (currentContext.has(token.value)) {
+            return currentContext.get(token.value)!;
         }
+
+        // If not, check if this variable has been defined previously in the env
+        const varEnvValue: Expression | Closure | string | undefined = env.lookup(new VarExpression(token.value));
+        if (varEnvValue !== undefined) {
+            assert(varEnvValue instanceof Closure || isExpression(varEnvValue));
+            if (varEnvValue instanceof Closure) {
+                return new LambdaExpression(varEnvValue.variable, varEnvValue.body);
+            }
+
+            return varEnvValue;
+        }
+
+        currentContext.set(token.value, new VarExpression(token.value));
         return currentContext.get(token.value)!;
     }
 
@@ -94,6 +109,7 @@ export function parse(tokens: Token[]): Expression {
         const token = consume('VAR'); 
         return token.value;
     }
+
 
     function parseLambdaVar(): VarExpression {
         const token = consume('VAR');
@@ -142,6 +158,7 @@ export function parse(tokens: Token[]): Expression {
         consume('DEFINE');
         const variable = parseVar();
         const body = parseLambdaExpr();
+        assert(variable instanceof VarExpression);
         return new DefineExpression(variable, body);
     }
 
@@ -149,6 +166,7 @@ export function parse(tokens: Token[]): Expression {
         consume('SDEFINE');
         const variable = parseVar();
         const body = parseSymbol();
+        assert(variable instanceof VarExpression);
         return new SDefineExpression(variable, body);
     }
 
@@ -169,4 +187,25 @@ export function parse(tokens: Token[]): Expression {
     }
 
     return parseBase();
+}
+
+export function runProgram(env: Environment, maybeExpressions: Array<string>): void {
+    let currentEnv = env;
+    for (const maybeExpr of maybeExpressions) {
+        const expr = parse(currentEnv, tokenize(maybeExpr));
+        if (expr instanceof DefineExpression) {
+            currentEnv = currentEnv.extend(expr.variable, evaluate(currentEnv, expr.definition));
+            console.log(currentEnv.toString());
+        } else if (expr instanceof SDefineExpression) {
+            currentEnv = currentEnv.extend(expr.variable, expr.definition);
+        } else {
+            console.log("Evaluating lambda calculus term:", prettifyToString(expr.toString()));
+            const evalResult = evaluate(currentEnv, expr);
+            try {
+                console.log("Result (-unbound):", prettifyToString(evalResult.toString()));
+            } catch (e) {
+                console.log("Result (+unbound):", evalResult);
+            }
+        }
+    }
 }
