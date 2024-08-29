@@ -1,17 +1,20 @@
 import { Closure, Environment } from "./env";
-import { Expression, VarExpression, LambdaExpression, AppExpression, DefineExpression, SDefineExpression } from "./Expression";
+import { Expression, VarExpression, LambdaExpression, AppExpression, DefineExpression, SDefineExpression, prettifyToString } from "./Expression";
 import { normalise } from "./reduce";
 
 
 export function evaluate(env: Environment, expression: Expression): any {
     if (expression instanceof VarExpression) {
-        console.log("eval params:", env, expression);
+        // console.log("eval params:", env, expression);
         const lookup = env.lookup(expression);
-        console.log("lookup got:", lookup);
+        // console.log("lookup got:", lookup);
         return lookup;
     } else if (expression instanceof LambdaExpression) {
+        console.log('evaling lambda:', expression.toString());
+        normalise(expression);
         return new Closure(env, expression.variable, expression.body);
     } else if (expression instanceof AppExpression) {
+        normalise(expression);
         return apply(evaluate(env, expression.func), evaluate(env, expression.arg));
     } else {
         throw new Error("Unknown expression type");
@@ -37,11 +40,11 @@ export function runProgram(env: Environment, expressions: Array<Expression>): vo
         } else if (expr instanceof SDefineExpression) {
             currentEnv = currentEnv.extend(expr.variable, expr.definition);
         } else {
-            console.log('in eval:', currentEnv.toString())
-            normalise(expr);
+            // console.log('in eval:', currentEnv.toString())
+            console.log("Evaluating lambda calculus term:", prettifyToString(expr.toString()));
             const evalResult = evaluate(currentEnv, expr);
             try {
-                console.log("Result (-unbound):", evalResult.toString());
+                console.log("Result (-unbound):", prettifyToString(evalResult.toString()));
             } catch (e) {
                 console.log("Result (+unbound):", evalResult);
             }

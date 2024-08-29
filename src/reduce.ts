@@ -115,6 +115,7 @@ export function normalise(expression: Expression): void{
         const funcValue = app.func;
 
         if (funcValue instanceof LambdaExpression) {
+            console.log("Found redex in:", app.toString());
             normalise(reduce(app));
         } else if (funcValue instanceof VarExpression) {
             normalise(app.arg);

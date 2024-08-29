@@ -30,7 +30,7 @@ export class Environment {
     }
 
     public toString(): string {
-        return this.env.map(entry => `(${entry.key.toString}, ${entry.value})`).join(", ");
+        return this.env.map(entry => `(${entry.key.toString()}, ${entry.value})`).join(", ");
     }
 }
 

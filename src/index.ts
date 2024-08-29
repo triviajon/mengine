@@ -30,9 +30,12 @@ function startREPL() {
                 }
             }
         } else if (line == "pre") {
-            const expr = parse(tokenize("((\\x. x) (\\x. x))"));
-            console.log("Using preloaded test value:", expr);
-            runProgram(env, [expr]);
+            const exprs = [
+                parse(tokenize(String.raw`define zero \f. (\x. x)`)),
+                parse(tokenize(String.raw`define succ \n. (\f. (\x. f (n f x)))`)),
+                parse(tokenize(String.raw`succ zero`))
+            ]
+            runProgram(env, exprs);
         } else if (line == "clear") {
             console.log("Program has been cleared.")
             expressions = [];
