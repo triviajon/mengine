@@ -3,7 +3,7 @@ import { Expression, VarExpression, LambdaExpression, AppExpression, DefineExpre
 import { normalise } from "./reduce";
 
 
-export function evaluate(env: Environment, expression: Expression): Expression | Closure | string {
+export function evaluate(env: Environment, expression: Expression): Expression | string {
     if (expression instanceof VarExpression) {
         const lookup = env.lookup(expression);
         if (lookup === undefined) {
@@ -11,24 +11,26 @@ export function evaluate(env: Environment, expression: Expression): Expression |
         }
         return lookup;
     } else if (expression instanceof LambdaExpression) {
-        normalise(expression)
-        return new Closure(env, expression.variable, expression.body);
-    } else if (expression instanceof AppExpression) {
         normalise(expression);
+        return expression; // Should be doing closures of the current envirnoment here, but too hard to implement for now
+    } else if (expression instanceof AppExpression) {
+        console.log("Before normalization in eval:", expression);
+        normalise(expression);
+        console.log("After normalization in eval:", expression);
         return apply(evaluate(env, expression.func), evaluate(env, expression.arg));
     } else {
         throw new Error("Unknown expression type");
     }
 }
 
-function apply(clos: any, arg: any): any {
-    if (clos instanceof Closure) {
-        const extendedEnv = clos.env.extend(clos.variable, arg);
-        return evaluate(extendedEnv, clos.body);
-    } else if (typeof clos === 'string') {
-        return `(${clos} ${arg})`; // Temporary solution, but this means that clos is not yet a value
+function apply(func: any, arg: any): any {
+    if (func instanceof Closure) {
+        const extendedEnv = func.env.extend(func.variable, arg);
+        return evaluate(extendedEnv, func.body);
+    } else if (typeof func === 'string') {
+        return `(${func} ${arg})`; // Temporary solution, but this means that func is not yet a value
     } else {
-        throw new Error(`Attempted to apply a non-closure value (got [${clos} ${arg}]: [${typeof clos} ${typeof arg}])`);
+        throw new Error(`Attempted to apply a non-closure value (got [${func} ${arg}]: [${typeof func} ${typeof arg}])`);
     }
 }
 

@@ -22,16 +22,16 @@ function startREPL() {
                 runProgram(env, expressions);
                 expressions = [];
             } catch (err) {
-                console.log("erred")
                 if (err instanceof Error) {
                     console.error(`Error: ${err.message}`);
                 }
+                expressions = [];
             }
         } else if (line == "pre") {
             const exprs = [
                 String.raw`define zero \f. (\x. x)`,
-                String.raw`define succ \n. (\f. (\x. f (n f x)))`,
-                String.raw`succ zero`
+                String.raw`define succ \n. (\f. (\x. (f (n f x))))`,
+                String.raw`(succ zero)`
 
                 // String.raw`define id \x. x`,
                 // String.raw`(\y. y y) id`

@@ -2,7 +2,7 @@ import { Expression, VarExpression } from "./Expression";
 
 interface EnvEntry {
     key: VarExpression;
-    value: Expression | Closure | string;
+    value: Expression | string;
 }
 
 // Immutable
@@ -13,13 +13,13 @@ export class Environment {
         this.env = [];
     }
 
-    public extend(key: VarExpression, value: Expression | Closure | string): Environment {
+    public extend(key: VarExpression, value: Expression | string): Environment {
         const newEnv = new Environment();
         newEnv.env = [...this.env, { key, value }];
         return newEnv;
     }
 
-    public lookup(key: VarExpression): Expression | Closure | string | undefined {
+    public lookup(key: VarExpression): Expression | string | undefined {
         for (const envEntry of this.env) {
             // Note: we don't want to use eqaulValue here
             if (envEntry.key.name === key.name) {

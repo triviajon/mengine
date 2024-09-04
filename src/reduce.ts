@@ -108,7 +108,7 @@ function normaliseWeakHead(expression: Expression): void {
     }
 }
 
-export function normalise(expression: Expression): void{
+export function normalise(expression: Expression): void {
     if (expression instanceof AppExpression) {
         const app = expression;
         normaliseWeakHead(app.func);
