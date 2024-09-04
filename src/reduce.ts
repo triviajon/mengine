@@ -99,31 +99,28 @@ function reduce(a: AppExpression) {
 
 function normaliseWeakHead(expression: Expression): void {
     if (expression instanceof AppExpression) {
-        const app = expression;
-        normaliseWeakHead(app.func);
-        const funcValue = app.func;
-        if (funcValue instanceof LambdaExpression) {
-            normaliseWeakHead(reduce(app));
+        normaliseWeakHead(expression.func);
+        if (expression.func instanceof LambdaExpression) {
+            normaliseWeakHead(reduce(expression));
         }
     }
 }
 
 export function normalise(expression: Expression): void {
     if (expression instanceof AppExpression) {
-        const app = expression;
-        normaliseWeakHead(app.func);
-        const funcValue = app.func;
+        normaliseWeakHead(expression.func);
+        const func = expression.func;
 
-        if (funcValue instanceof LambdaExpression) {
-            console.log("Found redex in:", app.toString());
-            normalise(reduce(app));
-        } else if (funcValue instanceof VarExpression) {
-            normalise(app.arg);
+        if (func instanceof LambdaExpression) {
+            normalise(reduce(expression));
+        } else if (func instanceof VarExpression) {
+            normalise(expression.arg);
         } else {
-            normalise(funcValue);
-            normalise(app.arg);
+            normalise(func);
+            normalise(expression.arg);
         }
     } else if (expression instanceof LambdaExpression) {
         normalise(expression.body);
     }
 }
+
