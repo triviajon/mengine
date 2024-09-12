@@ -67,8 +67,8 @@ export function isExpression(maybeExpr: any): maybeExpr is Expression {
     return maybeExpr instanceof VarExpression ||
         maybeExpr instanceof AppExpression ||
         maybeExpr instanceof LambdaExpression ||
-        maybeExpr instanceof DefineExpression ||
-        maybeExpr instanceof SDefineExpression
+        maybeExpr instanceof ForallExpression ||
+        maybeExpr instanceof TypeExpression
 }
 
 export class VarExpression implements Expression {
@@ -179,17 +179,28 @@ export class AppExpression implements Expression {
     }
 }
 
-export class DefineExpression implements Expression {
+
+export class ForallExpression implements Expression {
+    private parents: DoublyLinkedList<ChildCell>;
+    public bodyRef: DoublyLinkedListNode<ChildCell> | undefined = undefined;
     public id;
 
-    constructor(public variable: VarExpression, public definition: Expression) {
+    constructor(public variable: VarExpression, public body: Expression) {
         this.variable = variable;
-        this.definition = definition;
+        this.body = body;
+        this.parents = new DoublyLinkedList<ChildCell>(null, null, formatChildCell);
         this.id = generateSimpleId();
+
+        // Install uplinks
+        this.bodyRef = this.body.addToParents({ relation: Relation.LAMBDA_BODY, parent: this });
+        this.variable.addToParents({ relation: Relation.LAMBDA_VAR, parent: this });
     }
 
     public toString(): string {
-        return `DefineExpression { var: '${this.variable}', definition: '${this.definition}', id: '${this.id}' }`;
+        // return `(\\${this.variable.toString()}. ${this.body.toString()})`;
+        const parentIds = []
+        for (const cc of this.parents) { parentIds.push(cc.parent.id); }
+        return `LambdaExpression { variable: ${this.variable}, body: ${this.body}, parents: '${parentIds.join()}', id: '${this.id}' }`;
     }
 
     public equalValue(that: Expression): boolean {
@@ -197,41 +208,14 @@ export class DefineExpression implements Expression {
     }
 
     public getParents(): DoublyLinkedList<ChildCell> {
-        return new DoublyLinkedList(null, null, formatChildCell);
+        return this.parents;
     }
 
-    public addToParents(_: ChildCell | undefined): undefined {
-        // Intentionally do nothing
-        return undefined;
-    }
-}
-
-export class SDefineExpression implements Expression {
-    public id; 
-
-    constructor(public variable: VarExpression, public definition: string) {
-        this.variable = variable;
-        this.definition = definition;
-        this.id = generateSimpleId();
-    }
-
-    public toString(): string {
-        return `SDefineExpression { var: '${this.variable}', definition: '${this.definition}', id: '${this.id}' }`;
-    }
-
-    public equalValue(that: Expression): boolean {
-        return this.id === that.id;
-    }
-
-    public getParents(): DoublyLinkedList<ChildCell> {
-        throw new Error("not implemented yet");
-    }
-
-    public addToParents(cclink: ChildCell | undefined): DoublyLinkedListNode<ChildCell> | undefined {
-        throw new Error("not implemented yet");
+    public addToParents(cclink: ChildCell | undefined): DoublyLinkedListNode<ChildCell> {
+        assert(cclink !== undefined);
+        return this.parents.addBeginning(cclink);
     }
 }
-
 
 export function freeDeadExpr(expr: Expression) {
 
