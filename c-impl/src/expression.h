@@ -2,12 +2,16 @@
 #define EXPRESSION_H
 
 #include "doubly_linked_list.h"
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
 
-
-typedef enum { VAR_EXPRESSION, LAMBDA_EXPRESSION, APP_EXPRESSION } ExpressionType;
-
+typedef enum {
+  VAR_EXPRESSION,
+  LAMBDA_EXPRESSION,
+  APP_EXPRESSION,
+  FORALL_EXPRESSION,
+  TYPE_EXPRESSION
+} ExpressionType;
 
 typedef union Expression Expression;
 
@@ -29,8 +33,8 @@ A VarExpression is a combination of
 
 VarExpression instances are responsibile for allocating and freeing the memory
 used to store the doubly-linked list of uplinks, but not the Uplinks within
-each DLLExpression. Each DLLExpression contains a pointer to an Uplink, which should be
-freed by the Expression it pointers to.
+each DLLExpression. Each DLLExpression contains a pointer to an Uplink, which
+should be freed by the Expression it pointers to.
 */
 typedef struct {
   char *name;
@@ -57,26 +61,76 @@ typedef struct {
   DoublyLinkedList *uplinks;
 } AppExpression;
 
+/*
+Similar to above.
+*/
+typedef struct {
+  VarExpression *var;
+  Expression *type;
+  Expression *arg;
+  DoublyLinkedList *uplinks;
+} ForallExpression;
+
+typedef struct {
+
+} TypeExpression;
+
 typedef struct {
   ExpressionType type;
   union Expression {
     VarExpression var;
     LambdaExpression lambda;
     AppExpression app;
+    ForallExpression forall;
+    TypeExpression type;
   } value;
 } Expression;
 
-char* stringify_expression(Expression* expression);
+typedef struct {
+  char *name;
+  Expression *theorem;
+  Expression *proof;
+} Theorem;
 
-Expression* create_var_expression(const char* name);
-Expression* create_lambda_expression(Expression* var, Expression* body);
-Expression* create_app_expression(Expression* func, Expression* arg);
+/*
+A program is just an step (let statement, theorem statement, or expression), and
+a pointer to the next instruction (or null)
+*/
+typedef enum { LET_STEP, THEOREM_STEP, EXPR_STEP } StepType;
 
-int replace_child(DoublyLinkedList* old_parents, Expression* new_child);
-Expression* scandown(Expression* expression, Expression* argterm, DoublyLinkedList* varpars, Expression** topapp);
-Expression* beta_reduction(Expression* expression);
-int upcopy(Expression* new_child, Expression* parent, Relation relation);
-int clear_caches(Expression* reduced_lambda_expression, Expression* top_app_expression);
-int free_dead_expression(Expression* expression);
+typedef struct {
+  StepType type;
+  union {
+    struct {
+      char *id;
+      Expression *expr;
+    } let;
+
+    struct {
+      Theorem *theorem;
+    } theorem;
+
+    struct {
+      Expression *expr;
+    } expr;
+  } value;
+
+  struct Step *next;
+} Program;
+
+char *stringify_expression(Expression *expression);
+
+Expression *create_var_expression(const char *name);
+Expression *create_lambda_expression(Expression *var, Expression *body);
+Expression *create_app_expression(Expression *func, Expression *arg);
+
+int replace_child(DoublyLinkedList *old_parents, Expression *new_child);
+Expression *scandown(Expression *expression, Expression *argterm,
+                     DoublyLinkedList *varpars, Expression **topapp);
+Expression *beta_reduction(Expression *expression);
+int upcopy(Expression *new_child, Expression *parent, Relation relation);
+int clear_caches(Expression *reduced_lambda_expression,
+                 Expression *top_app_expression);
+int free_dead_expression(Expression *expression);
 
 #endif // EXPRESSION_H
