@@ -72,7 +72,7 @@ typedef struct {
 } ForallExpression;
 
 typedef struct {
-
+  DoublyLinkedList *uplinks;
 } TypeExpression;
 
 typedef struct {
@@ -120,9 +120,18 @@ typedef struct {
 
 char *stringify_expression(Expression *expression);
 
-Expression *create_var_expression(const char *name);
-Expression *create_lambda_expression(Expression *var, Expression *body);
-Expression *create_app_expression(Expression *func, Expression *arg);
+Expression *init_var_expression(const char *name);
+Expression *init_lambda_expression(Expression *var, Expression *body);
+Expression *init_app_expression(Expression *func, Expression *arg);
+Expression *init_forall_expression(Expression *var, Expression *arg);
+Expression *init_type_expression();
+
+Expression *free_var_expression(Expression *expr);
+Expression *free_lambda_expression(Expression *expr);
+Expression *free_app_expression(Expression *expr);
+Expression *free_forall_expression(Expression *expr);
+Expression *free_type_expression(Expression *expr);
+
 
 int replace_child(DoublyLinkedList *old_parents, Expression *new_child);
 Expression *scandown(Expression *expression, Expression *argterm,
