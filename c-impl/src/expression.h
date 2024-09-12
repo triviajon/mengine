@@ -123,7 +123,7 @@ char *stringify_expression(Expression *expression);
 Expression *init_var_expression(const char *name);
 Expression *init_lambda_expression(Expression *var, Expression *body);
 Expression *init_app_expression(Expression *func, Expression *arg);
-Expression *init_forall_expression(Expression *var, Expression *arg);
+Expression *init_forall_expression(Expression *var, Expression *type, Expression *arg);
 Expression *init_type_expression();
 
 Expression *free_var_expression(Expression *expr);
