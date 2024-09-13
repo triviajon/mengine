@@ -28,9 +28,6 @@ char* env_lookup(Env *env, const char *id);
 // Insert a key-value pair into the environment (replaces if id already exists)
 void env_insert(Env *env, const char *id, const char *value);
 
-// Remove a key-value pair from the environment
-void env_remove(Env *env, const char *id);
-
 // Print the environment
 void env_print(Env *env);
 

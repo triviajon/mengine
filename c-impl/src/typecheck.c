@@ -5,7 +5,69 @@
 #include "expression.h"
 #include "env.h"
 
-Expression *substitute(Expression *expr, Expression *var, Expression *subst);
+// In expr, replace instances of var by subst.
+Expression *substitute(Expression *expr, Expression *var, Expression *subst) {
+  switch (expr->type) {
+  case (VAR_EXPRESSION):
+    if (equal(expr, var)) {
+      return subst;
+    } else {
+      return expr;
+    }
+  case (LAMBDA_EXPRESSION):
+    if (equal(expr->value.lambda.var, var)) {
+      return expr;
+    } else {
+      return init_lambda_expression(
+        expr->value.lambda.var, 
+        substitute(expr->value.lambda.type, var, subst), 
+        substitute(expr->value.lambda.body, var, subst)
+      );
+    }
+  case (APP_EXPRESSION):
+    return init_app_expression( 
+      substitute(expr->value.app.func, var, subst), 
+      substitute(expr->value.app.arg, var, subst)
+    );
+  case (FORALL_EXPRESSION):
+    return init_forall_expression(
+      expr->value.forall.var,
+      substitute(expr->value.forall.type, var, subst), 
+      substitute(expr->value.forall.arg, var, subst)
+    );
+  case (TYPE_EXPRESSION):
+    return init_type_expression();
+  }
+}
+
+Step *substitute_rest_steps(Step *prog, Expression *var, Expression *subst) {
+  switch (prog->type) {
+  case LET_STEP:
+    return init_let_step(
+      prog->value.let.id, 
+      substitute(prog->value.let.expr, var, subst),
+      substitute_rest_steps(prog->next, var, subst)
+    );
+  case THEOREM_STEP: {
+    Theorem *theorem = prog->value.theorem.theorem;
+    Theorem *new_theorem = init_theorem(
+      theorem->name,
+      substitute(theorem->theorem, var, subst),
+      substitute(theorem->proof, var, subst)
+    );
+    return init_theorem_step(
+      new_theorem, 
+      substitute_rest_steps(prog->next, var, subst)
+    );
+  }
+  case EXPR_STEP:
+    return init_expr_step(
+      substitute(prog->value.expr.expr, var, subst)
+    );
+  default:
+    return NULL;  // Handle unexpected cases
+  }
+}
 
 Expression *typecheck_lambda(Expression *gamma, Expression *var, Expression *type, Expression *body) {
     Expression *new_gamma = set_in_context(gamma, var, type);
@@ -45,7 +107,7 @@ Expression *typecheck_expression_under_context(Expression *gamma,
                                                Expression *expr) {
   switch (expr->type) {
   case (VAR_EXPRESSION):
-    return lookup_in_context(gamma, expr->value.var);
+    return lookup_in_context(gamma, expr);
   case (LAMBDA_EXPRESSION):
     return typecheck_lambda(gamma, expr->value.lambda.var,
                             expr->value.lambda.type, expr->value.lambda.body);
@@ -99,7 +161,9 @@ bool typecheck_context(Expression *gamma, Expression *delta) {
   }
 }
 
-Expression *typecheck_non_context(Expression *context, Expression *expr) {}
+Expression *typecheck_non_context(Expression *context, Expression *expr) {
+  return beta_reduction(context, typecheck_expression_under_context(context, expr));
+}
 
 bool is_valid_context(Expression *expr) {
   switch (expr->type) {
@@ -112,43 +176,64 @@ bool is_valid_context(Expression *expr) {
   }
 }
 
-void typecheck_expression(Expression *expr) {
+Expression *typecheck_expression(Expression *expr) {
   if (is_valid_context(expr)) {
-    typecheck_valid_context(expr);
+    if (typecheck_cotext(expr)) {
+      return init_type_expression();
+    } else {
+      // panic!
+      return NULL;
+    }
   } else {
     Expression *context = init_type_expression();
-    typecheck_non_context(context, expr);
-    free_type_expression(context);
+    return typecheck_non_context(context, expr);
   }
 }
 
 // Function to typecheck a Let statement
-void typecheck_let(char *id, Expression *expr, Program *next) {}
+Step *typecheck_let(char *name, Expression *expr, Step *next) {
+  Expression *expr_context = init_type_expression();
+  Expression *expr_reduced = beta_reduction(expr_context, expr);
+  Expression *new_prog = substitute_rest_steps(next, name, expr_reduced);
+  return new_prog;
+}
 
 // Function to typecheck a Theorem
-void typecheck_theorem(Theorem *theorem, Program *next) {
+Step *typecheck_theorem(Theorem *theorem, Step *next) {
   // To typecheck a theorem, we must make sure that it's
   // theorem term (type) is well-typed, and that it's proof is a
   // term of the theorem type
 
   typecheck_expression(theorem->theorem);
 
-  Expression *new_theorem_term = beta_reduction(theorem->theorem);
+  Expression *theorem_context = init_type_expression();
+  Expression *new_theorem_term = beta_reduction(theorem_context, theorem->theorem);
+  Expression *proof_type = typecheck_expression(theorem->proof);
+  Expression *proof_context = init_type_expression();
+  Expression *proof_reduced = beta_reduction(proof_context, theorem->proof);
+  Env* env = env_init();
+  if (alpha_equivalent(env, new_theorem_term, proof_type)) {
+    return substitute_rest_steps(next, theorem->name, proof_reduced);
+  } else {
+    // panic! proof type does not match theorem term
+    printf("Proof type does not match theorem term!");
+    return NULL;
+  }
 }
 
 // Function to typecheck the entire program
-void typecheck_prog(Program *prog) {
-  Program *current = prog;
+void typecheck_prog(Step *step) {
+  Step *current = step;
 
   while (current != NULL) {
     switch (current->type) {
     case LET_STEP:
-      typecheck_let(current->value.let.id, current->value.let.expr,
+      current = typecheck_let(current->value.let.id, current->value.let.expr,
                     current->next);
       break;
 
     case THEOREM_STEP:
-      typecheck_theorem(current->value.theorem.theorem, current->next);
+      current = typecheck_theorem(current->value.theorem.theorem, current->next);
       break;
 
     case EXPR_STEP:

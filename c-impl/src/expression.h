@@ -2,8 +2,11 @@
 #define EXPRESSION_H
 
 #include "doubly_linked_list.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <string.h>
 
 typedef enum {
   VAR_EXPRESSION,
@@ -13,7 +16,7 @@ typedef enum {
   TYPE_EXPRESSION
 } ExpressionType;
 
-typedef union Expression Expression;
+typedef struct Expression Expression;
 
 /*
 An uplink is a combination of
@@ -75,16 +78,16 @@ typedef struct {
   DoublyLinkedList *uplinks;
 } TypeExpression;
 
-typedef struct {
+struct Expression {
   ExpressionType type;
-  union Expression {
+  union {
     VarExpression var;
     LambdaExpression lambda;
     AppExpression app;
     ForallExpression forall;
     TypeExpression type;
   } value;
-} Expression;
+};
 
 typedef struct {
   char *name;
@@ -93,12 +96,12 @@ typedef struct {
 } Theorem;
 
 /*
-A program is just an step (let statement, theorem statement, or expression), and
-a pointer to the next instruction (or null)
+A "program" is just an step (let statement, theorem statement, or expression), and
+a pointer to the next step (or null)
 */
 typedef enum { LET_STEP, THEOREM_STEP, EXPR_STEP } StepType;
 
-typedef struct {
+typedef struct Step {
   StepType type;
   union {
     struct {
@@ -116,12 +119,14 @@ typedef struct {
   } value;
 
   struct Step *next;
-} Program;
+} Step;
 
-char *stringify_expression(Expression *expression);
+Step *init_let_step(char *id, Expression *expr, Step *next);
+Step *init_theorem_step(Theorem *theorem, Step *next);
+Step *init_expr_step(Expression *expr);
 
 Expression *init_var_expression(const char *name);
-Expression *init_lambda_expression(Expression *var, Expression *body);
+Expression *init_lambda_expression(Expression *var, Expression *type, Expression *body);
 Expression *init_app_expression(Expression *func, Expression *arg);
 Expression *init_forall_expression(Expression *var, Expression *type, Expression *arg);
 Expression *init_type_expression();
@@ -132,14 +137,10 @@ Expression *free_app_expression(Expression *expr);
 Expression *free_forall_expression(Expression *expr);
 Expression *free_type_expression(Expression *expr);
 
+bool equal(Expression *a, Expression *b);
+char *stringify_expression(Expression *expression);
 
-int replace_child(DoublyLinkedList *old_parents, Expression *new_child);
-Expression *scandown(Expression *expression, Expression *argterm,
-                     DoublyLinkedList *varpars, Expression **topapp);
-Expression *beta_reduction(Expression *expression);
-int upcopy(Expression *new_child, Expression *parent, Relation relation);
-int clear_caches(Expression *reduced_lambda_expression,
-                 Expression *top_app_expression);
-int free_dead_expression(Expression *expression);
+Expression *set_in_context(Expression *context, Expression *var, Expression *expr);
+Expression *lookup_in_context(Expression *context, Expression *var);
 
 #endif // EXPRESSION_H
