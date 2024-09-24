@@ -48,7 +48,7 @@ typedef struct {
 Similar to VarExpression.
 */
 typedef struct {
-  VarExpression *var;
+  Expression *var; // Maybe not the best choice of type, but types aren't first class in C, meaning making this a VarExpression is hard to work with
   Expression *type;
   Expression *body;
   DoublyLinkedList *uplinks;
@@ -68,7 +68,7 @@ typedef struct {
 Similar to above.
 */
 typedef struct {
-  VarExpression *var;
+  Expression *var; // Similar to the reason why we made LambdaExpression.var Expression type.
   Expression *type;
   Expression *arg;
   DoublyLinkedList *uplinks;
@@ -99,7 +99,7 @@ typedef struct {
 A "program" is just an step (let statement, theorem statement, or expression), and
 a pointer to the next step (or null)
 */
-typedef enum { LET_STEP, THEOREM_STEP, EXPR_STEP } StepType;
+typedef enum { LET_STEP, THEOREM_STEP, EXPR_STEP, END_STEP } StepType;
 
 typedef struct Step {
   StepType type;
@@ -121,9 +121,12 @@ typedef struct Step {
   struct Step *next;
 } Step;
 
+Theorem *init_theorem(char *name, Expression *theorem, Expression *proof);
+
 Step *init_let_step(char *id, Expression *expr, Step *next);
 Step *init_theorem_step(Theorem *theorem, Step *next);
 Step *init_expr_step(Expression *expr);
+Step *init_end_step();
 
 Expression *init_var_expression(const char *name);
 Expression *init_lambda_expression(Expression *var, Expression *type, Expression *body);
@@ -142,5 +145,10 @@ char *stringify_expression(Expression *expression);
 
 Expression *set_in_context(Expression *context, Expression *var, Expression *expr);
 Expression *lookup_in_context(Expression *context, Expression *var);
+// Returns the "outer most" product in the context.
+// In other words, if the context has the form Γ[x: P], it returns [x: P].
+Expression *top_context(Expression *context);
+// If the context has the form Γ[x: P], it returns Γ.
+Expression *clear_top_context(Expression *context);
 
 #endif // EXPRESSION_H

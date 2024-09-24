@@ -126,6 +126,19 @@ DLLNode *dll_search(DoublyLinkedList *list, void *data)
     return NULL;
 }
 
+int dll_len(DoublyLinkedList *list) {
+    DLLNode *node = list->head;
+    int count = 0;
+
+    while (node) {
+        count++;
+    }
+
+    return count;
+}
+
+
+
 DLLNode *dll_at(DoublyLinkedList *list, int index)
 {
     DLLNode *node = list->head;

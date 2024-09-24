@@ -1,4 +1,4 @@
-#include "beta_reduce.h"
+#include "beta_reduction.h"
 
 // Forward declaration
 int upcopy(Expression *new_child, Expression *parent, Relation relation);
@@ -92,19 +92,22 @@ int replace_child(DoublyLinkedList *old_parents, Expression *new_child) {
   return 0;
 }
 
-Expression *scandown(Expression *expression, Expression *argterm, 
+Expression *scandown(Expression *expression, Expression *argterm,
                      DoublyLinkedList *varpars, Expression **topapp) {
   if (expression->type == LAMBDA_EXPRESSION) {
     Expression *body_prime =
         scandown(expression->value.lambda.body, argterm, varpars, topapp);
-    Expression *l_prime = init_lambda_expression(expression->value.lambda.var, body_prime);
+    Expression *l_prime =
+        init_lambda_expression(expression->value.lambda.var,
+                               expression->value.lambda.type, body_prime);
     return l_prime;
   } else if (expression->type == VAR_EXPRESSION) {
     topapp = NULL;
     return argterm;
   } else {
     // Must be APP_EXPRESSION
-    Expression *a_prime = init_app_expression(expression->value.app.func, expression->value.app.arg);
+    Expression *a_prime = init_app_expression(expression->value.app.func,
+                                              expression->value.app.arg);
     expression->value.app.cache = a_prime;
     DLLNode *current = varpars->head;
     while (current != NULL) {
@@ -116,30 +119,34 @@ Expression *scandown(Expression *expression, Expression *argterm,
   }
 }
 
-Expression *beta_reduce(Expression *expression) {
-  if (expression->type != APP_EXPRESSION) {
-    printf("Expression must be an app expression.");
-    return NULL;
-  }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
+Expression *beta_reduction(Expression *context, Expression *expression) {
+   if (expression->type != APP_EXPRESSION) {
+    // printf("Expression must be an app expression.");
+    return expression;
+  } 
 
   Expression *app_func = expression->value.app.func;
 
   if (app_func->type != LAMBDA_EXPRESSION) {
-    printf("Expression is not a redex.");
-    return NULL;
+    // printf("Expression is not a redex.");
+    return expression;
   }
 
   Expression *ans;
 
   if (dll_len(app_func->value.lambda.uplinks) == 1) {
-    replace_child(app_func->value.lambda.var->uplinks, expression->value.app.arg);
+    Expression *lambda_var = app_func->value.lambda.var;
+    replace_child(lambda_var->value.var.uplinks, expression->value.app.arg);
     ans = app_func;
-  } else if (dll_len(app_func->value.lambda.var->uplinks) == 0) {
+  } else if (dll_len(app_func->value.lambda.var->value.var.uplinks) == 0) {
     ans = app_func->value.lambda.body;
   } else {
     Expression *top_app = NULL;
+    Expression *lambda_var = app_func->value.lambda.var;
     ans = scandown(expression, expression->value.app.arg,
-                   app_func->value.lambda.var->uplinks, &top_app);
+                   lambda_var->value.var.uplinks, &top_app);
     if (top_app != NULL) {
       clear_caches(app_func, top_app);
     }
@@ -149,10 +156,12 @@ Expression *beta_reduce(Expression *expression) {
   free_dead_expression(expression);
   return ans;
 }
+#pragma clang diagnostic pop
 
 int upcopy(Expression *new_child, Expression *parent, Relation relation) {
   if (relation == LAMBDA_BODY) {
-    Expression *new_lambda = init_lambda_expression(parent->value.lambda.var, new_child);
+    Expression *new_lambda = init_lambda_expression(
+        parent->value.lambda.var, parent->value.lambda.type, new_child);
     DLLNode *current = parent->value.lambda.uplinks->head;
     while (current != NULL) {
       Uplink *uplink = (Uplink *)current->data;
@@ -162,7 +171,8 @@ int upcopy(Expression *new_child, Expression *parent, Relation relation) {
     return 0;
   } else if (relation == APP_FUNC) {
     if (parent->value.app.cache == NULL) {
-      Expression *new_app = init_app_expression(new_child, parent->value.app.arg);
+      Expression *new_app =
+          init_app_expression(new_child, parent->value.app.arg);
       parent->value.app.cache = new_app;
       DLLNode *current = parent->value.app.uplinks->head;
       while (current != NULL) {
@@ -171,12 +181,14 @@ int upcopy(Expression *new_child, Expression *parent, Relation relation) {
         current = current->next;
       }
     } else {
-      parent->value.app.cache->app.func = new_child;
+      Expression *app_cache = parent->value.app.cache;
+      app_cache->value.app.func = new_child;
     }
     return 0;
   } else if (relation == APP_ARG) {
     if (parent->value.app.cache == NULL) {
-      Expression *new_app = init_app_expression(parent->value.app.func, new_child);
+      Expression *new_app =
+          init_app_expression(parent->value.app.func, new_child);
       parent->value.app.cache = new_app;
       DLLNode *current = parent->value.app.uplinks->head;
       while (current != NULL) {
@@ -185,7 +197,8 @@ int upcopy(Expression *new_child, Expression *parent, Relation relation) {
         current = current->next;
       }
     } else {
-      parent->value.app.cache->app.arg = new_child;
+      Expression *app_cache = parent->value.app.cache;
+      app_cache->value.app.arg = new_child;
     }
     return 0;
   } else {
@@ -194,19 +207,15 @@ int upcopy(Expression *new_child, Expression *parent, Relation relation) {
   }
 }
 
-static void var_clean(Expression *var_expression);
-static void clean_up(Expression *expression, Relation relation);
-static int lambda_scan(Expression *expression);
-
-int clear_caches(Expression *reduced_lambda_expression, Expression *top_app_expression) {
+int clear_caches(Expression *reduced_lambda_expression,
+                 Expression *top_app_expression) {
   if (reduced_lambda_expression->type != LAMBDA_EXPRESSION ||
       top_app_expression->type != APP_EXPRESSION) {
-    printf("reduced_lambda_expression must be of type LAMBDA_EXPRESSION (got %d)\n"
-           "top_app_expression must be of type APP_EXPRESSION (got %d)\n",
-           reduced_lambda_expression->type, top_app_expression->type);
+    printf(
+        "reduced_lambda_expression must be of type LAMBDA_EXPRESSION (got %d)\n"
+        "top_app_expression must be of type APP_EXPRESSION (got %d)\n",
+        reduced_lambda_expression->type, top_app_expression->type);
   }
-
-  ;
 
   // For Lambda body and App arg
   clean_up(reduced_lambda_expression, LAMBDA_BODY);
@@ -214,7 +223,9 @@ int clear_caches(Expression *reduced_lambda_expression, Expression *top_app_expr
   return 0;
 }
 
-static void clean_up(Expression *expression, Relation relation) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
+void clean_up(Expression *expression, Relation relation) {
   if (expression->type == LAMBDA_EXPRESSION) {
     // Clean lambda body
     Expression *body = expression->value.lambda.body;
@@ -236,3 +247,4 @@ static void clean_up(Expression *expression, Relation relation) {
     free(expression->value.app.arg);
   }
 }
+#pragma clang diagnostic push
