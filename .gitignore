@@ -47,9 +47,12 @@ dist/
 out/
 .next
 .cache
+*.o
+main
 
-# VSCode testing
+# VSCode
 .vscode-test
+.vscode
 
 # Yarn v2
 .yarn/cache
