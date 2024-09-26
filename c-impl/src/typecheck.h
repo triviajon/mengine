@@ -6,10 +6,8 @@
 #include <string.h>
 
 #include "expression.h"
-#include "env.h"
+#include "alpha_equiv.h"
 #include "beta_reduction.h"
-
-bool alpha_equivalent(Env *env, Expression *t1, Expression *t2);
 
 Expression *substitute(Expression *expr, char *var, Expression *subst);
 

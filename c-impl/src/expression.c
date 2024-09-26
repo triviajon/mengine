@@ -1,11 +1,12 @@
 #include "expression.h"
+#include "safe_typecheck.h"
 
 Theorem *init_theorem(char *name, Expression *theorem, Expression *proof) {
     Theorem *new_theorem = (Theorem *)malloc(sizeof(Theorem));
     if (new_theorem == NULL) {
         return NULL;
     }
-
+ 
     new_theorem->name = (char *)malloc(strlen(name) + 1);
     if (new_theorem->name == NULL) {
         free(new_theorem);
@@ -60,31 +61,35 @@ Expression *init_var_expression(const char *name) {
     return expr;
 }
 
-Expression *init_lambda_expression(Expression *var, Expression *type, Expression *body) {
+Expression *init_lambda_expression(Expression *var, Expression *var_type, Expression *body, Expression *given_context) {
     Expression *expr = (Expression*)malloc(sizeof(Expression));
     expr->type = LAMBDA_EXPRESSION;
     expr->value.lambda.var = var;
-    expr->value.lambda.type = type;
+    expr->value.lambda.var_type = var_type;
     expr->value.lambda.body = body;
     expr->value.lambda.uplinks = dll_create();
+    expr->value.lambda.type = safe_synthesize_lambda_type(given_context, var, var_type, body);
+    expr->value.lambda.given_context = given_context;
     return expr;
 }
 
-Expression *init_app_expression(Expression *func, Expression *arg) {
+Expression *init_app_expression(Expression *func, Expression *arg, Expression *given_context) {
     Expression *expr = (Expression*)malloc(sizeof(Expression));
     expr->type = APP_EXPRESSION;
     expr->value.app.func = func;
     expr->value.app.arg = arg;
     expr->value.app.cache = NULL;
     expr->value.app.uplinks = dll_create();
+    expr->value.app.type = safe_synthesize_app_type(given_context, func, arg);
+    expr->value.app.given_context = given_context;
     return expr;
 }
 
-Expression *init_forall_expression(Expression *var, Expression *type, Expression *arg) {
+Expression *init_forall_expression(Expression *var, Expression *var_type, Expression *arg) {
     Expression *expr = (Expression*)malloc(sizeof(Expression));
     expr->type = FORALL_EXPRESSION;
     expr->value.forall.var = var;
-    expr->value.forall.type = type;
+    expr->value.forall.var_type = var_type;
     expr->value.forall.arg = arg;
     expr->value.forall.uplinks = dll_create();
     return expr;
@@ -110,7 +115,7 @@ Expression *free_lambda_expression(Expression *expr) {
     if (expr && expr->type == LAMBDA_EXPRESSION) {
         free_lambda_expression(expr->value.lambda.var);
         free_lambda_expression(expr->value.lambda.body);
-        free_lambda_expression(expr->value.lambda.type);
+        free_lambda_expression(expr->value.lambda.var_type);
         dll_destroy(expr->value.lambda.uplinks);
         free(expr);
     }
@@ -133,7 +138,7 @@ Expression *free_app_expression(Expression *expr) {
 Expression *free_forall_expression(Expression *expr) {
     if (expr && expr->type == FORALL_EXPRESSION) {
         free_forall_expression(expr->value.forall.var);
-        free_forall_expression(expr->value.forall.type);
+        free_forall_expression(expr->value.forall.var_type);
         free_forall_expression(expr->value.forall.arg);
         dll_destroy(expr->value.forall.uplinks);
         free(expr);
@@ -181,7 +186,7 @@ char *stringify_expression(Expression *expression) {
 
         case LAMBDA_EXPRESSION: {
             char *var_str = stringify_expression((Expression *)expression->value.lambda.var);
-            char *type_str = stringify_expression(expression->value.lambda.type);
+            char *type_str = stringify_expression(expression->value.lambda.var_type);
             char *body_str = stringify_expression(expression->value.lambda.body);
             result = str_concat("λ", var_str);
             result = str_concat(result, ":");
@@ -206,7 +211,7 @@ char *stringify_expression(Expression *expression) {
 
         case FORALL_EXPRESSION: {
             char *var_str = stringify_expression((Expression *)expression->value.forall.var);
-            char *type_str = stringify_expression(expression->value.forall.type);
+            char *type_str = stringify_expression(expression->value.forall.var_type);
             char *arg_str = stringify_expression(expression->value.forall.arg);
             result = str_concat("∀", var_str);
             result = str_concat(result, ":");
@@ -236,7 +241,7 @@ Expression *set_in_context(Expression *context, Expression *var, Expression *exp
     case (TYPE_EXPRESSION):
         return init_forall_expression(var, expr, context);
     case (FORALL_EXPRESSION): 
-        return init_forall_expression(context->value.forall.var, context->value.forall.type, set_in_context(context->value.forall.arg, var, expr));
+        return init_forall_expression(context->value.forall.var, context->value.forall.var_type, set_in_context(context->value.forall.arg, var, expr));
     default:
         // panic!
         return NULL;
@@ -249,7 +254,7 @@ Expression *lookup_in_context(Expression *context, Expression *var) {
     while (current_context->type == FORALL_EXPRESSION) {
         Expression *forall_var = current_context->value.forall.var;
         if (equal(forall_var, var)) {
-            result = current_context->value.forall.type;
+            result = current_context->value.forall.var_type;
         }
         current_context = current_context->value.forall.arg;
     }
@@ -281,7 +286,7 @@ Expression *clear_top_context(Expression *context) {
         case (TYPE_EXPRESSION):
             return init_type_expression();
         case (FORALL_EXPRESSION): 
-            return init_forall_expression(context->value.forall.var, context->value.forall.type, clear_top_context(context->value.forall.arg));
+            return init_forall_expression(context->value.forall.var, context->value.forall.var_type, clear_top_context(context->value.forall.arg));
         default:
             // panic!
             return NULL;    

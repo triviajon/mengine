@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+#include "expression.h"
 
 typedef struct EnvEntry {
     char *id;
@@ -30,5 +32,7 @@ void env_insert(Env *env, const char *id, const char *value);
 
 // Print the environment
 void env_print(Env *env);
+
+bool alpha_equivalent(Expression *t1, Expression *t2);
 
 #endif // ENV_H

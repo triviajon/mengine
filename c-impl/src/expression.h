@@ -49,9 +49,11 @@ Similar to VarExpression.
 */
 typedef struct {
   Expression *var; // Maybe not the best choice of type, but types aren't first class in C, meaning making this a VarExpression is hard to work with
-  Expression *type;
+  Expression *var_type;
   Expression *body;
   DoublyLinkedList *uplinks;
+  Expression *type; // Type of the lambda expression, assuming it's body is well typed
+  Expression *given_context;
 } LambdaExpression;
 
 /*
@@ -62,6 +64,8 @@ typedef struct {
   Expression *arg;
   Expression *cache; // Possibly NULL
   DoublyLinkedList *uplinks;
+  Expression *type; // type of the app expression, assuming it's func and arg are well typed
+  Expression *given_context;
 } AppExpression;
 
 /*
@@ -69,7 +73,7 @@ Similar to above.
 */
 typedef struct {
   Expression *var; // Similar to the reason why we made LambdaExpression.var Expression type.
-  Expression *type;
+  Expression *var_type;
   Expression *arg;
   DoublyLinkedList *uplinks;
 } ForallExpression;
@@ -129,8 +133,8 @@ Step *init_expr_step(Expression *expr);
 Step *init_end_step();
 
 Expression *init_var_expression(const char *name);
-Expression *init_lambda_expression(Expression *var, Expression *type, Expression *body);
-Expression *init_app_expression(Expression *func, Expression *arg);
+Expression *init_lambda_expression(Expression *var, Expression *type, Expression *body, Expression *given_context);
+Expression *init_app_expression(Expression *func, Expression *arg, Expression *given_context);
 Expression *init_forall_expression(Expression *var, Expression *type, Expression *arg);
 Expression *init_type_expression();
 

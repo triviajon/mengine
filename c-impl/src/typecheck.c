@@ -1,73 +1,5 @@
 #include "typecheck.h"
 
-bool alpha_equivalent(Env *env, Expression *t1, Expression *t2) {
-  if (t1->type != t2->type) {
-    return false;
-  }
-
-  switch (t1->type) {
-  case TYPE_EXPRESSION:
-    return true;
-
-  case VAR_EXPRESSION: {
-    if (equal(t1, t2)) {
-      return true;
-    }
-    return strcmp(env_lookup(env, t1->value.var.name),
-                  env_lookup(env, t2->value.var.name)) == 0;
-  }
-
-  case LAMBDA_EXPRESSION:
-  case FORALL_EXPRESSION: {
-    char *name1 = t1->value.lambda.var->value.var.name;
-    char *name2 = t2->value.lambda.var->value.var.name;
-
-    env_insert(env, name1, name2);
-
-    return alpha_equivalent(env, t1->value.lambda.type,
-                            t2->value.lambda.type) &&
-           alpha_equivalent(env, t1->value.lambda.body, t2->value.lambda.body);
-  }
-
-  case APP_EXPRESSION:
-    return alpha_equivalent(env, t1->value.app.func, t2->value.app.func) &&
-           alpha_equivalent(env, t1->value.app.arg, t2->value.app.arg);
-
-  default:
-    return false;
-  }
-}
-
-// In expr, replace instances of var by subst.
-Expression *substitute(Expression *expr, char *var, Expression *subst) {
-  switch (expr->type) {
-  case (VAR_EXPRESSION):
-    if (strcmp(expr->value.var.name, var) == 0) {
-      return subst;
-    } else {
-      return expr;
-    }
-  case (LAMBDA_EXPRESSION):
-    if (strcmp(expr->value.lambda.var->value.var.name, var) == 0) {
-      return expr;
-    } else {
-      return init_lambda_expression(
-          expr->value.lambda.var,
-          substitute(expr->value.lambda.type, var, subst),
-          substitute(expr->value.lambda.body, var, subst));
-    }
-  case (APP_EXPRESSION):
-    return init_app_expression(substitute(expr->value.app.func, var, subst),
-                               substitute(expr->value.app.arg, var, subst));
-  case (FORALL_EXPRESSION):
-    return init_forall_expression(
-        expr->value.forall.var, substitute(expr->value.forall.type, var, subst),
-        substitute(expr->value.forall.arg, var, subst));
-  case (TYPE_EXPRESSION):
-    return init_type_expression();
-  }
-}
-
 Step *substitute_rest_steps(Step *prog, char *var, Expression *subst) {
   switch (prog->type) {
   case LET_STEP:
@@ -102,8 +34,7 @@ Expression *typecheck_app(Expression *gamma, Expression *func,
   Expression *arg_type = typecheck_non_context(gamma, arg);
 
   if (func_type->type == FORALL_EXPRESSION) {
-    Env *env = env_init();
-    if (alpha_equivalent(env, arg_type, func_type->value.forall.type)) {
+    if (alpha_equivalent(arg_type, func_type->value.forall.var_type)) {
       return substitute(func_type->value.forall.arg,
                         func_type->value.forall.var->value.var.name, arg);
     } else {
@@ -130,6 +61,7 @@ Expression *typecheck_forall(Expression *gamma, Expression *var,
 }
 #pragma clang diagnostic pop
 
+// Returns the type of the expression under the context gamma.
 Expression *typecheck_expression_under_context(Expression *gamma,
                                                Expression *expr) {
   switch (expr->type) {
@@ -137,12 +69,12 @@ Expression *typecheck_expression_under_context(Expression *gamma,
     return lookup_in_context(gamma, expr);
   case (LAMBDA_EXPRESSION):
     return typecheck_lambda(gamma, expr->value.lambda.var,
-                            expr->value.lambda.type, expr->value.lambda.body);
+                            expr->value.lambda.var_type, expr->value.lambda.body);
   case (APP_EXPRESSION):
     return typecheck_app(gamma, expr->value.app.func, expr->value.app.arg);
   case (FORALL_EXPRESSION):
     return typecheck_forall(gamma, expr->value.forall.var,
-                            expr->value.forall.type, expr->value.forall.arg);
+                            expr->value.forall.var_type, expr->value.forall.arg);
   case (TYPE_EXPRESSION):
     return expr;
   }
@@ -159,7 +91,7 @@ bool typecheck_context(Expression *gamma, Expression *delta) {
       return true;
     case (FORALL_EXPRESSION): {
       Expression *new_gamma = set_in_context(gamma, delta->value.forall.var,
-                                             delta->value.forall.type);
+                                             delta->value.forall.var_type);
       return typecheck_context(new_gamma, delta->value.forall.arg);
     }
     default:
@@ -168,7 +100,7 @@ bool typecheck_context(Expression *gamma, Expression *delta) {
   case (FORALL_EXPRESSION):
     switch (delta->type) {
     case (TYPE_EXPRESSION): {
-      Expression *delta_prime = top_context(gamma)->value.forall.type;
+      Expression *delta_prime = top_context(gamma)->value.forall.var_type;
       Expression *gamma_prime = clear_top_context(gamma);
       if (is_valid_context(delta_prime)) {
         return typecheck_context(gamma_prime, delta_prime);
@@ -179,7 +111,7 @@ bool typecheck_context(Expression *gamma, Expression *delta) {
     }
     case (FORALL_EXPRESSION): {
       Expression *new_gamma = set_in_context(gamma, delta->value.forall.var,
-                                             delta->value.forall.type);
+                                             delta->value.forall.var_type);
       return typecheck_context(new_gamma, delta->value.forall.arg);
     }
     default:
@@ -189,7 +121,7 @@ bool typecheck_context(Expression *gamma, Expression *delta) {
     switch (delta->type) {
     case (FORALL_EXPRESSION): {
       Expression *new_gamma = set_in_context(gamma, delta->value.forall.var,
-                                             delta->value.forall.type);
+                                             delta->value.forall.var_type);
       return typecheck_context(new_gamma, delta->value.forall.arg);
     }
     default:
@@ -200,8 +132,8 @@ bool typecheck_context(Expression *gamma, Expression *delta) {
 }
 
 Expression *typecheck_non_context(Expression *context, Expression *expr) {
-  Expression *type = typecheck_expression_under_context(context, expr);
-  return beta_reduction(context, type);
+  Expression *expr_type = typecheck_expression_under_context(context, expr);
+  return beta_reduction(context, expr_type);
 }
 
 bool is_valid_context(Expression *expr) {
@@ -252,8 +184,7 @@ Step *typecheck_theorem(Theorem *theorem, Step *next) {
   Expression *proof_type = typecheck_expression(theorem->proof);
   Expression *proof_context = init_type_expression();
   Expression *proof_reduced = beta_reduction(proof_context, theorem->proof);
-  Env *env = env_init();
-  if (alpha_equivalent(env, new_theorem_term, proof_type)) {
+  if (alpha_equivalent(new_theorem_term, proof_type)) {
     printf("Theorem %s : %s.\nProof: %s\n", theorem->name, stringify_expression(new_theorem_term), stringify_expression(theorem->proof));
     return substitute_rest_steps(next, theorem->name, proof_reduced);
   } else {

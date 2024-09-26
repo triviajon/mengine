@@ -99,7 +99,8 @@ Expression *scandown(Expression *expression, Expression *argterm,
         scandown(expression->value.lambda.body, argterm, varpars, topapp);
     Expression *l_prime =
         init_lambda_expression(expression->value.lambda.var,
-                               expression->value.lambda.type, body_prime);
+                               expression->value.lambda.var_type, body_prime,
+                               expression->value.lambda.given_context);
     return l_prime;
   } else if (expression->type == VAR_EXPRESSION) {
     topapp = NULL;
@@ -107,7 +108,8 @@ Expression *scandown(Expression *expression, Expression *argterm,
   } else {
     // Must be APP_EXPRESSION
     Expression *a_prime = init_app_expression(expression->value.app.func,
-                                              expression->value.app.arg);
+                                              expression->value.app.arg,
+                                              expression->value.app.given_context);
     expression->value.app.cache = a_prime;
     DLLNode *current = varpars->head;
     while (current != NULL) {
@@ -161,7 +163,8 @@ Expression *beta_reduction(Expression *context, Expression *expression) {
 int upcopy(Expression *new_child, Expression *parent, Relation relation) {
   if (relation == LAMBDA_BODY) {
     Expression *new_lambda = init_lambda_expression(
-        parent->value.lambda.var, parent->value.lambda.type, new_child);
+        parent->value.lambda.var, parent->value.lambda.var_type, new_child,
+        parent->value.lambda.given_context);
     DLLNode *current = parent->value.lambda.uplinks->head;
     while (current != NULL) {
       Uplink *uplink = (Uplink *)current->data;
@@ -172,7 +175,7 @@ int upcopy(Expression *new_child, Expression *parent, Relation relation) {
   } else if (relation == APP_FUNC) {
     if (parent->value.app.cache == NULL) {
       Expression *new_app =
-          init_app_expression(new_child, parent->value.app.arg);
+          init_app_expression(new_child, parent->value.app.arg, parent->value.app.given_context);
       parent->value.app.cache = new_app;
       DLLNode *current = parent->value.app.uplinks->head;
       while (current != NULL) {
@@ -188,7 +191,7 @@ int upcopy(Expression *new_child, Expression *parent, Relation relation) {
   } else if (relation == APP_ARG) {
     if (parent->value.app.cache == NULL) {
       Expression *new_app =
-          init_app_expression(parent->value.app.func, new_child);
+          init_app_expression(parent->value.app.func, new_child, parent->value.app.given_context);
       parent->value.app.cache = new_app;
       DLLNode *current = parent->value.app.uplinks->head;
       while (current != NULL) {
