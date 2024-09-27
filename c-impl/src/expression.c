@@ -61,7 +61,7 @@ Expression *init_var_expression(const char *name) {
     return expr;
 }
 
-Expression *init_lambda_expression(Expression *var, Expression *var_type, Expression *body, Expression *given_context) {
+Expression *init_lambda_expression(Expression *var, Expression *var_type, Expression *body) {
     Expression *expr = (Expression*)malloc(sizeof(Expression));
     expr->type = LAMBDA_EXPRESSION;
     expr->value.lambda.var = var;
