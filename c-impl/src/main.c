@@ -15,8 +15,9 @@ int main() {
     Expression *inner_lambda = init_lambda_expression(x, P, x);
     Expression *outer_lambda = init_lambda_expression(P, type, inner_lambda);
 
+    // Theorem p_implies_p : forall P: Type, forall x: P, P.
+    // Proof. exact \P: Type, \x: P, x.  
     Theorem *p_implies_p = init_theorem("p_implies_p", outer_forall, outer_lambda);
-    // Step *theorem_statement = init_expr_step(init_var_expression("p_implies_p"));
     Step *theorem_definition = init_theorem_step(p_implies_p, init_end_step());
 
     printf("Setup is complete.\n");
