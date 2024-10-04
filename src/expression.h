@@ -2,21 +2,24 @@
 #define EXPRESSION_H
 
 #include "doubly_linked_list.h"
+#include "context.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
 
+// Forward declaration of Expression
+typedef struct Expression Expression;
+
 typedef enum {
   VAR_EXPRESSION,
   LAMBDA_EXPRESSION,
   APP_EXPRESSION,
   FORALL_EXPRESSION,
-  TYPE_EXPRESSION
+  TYPE_EXPRESSION,
+  HOLE_EXPRESSION
 } ExpressionType;
-
-typedef struct Expression Expression;
 
 /*
 An uplink is a combination of
@@ -44,16 +47,13 @@ typedef struct {
   DoublyLinkedList *uplinks;
 } VarExpression;
 
-/*
-Similar to VarExpression.
-*/
+// A Lambda expression. The body provided must be valid under the given context. 3
 typedef struct {
-  Expression *var; // Maybe not the best choice of type, but types aren't first class in C, meaning making this a VarExpression is hard to work with
+  Context *context; 
   Expression *type;
   Expression *body;
   DoublyLinkedList *uplinks;
 } LambdaExpression;
-
 /*
 Similar to VarExpression, but we also include an optional cache.
 */
@@ -61,22 +61,31 @@ typedef struct {
   Expression *func;
   Expression *arg;
   Expression *cache; // Possibly NULL
+  Expression *type; // Type of the app expression, which should be the type of func with it's binding variable substituted by arg
+  Context *context;  
   DoublyLinkedList *uplinks;
 } AppExpression;
 
 /*
-Similar to above.
+Represented the same way as a LambdaExpression.
 */
 typedef struct {
-  Expression *var; // Similar to the reason why we made LambdaExpression.var Expression type.
+  Context *context; 
   Expression *type;
-  Expression *arg;
+  Expression *body;
   DoublyLinkedList *uplinks;
 } ForallExpression;
 
 typedef struct {
   DoublyLinkedList *uplinks;
 } TypeExpression;
+
+typedef struct {
+  char *name; 
+  Expression *type; // The intended return type of the hole
+  Context *context;
+  DoublyLinkedList *uplinks;
+} HoleExpression;
 
 struct Expression {
   ExpressionType type;
@@ -86,69 +95,17 @@ struct Expression {
     AppExpression app;
     ForallExpression forall;
     TypeExpression type;
+    HoleExpression hole;
   } value;
 };
 
-typedef struct {
-  char *name;
-  Expression *theorem;
-  Expression *proof;
-} Theorem;
-
-/*
-A "program" is just an step (let statement, theorem statement, or expression), and
-a pointer to the next step (or null)
-*/
-typedef enum { LET_STEP, THEOREM_STEP, EXPR_STEP, END_STEP } StepType;
-
-typedef struct Step {
-  StepType type;
-  union {
-    struct {
-      char *id;
-      Expression *expr;
-    } let;
-
-    struct {
-      Theorem *theorem;
-    } theorem;
-
-    struct {
-      Expression *expr;
-    } expr;
-  } value;
-
-  struct Step *next;
-} Step;
-
-Theorem *init_theorem(char *name, Expression *theorem, Expression *proof);
-
-Step *init_let_step(char *id, Expression *expr, Step *next);
-Step *init_theorem_step(Theorem *theorem, Step *next);
-Step *init_expr_step(Expression *expr);
-Step *init_end_step();
-
 Expression *init_var_expression(const char *name);
-Expression *init_lambda_expression(Expression *var, Expression *type, Expression *body);
-Expression *init_app_expression(Expression *func, Expression *arg);
-Expression *init_forall_expression(Expression *var, Expression *type, Expression *arg);
+Expression *init_lambda_expression(Context *context, Expression *body);
+Expression *init_app_expression(Context *context, Expression *func, Expression *arg);
+Expression *init_forall_expression(Context *context, Expression *body);
 Expression *init_type_expression();
+Expression *init_hole_expression(char *name, Expression *type, Context *context);
 
-Expression *free_var_expression(Expression *expr);
-Expression *free_lambda_expression(Expression *expr);
-Expression *free_app_expression(Expression *expr);
-Expression *free_forall_expression(Expression *expr);
-Expression *free_type_expression(Expression *expr);
-
-bool equal(Expression *a, Expression *b);
-char *stringify_expression(Expression *expression);
-
-Expression *set_in_context(Expression *context, Expression *var, Expression *expr);
-Expression *lookup_in_context(Expression *context, Expression *var);
-// Returns the "outer most" product in the context.
-// In other words, if the context has the form Γ[x: P], it returns [x: P].
-Expression *top_context(Expression *context);
-// If the context has the form Γ[x: P], it returns Γ.
-Expression *clear_top_context(Expression *context);
+void free_expression(Expression *expr);
 
 #endif // EXPRESSION_H
