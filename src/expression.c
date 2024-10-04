@@ -9,11 +9,24 @@ Expression *init_var_expression(const char *name) {
     return expr;
 }
 
+// Helper function to construct a lambda type
+Expression *constr_lambda_type(Context *context, Expression *body) {
+    Expression *type = init_forall_expression(context, get_expression_type(context, body));
+    return type;
+}
+
+// Helper function to construct a app type
+Expression *constr_app_type(Context *context, Expression *func, Expression *arg) {
+    Expression *func_type = get_expression_type(context, func); // something like Forall x: A, B
+    return func_type->value.forall.body; // Does not account for dependently-typed case
+}
+
+
 Expression *init_lambda_expression(Context *context, Expression *body) {
     Expression *expr = (Expression*)malloc(sizeof(Expression));
     expr->type = LAMBDA_EXPRESSION;
     expr->value.lambda.context = context;
-    expr->value.lambda.type = NULL; // TODO
+    expr->value.lambda.type = constr_lambda_type(context, body); 
     expr->value.lambda.body = body;
     expr->value.lambda.uplinks = dll_create();
     return expr;
@@ -25,6 +38,7 @@ Expression *init_app_expression(Context *context, Expression *func, Expression *
     expr->value.app.context = context;
     expr->value.app.func = func;
     expr->value.app.arg = arg;
+    expr->value.app.type = constr_app_type(context, func, arg);
     expr->value.app.cache = NULL;
     expr->value.app.uplinks = dll_create();
     return expr;
@@ -34,7 +48,7 @@ Expression *init_forall_expression(Context *context, Expression *body) {
     Expression *expr = (Expression*)malloc(sizeof(Expression));
     expr->type = FORALL_EXPRESSION;
     expr->value.forall.context = context;
-    expr->value.forall.type = NULL; // TODO
+    expr->value.forall.type = init_type_expression();
     expr->value.forall.body = body;
     expr->value.forall.uplinks = dll_create();
     return expr;
@@ -56,6 +70,25 @@ Expression *init_hole_expression(char *name, Expression *type, Context *context)
     expr->value.forall.uplinks = dll_create();
     return expr;
 }
+
+Expression *get_expression_type(Context *context, Expression *expression) {
+    switch (expression->type) {
+        case (VAR_EXPRESSION): return context_lookup(context, expression); break;
+        case (LAMBDA_EXPRESSION): return expression->value.lambda.type;
+        case (APP_EXPRESSION): return expression->value.app.type;
+        case (FORALL_EXPRESSION): return expression->value.forall.type;
+        case (TYPE_EXPRESSION): return expression;
+        case (HOLE_EXPRESSION): return expression->value.hole.type;
+    }
+}
+
+// Forward declarations. No need to expose them in expression.h. 
+void free_var_expression(Expression *expr);
+void free_lambda_expression(Expression *expr);
+void free_app_expression(Expression *expr);
+void free_forall_expression(Expression *expr);
+void free_type_expression(Expression *expr);
+void free_hole_expression(Expression *expr);
 
 // Forward declarations. No need to expose them in expression.h. 
 void free_var_expression(Expression *expr);

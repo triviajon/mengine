@@ -23,6 +23,8 @@ int main() {
 
     printf("Term: %s\n", stringify_expression(lambda));
 
+    printf("Term's type: %s\n", stringify_expression(get_expression_type(c, lambda)));
+
     printf("Successfully ran program. \n");
 
     return 0;

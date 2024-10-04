@@ -106,6 +106,8 @@ Expression *init_forall_expression(Context *context, Expression *body);
 Expression *init_type_expression();
 Expression *init_hole_expression(char *name, Expression *type, Context *context);
 
+Expression *get_expression_type(Context *context, Expression *expression);
+
 void free_expression(Expression *expr);
 
 #endif // EXPRESSION_H
