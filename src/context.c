@@ -32,13 +32,26 @@ Expression *context_lookup(Context *context, Expression *var) {
     }
 }
 
+bool *context_is_ancestor(Context *context_A, Context *context_B) {
+    // context_A is an ancestor of context_B if at some point traveling the context_B parent chain,
+    // we encounter context_A. 
+    Context *curr_B = context_B;
+    while (!context_is_empty(curr_B)) {
+        if (context_A == curr_B) {
+            return true;
+        }
+        curr_B = curr_B->parent;
+    }
+    return false;
+}
+
 void context_free(Context *context) {
     return;
 }
 
-Expression *context_head(Context *context) {
-    return NULL; // TODO
-}
+// Expression *context_head(Context *context) {
+//     return NULL; // TODO maybe
+// }
 
 Context *context_tail(Context *context) {
     return context->parent;

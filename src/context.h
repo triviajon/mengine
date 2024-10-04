@@ -27,6 +27,9 @@ Context *context_insert(Context *context, Expression *var, Expression *type);
 // Look up the type of a variable in the context
 Expression *context_lookup(Context *context, Expression *var);
 
+// Returns true if context_A is an ancestor of context_B
+bool *context_is_ancestor(Context *context_A, Context *context_B);
+
 // TODO: Unclear what we should be freeing.
 void context_free(Context *context);
 
