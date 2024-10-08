@@ -48,10 +48,6 @@ void env_insert(Env *env, Expression *var1, Expression *var2) {
 }
 
 bool _alpha_equivalent(Env *env, Expression *t1, Expression *t2) {
-  if (t1->type != t2->type) {
-    return false;
-  }
-
   // switch (t1->type) {
   //   case (VAR_EXPRESSION): return t2->type == VAR_EXPRESSION && env_lookup(env, t1) == t2; 
   // }
@@ -60,8 +56,5 @@ bool _alpha_equivalent(Env *env, Expression *t1, Expression *t2) {
 }
 
 bool alpha_equivalent(Expression *t1, Expression *t2) {
-  Env *env = env_init();
-  bool result = _alpha_equivalent(env, t1, t2);
-  env_free(env);
-  return result;
+  return t1 == t2;  // TODO: Implement
 }

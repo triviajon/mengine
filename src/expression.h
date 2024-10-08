@@ -2,6 +2,7 @@
 #define EXPRESSION_H
 
 #include "doubly_linked_list.h"
+#include "alpha_equivalent.h"
 #include "context.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -79,6 +80,9 @@ typedef struct {
 typedef struct {
   DoublyLinkedList *uplinks;
 } TypeExpression;
+
+// Singleton
+static Expression *TYPE = NULL;
 
 typedef struct {
   char *name; 

@@ -23,7 +23,7 @@ Expression *constr_lambda_type(Context *context, Expression *body) {
 // Helper function to construct a app type
 Expression *constr_app_type(Context *context, Expression *func, Expression *arg) {
     Expression *func_type = get_expression_type(context, func); // something like Forall x: A, B
-    Expression *actual_arg_type = get_expression_type(context, arg); // hopefully B, but we need to check.
+    Expression *actual_arg_type = get_expression_type(context, arg); // hopefully A, but we need to check.
     Expression *expected_arg_type = func_type->value.forall.type;
     
     if (alpha_equivalent(actual_arg_type, expected_arg_type)) {
@@ -66,10 +66,12 @@ Expression *init_forall_expression(Context *context, Expression *body) {
 }
 
 Expression *init_type_expression() {
-    Expression *expr = (Expression*)malloc(sizeof(Expression));
-    expr->type = TYPE_EXPRESSION;
-    expr->value.type.uplinks = dll_create();
-    return expr;
+    if (TYPE == NULL) {
+        TYPE = (Expression *)malloc(sizeof(Expression));
+        TYPE->type = TYPE_EXPRESSION;
+        TYPE->value.type.uplinks = dll_create();
+    }
+    return TYPE;
 }
 
 Expression *init_hole_expression(char *name, Expression *type, Context *context) {

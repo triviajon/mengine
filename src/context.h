@@ -13,6 +13,7 @@ typedef struct Context {
   struct Context *parent; // if Γ[variable: type] is this context, then Γ is our parent.
 } Context;
 
+// Singleton
 static Context *EMPTY_CONTEXT = NULL;
 
 // Returns a pointer to the empty context, which is a persistent value.

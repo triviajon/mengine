@@ -1,5 +1,5 @@
 CC = clang
-CFLAGS = -Wall -Wextra -std=c11 -D_GNU_SOURCE -g
+CFLAGS = -Wall -Wextra -std=c11 -D_GNU_SOURCE -g -O0
 SRC_DIR = src
 OBJ = $(SRC_DIR)/doubly_linked_list.o $(SRC_DIR)/context.o $(SRC_DIR)/expression.o $(SRC_DIR)/utils.o $(SRC_DIR)/beta_reduction.o $(SRC_DIR)/alpha_equivalent.o
 EXEC = main
