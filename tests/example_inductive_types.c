@@ -49,7 +49,6 @@ int main() {
   Expression *x = init_var_expression("x");
 
   Context *eq_pars = context_create_empty();
-  eq_pars = context_insert(eq_pars, eq, type);
   eq_pars = context_insert(eq_pars, A, type);
   eq_pars = context_insert(eq_pars, x, A);
 

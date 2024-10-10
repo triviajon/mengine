@@ -22,6 +22,17 @@ Context *context_insert(Context *context, Expression *var, Expression *type) {
     return new_ctx;
 }
 
+Context *context_insert_inductive(Context *context, Inductive *inductive) {
+    Context *new_ctx = context_insert(context, inductive->name, init_type_expression());
+    DLLNode *curr = inductive->constructors->head;
+    while (curr != NULL) {
+        Constructor *curr_cons = (Constructor *)curr->data;
+        new_ctx = context_insert(new_ctx, curr_cons->name, curr_cons->type);
+        curr = curr->next;
+    }
+    return new_ctx;
+}
+
 Expression *context_lookup(Context *context, Expression *var) {
     if (context_is_empty(context)) {
         return NULL; 
@@ -32,7 +43,7 @@ Expression *context_lookup(Context *context, Expression *var) {
     }
 }
 
-bool *context_is_ancestor(Context *context_A, Context *context_B) {
+bool context_is_ancestor(Context *context_A, Context *context_B) {
     // context_A is an ancestor of context_B if at some point traveling the context_B parent chain,
     // we encounter context_A. 
     Context *curr_B = context_B;

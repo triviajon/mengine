@@ -109,6 +109,7 @@ Expression *init_app_expression(Context *context, Expression *func, Expression *
 Expression *init_forall_expression(Context *context, Expression *body);
 Expression *init_type_expression();
 Expression *init_hole_expression(char *name, Expression *type, Context *context);
+Expression *init_arrow_expression(Expression *lhs, Expression *rhs);
 
 Expression *get_expression_type(Context *context, Expression *expression);
 Context *get_expression_context(Expression *expression);
