@@ -132,6 +132,7 @@ int dll_len(DoublyLinkedList *list) {
 
     while (node) {
         count++;
+        node = node->next;
     }
 
     return count;

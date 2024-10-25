@@ -23,6 +23,6 @@ void free_proof_state(ProofState *proof_state) {
   }
 }
 
-void *add_hole(ProofState *proof_state, Expression *hole) {
+void add_hole(ProofState *proof_state, Expression *hole) {
   dll_insert_at_tail(proof_state->holes, dll_new_node(hole));
 }

@@ -1,20 +1,21 @@
 #ifndef EXPRESSION_H
 #define EXPRESSION_H
 
-#include "doubly_linked_list.h"
-#include "alpha_equivalent.h"
-#include "context.h"
-#include <stdio.h>
-#include <stdlib.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-// Forward declaration of Expression
+#include "alpha_equivalent.h"
+#include "doubly_linked_list.h"
+
+// Forward declaration of Expression & Context
 typedef struct Expression Expression;
+typedef struct Context Context;
 
 typedef enum {
-  VAR_EXPRESSION,
+  VAR_EXPRESSION, 
   LAMBDA_EXPRESSION,
   APP_EXPRESSION,
   FORALL_EXPRESSION,
@@ -46,11 +47,13 @@ should be freed by the Expression it pointers to.
 typedef struct {
   char *name;
   DoublyLinkedList *uplinks;
+  Context *context;
 } VarExpression;
 
-// A Lambda expression. The body provided must be valid under the given context. 3
+// A Lambda expression. The body provided must be valid under the given context.
+// 3
 typedef struct {
-  Context *context; 
+  Context *context;
   Expression *type;
   Expression *body;
   DoublyLinkedList *uplinks;
@@ -61,9 +64,10 @@ Similar to VarExpression, but we also include an optional cache.
 typedef struct {
   Expression *func;
   Expression *arg;
-  Expression *cache; // Possibly NULL
-  Expression *type; // Type of the app expression, which should be the type of func with it's binding variable substituted by arg
-  Context *context;  
+  Expression *cache;  // Possibly NULL
+  Expression *type;   // Type of the app expression, which should be the type of
+                      // func with it's binding variable substituted by arg
+  Context *context;
   DoublyLinkedList *uplinks;
 } AppExpression;
 
@@ -71,7 +75,7 @@ typedef struct {
 Represented the same way as a LambdaExpression.
 */
 typedef struct {
-  Context *context; 
+  Context *context;
   Expression *type;
   Expression *body;
   DoublyLinkedList *uplinks;
@@ -85,8 +89,8 @@ typedef struct {
 static Expression *TYPE = NULL;
 
 typedef struct {
-  char *name; 
-  Expression *type; // The intended return type of the hole
+  char *name;
+  Expression *type;  // The intended return type of the hole
   Context *context;
   DoublyLinkedList *uplinks;
 } HoleExpression;
@@ -103,17 +107,24 @@ struct Expression {
   } value;
 };
 
+// Given an expression and an uplink, add the uplink to the expression's uplink list.
+void add_to_parents(Expression *expression, Uplink *uplink);
+Uplink *new_uplink(Expression *parent, Relation relation);
+
 Expression *init_var_expression(const char *name);
 Expression *init_lambda_expression(Context *context, Expression *body);
-Expression *init_app_expression(Context *context, Expression *func, Expression *arg);
+Expression *init_app_expression(Context *context, Expression *func,
+                                Expression *arg);
 Expression *init_forall_expression(Context *context, Expression *body);
 Expression *init_type_expression();
-Expression *init_hole_expression(char *name, Expression *type, Context *context);
+Expression *init_hole_expression(char *name, Expression *type,
+                                 Context *context);
 Expression *init_arrow_expression(Expression *lhs, Expression *rhs);
 
+DoublyLinkedList *get_expression_uplinks(Expression *expression);
 Expression *get_expression_type(Context *context, Expression *expression);
 Context *get_expression_context(Expression *expression);
 
 void free_expression(Expression *expr);
 
-#endif // EXPRESSION_H
+#endif  // EXPRESSION_H

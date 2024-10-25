@@ -1,5 +1,7 @@
 #include "expression.h"
 
+typedef struct Context Context;
+
 char *stringify_expression(Expression *expression);
 char *stringify_context(Context *context);
 

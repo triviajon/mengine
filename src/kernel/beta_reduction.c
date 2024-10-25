@@ -1,4 +1,4 @@
-// #include "beta_reduction.h"
+#include "beta_reduction.h"
 
 // // Forward declaration
 // int upcopy(Expression *new_child, Expression *parent, Relation relation);
@@ -14,81 +14,84 @@
 //   return 0;
 // }
 
-// int replace_child(DoublyLinkedList *old_parents, Expression *new_child) {
-//   DLLNode *current = old_parents->head;
-//   while (current != NULL) {
-//     Uplink *uplink = (Uplink *)current->data;
-//     Expression *parent = uplink->expression;
-//     Relation relation = uplink->relation;
+int replace_child(DoublyLinkedList *old_parents, Expression *new_child) {
+  DLLNode *current = old_parents->head;
+  while (current != NULL) {
+    Uplink *uplink = (Uplink *)current->data;
+    Expression *parent = uplink->expression;
+    Relation relation = uplink->relation;
 
-//     switch (relation) {
-//     case LAMBDA_BODY:
-//       if (parent->type == LAMBDA_EXPRESSION) {
-//         parent->value.lambda.body = new_child;
-//       } else {
-//         printf("Invalid relation for expression type: %d\n", parent->type);
-//         return 1;
-//       }
-//       break;
-//     case APP_FUNC:
-//       if (parent->type == APP_EXPRESSION) {
-//         parent->value.app.func = new_child;
-//       } else {
-//         printf("Invalid relation for expression type: %d\n", parent->type);
-//         return 1;
-//       }
-//       break;
-//     case APP_ARG:
-//       if (parent->type == APP_EXPRESSION) {
-//         parent->value.app.arg = new_child;
-//       } else {
-//         printf("Invalid relation for expression type: %d\n", parent->type);
-//         return 1;
-//       }
-//       break;
-//     default:
-//       printf("Relation between child/parent is invalid, got %d\n", relation);
-//       return 1;
-//     }
+    switch (relation) {
+      case LAMBDA_BODY:
+        if (parent->type == LAMBDA_EXPRESSION) {
+          parent->value.lambda.body = new_child;
+        } else {
+          printf("Invalid relation for expression type: %d\n", parent->type);
+          return 1;
+        }
+        break;
+      case APP_FUNC:
+        if (parent->type == APP_EXPRESSION) {
+          parent->value.app.func = new_child;
+        } else {
+          printf("Invalid relation for expression type: %d\n", parent->type);
+          return 1;
+        }
+        break;
+      case APP_ARG:
+        if (parent->type == APP_EXPRESSION) {
+          parent->value.app.arg = new_child;
+        } else {
+          printf("Invalid relation for expression type: %d\n", parent->type);
+          return 1;
+        }
+        break;
+      default:
+        printf("Relation between child/parent is invalid, got %d\n", relation);
+        return 1;
+    }
 
-//     // Update the new child's uplinks
-//     Uplink *new_uplink = malloc(sizeof(Uplink));
-//     if (new_uplink == NULL) {
-//       printf("Memory allocation failed.\n");
-//       return 1;
-//     }
-//     new_uplink->expression = parent;
-//     new_uplink->relation = relation;
-//     dll_insert_at_tail(new_child->value.app.uplinks, dll_new_node(new_uplink));
+    // Update the new child's uplinks
+    Uplink *new_uplink = malloc(sizeof(Uplink));
+    if (new_uplink == NULL) {
+      printf("Memory allocation failed.\n");
+      return 1;
+    }
+    new_uplink->expression = parent;
+    new_uplink->relation = relation;
+    
+    dll_insert_at_head(get_expression_uplinks(new_child), dll_new_node(new_uplink));
 
-//     current = current->next;
-//   }
+    current = current->next;
+  }
 
-//   // When we're done, we are good to clear the old_parents
-//   DLLNode *node_to_delete;
-//   while (old_parents->head != NULL) {
-//     node_to_delete = old_parents->head;
-//     old_parents->head = old_parents->head->next;
-//     free(node_to_delete->data);
-//     free(node_to_delete);
-//   }
-//   old_parents->tail = NULL;
-//   return 0;
-// }
+  // When we're done, we are good to clear the old_parents
+  DLLNode *node_to_delete;
+  while (old_parents->head != NULL) {
+    node_to_delete = old_parents->head;
+    old_parents->head = old_parents->head->next;
+    free(node_to_delete->data);
+    free(node_to_delete);
+  }
+  old_parents->tail = NULL;
+  return 0;
+}
 
 // Expression *scandown(Expression *expression, Expression *argterm,
 //                      DoublyLinkedList *varpars, Expression **topapp) {
 //   if (expression->type == LAMBDA_EXPRESSION) {
 //     Expression *body_prime =
 //         scandown(expression->value.lambda.body, argterm, varpars, topapp);
-//     Expression *l_prime = init_lambda_expression(expression->value.lambda.context, body_prime);
+//     Expression *l_prime =
+//     init_lambda_expression(expression->value.lambda.context, body_prime);
 //     return l_prime;
 //   } else if (expression->type == VAR_EXPRESSION) {
 //     topapp = NULL;
 //     return argterm;
 //   } else {
 //     // Must be APP_EXPRESSION
-//     Expression *a_prime = init_app_expression(expression->value.app.context, expression->value.app.func, expression->value.app.arg);
+//     Expression *a_prime = init_app_expression(expression->value.app.context,
+//     expression->value.app.func, expression->value.app.arg);
 //     expression->value.app.cache = a_prime;
 //     DLLNode *current = varpars->head;
 //     while (current != NULL) {
@@ -106,7 +109,7 @@
 //    if (expression->type != APP_EXPRESSION) {
 //     // printf("Expression must be an app expression.");
 //     return expression;
-//   } 
+//   }
 
 //   Expression *app_func = expression->value.app.func;
 
@@ -193,9 +196,9 @@
 //   if (reduced_lambda_expression->type != LAMBDA_EXPRESSION ||
 //       top_app_expression->type != APP_EXPRESSION) {
 //     printf(
-//         "reduced_lambda_expression must be of type LAMBDA_EXPRESSION (got %d)\n"
-//         "top_app_expression must be of type APP_EXPRESSION (got %d)\n",
-//         reduced_lambda_expression->type, top_app_expression->type);
+//         "reduced_lambda_expression must be of type LAMBDA_EXPRESSION (got
+//         %d)\n" "top_app_expression must be of type APP_EXPRESSION (got
+//         %d)\n", reduced_lambda_expression->type, top_app_expression->type);
 //   }
 
 //   // For Lambda body and App arg

@@ -1,22 +1,20 @@
 #ifndef CONTEXT_H
 #define CONTEXT_H
 
+#include <stdbool.h>
+#include <stdlib.h>
+
 #include "inductive.h"
-#include "stdbool.h"
-#include "stdlib.h"
 
 // Forward declaration of Expression
 typedef struct Expression Expression;
-
-// Forward declaration of init_type_expression
-Expression *init_type_expression();
 
 typedef struct Context {
   Expression *variable;  // binding variable
   Expression *type;      // and it's type
   struct Context
       *parent;  // if Γ[variable: type] is this context, then Γ is our parent.
-}   Context;
+} Context;
 
 // Singleton
 static Context *EMPTY_CONTEXT = NULL;
@@ -31,6 +29,8 @@ bool context_is_empty(Context *context);
 // containing a pointer to input context
 Context *context_insert(Context *context, Expression *var, Expression *type);
 
+Context *context_join(Context *contextA, Context *contextB);
+
 // Add an inductive type to the context, and return the new context containing a
 // pointer to input context
 Context *context_insert_inductive(Context *context, Inductive *inductive);
@@ -43,6 +43,12 @@ bool context_is_ancestor(Context *context_A, Context *context_B);
 
 // TODO: Unclear what we should be freeing.
 void context_free(Context *context);
+
+// Returns context->type
+Expression *get_binding_variable_type(Context *context);
+
+// Returns context->variable
+Expression *get_binding_variable(Context *context);
 
 // If the context has the form Γ[variable: type], it returns [variable: type].
 // ? *context_head(Context *context);

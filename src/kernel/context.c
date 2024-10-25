@@ -1,4 +1,5 @@
 #include "context.h"
+#include "expression.h"
 
 Context *context_create_empty() {
   if (EMPTY_CONTEXT == NULL) {
@@ -18,8 +19,27 @@ Context *context_insert(Context *context, Expression *var, Expression *type) {
     Context *new_ctx = (Context *)malloc(sizeof(Context));
     new_ctx->parent = context;
     new_ctx->variable = var;
+    new_ctx->variable->value.var.context = new_ctx;
     new_ctx->type = type;
     return new_ctx;
+}
+
+Context *context_join(Context *contextA, Context *contextB) {
+    if (context_is_empty(contextA)) {
+        return contextB;
+    }
+    if (context_is_empty(contextB)) {
+        return contextA;
+    }
+
+    Context *result = contextB;
+    Context *currentA = contextA;
+    while (!context_is_empty(currentA)) {
+        result = context_insert(result, currentA->variable, currentA->type);
+        currentA = currentA->parent;
+    }
+
+    return result;
 }
 
 Context *context_insert_inductive(Context *context, Inductive *inductive) {
@@ -60,9 +80,13 @@ void context_free(Context *context) {
     return;
 }
 
-// Expression *context_head(Context *context) {
-//     return NULL; // TODO maybe
-// }
+Expression *get_binding_variable_type(Context *context) {
+    return context->type;
+}
+
+Expression *get_binding_variable(Context *context) {
+    return context->variable;
+}
 
 Context *context_tail(Context *context) {
     return context->parent;

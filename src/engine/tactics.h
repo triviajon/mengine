@@ -1,21 +1,14 @@
 #ifndef TACTICS_H
 #define TACTICS_H
 
+#include "axiom.h"
 #include "logic.h"
 #include "proof_state.h"
-#include "theorem.h"
+#include "rewrite_proof.h"
 #include "unify.h"
 
 void intros(ProofState *proof_state);
-
-typedef struct {
-  Expression *expr;
-  Expression *rewritten_expr;
-  Expression *equality_proof;
-} RewriteProof;
-
-RewriteProof *init_rewrite_proof(Expression *expr, Expression *rewritten_expr,
-                                 Expression *equality_proof);
-void free_rewrite_proof(RewriteProof *proof);
+RewriteProof *rewrite_head_example(Expression *expr);
+RewriteProof *rewrite_example(Expression *expr);
 
 #endif  // TACTICS_H

@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "context.h"
 
 // Helper function to concatenate two strings
 char *str_concat(const char *s1, const char *s2) {

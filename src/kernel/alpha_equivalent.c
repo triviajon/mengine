@@ -1,5 +1,5 @@
 #include "alpha_equivalent.h"
-
+#include "expression.h"
 
 // An env entry proposes that var1 and var2 are alpha-equivalent.
 typedef struct EnvEntry {

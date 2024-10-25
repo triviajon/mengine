@@ -1,12 +1,41 @@
 #include "expression.h"
 
-// Expression initialization functions
-Expression *init_var_expression(const char *name) {
-  Expression *expr = (Expression *)malloc(sizeof(Expression));
-  expr->type = VAR_EXPRESSION;
-  expr->value.var.name = strdup(name);
-  expr->value.var.uplinks = dll_create();
-  return expr;
+#include "axiom.h"
+#include "beta_reduction.h"
+#include "context.h"
+
+void add_to_parents(Expression *expression, Uplink *uplink) {
+  switch (expression->type) {
+    case (VAR_EXPRESSION):
+      dll_insert_at_head(expression->value.var.uplinks, dll_new_node(uplink));
+      break;
+    case (LAMBDA_EXPRESSION):
+      dll_insert_at_head(expression->value.lambda.uplinks,
+                         dll_new_node(uplink));
+      break;
+    case (APP_EXPRESSION):
+      dll_insert_at_head(expression->value.app.uplinks, dll_new_node(uplink));
+      break;
+    case (FORALL_EXPRESSION):
+      dll_insert_at_head(expression->value.forall.uplinks,
+                         dll_new_node(uplink));
+      break;
+    case (TYPE_EXPRESSION):
+      break;
+    case (HOLE_EXPRESSION):
+      dll_insert_at_head(expression->value.hole.uplinks, dll_new_node(uplink));
+      break;
+  }
+}
+
+Uplink *new_uplink(Expression *parent, Relation relation) {
+  Uplink *new_uplink = malloc(sizeof(Uplink));
+  if (new_uplink == NULL) {
+    return NULL;
+  }
+  new_uplink->expression = parent;
+  new_uplink->relation = relation;
+  return new_uplink;
 }
 
 // Helper function to construct a lambda type
@@ -27,15 +56,28 @@ Expression *constr_app_type(Context *context, Expression *func,
                             Expression *arg) {
   Expression *func_type =
       get_expression_type(context, func);  // something like Forall x: A, B
+  Expression *variable =
+      get_binding_variable(func_type->value.forall.context);  // x
+  Expression *expected_arg_type =
+      get_binding_variable_type(func_type->value.forall.context); // A
   Expression *actual_arg_type =
       get_expression_type(context, arg);  // hopefully A, but we need to check.
-  Expression *expected_arg_type = func_type->value.forall.type;
 
-  if (alpha_equivalent(actual_arg_type, expected_arg_type)) {
-    return func_type->value.forall
-        .body;  // Does not account for dependently-typed case
+  if (equivalent_under_computation(actual_arg_type, expected_arg_type)) {
+    replace_child(variable->value.var.uplinks, arg);
+    return func_type->value.forall.body;  // Does not account for dependently-typed case
   }
   return NULL;  // Bad app constr, for now set type to NULL
+}
+
+// Expression initialization functions
+Expression *init_var_expression(const char *name) {
+  Expression *expr = (Expression *)malloc(sizeof(Expression));
+  expr->type = VAR_EXPRESSION;
+  expr->value.var.name = strdup(name);
+  expr->value.var.uplinks = dll_create();
+  expr->value.var.context = NULL;
+  return expr;
 }
 
 Expression *init_lambda_expression(Context *context, Expression *body) {
@@ -54,7 +96,9 @@ Expression *init_app_expression(Context *context, Expression *func,
   expr->type = APP_EXPRESSION;
   expr->value.app.context = context;
   expr->value.app.func = func;
+  add_to_parents(func, new_uplink(expr, APP_FUNC));
   expr->value.app.arg = arg;
+  add_to_parents(arg, new_uplink(expr, APP_ARG));
   expr->value.app.type = constr_app_type(context, func, arg);
   expr->value.app.cache = NULL;
   expr->value.app.uplinks = dll_create();
@@ -97,6 +141,23 @@ Expression *init_arrow_expression(Expression *lhs, Expression *rhs) {
       rhs);
 }
 
+DoublyLinkedList *get_expression_uplinks(Expression *expression) {
+  switch (expression->type) {
+    case (VAR_EXPRESSION):
+      return expression->value.var.uplinks;
+    case (LAMBDA_EXPRESSION):
+      return expression->value.lambda.uplinks;
+    case (APP_EXPRESSION):
+      return expression->value.app.uplinks;
+    case (FORALL_EXPRESSION):
+      return expression->value.forall.uplinks;
+    case (TYPE_EXPRESSION):
+      return expression->value.type.uplinks;
+    case (HOLE_EXPRESSION):
+      return expression->value.hole.uplinks;
+  }
+}
+
 Expression *get_expression_type(Context *context, Expression *expression) {
   switch (expression->type) {
     case (VAR_EXPRESSION):
@@ -117,7 +178,7 @@ Expression *get_expression_type(Context *context, Expression *expression) {
 Context *get_expression_context(Expression *expression) {
   switch (expression->type) {
     case (VAR_EXPRESSION):
-      return NULL;  // TODO: Look at this again?
+      return expression->value.var.context;
     case (LAMBDA_EXPRESSION):
       return expression->value.lambda.context;
     case (APP_EXPRESSION):

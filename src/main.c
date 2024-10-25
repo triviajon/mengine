@@ -6,69 +6,31 @@
 #include "kernel/inductive.h"
 #include "kernel/utils.h"
 
+#include "engine/tactics.h"
+#include "engine/axiom.h"
+
 int main() {
-  Expression *type = init_type_expression();
+  init_globals();
 
-  // Inductive natural numbers
-  // Inductive nat : Type := z : nat | S : Forall (_: nat),  nat.
-  // name = "nat"
-  // parameters = none
-  // arity = Type
-  //
-  // constructor 0: name = "z", type = Var{"nat"}
-  // constructor 1: name = "S", type = Forall (_: Var{"nat"}), Var{"nat"}
+  // // Build the expression (f a) under the context which f: nat -> nat, a : nat, and things like nat, eq, eq_refl, f_equal, and eq_trans are defined.
+  Expression *f_a = init_app_expression(f_a_ctx, f, a);
+  // // Attempt to rewrite (f a) using an example rewriter which has the lemma "(f a) = a" built-in. 
+  // RewriteProof *rw_pf1 = rewrite_example(f_a);
+  // printf("%s\n -> (proof: %s)\n%s\n\n", stringify_expression(rw_pf1->expr), stringify_expression(rw_pf1->equality_proof), stringify_expression(rw_pf1->rewritten_expr));
 
-  Expression *nat = init_var_expression("nat");
-  Expression *z = init_var_expression("z");
-  Expression *S = init_var_expression("S");
+  // // Similar to above
+  // // Build the expression f (f a) under the same context as above...
+  Expression *f_f_a = init_app_expression(f_a_ctx, f, f_a);
+  // // Attempt to rewrite (f (f a)) using an example rewriter which has the lemma "(f a) = a" built-in. 
+  // RewriteProof *rw_pf2 = rewrite_example(f_f_a);
+  // printf("%s\n -> (proof: %s)\n%s\n\n", stringify_expression(rw_pf2->expr), stringify_expression(rw_pf2->equality_proof), stringify_expression(rw_pf2->rewritten_expr));
 
-  Context *pars = context_create_empty();
-  Expression *arity = init_type_expression();
-  Constructor *c0 = init_constructor(z, nat);
-  Constructor *c1 = init_constructor(S, init_arrow_expression(nat, nat));
 
-  DoublyLinkedList *constructors = dll_create();
-  dll_insert_at_tail(constructors, dll_new_node(c0));
-  dll_insert_at_tail(constructors, dll_new_node(c1));
-
-  Inductive *nat_inductive = init_inductive(nat, pars, arity, constructors);
-  Context *with_nats =
-      context_insert_inductive(context_create_empty(), nat_inductive);
-
-  // Inductive equality
-  // Inductive eq A (x:A) : A → Prop := eq_refl : eq x x.
-  // name = "eq"
-  // parameters = (A: Type) (x:A)
-  // arity = A -> Type
-  //
-  // constructor 0: name = "eq_refl", type = eq A x x
-
-  Expression *eq = init_var_expression("eq");
-  Expression *eq_refl = init_var_expression("eq_refl");
-  Expression *A = init_var_expression("A");
-  Expression *x = init_var_expression("x");
-
-  Context *eq_pars = context_create_empty();
-  eq_pars = context_insert(eq_pars, eq, type);
-  eq_pars = context_insert(eq_pars, A, type);
-  eq_pars = context_insert(eq_pars, x, A);
-
-  Expression *eq_arity = init_arrow_expression(A, type);
-  Constructor *eq_c0 = init_constructor(
-      eq_refl,
-      init_app_expression(
-          eq_pars,
-          init_app_expression(eq_pars, init_app_expression(eq_pars, eq, A), x),
-          x));
-  
-  DoublyLinkedList *eq_constructors = dll_create();
-  dll_insert_at_tail(eq_constructors, dll_new_node(eq_c0));
-  Inductive *eq_inductive = init_inductive(eq, eq_pars, eq_arity, eq_constructors);
-
-  Context *with_eq_and_nats = context_insert_inductive(with_nats, eq_inductive);
-
-  printf("%s\n", stringify_context(with_eq_and_nats));
-  printf("Successfully ran program. \n");
+  // Build the expression (g (f (f a))) under a similar context as above, but also extended with g: nat -> nat.
+  Expression *g_f_f_a = init_app_expression(g_f_a_ctx, g, f_f_a);
+  // Attempt to rewrite (g (f (f a))) using an example rewriter which has the lemma "(f a) = a" built-in (but NOT any lemmas on g).
+  RewriteProof *rw_pf3 = rewrite_example(g_f_f_a);
+  printf("%s\n -> (proof: %s)\n%s\n\n", stringify_expression(rw_pf3->expr), stringify_expression(rw_pf3->equality_proof), stringify_expression(rw_pf3->rewritten_expr));
 
   return 0;
 }
