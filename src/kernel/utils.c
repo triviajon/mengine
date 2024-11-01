@@ -68,6 +68,10 @@ char *stringify_expression(Expression *expression) {
       result = strdup("Type");
       break;
 
+    case PROP_EXPRESSION:
+      result = strdup("Prop");
+      break;
+
     default:
       result = strdup("Unknown expression");
       break;
@@ -192,6 +196,10 @@ char *stringify_expression2(Expression *expression) {
       result = strdup("Type");
       break;
 
+    case PROP_EXPRESSION:
+      result = strdup("Prop");
+      break;
+      
     default:
       result = strdup("Unknown expression");
       break;

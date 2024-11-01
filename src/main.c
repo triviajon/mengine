@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
 
   printf("Require Import Setoid Morphisms.\n");
   printf("%s\n", stringify_context2(g_f_a_ctx));
-  printf("Declare Instance Equivalence_eq : Equivalence eq.\nInstance f_Proper : Proper (eq ==> eq) f := f_equal f.");
+  printf("Declare Instance Equivalence_eq : Equivalence eq.\nInstance f_Proper : Proper (eq ==> eq) f := f_equal f.\nInstance f_Proper : Proper (eq ==> eq) g := f_equal g.");
   RewriteProof *rw_pf = rewrite_example(current_expr);
   printf("\nCheck %s : eq (%s) (%s).\n", stringify_expression_with_let(rw_pf->equality_proof), stringify_expression(rw_pf->expr), stringify_expression(rw_pf->rewritten_expr));
 

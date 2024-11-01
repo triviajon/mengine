@@ -24,3 +24,5 @@ node_modules/
 tests/__pycache__/
 
 .git/*
+
+.vscode/*
