@@ -7,8 +7,7 @@
 #include "rewrite_proof.h"
 #include "unify.h"
 
-void intros(ProofState *proof_state);
-RewriteProof *rewrite_head_example(Expression *expr);
-RewriteProof *rewrite_example(Expression *expr);
+RewriteProof *rewrite_head(Expression *expr, Expression *lemma);
+RewriteProof *rewrite(Expression *expr, Expression *lemma);
 
 #endif  // TACTICS_H

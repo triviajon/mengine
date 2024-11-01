@@ -1,18 +1,5 @@
 #include "tactics.h"
 
-void intros(ProofState *proof_state) {
-  // if (num_holes(proof_state->holes) != 1) {
-  //   // If num_holes is 0, obviously we shouldn't do anything.
-  //   // How do I handle calling intros on a proof_state with more than one
-  //   // hole?
-  //   return;
-  // }
-
-  // Expression *goal_hole = get_hole_at(proof_state->holes, 0);
-  // // Expression *new_hole = init_hole_expression("Goal",
-  // // TODO
-}
-
 bool nothing_rewritten(RewriteProof *rewrite_proof) {
   return rewrite_proof == NULL ||
          rewrite_proof->expr == rewrite_proof->rewritten_expr;
@@ -21,35 +8,6 @@ bool nothing_rewritten(RewriteProof *rewrite_proof) {
 bool rewrite_failed(RewriteProof *rewrite_proof) {
   return rewrite_proof == NULL;
 }
-
-// RewriteProof *rewrite_head(Expression *expr, Theorem *theorem) {
-//   // A simple rewrite-head function would match its input against the
-//   left-hand
-//   // side of a quantified equality theorem, and return (an instantiated
-//   version
-//   // of) the right-hand side and (an instantiated version of) the theorem in
-//   // case of success.
-
-//   if (theorem->theorem->type != FORALL_EXPRESSION) {
-//     // Nothing to instantiate, but we can probably deal with this too.
-//     return init_rewrite_proof(expr, expr, build_eq_refl(expr));
-//   }
-
-//   Context *theorem_statement_ctx = theorem->theorem->value.forall.context;
-//   Expression *theorem_statement_body = theorem->theorem->value.forall.body;
-
-//   // Our body should be of the form eq lhs rhs, we want to match expr
-//   // against lhs to figure out how to instantiate the theorem
-//   Expression *lhs = eq_lhs(theorem_statement_body);
-//   // Unification algorithm?
-//   Context *variable_instantiation = unify(lhs, expr);
-
-//   // How should I instantiate the theorem now that I know what variables
-//   should
-//   // be where?
-//   // TODO
-//   return NULL;
-// }
 
 bool expr_match(Expression *expr1, Expression *expr2) {
   switch (expr1->type) {
@@ -76,66 +34,72 @@ bool expr_match(Expression *expr1, Expression *expr2) {
   return false;
 }
 
-// RewriteProof *rewrite_app(Expression *expr, Theorem *theorem) {
-//   Expression *func = expr->value.app.func;
-//   Expression *arg = expr->value.app.arg;
-//   RewriteProof *rw_func_proof = rewrite(func, theorem);
-//   RewriteProof *rw_arg_proof = rewrite(arg, theorem);
+// Returns the lhs of an equality The equality expresison is an opaque
+// reference, and exist in the given context. If the context contains
+// eq_expression, then its type should be "(eq lhs) rhs", and this function
+// returns lhs. If any steps fails, return NULL.
+Expression *get_lhs_eq(Context *context, Expression *eq_expression) {
+  Expression *eq_type = context_lookup(context, eq_expression);
+  if (eq_type == NULL) {
+    return NULL;
+  }
+  if (eq_type->type != APP_EXPRESSION) {
+    return NULL;
+  }
+  if (eq_type->value.app.func->type != APP_EXPRESSION) {
+    return NULL;
+  }
+  Expression *expected_eq = eq_type->value.app.func->value.app.func;
+  if (expected_eq != eq) {
+    return NULL;
+  }
+  return eq_type->value.app.func->value.app.arg;
+}
 
-//   Expression *mid, *fx_mid;
+// Returns the rhs of an equality The equality expresison is an opaque
+// reference, and exist in the given context. If the context contains
+// eq_expression, then its type should be "(eq lhs) rhs", and this function
+// returns rhs. If any steps fails, return NULL.
+Expression *get_rhs_eq(Context *context, Expression *eq_expression) {
+  Expression *eq_type = context_lookup(context, eq_expression);
+  if (eq_type == NULL) {
+    return NULL;
+  }
+  if (eq_type->type != APP_EXPRESSION) {
+    return NULL;
+  }
+  if (eq_type->value.app.func->type != APP_EXPRESSION) {
+    return NULL;
+  }
+  Expression *expected_eq = eq_type->value.app.func->value.app.func;
+  if (expected_eq != eq) {
+    return NULL;
+  }
+  return eq_type->value.app.arg;
+}
 
-//   if (nothing_rewritten(rw_func_proof) || nothing_rewritten(rw_arg_proof)) {
-//     mid = expr;
-//     fx_mid = init_rewrite_proof(expr, expr, build_eq_refl(expr));
-//   } else {
-//     mid = init_app_expression(expr->value.app.context,
-//                               rw_func_proof->rewritten_expr,
-//                               rw_arg_proof->rewritten_expr);
-//     fx_mid = build_app_cong(rw_func_proof->equality_proof,
-//                             rw_arg_proof->equality_proof);
-//   }
-
-//   RewriteProof *rewritten_mid = rewrite_head(mid, theorem);
-//   if (nothing_rewritten(rewritten_mid)) {
-//     free_rewrite_proof(rewritten_mid);
-//     return init_rewrite_proof(expr, mid, fx_mid);
-//   } else {
-//     return init_rewrite_proof(
-//         expr, rewritten_mid->rewritten_expr,
-//         build_eq_trans(fx_mid, rewritten_mid->equality_proof));
-//   }
-// }
-
-// RewriteProof *rewrite(Expression *expr, Theorem *theorem) {
-//   switch (expr->type) {
-//     case (APP_EXPRESSION):
-//       return rewrite_app(expr, theorem);
-//   }
-// }
-
-// Example:
-
-RewriteProof *rewrite_head_example(Expression *expr) {
+RewriteProof *rewrite_head(Expression *expr, Expression *lemma) {
   // Has built into it the lemma (f a = a).
   // We want to match expr against (f a)
-  Expression *lhs = build_fa();
-  Expression *rhs = a;
+  Context *ctx = get_expression_context(expr);
+  Expression *lhs = get_lhs_eq(ctx, eq_fa_a);
+  Expression *rhs = get_rhs_eq(ctx, eq_fa_a);
   if (expr_match(lhs, expr)) {
     // TODO: Review
-    RewriteProof *equality = init_rewrite_proof(expr, rhs, eq_fa_a);
+    RewriteProof *equality = init_rewrite_proof(expr, rhs, lemma);
     return equality;
   } else {
     return init_rewrite_proof(expr, expr, build_eq_refl(expr));
   }
 }
 
-RewriteProof *rewrite_app_example(Expression *expr) {
+RewriteProof *rewrite_app(Expression *expr, Expression *lemma) {
   Context *app_context = get_expression_context(expr);
 
   Expression *func = expr->value.app.func;
   Expression *arg = expr->value.app.arg;
-  RewriteProof *rw_func_proof = rewrite_example(func);
-  RewriteProof *rw_arg_proof = rewrite_example(arg);
+  RewriteProof *rw_func_proof = rewrite(func, lemma);
+  RewriteProof *rw_arg_proof = rewrite(arg, lemma);
 
   // Expression *mid;
   // RewriteProof *fx_mid;
@@ -155,7 +119,7 @@ RewriteProof *rewrite_app_example(Expression *expr) {
   Expression *mid = mid_rewrite_proof->rewritten_expr;
   Expression *fx_mid = mid_rewrite_proof->equality_proof;
 
-  RewriteProof *rewritten_mid = rewrite_head_example(mid);
+  RewriteProof *rewritten_mid = rewrite_head(mid, lemma);
   if (nothing_rewritten(rewritten_mid)) {
     free_rewrite_proof(rewritten_mid);
     return init_rewrite_proof(expr, mid, fx_mid);
@@ -166,13 +130,15 @@ RewriteProof *rewrite_app_example(Expression *expr) {
   }
 }
 
-RewriteProof *rewrite_example(Expression *expr) {
+// Attempt an aggressive rewrite in expr using the provided lemma. The lemma
+// should be an opaque reference that is valid in the context.
+RewriteProof *rewrite(Expression *expr, Expression *lemma) {
   switch (expr->type) {
     case (APP_EXPRESSION):
-      return rewrite_app_example(expr);
+      return rewrite_app(expr, lemma);
     case (VAR_EXPRESSION):
       return init_rewrite_proof(expr, expr, build_eq_refl(expr));
     default:
-      return NULL; // TODO: Unsupported.
+      return NULL;  // TODO: Unsupported.
   }
 }
