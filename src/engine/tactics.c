@@ -122,7 +122,7 @@ RewriteProof *rewrite_head_example(Expression *expr) {
   Expression *rhs = a;
   if (expr_match(lhs, expr)) {
     // TODO: Review
-    RewriteProof *equality = init_rewrite_proof(expr, rhs, build_eq_refl(expr));
+    RewriteProof *equality = init_rewrite_proof(expr, rhs, eq_fa_a);
     return equality;
   } else {
     return init_rewrite_proof(expr, expr, build_eq_refl(expr));
@@ -172,5 +172,7 @@ RewriteProof *rewrite_example(Expression *expr) {
       return rewrite_app_example(expr);
     case (VAR_EXPRESSION):
       return init_rewrite_proof(expr, expr, build_eq_refl(expr));
+    default:
+      return NULL; // TODO: Unsupported.
   }
 }

@@ -137,7 +137,7 @@ Expression *init_hole_expression(char *name, Expression *type,
 
 Expression *init_arrow_expression(Expression *lhs, Expression *rhs) {
   return init_forall_expression(
-      context_insert(context_create_empty(), init_var_expression(""), lhs),
+      context_insert(context_create_empty(), init_var_expression("_"), lhs),
       rhs);
 }
 

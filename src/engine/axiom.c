@@ -7,13 +7,11 @@ Expression *eq_trans = NULL;
 Expression *f = NULL;
 Expression *g = NULL;
 Expression *a = NULL;
+Expression *eq_fa_a = NULL;
 Expression *nat = NULL;
 Context *f_a_ctx = NULL;
 Context *g_f_a_ctx = NULL;
 
-// Builds a context with variable bindings associated with equality (eq type,
-// refl constructor)
-Context *context_with_eq() { Context *context = context_create_empty(); }
 
 // Takes in any context, and extends it with nat.
 Context *extend_with_nat(Context *ctx) {
@@ -106,6 +104,7 @@ void init_globals() {
   if (!f) f = init_var_expression("f");
   if (!g) g = init_var_expression("g");
   if (!a) a = init_var_expression("a");
+  if (!eq_fa_a) eq_fa_a = init_var_expression("eq_fa_a");
   if (!nat) nat = init_var_expression("nat");
 
   if (!f_a_ctx) {
@@ -120,21 +119,17 @@ void init_globals() {
 
     f_a_ctx = context_insert(f_a_ctx, f, f_ty);
     f_a_ctx = context_insert(f_a_ctx, a, a_ty);
+
+    Expression *eq_fa_a_ty = init_app_expression(
+        f_a_ctx,
+        init_app_expression(f_a_ctx, eq, init_app_expression(f_a_ctx, f, a)),
+        a);
+    f_a_ctx = context_insert(f_a_ctx, eq_fa_a, eq_fa_a_ty);
   };
 
   if (!g_f_a_ctx) {
-    g_f_a_ctx = context_create_empty();
-    g_f_a_ctx = extend_with_nat(g_f_a_ctx);
-    g_f_a_ctx = extend_with_eq(g_f_a_ctx);
-    g_f_a_ctx = extend_with_f_equal(g_f_a_ctx);
-    g_f_a_ctx = extend_with_eq_trans(g_f_a_ctx);
-
-    Expression *f_g_ty = init_arrow_expression(nat, nat);
-    Expression *a_ty = nat;
-
-    g_f_a_ctx = context_insert(g_f_a_ctx, g, f_g_ty);
-    g_f_a_ctx = context_insert(g_f_a_ctx, f, f_g_ty);
-    g_f_a_ctx = context_insert(g_f_a_ctx, a, a_ty);
+    Expression *g_ty = init_arrow_expression(nat, nat);
+    g_f_a_ctx = context_insert(f_a_ctx, g, g_ty);
   };
 }
 
@@ -154,7 +149,7 @@ Expression *compute_f_a(Expression *e) {
   return e;
 }
 
-bool *equivalent_under_computation(Expression *a, Expression *b) {
+bool equivalent_under_computation(Expression *a, Expression *b) {
   if (a == b) {
     return true;
   }
@@ -172,7 +167,9 @@ bool *equivalent_under_computation(Expression *a, Expression *b) {
              equivalent_under_computation(compute_f_a(a->value.app.arg),
                                           compute_f_a(b->value.app.arg));
     case (FORALL_EXPRESSION):
-      return equivalent_under_computation(a->value.forall.body, b->value.forall.body); // TODO: Needs to be tigher
+      return equivalent_under_computation(
+          a->value.forall.body,
+          b->value.forall.body);  // TODO: Needs to be tigher
     default:
       return false;  // do more later
   }

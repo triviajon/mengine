@@ -64,7 +64,6 @@ DLLNode *dll_remove_tail(DoublyLinkedList *list)
         list->head = list->tail = NULL;
     }
 
-    free(node);
     return node;
 }
 
@@ -85,7 +84,6 @@ DLLNode *dll_remove_head(DoublyLinkedList *list)
         list->head = list->tail = NULL;
     }
 
-    free(node);
     return node;
 }
 
