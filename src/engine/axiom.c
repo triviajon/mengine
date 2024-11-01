@@ -21,9 +21,9 @@ Context *extend_with_nat(Context *ctx) {
 // Takes in a context in which nat is defined, and extends it with eq, eq_refl.
 Context *extend_with_eq(Context *ctx) {
   // defining the eq type
-  Expression *type = init_type_expression();
+  Expression *prop = init_prop_expression();
   Expression *eq_ty =
-      init_arrow_expression(nat, init_arrow_expression(nat, type));
+      init_arrow_expression(nat, init_arrow_expression(nat, prop));
   Context *new_ctx = context_insert(ctx, eq, eq_ty);
 
   // defining the refl type
@@ -160,6 +160,7 @@ bool equivalent_under_computation(Expression *a, Expression *b) {
 
   switch (a->type) {
     case (TYPE_EXPRESSION):
+    case (PROP_EXPRESSION):
       return true;
     case (APP_EXPRESSION):
       return equivalent_under_computation(compute_f_a(a->value.app.func),

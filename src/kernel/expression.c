@@ -21,6 +21,7 @@ void add_to_parents(Expression *expression, Uplink *uplink) {
                          dll_new_node(uplink));
       break;
     case (TYPE_EXPRESSION):
+    case (PROP_EXPRESSION):
       break;
     case (HOLE_EXPRESSION):
       dll_insert_at_head(expression->value.hole.uplinks, dll_new_node(uplink));
@@ -109,11 +110,21 @@ Expression *init_forall_expression(Context *context, Expression *body) {
   Expression *expr = (Expression *)malloc(sizeof(Expression));
   expr->type = FORALL_EXPRESSION;
   expr->value.forall.context = context;
-  expr->value.forall.type = init_type_expression();
+  expr->value.forall.type = init_prop_expression();
   expr->value.forall.body = body;
   expr->value.forall.uplinks = dll_create();
   return expr;
 }
+
+Expression *init_prop_expression() {
+  if (PROP == NULL) {
+    PROP = (Expression *)malloc(sizeof(Expression));
+    PROP->type = PROP_EXPRESSION;
+    PROP->value.type.uplinks = dll_create();
+  }
+  return PROP;
+}
+
 
 Expression *init_type_expression() {
   if (TYPE == NULL) {
@@ -153,6 +164,8 @@ DoublyLinkedList *get_expression_uplinks(Expression *expression) {
       return expression->value.forall.uplinks;
     case (TYPE_EXPRESSION):
       return expression->value.type.uplinks;
+    case (PROP_EXPRESSION):
+      return expression->value.prop.uplinks;
     case (HOLE_EXPRESSION):
       return expression->value.hole.uplinks;
   }
@@ -169,6 +182,8 @@ Expression *get_expression_type(Context *context, Expression *expression) {
     case (FORALL_EXPRESSION):
       return expression->value.forall.type;
     case (TYPE_EXPRESSION):
+      return expression;
+    case (PROP_EXPRESSION):
       return expression;
     case (HOLE_EXPRESSION):
       return expression->value.hole.type;
@@ -187,6 +202,8 @@ Context *get_expression_context(Expression *expression) {
       return expression->value.forall.context;
     case (TYPE_EXPRESSION):
       return context_create_empty();
+    case (PROP_EXPRESSION):
+      return context_create_empty();
     case (HOLE_EXPRESSION):
       return expression->value.hole.context;
   }
@@ -198,14 +215,7 @@ void free_lambda_expression(Expression *expr);
 void free_app_expression(Expression *expr);
 void free_forall_expression(Expression *expr);
 void free_type_expression(Expression *expr);
-void free_hole_expression(Expression *expr);
-
-// Forward declarations. No need to expose them in expression.h.
-void free_var_expression(Expression *expr);
-void free_lambda_expression(Expression *expr);
-void free_app_expression(Expression *expr);
-void free_forall_expression(Expression *expr);
-void free_type_expression(Expression *expr);
+void free_prop_expression(Expression *expr);
 void free_hole_expression(Expression *expr);
 
 void free_expression(Expression *expr) {
@@ -224,6 +234,9 @@ void free_expression(Expression *expr) {
       break;
     case (TYPE_EXPRESSION):
       free_type_expression(expr);
+      break;
+    case (PROP_EXPRESSION):
+      free_prop_expression(expr);
       break;
     case (HOLE_EXPRESSION):
       free_hole_expression(expr);
@@ -275,6 +288,13 @@ void free_forall_expression(Expression *expr) {
 
 void free_type_expression(Expression *expr) {
   if (expr && expr->type == TYPE_EXPRESSION) {
+    dll_destroy(expr->value.type.uplinks);
+    free(expr);
+  }
+}
+
+void free_prop_expression(Expression *expr) {
+  if (expr && expr->type == PROP_EXPRESSION) {
     dll_destroy(expr->value.type.uplinks);
     free(expr);
   }

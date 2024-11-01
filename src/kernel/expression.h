@@ -20,6 +20,7 @@ typedef enum {
   APP_EXPRESSION,
   FORALL_EXPRESSION,
   TYPE_EXPRESSION,
+  PROP_EXPRESSION,
   HOLE_EXPRESSION
 } ExpressionType;
 
@@ -85,8 +86,13 @@ typedef struct {
   DoublyLinkedList *uplinks;
 } TypeExpression;
 
+typedef struct {
+  DoublyLinkedList *uplinks;
+} PropExpression;
+
 // Singleton
 static Expression *TYPE = NULL;
+static Expression *PROP = NULL;
 
 typedef struct {
   char *name;
@@ -103,6 +109,7 @@ struct Expression {
     AppExpression app;
     ForallExpression forall;
     TypeExpression type;
+    PropExpression prop;
     HoleExpression hole;
   } value;
 };
@@ -117,6 +124,7 @@ Expression *init_app_expression(Context *context, Expression *func,
                                 Expression *arg);
 Expression *init_forall_expression(Context *context, Expression *body);
 Expression *init_type_expression();
+Expression *init_prop_expression();
 Expression *init_hole_expression(char *name, Expression *type,
                                  Context *context);
 Expression *init_arrow_expression(Expression *lhs, Expression *rhs);
