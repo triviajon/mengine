@@ -5,7 +5,7 @@ import json
 N_values = [i for i in range(1, 500, 10)]
 G_flags = [0, 1]
 num_trials = 3
-benchmark_results_fn = "mengine_benchmark_results.json"
+benchmark_results_fn = "mengine_benchmark_2_results.json"
 program = "../../main"
 
 
