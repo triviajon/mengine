@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "alpha_equivalent.h"
 #include "doubly_linked_list.h"
 
 // Forward declaration of Expression & Context
@@ -55,6 +54,7 @@ typedef struct {
 // 3
 typedef struct {
   Context *context;
+  Context *bound_variable;
   Expression *type;
   Expression *body;
   DoublyLinkedList *uplinks;
@@ -77,6 +77,7 @@ Represented the same way as a LambdaExpression.
 */
 typedef struct {
   Context *context;
+  Context *bound_variable;
   Expression *type;
   Expression *body;
   DoublyLinkedList *uplinks;
@@ -117,6 +118,7 @@ struct Expression {
 // Given an expression and an uplink, add the uplink to the expression's uplink list.
 void add_to_parents(Expression *expression, Uplink *uplink);
 Uplink *new_uplink(Expression *parent, Relation relation);
+Expression *new_reduce(Expression *func_type, Expression *arg);
 
 Expression *init_var_expression(const char *name);
 Expression *init_lambda_expression(Context *context, Expression *body);
@@ -127,7 +129,7 @@ Expression *init_type_expression();
 Expression *init_prop_expression();
 Expression *init_hole_expression(char *name, Expression *type,
                                  Context *context);
-Expression *init_arrow_expression(Expression *lhs, Expression *rhs);
+Expression *init_arrow_expression(Context *context, Expression *lhs, Expression *rhs);
 
 DoublyLinkedList *get_expression_uplinks(Expression *expression);
 Expression *get_expression_type(Context *context, Expression *expression);

@@ -58,20 +58,29 @@ Expression *constr_app_type(Context *context, Expression *func,
   Expression *func_type =
       get_expression_type(context, func);  // something like Forall x: A, B
   Expression *variable =
-      get_binding_variable(func_type->value.forall.context);  // x
+      get_binding_variable(func_type->value.forall.bound_variable);  // x
   Expression *expected_arg_type =
-      get_binding_variable_type(func_type->value.forall.context); // A
+      get_binding_variable_type(func_type->value.forall.bound_variable);  // A
   Expression *actual_arg_type =
       get_expression_type(context, arg);  // hopefully A, but we need to check.
 
   if (equivalent_under_computation(actual_arg_type, expected_arg_type)) {
-    replace_child(variable->value.var.uplinks, arg);
-    return func_type->value.forall.body;  // Does not account for dependently-typed case
+    return new_reduce(func_type, arg);
   }
   return NULL;  // Bad app constr, for now set type to NULL
 }
 
-// Expression initialization functions
+Expression *new_reduce(Expression *func_type, Expression *arg) {
+  Context *ft_var_ctx = func_type->value.forall.bound_variable;
+  Expression *ft_body = func_type->value.forall.body;
+
+  // If func_type is Forall x: A, B, then lambda_over_var is lambda x: A, B.
+  // This allows us to pair it with an argument and then beta-reduce.
+  Expression *lambda_over_var = init_lambda_expression(ft_var_ctx, ft_body);
+
+  return reduce(lambda_over_var, arg);
+}
+
 Expression *init_var_expression(const char *name) {
   Expression *expr = (Expression *)malloc(sizeof(Expression));
   expr->type = VAR_EXPRESSION;
@@ -84,7 +93,8 @@ Expression *init_var_expression(const char *name) {
 Expression *init_lambda_expression(Context *context, Expression *body) {
   Expression *expr = (Expression *)malloc(sizeof(Expression));
   expr->type = LAMBDA_EXPRESSION;
-  expr->value.lambda.context = context;
+  expr->value.lambda.context = context->parent;
+  expr->value.lambda.bound_variable = context;
   expr->value.lambda.type = constr_lambda_type(context, body);
   expr->value.lambda.body = body;
   expr->value.lambda.uplinks = dll_create();
@@ -109,7 +119,8 @@ Expression *init_app_expression(Context *context, Expression *func,
 Expression *init_forall_expression(Context *context, Expression *body) {
   Expression *expr = (Expression *)malloc(sizeof(Expression));
   expr->type = FORALL_EXPRESSION;
-  expr->value.forall.context = context;
+  expr->value.forall.context = context->parent;
+  expr->value.forall.bound_variable = context;
   expr->value.forall.type = init_prop_expression();
   expr->value.forall.body = body;
   expr->value.forall.uplinks = dll_create();
@@ -124,7 +135,6 @@ Expression *init_prop_expression() {
   }
   return PROP;
 }
-
 
 Expression *init_type_expression() {
   if (TYPE == NULL) {
@@ -146,10 +156,10 @@ Expression *init_hole_expression(char *name, Expression *type,
   return expr;
 }
 
-Expression *init_arrow_expression(Expression *lhs, Expression *rhs) {
-  return init_forall_expression(
-      context_insert(context_create_empty(), init_var_expression("_"), lhs),
-      rhs);
+Expression *init_arrow_expression(Context *context, Expression *lhs,
+                                  Expression *rhs) {
+  Context *unnamed_ctx = context_insert(context, init_var_expression("_"), lhs);
+  return init_forall_expression(unnamed_ctx, rhs);
 }
 
 DoublyLinkedList *get_expression_uplinks(Expression *expression) {

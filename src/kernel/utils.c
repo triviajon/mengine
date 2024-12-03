@@ -30,12 +30,16 @@ char *stringify_expression(Expression *expression) {
       break;
 
     case LAMBDA_EXPRESSION: {
-      char *ctx_str = stringify_context(expression->value.lambda.context);
+      char *var_str = stringify_expression(expression->value.lambda.bound_variable->variable);
+      char *type_str = stringify_expression(expression->value.lambda.bound_variable->type);
       char *body_str = stringify_expression(expression->value.lambda.body);
-      result = str_concat("fun ", ctx_str);
-      result = str_concat(result, " -> ");
+      result = str_concat("fun (", var_str);
+      result = str_concat(result, ": ");
+      result = str_concat(result, type_str);
+      result = str_concat(result, "), ");
       result = str_concat(result, body_str);
-      free(ctx_str);
+      free(var_str);
+      free(type_str);
       free(body_str);
       break;
     }
@@ -54,12 +58,16 @@ char *stringify_expression(Expression *expression) {
     }
 
     case FORALL_EXPRESSION: {
-      char *ctx_str = stringify_context(expression->value.forall.context);
+      char *var_str = stringify_expression(expression->value.forall.bound_variable->variable);
+      char *type_str = stringify_expression(expression->value.forall.bound_variable->type);
       char *body_str = stringify_expression(expression->value.forall.body);
-      result = str_concat("∀ ", ctx_str);
-      result = str_concat(result, " : ");
+      result = str_concat("forall (", var_str);
+      result = str_concat(result, ": ");
+      result = str_concat(result, type_str);
+      result = str_concat(result, "), ");
       result = str_concat(result, body_str);
-      free(ctx_str);
+      free(var_str);
+      free(type_str);
       free(body_str);
       break;
     }
@@ -130,7 +138,7 @@ char *stringify_type(Expression *expr) {
   switch (expr->type) {
     case FORALL_EXPRESSION: {
       Context *ctx = expr->value.forall.context;
-      char *var_str = stringify_expression2(ctx->variable);
+      char *var_str = stringify_expression(ctx->variable);
       char *type_str = stringify_type(ctx->type);
       result = str_concat("(", var_str);
       result = str_concat(result, " : ");
@@ -158,16 +166,19 @@ char *stringify_expression2(Expression *expression) {
       break;
 
     case LAMBDA_EXPRESSION: {
-      char *ctx_str = stringify_context2(expression->value.lambda.context);
+      char *var_str = stringify_expression2(expression->value.lambda.bound_variable->variable);
+      char *type_str = stringify_expression2(expression->value.lambda.bound_variable->type);
       char *body_str = stringify_expression2(expression->value.lambda.body);
-      result = str_concat("fun ", ctx_str);
-      result = str_concat(result, " -> ");
+      result = str_concat("fun (", var_str);
+      result = str_concat(result, ": ");
+      result = str_concat(result, type_str);
+      result = str_concat(result, ") -> ");
       result = str_concat(result, body_str);
-      free(ctx_str);
+      free(var_str);
+      free(type_str);
       free(body_str);
       break;
     }
-
     case APP_EXPRESSION: {
       char *func_str = stringify_expression2(expression->value.app.func);
       char *arg_str = stringify_expression2(expression->value.app.arg);
@@ -182,12 +193,16 @@ char *stringify_expression2(Expression *expression) {
     }
 
     case FORALL_EXPRESSION: {
-      char *ctx_str = stringify_context2(expression->value.forall.context);
+      char *var_str = stringify_expression2(expression->value.forall.bound_variable->variable);
+      char *type_str = stringify_expression2(expression->value.forall.bound_variable->type);
       char *body_str = stringify_expression2(expression->value.forall.body);
-      result = str_concat("forall ", ctx_str);
-      result = str_concat(result, " : ");
+      result = str_concat("forall (", var_str);
+      result = str_concat(result, ": ");
+      result = str_concat(result, type_str);
+      result = str_concat(result, "), ");
       result = str_concat(result, body_str);
-      free(ctx_str);
+      free(var_str);
+      free(type_str);
       free(body_str);
       break;
     }
@@ -213,7 +228,7 @@ char *stringify_context2(Context *context) {
     return strdup("");
   } else {
     char *var_str = stringify_expression2(context->variable);
-    char *type_str = stringify_type(context->type);
+    char *type_str = stringify_expression2(context->type);
     char *parent_str = stringify_context2(context->parent);
 
     char *result = str_concat(parent_str, "\n");

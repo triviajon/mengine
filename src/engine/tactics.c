@@ -49,7 +49,7 @@ Expression *get_lhs_eq(Context *context, Expression *eq_expression) {
   if (eq_type->value.app.func->type != APP_EXPRESSION) {
     return NULL;
   }
-  Expression *expected_eq = eq_type->value.app.func->value.app.func;
+  Expression *expected_eq = eq_type->value.app.func->value.app.func->value.app.func;
   if (expected_eq != eq) {
     return NULL;
   }
@@ -71,7 +71,7 @@ Expression *get_rhs_eq(Context *context, Expression *eq_expression) {
   if (eq_type->value.app.func->type != APP_EXPRESSION) {
     return NULL;
   }
-  Expression *expected_eq = eq_type->value.app.func->value.app.func;
+  Expression *expected_eq = eq_type->value.app.func->value.app.func->value.app.func;
   if (expected_eq != eq) {
     return NULL;
   }

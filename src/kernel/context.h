@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "inductive.h"
+#include "doubly_linked_list.h"
 
 // Forward declaration of Expression
 typedef struct Expression Expression;
@@ -29,20 +29,23 @@ bool context_is_empty(Context *context);
 // containing a pointer to input context
 Context *context_insert(Context *context, Expression *var, Expression *type);
 
-Context *context_join(Context *contextA, Context *contextB);
-
-// Add an inductive type to the context, and return the new context containing a
-// pointer to input context
-Context *context_insert_inductive(Context *context, Inductive *inductive);
-
 // Look up the type of a variable in the context
 Expression *context_lookup(Context *context, Expression *var);
 
 // Returns true if context_A is an ancestor of context_B
 bool context_is_ancestor(Context *context_A, Context *context_B);
 
+// Creates a list of context_A ancestors starting at the empty context ...
+// context_A
+DoublyLinkedList *context_ancestors(Context *context_A);
+
+// Finds least common ancestor of context_A and context_B
+Context *context_LCA(Context *context_A, Context *context_B);
+
 // TODO: Unclear what we should be freeing.
 void context_free(Context *context);
+
+Context *context_combine(Expression *body, Expression *old, Expression *new);
 
 // Returns context->type
 Expression *get_binding_variable_type(Context *context);
@@ -50,10 +53,9 @@ Expression *get_binding_variable_type(Context *context);
 // Returns context->variable
 Expression *get_binding_variable(Context *context);
 
-// If the context has the form Γ[variable: type], it returns [variable: type].
-// ? *context_head(Context *context);
-
 // If the context has the form Γ[x: P], it returns a pointer to Γ.
 Context *context_tail(Context *context);
+
+bool type_valid(Context *context, Expression *type);
 
 #endif

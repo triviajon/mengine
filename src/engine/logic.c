@@ -4,7 +4,8 @@
 // eq_refl constructor of the inductive type "eq"
 Expression *build_eq_refl(Expression *e) {
   Context *e_ctx = get_expression_context(e);
-  return init_app_expression(e_ctx, eq_refl, e);
+  Expression *e_type = get_expression_type(e_ctx, e);
+  return init_app_expression(e_ctx, init_app_expression(e_ctx, eq_refl, e_type), e);
 }
 
 // Given expressions f, and x_equality (representing equality between some x and
