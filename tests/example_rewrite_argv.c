@@ -1,13 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "engine/axiom.h"
+#include "engine/tactics.h"
 #include "kernel/context.h"
 #include "kernel/expression.h"
-#include "kernel/inductive.h"
 #include "kernel/utils.h"
-
-#include "engine/tactics.h"
-#include "engine/axiom.h"
 
 int main(int argc, char *argv[]) {
   if (argc != 3) {
@@ -16,7 +14,7 @@ int main(int argc, char *argv[]) {
   }
 
   int f_length = atoi(argv[1]);
-  int g_wrap = atoi(argv[2]);
+  int g_wrap = atcleanoi(argv[2]);
 
   init_globals();
 
@@ -32,9 +30,13 @@ int main(int argc, char *argv[]) {
 
   printf("Require Import Setoid Morphisms.\n");
   printf("%s\n", stringify_context2(g_f_a_ctx));
-  printf("Declare Instance Equivalence_eq : Equivalence eq.\nInstance f_Proper : Proper (eq ==> eq) f := f_equal f.\nInstance f_Proper : Proper (eq ==> eq) g := f_equal g.");
-  RewriteProof *rw_pf = rewrite(current_expr, eq_fa_a);
-  printf("\nCheck %s : eq (%s) (%s).\n", stringify_expression_with_let(rw_pf->equality_proof), stringify_expression(rw_pf->expr), stringify_expression(rw_pf->rewritten_expr));
+  RewriteProof *rw_pf = rewrite(current_expr, eq_haa_a);
+
+  Expression *expr_ty = get_expression_type(get_expression_context(current_expr), current_expr);
+  printf("\nCheck %s : eq (%s) (%s) (%s).\n",
+         stringify_expression(rw_pf->equality_proof),
+         stringify_expression(expr_ty), stringify_expression(rw_pf->expr),
+         stringify_expression(rw_pf->rewritten_expr));
 
   return 0;
 }

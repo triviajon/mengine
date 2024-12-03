@@ -17,7 +17,7 @@ ProofState *init_proof_state() {
 
 void free_proof_state(ProofState *proof_state) {
   if (proof_state) {
-    dll_foreach(proof_state->holes, free_expression);
+    dll_foreach(proof_state->holes, (void (*)(void *))free_expression);
     dll_destroy(proof_state->holes);
     free(proof_state);
   }
