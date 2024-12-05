@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
   }
 
   int f_length = atoi(argv[1]);
-  int g_wrap = atcleanoi(argv[2]);
+  int g_wrap = atoi(argv[2]);
 
   init_globals();
 
@@ -30,13 +30,13 @@ int main(int argc, char *argv[]) {
 
   printf("Require Import Setoid Morphisms.\n");
   printf("%s\n", stringify_context2(g_f_a_ctx));
-  RewriteProof *rw_pf = rewrite(current_expr, eq_haa_a);
+  RewriteProof *rw_pf = rewrite(get_expression_context(current_expr), current_expr, eq_fa_a);
 
   Expression *expr_ty = get_expression_type(get_expression_context(current_expr), current_expr);
   printf("\nCheck %s : eq (%s) (%s) (%s).\n",
-         stringify_expression(rw_pf->equality_proof),
-         stringify_expression(expr_ty), stringify_expression(rw_pf->expr),
-         stringify_expression(rw_pf->rewritten_expr));
+         stringify_expression2(rw_pf->equality_proof),
+         stringify_expression2(expr_ty), stringify_expression2(rw_pf->expr),
+         stringify_expression2(rw_pf->rewritten_expr));
 
   return 0;
 }

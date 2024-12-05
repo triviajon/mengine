@@ -29,6 +29,12 @@ bool context_is_empty(Context *context);
 // containing a pointer to input context
 Context *context_insert(Context *context, Expression *var, Expression *type);
 
+// Gets the size of the content. Empty context has size 0.
+int context_size(Context *context);
+
+// Finds the context which defines the type of var
+Context *context_find(Context *context, Expression *var);
+
 // Look up the type of a variable in the context
 Expression *context_lookup(Context *context, Expression *var);
 
@@ -45,7 +51,7 @@ Context *context_LCA(Context *context_A, Context *context_B);
 // TODO: Unclear what we should be freeing.
 void context_free(Context *context);
 
-Context *context_combine(Expression *body, Expression *old, Expression *new);
+Context *context_combine(Context *body_context, Expression *old, Expression *old_ty, Expression *new);
 
 // Returns context->type
 Expression *get_binding_variable_type(Context *context);

@@ -12,6 +12,8 @@ char *stringify_expression2(Expression *expression);
 char *stringify_context2(Context *context);
 char *stringify_type(Expression *expression);
 
+char *se(Expression *expression);
+char *sc(Context *context);
 
 typedef enum {
 	UNMARKED,

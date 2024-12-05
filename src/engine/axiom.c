@@ -2,7 +2,7 @@
 
 Expression *eq = NULL;
 Expression *eq_refl = NULL;
-Expression *f_equal = NULL;
+Expression *app_cong = NULL;
 Expression *eq_trans = NULL;
 Expression *f = NULL;
 Expression *g = NULL;
@@ -48,34 +48,54 @@ Context *extend_with_eq(Context *ctx) {
 }
 
 // Takes in a context which has nat and eq defined within it, and extends it
-// with f_equal.
-Context *extend_with_f_equal(Context *ctx) {
-  // defining the f_equal type
+// with app_cong.
+Context *extend_with_app_cong(Context *ctx) {
+
+  Expression *A = init_var_expression("A");
+  Expression *B = init_var_expression("B");
+  Expression *f = init_var_expression("f");
+  Expression *g = init_var_expression("g");
   Expression *x = init_var_expression("x");
   Expression *y = init_var_expression("y");
-  Expression *f = init_var_expression("f");
 
-  Context *with_nat = extend_with_nat(context_create_empty());
-  Context *base_ctx = extend_with_eq(with_nat);
-  Context *f_ctx = context_insert(base_ctx, f, init_arrow_expression(with_nat, nat, nat));
-  Context *x_ctx = context_insert(f_ctx, x, nat);
-  Context *full_ctx = context_insert(x_ctx, y, nat);
+  Expression *type = init_type_expression();
 
-  Expression *f_equal_H = init_app_expression(full_ctx, 
+  Context *base_ctx = extend_with_eq(context_create_empty());
+  Context *A_ctx = context_insert(base_ctx, A, type);
+  Context *B_ctx = context_insert(A_ctx, B, type);
+  Context *f_ctx = context_insert(B_ctx, f, init_arrow_expression(B_ctx, A, B));
+  Context *g_ctx = context_insert(f_ctx, g, init_arrow_expression(B_ctx, A, B));
+  Context *x_ctx = context_insert(g_ctx, x, A);
+  Context *full_ctx = context_insert(x_ctx, y, A);
+
+  // app_cong_H1 = eq (A -> B) f g
+  Expression *app_cong_H1 = init_app_expression(full_ctx, 
     init_app_expression(full_ctx, 
-      init_app_expression(full_ctx, eq, nat), x), y);
+      init_app_expression(full_ctx, eq, init_arrow_expression(B_ctx, A, B)), f), g);
+
+  // app_cong_H2 = eq A x y
+  Expression *app_cong_H2 = init_app_expression(full_ctx, 
+    init_app_expression(full_ctx, 
+      init_app_expression(full_ctx, eq, A), x), y);
+
+  // app_cong_concl = eq B (f x) (g y)
   Expression *f_x = init_app_expression(full_ctx, f, x);
-  Expression *f_y = init_app_expression(full_ctx, f, y);
-
-  Expression *f_equal_concl = init_app_expression(full_ctx, 
+  Expression *g_y = init_app_expression(full_ctx, g, y);
+  Expression *app_cong_concl = init_app_expression(full_ctx, 
     init_app_expression(full_ctx, 
-      init_app_expression(full_ctx, eq, nat), f_x), f_y);
-  Expression *f_equal_body = init_arrow_expression(full_ctx, f_equal_H, f_equal_concl);
+      init_app_expression(full_ctx, eq, B), f_x), g_y);
 
-  Expression *f_equal_ty = init_forall_expression(f_ctx, 
-    init_forall_expression(x_ctx, 
-      init_forall_expression(full_ctx, f_equal_body)));
-  return context_insert(ctx, f_equal, f_equal_ty);
+  Expression *app_cong_body = init_arrow_expression(full_ctx, app_cong_H1, 
+    init_arrow_expression(full_ctx, app_cong_H2, app_cong_concl));
+
+  // app_cong : forall (A B: Type) (f g : A -> B) (x y : A), f = g -> x = y -> f x = g y
+  Expression *app_cong_ty = init_forall_expression(A_ctx, 
+    init_forall_expression(B_ctx, 
+      init_forall_expression(f_ctx, 
+        init_forall_expression(g_ctx, 
+          init_forall_expression(x_ctx, 
+            init_forall_expression(full_ctx, app_cong_body))))));
+  return context_insert(ctx, app_cong, app_cong_ty);
 }
 
 // Takes in a context which has nat and eq defined within it, and extends it
@@ -113,7 +133,7 @@ Context *extend_with_eq_trans(Context *ctx) {
 void init_globals() {
   if (!eq) eq = init_var_expression("eq");
   if (!eq_refl) eq_refl = init_var_expression("eq_refl");
-  if (!f_equal) f_equal = init_var_expression("f_equal");
+  if (!app_cong) app_cong = init_var_expression("app_cong");
   if (!eq_trans) eq_trans = init_var_expression("eq_trans");
   if (!f) f = init_var_expression("f");
   if (!g) g = init_var_expression("g");
@@ -127,7 +147,7 @@ void init_globals() {
     f_a_ctx = context_create_empty();
     f_a_ctx = extend_with_nat(f_a_ctx);
     f_a_ctx = extend_with_eq(f_a_ctx);
-    f_a_ctx = extend_with_f_equal(f_a_ctx);
+    f_a_ctx = extend_with_app_cong(f_a_ctx);
     f_a_ctx = extend_with_eq_trans(f_a_ctx);
 
     Expression *f_ty = init_arrow_expression(f_a_ctx, nat, nat);
@@ -143,7 +163,7 @@ void init_globals() {
   };
 
   if (!g_f_a_ctx) {
-    Expression *g_ty = init_arrow_expression(nat, nat, nat);
+    Expression *g_ty = init_arrow_expression(f_a_ctx, nat, nat);
     g_f_a_ctx = context_insert(f_a_ctx, g, g_ty);
   };
 
