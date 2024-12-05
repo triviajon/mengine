@@ -8,6 +8,6 @@
 #include "unify.h"
 
 RewriteProof *rewrite_head(Expression *expr, Expression *lemma);
-RewriteProof *rewrite(Expression *expr, Expression *lemma);
+RewriteProof *rewrite(Context *ctx, Expression *expr, Expression *lemma);
 
 #endif  // TACTICS_H

@@ -79,41 +79,38 @@ Expression *get_rhs_eq(Context *context, Expression *eq_expression) {
 }
 
 RewriteProof *rewrite_head(Expression *expr, Expression *lemma) {
-  // Has built into it the lemma (f a = a).
-  // We want to match expr against (f a)
   Context *ctx = get_expression_context(expr);
-  Expression *lhs = get_lhs_eq(ctx, eq_fa_a);
-  Expression *rhs = get_rhs_eq(ctx, eq_fa_a);
+  Expression *lhs = get_lhs_eq(ctx, lemma);
+  Expression *rhs = get_rhs_eq(ctx, lemma);
   if (expr_match(lhs, expr)) {
-    // TODO: Review
     RewriteProof *equality = init_rewrite_proof(expr, rhs, lemma);
     return equality;
   } else {
-    return init_rewrite_proof(expr, expr, build_eq_refl(expr));
+    return init_rewrite_proof(expr, expr, build_eq_refl(ctx, expr));
   }
 }
 
-RewriteProof *rewrite_app(Expression *expr, Expression *lemma) {
+RewriteProof *rewrite_app(Context *ctx, Expression *expr, Expression *lemma) {
   Context *app_context = get_expression_context(expr);
 
   Expression *func = expr->value.app.func;
   Expression *arg = expr->value.app.arg;
-  RewriteProof *rw_func_proof = rewrite(func, lemma);
-  RewriteProof *rw_arg_proof = rewrite(arg, lemma);
+  RewriteProof *rw_func_proof = rewrite(ctx, func, lemma);
+  RewriteProof *rw_arg_proof = rewrite(ctx, arg, lemma);
 
   // Expression *mid;
   // RewriteProof *fx_mid;
   RewriteProof *mid_rewrite_proof;
 
   if (nothing_rewritten(rw_func_proof) && nothing_rewritten(rw_arg_proof)) {
-    mid_rewrite_proof = init_rewrite_proof(expr, expr, build_eq_refl(expr));
+    mid_rewrite_proof = init_rewrite_proof(expr, expr, build_eq_refl(ctx, expr));
   } else {
     mid_rewrite_proof = init_rewrite_proof(
         expr,
         init_app_expression(expr->value.app.context,
                             rw_func_proof->rewritten_expr,
                             rw_arg_proof->rewritten_expr),
-        build_f_equal(app_context, rw_func_proof->expr, rw_arg_proof));
+        build_app_cong(app_context, rw_func_proof, rw_arg_proof));
   }
 
   Expression *mid = mid_rewrite_proof->rewritten_expr;
@@ -132,12 +129,12 @@ RewriteProof *rewrite_app(Expression *expr, Expression *lemma) {
 
 // Attempt an aggressive rewrite in expr using the provided lemma. The lemma
 // should be an opaque reference that is valid in the context.
-RewriteProof *rewrite(Expression *expr, Expression *lemma) {
+RewriteProof *rewrite(Context *ctx, Expression *expr, Expression *lemma) {
   switch (expr->type) {
     case (APP_EXPRESSION):
-      return rewrite_app(expr, lemma);
+      return rewrite_app(ctx, expr, lemma);
     case (VAR_EXPRESSION):
-      return init_rewrite_proof(expr, expr, build_eq_refl(expr));
+      return init_rewrite_proof(expr, expr, build_eq_refl(ctx, expr));
     default:
       return NULL;  // TODO: Unsupported.
   }

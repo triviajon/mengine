@@ -201,6 +201,7 @@ char *stringify_expression2(Expression *expression) {
       result = str_concat(result, type_str);
       result = str_concat(result, "), ");
       result = str_concat(result, body_str);
+      result = parenthesize_and_free(result);
       free(var_str);
       free(type_str);
       free(body_str);
@@ -417,6 +418,14 @@ DoublyLinkedList *topo_order(Expression *top_expr, Map *expr_counts) {
 
   free(S);
   return L;
+}
+
+char *se(Expression *expression) {
+  return stringify_expression(expression);
+}
+
+char *sc(Context *context) {
+  return stringify_context(context);
 }
 
 char *stringify_expression_with_let(Expression *expression) {

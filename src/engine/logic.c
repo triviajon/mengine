@@ -2,28 +2,42 @@
 
 // Given an expression e, builds the new expression of type (eq e e) using the
 // eq_refl constructor of the inductive type "eq"
-Expression *build_eq_refl(Expression *e) {
-  Context *e_ctx = get_expression_context(e);
-  Expression *e_type = get_expression_type(e_ctx, e);
-  return init_app_expression(e_ctx, init_app_expression(e_ctx, eq_refl, e_type), e);
+Expression *build_eq_refl(Context *ctx, Expression *e) {
+  Expression *e_type = get_expression_type(ctx, e);
+  return init_app_expression(ctx, init_app_expression(ctx, eq_refl, e_type),
+                             e);
 }
 
-// Given expressions f, and x_equality (representing equality between some x and
-// x'), returns an expression which says that the application (f x') is equal to
-// (f x)
-Expression *build_f_equal(Context *app_context, Expression *f,
+// Given expressions f_equality (representing equality between some f and f'),
+// and x_equality (similar), returns an expression which says that the
+// application (f x') is equal to (f' x)
+Expression *build_app_cong(Context *app_context, RewriteProof *f_equality,
                           RewriteProof *x_equality) {
+  Expression *f = f_equality->expr;
+  Expression *fp = f_equality->rewritten_expr;
+  Expression *eq_f_fp = f_equality->equality_proof;
+
   Expression *x = x_equality->expr;
-  Expression *x_p = x_equality->rewritten_expr;
+  Expression *xp = x_equality->rewritten_expr;
   Expression *eq_x_xp = x_equality->equality_proof;
-  return init_app_expression(
-      app_context,
-      init_app_expression(
-          app_context,
-          init_app_expression(app_context,
-                              init_app_expression(app_context, f_equal, f), x),
-          x_p),
-      eq_x_xp);
+
+  Expression *fx = init_app_expression(app_context, f, x);
+  Expression *fp_xp = init_app_expression(app_context, fp, xp);
+  
+  Expression *x_ty = get_expression_type(app_context, x);
+  Expression *fx_ty = get_expression_type(app_context, fx);
+
+  return init_app_expression(app_context, init_app_expression(app_context,
+    init_app_expression(app_context,
+        init_app_expression(app_context,
+            init_app_expression(app_context,
+              init_app_expression(app_context,
+                init_app_expression(app_context,
+                    init_app_expression(app_context, 
+                      app_cong, x_ty), fx_ty),
+                f), fp),
+            x), xp),
+    eq_f_fp), eq_x_xp);
 }
 
 // Given expressions x_y_equality (representing equality between some x and y)

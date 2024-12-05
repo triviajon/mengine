@@ -6,7 +6,7 @@
 
 extern Expression *eq;
 extern Expression *eq_refl;
-extern Expression *f_equal;
+extern Expression *app_cong;
 extern Expression *eq_trans;
 extern Expression *f;
 extern Expression *g;
