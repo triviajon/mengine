@@ -1,3 +1,6 @@
+#ifndef UTILS_H
+#define UTILS_H
+
 #include "expression.h"
 #include "dyn_array_map.h"
 #include "doubly_linked_list.h"
@@ -28,3 +31,5 @@ typedef struct {
 
 // Two expressions are equal wrt this function if their pointers are equal
 bool expression_equal(Expression *a, Expression *b);
+
+#endif  // UTILS_H

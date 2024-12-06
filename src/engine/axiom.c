@@ -8,6 +8,8 @@ Expression *f = NULL;
 Expression *g = NULL;
 Expression *h = NULL;
 Expression *a = NULL;
+Expression *b = NULL;
+Expression *c = NULL;
 Expression *eq_fa_a = NULL;
 Expression *eq_haa_a = NULL;
 Expression *nat = NULL;
@@ -139,6 +141,8 @@ void init_globals() {
   if (!g) g = init_var_expression("g");
   if (!h) h = init_var_expression("h");
   if (!a) a = init_var_expression("a");
+  if (!b) b = init_var_expression("b");
+  if (!c) c = init_var_expression("c");
   if (!eq_fa_a) eq_fa_a = init_var_expression("eq_fa_a");
   if (!eq_haa_a) eq_haa_a = init_var_expression("eq_haa_a");
   if (!nat) nat = init_var_expression("nat");
@@ -153,12 +157,16 @@ void init_globals() {
     Expression *f_ty = init_arrow_expression(f_a_ctx, nat, nat);
     Expression *a_ty = nat;
 
+    f_a_ctx = context_insert(f_a_ctx, b, a_ty);
     f_a_ctx = context_insert(f_a_ctx, f, f_ty);
     f_a_ctx = context_insert(f_a_ctx, a, a_ty);
 
-    Expression *eq_fa_a_ty = init_app_expression(
+    Expression *fa_a_equality = init_app_expression(
         f_a_ctx, init_app_expression(f_a_ctx, 
           init_app_expression(f_a_ctx, eq, nat), init_app_expression(f_a_ctx, f, a)), a);
+
+    // For all (a: nat), f a = a.
+    Expression *eq_fa_a_ty = init_forall_expression(f_a_ctx, fa_a_equality);
     f_a_ctx = context_insert(f_a_ctx, eq_fa_a, eq_fa_a_ty);
   };
 
@@ -170,14 +178,17 @@ void init_globals() {
   if (!h_g_f_a_ctx) {
     Expression *h_ty = init_arrow_expression(f_a_ctx, nat, init_arrow_expression(f_a_ctx, nat, nat));
     h_g_f_a_ctx = context_insert(g_f_a_ctx, h, h_ty);
+    h_g_f_a_ctx = context_insert(h_g_f_a_ctx, c, nat);
 
-    Expression *haa = init_app_expression(h_g_f_a_ctx, init_app_expression(h_g_f_a_ctx, h, a), a);
+    Expression *haa = init_app_expression(h_g_f_a_ctx, init_app_expression(h_g_f_a_ctx, h, c), c);
 
-    Expression *eq_haa_a_ty = init_app_expression(h_g_f_a_ctx, 
+    Expression *haa_a_equality = init_app_expression(h_g_f_a_ctx, 
       init_app_expression(h_g_f_a_ctx, 
-        init_app_expression(h_g_f_a_ctx, eq, nat), haa), a);
+        init_app_expression(h_g_f_a_ctx, eq, nat), haa), c);
 
-    h_g_f_a_ctx = context_insert(h_g_f_a_ctx, eq_haa_a, eq_haa_a_ty);
+    Expression *haa_a_ty = init_forall_expression(h_g_f_a_ctx, haa_a_equality);
+
+    h_g_f_a_ctx = context_insert(h_g_f_a_ctx, eq_haa_a, haa_a_ty);
   }
 }
 

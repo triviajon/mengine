@@ -25,9 +25,15 @@ char *stringify_expression(Expression *expression) {
   char *result = NULL;
 
   switch (expression->type) {
-    case VAR_EXPRESSION:
+    case VAR_EXPRESSION: {
       result = strdup(expression->value.var.name);
       break;
+    }
+
+    case HOLE_EXPRESSION: {
+      result = str_concat("?", strdup(expression->value.hole.name));
+      break;
+    }
 
     case LAMBDA_EXPRESSION: {
       char *var_str = stringify_expression(expression->value.lambda.bound_variable->variable);
