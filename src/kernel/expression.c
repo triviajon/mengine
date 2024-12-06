@@ -152,7 +152,7 @@ Expression *init_hole_expression(char *name, Expression *type,
   expr->value.hole.name = name;
   expr->value.hole.type = type;
   expr->value.hole.context = context;
-  expr->value.forall.uplinks = dll_create();
+  expr->value.hole.uplinks = dll_create();
   return expr;
 }
 

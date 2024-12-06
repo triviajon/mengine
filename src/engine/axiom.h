@@ -12,6 +12,8 @@ extern Expression *f;
 extern Expression *g;
 extern Expression *h;
 extern Expression *a;
+extern Expression *b;
+extern Expression *c;
 extern Expression *eq_fa_a;
 extern Expression *eq_haa_a;
 extern Expression *nat;

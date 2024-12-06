@@ -31,6 +31,9 @@
         "axiom.h": "c",
         "rewrite_proof.h": "c",
         "theorem.h": "c",
-        "unify.h": "c"
+        "unify.h": "c",
+        "dyn_array_map.h": "c",
+        "rewrite_multi_argument.h": "c",
+        "main_utils.h": "c"
     }
 }

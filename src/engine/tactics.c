@@ -34,61 +34,51 @@ bool expr_match(Expression *expr1, Expression *expr2) {
   return false;
 }
 
-// Returns the lhs of an equality The equality expresison is an opaque
-// reference, and exist in the given context. If the context contains
-// eq_expression, then its type should be "(eq lhs) rhs", and this function
-// returns lhs. If any steps fails, return NULL.
-Expression *get_lhs_eq(Context *context, Expression *eq_expression) {
-  Expression *eq_type = context_lookup(context, eq_expression);
-  if (eq_type == NULL) {
-    return NULL;
-  }
-  if (eq_type->type != APP_EXPRESSION) {
-    return NULL;
-  }
-  if (eq_type->value.app.func->type != APP_EXPRESSION) {
-    return NULL;
-  }
-  Expression *expected_eq = eq_type->value.app.func->value.app.func->value.app.func;
-  if (expected_eq != eq) {
-    return NULL;
-  }
-  return eq_type->value.app.func->value.app.arg;
-}
-
-// Returns the rhs of an equality The equality expresison is an opaque
-// reference, and exist in the given context. If the context contains
-// eq_expression, then its type should be "(eq lhs) rhs", and this function
-// returns rhs. If any steps fails, return NULL.
-Expression *get_rhs_eq(Context *context, Expression *eq_expression) {
-  Expression *eq_type = context_lookup(context, eq_expression);
-  if (eq_type == NULL) {
-    return NULL;
-  }
-  if (eq_type->type != APP_EXPRESSION) {
-    return NULL;
-  }
-  if (eq_type->value.app.func->type != APP_EXPRESSION) {
-    return NULL;
-  }
-  Expression *expected_eq = eq_type->value.app.func->value.app.func->value.app.func;
-  if (expected_eq != eq) {
-    return NULL;
-  }
-  return eq_type->value.app.arg;
-}
-
 RewriteProof *rewrite_head(Expression *expr, Expression *lemma) {
   Context *ctx = get_expression_context(expr);
-  Expression *lhs = get_lhs_eq(ctx, lemma);
-  Expression *rhs = get_rhs_eq(ctx, lemma);
+  Expression *lemma_ty = context_lookup(ctx, lemma);
+
+  if (lemma_ty->type == FORALL_EXPRESSION) {
+    // Need to run unification.
+    Map *binding_results = unify(ctx, lemma_ty, expr);
+    if (binding_results == NULL) {
+      return init_rewrite_proof(expr, expr, build_eq_refl(ctx, expr));
+    }
+    Expression *proof = instantiate_lemma_with_bindings(ctx, lemma, lemma_ty, binding_results);
+    Expression *lhs = get_lhs_eq(get_expression_type(ctx, proof));
+    Expression *rhs = get_rhs_eq(get_expression_type(ctx, proof));
+    if (expr_match(lhs, expr)) {
+      return init_rewrite_proof(expr, rhs, proof);
+    } else {
+      return init_rewrite_proof(expr, expr, build_eq_refl(ctx, expr));
+    }
+
+  }
+
+  Expression *lhs = get_lhs_eq(lemma_ty);
+  Expression *rhs = get_rhs_eq(lemma_ty);
   if (expr_match(lhs, expr)) {
-    RewriteProof *equality = init_rewrite_proof(expr, rhs, lemma);
-    return equality;
+    return init_rewrite_proof(expr, rhs, lemma);
   } else {
     return init_rewrite_proof(expr, expr, build_eq_refl(ctx, expr));
   }
 }
+
+// RewriteProof *rewrite_head(Expression *expr, Expression *lemma) {
+//   Context *ctx = get_expression_context(expr);
+//   Expression *inst_lemma = instantiate_lemma(ctx, lemma);
+//   Expression *lhs = get_lhs_eq(inst_lemma);
+//   Expression *rhs = get_rhs_eq(inst_lemma);
+
+//   if (contains_holes(lhs)) {
+//     // Need to attempt to unify.
+//     unify(lhs, expr);
+//   } else if (expr_match(lhs, expr)) {
+//     return init_rewrite_proof(expr, rhs, inst_lemma);
+//   } else {
+//     return init_rewrite_proof(expr, expr, build_eq_refl(ctx, expr));
+//   }
+// }
 
 RewriteProof *rewrite_app(Context *ctx, Expression *expr, Expression *lemma) {
   Context *app_context = get_expression_context(expr);

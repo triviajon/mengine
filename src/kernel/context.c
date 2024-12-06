@@ -129,7 +129,7 @@ void context_free(Context *context) { return; }
   substitutions to avoid redundancy and preserve context tree integrity.
 */
 Context *context_combine(Context *body_context, Expression *old, Expression *old_ty, Expression *new) {
-  if (new->type == VAR_EXPRESSION) {
+  if (new->type == VAR_EXPRESSION || new->type == HOLE_EXPRESSION) {
     // Then the returned context needs to contain new: old_ty, and anything required
     // for old_ty to be valid. 
     Context *old_defn = context_find(body_context, old);

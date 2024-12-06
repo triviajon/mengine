@@ -1,35 +1,77 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include "engine/axiom.h"
+#include "engine/tactics.h"
+#include "examples/main_utils.h"
+#include "examples/rewrite_multi_argument.h"
+#include "examples/rewrite_single_argument.h"
 #include "kernel/context.h"
 #include "kernel/expression.h"
 #include "kernel/utils.h"
 
-#include "engine/tactics.h"
-#include "engine/axiom.h"
+void print_usage() {
+  fprintf(stderr, "Usage: ./main [--proof=0|1] <example> [args]\n");
+  fprintf(stderr, "Available examples:\n");
+  fprintf(stderr, "  gfa <f_length> <g_wrap>\n");
+  fprintf(stderr, "  haa <h_depth>\n");
+}
 
 int main(int argc, char *argv[]) {
-  if (argc != 2) {
-    fprintf(stderr, "Usage: %s <h_depth>\n", argv[0]);
+  if (argc < 2) {
+    print_usage();
     return 1;
   }
 
-  init_globals();
-  Expression *haa = init_app_expression(h_g_f_a_ctx, init_app_expression(h_g_f_a_ctx, h, a), a);
-  Expression *current_expr = haa;
-
-  int depth = atoi(argv[1]);
-  for (int i = 0; i < depth; i++) {
-    Expression *intermediate = init_app_expression(h_g_f_a_ctx, h, current_expr);
-    current_expr = init_app_expression(h_g_f_a_ctx, intermediate, current_expr);
+  int proof_flag = 1;
+  if (strncmp(argv[1], "--proof=", 8) == 0) {
+    proof_flag = atoi(argv[1] + 8);
+    if (proof_flag != 0 && proof_flag != 1) {
+      fprintf(stderr,
+              "Invalid value for --proof. Use --proof=0 or --proof=1.\n");
+      return 1;
+    }
+    argc--;
+    argv++;
   }
 
-  printf("Section T.\n");
-  printf("%s\n", stringify_context2(h_g_f_a_ctx));
-  RewriteProof *rw_pf = rewrite(get_expression_context(current_expr), current_expr, eq_haa_a);
-  Expression *expr_ty = get_expression_type(get_expression_context(current_expr), current_expr);
-  printf("\nCheck %s : eq (%s) (%s) (%s).\n",
-         stringify_expression2(rw_pf->equality_proof),
-         stringify_expression2(expr_ty), stringify_expression2(rw_pf->expr),
-         stringify_expression2(rw_pf->rewritten_expr));
+  if (argc < 2) {
+    print_usage();
+    return 1;
+  }
+
+  if (strcmp(argv[1], "gfa") == 0) {
+    if (argc != 4) {
+      fprintf(stderr, "Usage: %s [--proof=0|1] gfa <f_length> <g_wrap>\n",
+              argv[0]);
+      return 1;
+    }
+    int f_length = atoi(argv[2]);
+    int g_wrap = atoi(argv[3]);
+    RewriteProof *rw_pf = rewrite_gfa(f_length, g_wrap);
+    if (proof_flag == 0) {
+      print_rwpf__no_proof(rw_pf);
+    } else {
+      print_rwpf__coq_ready(rw_pf);
+    }
+  } else if (strcmp(argv[1], "haa") == 0) {
+    if (argc != 3) {
+      fprintf(stderr, "Usage: %s [--proof=0|1] haa <h_depth>\n", argv[0]);
+      return 1;
+    }
+    int h_depth = atoi(argv[2]);
+    RewriteProof *rw_pf = rewrite_haa(h_depth);
+    if (proof_flag == 0) {
+      print_rwpf__no_proof(rw_pf);
+    } else {
+      print_rwpf__coq_ready(rw_pf);
+    }
+  } else {
+    fprintf(stderr, "Unknown example: %s\n", argv[1]);
+    print_usage();
+    return 1;
+  }
+
+  return 0;
 }
