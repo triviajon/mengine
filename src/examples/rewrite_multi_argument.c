@@ -14,3 +14,10 @@ RewriteProof *rewrite_haa(int h_depth) {
 
   return rewrite(get_expression_context(current_expr), current_expr, eq_haa_a);
 }
+
+RewriteProof *rewrite_hxy() {
+  init_globals();
+  Expression *haa = init_app_expression(h_g_f_a_ctx, init_app_expression(h_g_f_a_ctx, h, a), a);
+  return rewrite(get_expression_context(haa), haa, eq_haa_a);
+}
+

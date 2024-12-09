@@ -1,5 +1,5 @@
 CC = clang
-CFLAGS = -Wall -Wextra -O3 -march=native -ffast-math -funroll-loops -I./src/kernel -I./src/engine
+CFLAGS = -Wall -Wextra -O0 -g -march=native -ffast-math -funroll-loops -I./src/kernel -I./src/engine
 SRC = ./src/main.c $(wildcard ./src/kernel/*.c) $(wildcard ./src/engine/*.c) $(wildcard ./src/examples/*.c)
 OBJ = $(SRC:.c=.o)
 TARGET = main
