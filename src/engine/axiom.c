@@ -180,31 +180,22 @@ void init_globals() {
     h_g_f_a_ctx = context_insert(g_f_a_ctx, h, h_ty);
     h_g_f_a_ctx = context_insert(h_g_f_a_ctx, c, nat);
 
-    Expression *haa = init_app_expression(h_g_f_a_ctx, init_app_expression(h_g_f_a_ctx, h, c), c);
+    Expression *x = init_var_expression("x");
+    Expression *y = init_var_expression("y");
 
-    Expression *haa_a_equality = init_app_expression(h_g_f_a_ctx, 
+    Context *x_ctx = context_insert(h_g_f_a_ctx, x, nat);
+    h_g_f_a_ctx = context_insert(x_ctx, y, nat);
+
+    Expression *hxy = init_app_expression(h_g_f_a_ctx, init_app_expression(h_g_f_a_ctx, h, x), y);
+
+    Expression *hxy_c_equality = init_app_expression(h_g_f_a_ctx, 
       init_app_expression(h_g_f_a_ctx, 
-        init_app_expression(h_g_f_a_ctx, eq, nat), haa), c);
+        init_app_expression(h_g_f_a_ctx, eq, nat), hxy), c);
 
-    Expression *haa_a_ty = init_forall_expression(h_g_f_a_ctx, haa_a_equality);
+    Expression *hab_a_ty = init_forall_expression(x_ctx, init_forall_expression(h_g_f_a_ctx, hxy_c_equality));
 
-    h_g_f_a_ctx = context_insert(h_g_f_a_ctx, eq_haa_a, haa_a_ty);
+    h_g_f_a_ctx = context_insert(h_g_f_a_ctx, eq_haa_a, hab_a_ty);
   }
-}
-
-Expression *build_fa() {
-  Expression *fa = init_app_expression(f_a_ctx, f, a);
-  return fa;
-}
-
-Expression *compute_f_a(Expression *e) {
-  if (e->type == APP_EXPRESSION && e->value.app.func == f) {
-    if (e->value.app.arg == a) {
-      return a;
-    }
-    return compute_f_a(e->value.app.arg);
-  }
-  return e;
 }
 
 bool equivalent_under_computation(Expression *a, Expression *b) {
@@ -225,10 +216,10 @@ bool equivalent_under_computation(Expression *a, Expression *b) {
     case (PROP_EXPRESSION):
       return true;
     case (APP_EXPRESSION):
-      return equivalent_under_computation(compute_f_a(a->value.app.func),
-                                          compute_f_a(b->value.app.func)) &&
-             equivalent_under_computation(compute_f_a(a->value.app.arg),
-                                          compute_f_a(b->value.app.arg));
+      return equivalent_under_computation(a->value.app.func,
+                                          b->value.app.func) &&
+             equivalent_under_computation(a->value.app.arg,
+                                          b->value.app.arg);
     case (FORALL_EXPRESSION):
       return equivalent_under_computation(
           a->value.forall.body,

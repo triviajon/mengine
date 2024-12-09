@@ -182,7 +182,7 @@ Expression *instantiate_lemma_with_bindings(Context *ctx, Expression *lemma, Exp
     Expression *binding_var = curr_forall->value.forall.bound_variable->variable;
     Expression *binding_result = map_get(binders, binding_var);
     final_expr = init_app_expression(ctx, final_expr, binding_result);
-    curr_forall = new_reduce(lemma_ty, binding_result);
+    curr_forall = new_reduce(curr_forall, binding_result);
   }
   return final_expr;
 }
