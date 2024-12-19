@@ -9,6 +9,12 @@ Expression *reduce_body(Expression *body, Expression *old, Expression *old_ty, E
       Context *result_context = context_combine(body->value.forall.bound_variable, old, old_ty, new);
       return init_forall_expression(result_context, reduce_body(forall_body, old, old_ty, new));
     }
+    case (LAMBDA_EXPRESSION): {
+      // lambda x: A, B ->  lambda x: A[old -> new], B[old -> new]
+      Expression *lambda_body = body->value.lambda.body;
+      Context *result_context = context_combine(body->value.lambda.bound_variable, old, old_ty, new);
+      return init_lambda_expression(result_context, reduce_body(lambda_body, old, old_ty, new));
+    }
     case (APP_EXPRESSION): {
       Context *result_context = context_combine(get_expression_context(body), old, old_ty, new);
       return init_app_expression(result_context, reduce_body(body->value.app.func, old, old_ty, new), reduce_body(body->value.app.arg, old, old_ty, new));

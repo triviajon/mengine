@@ -65,3 +65,12 @@ Expression *build_eq_trans(Context *app_context, RewriteProof *x_y_equality,
           x_y),
       y_z);
 }
+
+
+Expression *build_lambda_extensionality(Context *ctx, Expression *A, Expression *B, Expression *f, Expression *g, Expression *eq_paramaterized) {
+  return init_app_expression(ctx, 
+    init_app_expression(ctx, 
+      init_app_expression(ctx, 
+        init_app_expression(ctx, 
+          init_app_expression(ctx, lambda_extensionality, A), B), f), g), eq_paramaterized);
+}

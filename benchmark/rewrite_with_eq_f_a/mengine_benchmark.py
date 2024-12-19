@@ -7,6 +7,8 @@ G_flags = [0, 1]
 num_trials = 3
 benchmark_results_fn = "mengine_benchmark_2_results.json"
 program = "../../main"
+gen_proof_bool = "--proof=0"
+subprogram = "gfa"
 
 
 def init_app_expression(func, arg):
@@ -36,7 +38,7 @@ if __name__ == "__main__":
                 start_time = time.time()
 
                 result = subprocess.run(
-                    [program, str(N), str(G)], capture_output=True, text=True)
+                    [program, gen_proof_bool, subprogram, str(N), str(G)], capture_output=True, text=True)
                 end_time = time.time()
 
                 elapsed_time = end_time - start_time

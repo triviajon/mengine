@@ -8,6 +8,8 @@
 #include "dyn_array_map.h"
 #include "doubly_linked_list.h"
 
+Expression *get_type_eq(Expression *eq_type);
+
 // Returns the lhs of an equality The equality expresison is an opaque
 // reference, and exist in the given context. If the context contains
 // eq_expression, then its type should be "(eq lhs) rhs", and this function

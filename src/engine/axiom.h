@@ -8,6 +8,7 @@ extern Expression *eq;
 extern Expression *eq_refl;
 extern Expression *app_cong;
 extern Expression *eq_trans;
+extern Expression *lambda_extensionality;
 extern Expression *f;
 extern Expression *g;
 extern Expression *h;

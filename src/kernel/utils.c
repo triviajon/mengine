@@ -178,8 +178,9 @@ char *stringify_expression2(Expression *expression) {
       result = str_concat("fun (", var_str);
       result = str_concat(result, ": ");
       result = str_concat(result, type_str);
-      result = str_concat(result, ") -> ");
+      result = str_concat(result, ") => ");
       result = str_concat(result, body_str);
+      result = parenthesize_and_free(result);
       free(var_str);
       free(type_str);
       free(body_str);

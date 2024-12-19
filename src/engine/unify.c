@@ -1,5 +1,27 @@
 #include "unify.h"
 
+Expression *get_type_eq(Expression *eq_type) {
+  if (eq_type == NULL) {
+    return NULL;
+  }
+  if (eq_type->type != APP_EXPRESSION) {
+    return NULL;
+  }
+  if (eq_type->value.app.func->type != APP_EXPRESSION) {
+    return NULL;
+  }
+  Expression *expected_eq = eq_type->value.app.func->value.app.func->value.app.func;
+  if (expected_eq != eq) {
+    return NULL;
+  }
+
+  Context *eq_type_ctx = get_expression_context(eq_type);
+  Expression *eq_type_expr = eq_type->value.app.func->value.app.func->value.app.arg;
+  return get_expression_type(eq_type_ctx, eq_type_expr);
+}
+
+
+
 Expression *get_lhs_eq(Expression *eq_type) {
   if (eq_type == NULL) {
     return NULL;

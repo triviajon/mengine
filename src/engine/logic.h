@@ -19,4 +19,7 @@ Expression *build_app_cong(Context *app_context, RewriteProof *f_equality, Rewri
 // expression representing the equality between x and z, i.e., (eq x z).
 Expression *build_eq_trans(Context *app_context, RewriteProof *x_y_equality, RewriteProof *y_z_equality);
 
+
+Expression *build_lambda_extensionality(Context *ctx, Expression *A, Expression *B, Expression *f, Expression *g, Expression *eq_paramaterized);
+
 #endif  // LOGIC_H

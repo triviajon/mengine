@@ -43,13 +43,7 @@ Uplink *new_uplink(Expression *parent, Relation relation) {
 Expression *constr_lambda_type(Context *context, Expression *body) {
   Expression *type =
       init_forall_expression(context, get_expression_type(context, body));
-
-  // Need to make sure that the body's context is an ancestor of the lambda's
-  // context
-  if (context_is_ancestor(get_expression_context(body), context)) {
     return type;
-  }
-  return NULL;  // Bad lambda constr, for now set type to NULL
 }
 
 // Helper function to construct a app type

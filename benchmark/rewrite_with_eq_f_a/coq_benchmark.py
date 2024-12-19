@@ -24,7 +24,7 @@ def get_theorem_with_file_content(filename, input_expr, expected_equality, index
     with open(filename, 'r') as file:
         content = file.readlines()
 
-    theorem_str = f"\nTheorem test_{index} : eq ({input_expr}) ({expected_equality}). Proof. {rewrite_strat_str} reflexivity. Qed."
+    theorem_str = f"\nTheorem test_{index} : eq nat ({input_expr}) ({expected_equality}). Proof. {rewrite_strat_str} reflexivity. Qed. End Test."
     combined_content = ''.join(content) + theorem_str + '\n'
 
     return combined_content

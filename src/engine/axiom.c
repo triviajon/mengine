@@ -4,6 +4,7 @@ Expression *eq = NULL;
 Expression *eq_refl = NULL;
 Expression *app_cong = NULL;
 Expression *eq_trans = NULL;
+Expression *lambda_extensionality = NULL;
 Expression *f = NULL;
 Expression *g = NULL;
 Expression *h = NULL;
@@ -132,11 +133,50 @@ Context *extend_with_eq_trans(Context *ctx) {
   return context_insert(ctx, eq_trans, eq_trans_ty);
 }
 
+Context *extend_with_lambda_extensionality(Context *ctx) {
+  Expression *type = init_type_expression();
+
+  Expression *A = init_var_expression("A");
+  Expression *B = init_var_expression("B");
+  Expression *f = init_var_expression("f");
+  Expression *g = init_var_expression("g");
+
+  Context *base_ctx = extend_with_eq(extend_with_nat(context_create_empty()));
+  Context *A_ctx = context_insert(base_ctx, A, type);
+  Context *B_ctx = context_insert(A_ctx, B, type);
+
+  Expression *fg_ty = init_arrow_expression(B_ctx, A, B);
+  Context *f_ctx = context_insert(B_ctx, f, fg_ty);
+  Context *g_ctx = context_insert(f_ctx, g, fg_ty);
+
+  Expression *H = init_var_expression("_");
+  Expression *x = init_var_expression("x");
+  Context *H_ctx = context_insert(g_ctx, x, A);
+  // H_ty is forall x: A, eq B (f x) (g x)
+  Expression *H_ty = init_forall_expression(H_ctx, init_app_expression(H_ctx, 
+    init_app_expression(H_ctx, 
+      init_app_expression(H_ctx, eq, B), init_app_expression(H_ctx, f, x)), init_app_expression(H_ctx, g, x)));
+
+  Context *final_ctx = context_insert(g_ctx, H, H_ty);
+  Expression *lambda_extensionality_concl = init_app_expression(final_ctx, 
+    init_app_expression(final_ctx, 
+      init_app_expression(final_ctx, eq, init_arrow_expression(final_ctx, A, B)), f), g);
+
+  Expression *lambda_extensionality_ty = init_forall_expression(A_ctx,
+    init_forall_expression(B_ctx, 
+      init_forall_expression(f_ctx, 
+        init_forall_expression(g_ctx, 
+          init_forall_expression(final_ctx, lambda_extensionality_concl)))));
+    
+  return context_insert(ctx, lambda_extensionality, lambda_extensionality_ty);
+}
+
 void init_globals() {
   if (!eq) eq = init_var_expression("eq");
   if (!eq_refl) eq_refl = init_var_expression("eq_refl");
   if (!app_cong) app_cong = init_var_expression("app_cong");
   if (!eq_trans) eq_trans = init_var_expression("eq_trans");
+  if (!lambda_extensionality) lambda_extensionality = init_var_expression("lambda_extensionality");
   if (!f) f = init_var_expression("f");
   if (!g) g = init_var_expression("g");
   if (!h) h = init_var_expression("h");
@@ -153,6 +193,7 @@ void init_globals() {
     f_a_ctx = extend_with_eq(f_a_ctx);
     f_a_ctx = extend_with_app_cong(f_a_ctx);
     f_a_ctx = extend_with_eq_trans(f_a_ctx);
+    f_a_ctx = extend_with_lambda_extensionality(f_a_ctx);
 
     Expression *f_ty = init_arrow_expression(f_a_ctx, nat, nat);
     Expression *a_ty = nat;

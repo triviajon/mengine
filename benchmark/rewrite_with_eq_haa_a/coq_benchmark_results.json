@@ -1,0 +1,836 @@
+{
+    "0": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.0932464599609375
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06607627868652344
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06481218338012695
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06531214714050293
+        }
+    },
+    "1": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06493949890136719
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06426286697387695
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06486320495605469
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.0633077621459961
+        }
+    },
+    "2": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06407284736633301
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06420755386352539
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06454896926879883
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06442737579345703
+        }
+    },
+    "3": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.07038211822509766
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06735610961914062
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06449723243713379
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.0641775131225586
+        }
+    },
+    "4": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06417489051818848
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.0663759708404541
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06736922264099121
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.09299135208129883
+        }
+    },
+    "5": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06427311897277832
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06603837013244629
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06779813766479492
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.049468994140625
+        }
+    },
+    "6": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.0655975341796875
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.0800020694732666
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.09579944610595703
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.0662236213684082
+        }
+    },
+    "7": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.07164549827575684
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.0682075023651123
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06531906127929688
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06587815284729004
+        }
+    },
+    "8": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.08413314819335938
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.0684049129486084
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06745100021362305
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06863141059875488
+        }
+    },
+    "9": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.1022791862487793
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.07454252243041992
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06865358352661133
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.10893011093139648
+        }
+    },
+    "10": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06414556503295898
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.07622361183166504
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06881451606750488
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.05493927001953125
+        }
+    },
+    "11": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06463742256164551
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.07938647270202637
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.07163715362548828
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06942462921142578
+        }
+    },
+    "12": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06477189064025879
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.09086751937866211
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.07062625885009766
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.07222700119018555
+        }
+    },
+    "13": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.0654299259185791
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.090606689453125
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.0712137222290039
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.07172536849975586
+        }
+    },
+    "14": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06613564491271973
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.09106564521789551
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.07891154289245605
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.07567739486694336
+        }
+    },
+    "15": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06743597984313965
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.15533661842346191
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.08087015151977539
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06941628456115723
+        }
+    },
+    "16": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.07174563407897949
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.1662445068359375
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06847524642944336
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06734085083007812
+        }
+    },
+    "17": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.07142400741577148
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.16162896156311035
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06963062286376953
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.06977248191833496
+        }
+    },
+    "18": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.07773685455322266
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.33142590522766113
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.07729768753051758
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.0783998966217041
+        }
+    },
+    "19": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.07603788375854492
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.34995365142822266
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.07839179039001465
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.11414933204650879
+        }
+    },
+    "20": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.08144783973693848
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.34118080139160156
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.08344769477844238
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.07416105270385742
+        }
+    },
+    "21": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.08841848373413086
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.6901767253875732
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.08633923530578613
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.08761882781982422
+        }
+    },
+    "22": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.1040031909942627
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.9176750183105469
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.08939981460571289
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.10053849220275879
+        }
+    },
+    "23": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.08600234985351562
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.9293444156646729
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.09794473648071289
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.08593249320983887
+        }
+    },
+    "24": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.11347126960754395
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 3.193690061569214
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.1051938533782959
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.10833907127380371
+        }
+    },
+    "25": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.10157585144042969
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 3.197871208190918
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.11026716232299805
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.11264896392822266
+        }
+    },
+    "26": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.14836764335632324
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 3.149106740951538
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.11214923858642578
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.11432576179504395
+        }
+    },
+    "27": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.19495224952697754
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 11.592459678649902
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.17003083229064941
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.17410874366760254
+        }
+    },
+    "28": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.1657853126525879
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 11.699296712875366
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.12463259696960449
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.17575550079345703
+        }
+    },
+    "29": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.19124698638916016
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 12.475278377532959
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.1608891487121582
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.17605280876159668
+        }
+    },
+    "30": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.25853466987609863
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 46.830453634262085
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.2685704231262207
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.2828547954559326
+        }
+    },
+    "31": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.257765531539917
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 41.66804647445679
+        },
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.2809309959411621
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.27526140213012695
+        }
+    },
+    "32": {
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.2809116840362549
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.2972598075866699
+        },
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.2560458183288574
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 47.63902926445007
+        }
+    },
+    "33": {
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.4408731460571289
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.4516921043395996
+        },
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.35651683807373047
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 195.26894688606262
+        }
+    },
+    "34": {
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.4556088447570801
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.4624488353729248
+        },
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.43815040588378906
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 189.17963242530823
+        }
+    },
+    "35": {
+        "repeat rewrite eq_haa_a.": {
+            "rewrite_command": "repeat rewrite eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.45046186447143555
+        },
+        "rewrite! eq_haa_a.": {
+            "rewrite_command": "rewrite! eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.44054460525512695
+        },
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.421830415725708
+        },
+        "rewrite_strat bottomup eq_haa_a.": {
+            "rewrite_command": "rewrite_strat bottomup eq_haa_a.",
+            "status": "PASSED",
+            "time": 189.36345672607422
+        }
+    },
+    "36": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.8285524845123291
+        }
+    },
+    "37": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.7753598690032959
+        }
+    },
+    "38": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 0.7902247905731201
+        }
+    },
+    "39": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 1.4655518531799316
+        }
+    },
+    "40": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 1.4746053218841553
+        }
+    },
+    "41": {
+        "rewrite_strat topdown eq_haa_a.": {
+            "rewrite_command": "rewrite_strat topdown eq_haa_a.",
+            "status": "PASSED",
+            "time": 1.4764466285705566
+        }
+    }
+}
