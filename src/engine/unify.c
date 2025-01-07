@@ -134,6 +134,17 @@ DoublyLinkedList *list_holes(Expression *expr) {
   return _list_holes(expr, lst);
 }
 
+int num_holes(Expression *expr) {
+  DoublyLinkedList *lst = list_holes(expr);
+  int num_holes = dll_len(lst);
+  dll_destroy(lst);
+  return num_holes;
+}
+
+bool has_holes(Expression *expr) {
+  return num_holes(expr) > 0;
+}
+
 Expression *_unify(Context *exprA_ctx, Expression *exprA, Context *exprB_ctx, Expression *exprB, Context *hole_to_fill) {
   switch (exprA->type) {
     case VAR_EXPRESSION: {
@@ -196,6 +207,82 @@ Map *unify(Context *exprA_ctx, Expression *exprA, Expression *exprB) {
   }
   return result;
 }
+
+
+Expression *_unify2(Context *exprA_ctx, Expression *exprA, Context *exprB_ctx, Expression *exprB, Expression *hole_to_fill) {
+  switch (exprA->type) {
+    case HOLE_EXPRESSION: {
+      if (exprA != hole_to_fill) {
+        // Don't care...
+        return NULL;
+      }
+
+      Expression *exprB_ty = get_expression_type(exprB_ctx, exprB);
+      Expression *expected_ty = hole_to_fill->value.hole.type;
+      if (equivalent_under_computation(exprB_ty, expected_ty)) {
+        return exprB;
+      }
+      return NULL;
+    }
+    case APP_EXPRESSION: {
+      if (exprB->type != APP_EXPRESSION) {
+        return NULL;
+      }
+      
+      Expression *new_func = _unify2(exprA_ctx, exprA->value.app.func, exprB_ctx, exprB->value.app.func, hole_to_fill);
+      if (new_func != NULL) {
+        return new_func;
+      }
+
+      Expression *new_arg = _unify2(exprA_ctx, exprA->value.app.arg, exprB_ctx, exprB->value.app.arg, hole_to_fill);
+      if (new_arg != NULL) {
+        return new_arg;
+      }
+
+      return NULL;
+    }
+    default:
+      return NULL;
+  }
+}
+
+
+Expression *unify_and_instantiate(Context *ctx, Expression *lemma, Expression *lemma_ty, Expression *expr) {
+  // Lemma_ty is like Forall x1: T1, ...
+  // Want to first replace all leading binding variables of lemma_ty by hole expressions,
+  // then try to do unification to instantiate the lemma. It is possible for there to remain open holes.
+
+  // First want to replace binding variables -> hole expressions
+  DoublyLinkedList *holes = dll_create();
+  Expression *curr_lemma_ty = lemma_ty;
+  while (curr_lemma_ty->type == FORALL_EXPRESSION) {
+    Expression *binding_var = curr_lemma_ty->value.forall.bound_variable->variable;
+    Expression *binding_var_type = curr_lemma_ty->value.forall.bound_variable->type;
+    char *binding_var_name = binding_var->value.var.name;
+    Expression *var_hole = init_hole_expression(binding_var_name, binding_var_type, curr_lemma_ty->value.forall.context);
+    dll_insert_at_tail(holes, dll_new_node(var_hole));
+    curr_lemma_ty = new_reduce(curr_lemma_ty, var_hole);
+  }
+
+  // Now for unification. 
+  Expression *instantiated_lemma = lemma;
+  Context *expr_ctx = get_expression_context(expr);
+  Expression *lemma_ty_lhs = get_lhs_eq(curr_lemma_ty);
+  for (int i = 0; i < dll_len(holes) && has_holes(lemma_ty_lhs); i++) {
+    Expression *hole_to_fill = dll_at(holes, i)->data;
+    Expression *hole_subst = _unify2(ctx, lemma_ty_lhs, expr_ctx, expr, hole_to_fill);
+
+    if (hole_subst == NULL) {
+      return NULL;
+    }
+
+    instantiated_lemma = init_app_expression(ctx, instantiated_lemma, hole_subst);
+    fillHole(hole_to_fill, hole_subst);
+  }
+  
+  return instantiated_lemma;
+}
+
 
 Expression *instantiate_lemma_with_bindings(Context *ctx, Expression *lemma, Expression *lemma_ty, Map *binders) {
   Expression *final_expr = lemma;

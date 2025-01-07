@@ -8,6 +8,7 @@
 #include "examples/rewrite_multi_argument.h"
 #include "examples/rewrite_single_argument.h"
 #include "examples/rewrite_under_lambda.h"
+#include "examples/rewrite_open_holes.h"
 #include "kernel/context.h"
 #include "kernel/expression.h"
 #include "kernel/utils.h"
@@ -18,6 +19,7 @@ void print_usage() {
   fprintf(stderr, "  gfa <f_length> <g_wrap>\n");
   fprintf(stderr, "  haa <h_depth>\n");
   fprintf(stderr, "  lambda\n");
+  fprintf(stderr, "  open\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -71,6 +73,13 @@ int main(int argc, char *argv[]) {
     }
   } else if (strcmp(argv[1], "lambda") == 0) {
     RewriteProof *rw_pf = rewrite_lambda_f_x();
+    if (proof_flag == 0) {
+      print_rwpf__no_proof(rw_pf);
+    } else {
+      print_rwpf__coq_ready(rw_pf);
+    }
+  } else if (strcmp(argv[1], "open") == 0) {
+    RewriteProof *rw_pf = rewrite_open_holes();
     if (proof_flag == 0) {
       print_rwpf__no_proof(rw_pf);
     } else {

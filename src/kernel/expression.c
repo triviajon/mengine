@@ -103,8 +103,7 @@ Expression *init_app_expression(Context *context, Expression *func,
   expr->value.app.func = func;
   add_to_parents(func, new_uplink(expr, APP_FUNC));
   expr->value.app.arg = arg;
-  add_to_parents(arg, new_uplink(expr, APP_ARG));
-  expr->value.app.type = constr_app_type(context, func, arg);
+  add_to_parents(arg, new_uplink(expr, APP_ARG));  expr->value.app.type = constr_app_type(context, func, arg);
   expr->value.app.cache = NULL;
   expr->value.app.uplinks = dll_create();
   return expr;
@@ -210,6 +209,30 @@ Context *get_expression_context(Expression *expression) {
       return context_create_empty();
     case (HOLE_EXPRESSION):
       return expression->value.hole.context;
+  }
+}
+
+void fillHole(Expression *hole, Expression *term) {
+  if (hole->type != HOLE_EXPRESSION) {
+    return; 
+  }
+
+  DoublyLinkedList *holepars = hole->value.hole.uplinks; 
+  for (int i = 0; i < dll_len(holepars); i++) {
+    Uplink *uplink = dll_at(holepars, i);
+    switch (uplink->relation) {
+      case (APP_FUNC):
+        uplink->expression->value.app.func = term;
+        break;
+      case (APP_ARG):
+        uplink->expression->value.app.arg = term;
+        break;
+      case (LAMBDA_BODY):
+        uplink->expression->value.lambda.body = term;
+        break;
+      default:
+        break;
+    }
   }
 }
 

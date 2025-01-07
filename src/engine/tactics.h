@@ -8,7 +8,7 @@
 #include "rewrite_proof.h"
 #include "unify.h"
 
-RewriteProof *rewrite_head(Expression *expr, Expression *lemma);
+RewriteProof *rewrite_head(Context *context, Expression *expr, Expression *lemma);
 RewriteProof *rewrite(Context *ctx, Expression *expr, Expression *lemma);
 
 #endif  // TACTICS_H

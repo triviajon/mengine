@@ -36,6 +36,7 @@ DoublyLinkedList *list_holes(Expression *expr);
 // Create a mapping of holes in exprA to terms in exprB
 Map *unify(Context *ctx, Expression *exprA, Expression *exprB);
 
+Expression *unify_and_instantiate(Context *ctx, Expression *lemma, Expression *lemma_ty, Expression *expr);
 
 Expression *instantiate_lemma_with_bindings(Context *ctx, Expression *lemma, Expression *lemma_ty, Map *binders);
 

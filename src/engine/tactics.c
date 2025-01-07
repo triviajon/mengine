@@ -34,22 +34,21 @@ bool expr_match(Expression *expr1, Expression *expr2) {
   return false;
 }
 
-RewriteProof *rewrite_head(Expression *expr, Expression *lemma) {
-  Context *ctx = get_expression_context(expr);
+RewriteProof *rewrite_head(Context *context, Expression *expr, Expression *lemma) {
+  Context *e_ctx = get_expression_context(expr);
+  Context *ctx = (e_ctx == NULL) ? context : e_ctx;
   Expression *lemma_ty = context_lookup(ctx, lemma);
 
   if (lemma_ty->type == FORALL_EXPRESSION) {
-    // Need to run unification.
-    Map *binding_results = unify(ctx, lemma_ty, expr);
-    if (binding_results == NULL) {
-      return init_rewrite_proof(expr, expr, build_eq_refl(ctx, expr));
+    Expression *instantiated_lemma = unify_and_instantiate(ctx, lemma, lemma_ty, expr);
+    if (instantiated_lemma == NULL) {
+      return NULL;
     }
-    Expression *proof =
-        instantiate_lemma_with_bindings(ctx, lemma, lemma_ty, binding_results);
-    Expression *lhs = get_lhs_eq(get_expression_type(ctx, proof));
-    Expression *rhs = get_rhs_eq(get_expression_type(ctx, proof));
+
+    Expression *lhs = get_lhs_eq(get_expression_type(ctx, instantiated_lemma));
+    Expression *rhs = get_rhs_eq(get_expression_type(ctx, instantiated_lemma));
     if (expr_match(lhs, expr)) {
-      return init_rewrite_proof(expr, rhs, proof);
+      return init_rewrite_proof(expr, rhs, instantiated_lemma);
     } else {
       return init_rewrite_proof(expr, expr, build_eq_refl(ctx, expr));
     }
@@ -109,7 +108,7 @@ RewriteProof *rewrite_lambda(Context *ctx, Expression *expr,
 
   // @functional_extensionality : forall (A B : Type) (f g : A -> B), (forall x
   // : A, eq B (f x) (g x)) -> eq (A -> B) f g
-  RewriteProof *rewritten_mid = rewrite_head(mid, lemma);
+  RewriteProof *rewritten_mid = rewrite_head(ctx, mid, lemma);
 
   if (nothing_rewritten(rewritten_mid)) {
     free_rewrite_proof(rewritten_mid);
@@ -147,7 +146,7 @@ RewriteProof *rewrite_app(Context *ctx, Expression *expr, Expression *lemma) {
   Expression *mid = mid_rewrite_proof->rewritten_expr;
   Expression *fx_mid = mid_rewrite_proof->equality_proof;
 
-  RewriteProof *rewritten_mid = rewrite_head(mid, lemma);
+  RewriteProof *rewritten_mid = rewrite_head(ctx, mid, lemma);
   if (nothing_rewritten(rewritten_mid)) {
     free_rewrite_proof(rewritten_mid);
     return init_rewrite_proof(expr, mid, fx_mid);
@@ -155,6 +154,15 @@ RewriteProof *rewrite_app(Context *ctx, Expression *expr, Expression *lemma) {
     return init_rewrite_proof(
         expr, rewritten_mid->rewritten_expr,
         build_eq_trans(app_context, mid_rewrite_proof, rewritten_mid));
+  }
+}
+
+RewriteProof *rewrite_var(Context *ctx, Expression *expr, Expression *lemma) {
+  RewriteProof *rewritten_expr = rewrite_head(ctx, expr, lemma);
+  if (nothing_rewritten(rewritten_expr)) {
+    return init_rewrite_proof(expr, expr, build_eq_refl(ctx, expr));
+  } else {
+    return rewritten_expr;
   }
 }
 
@@ -167,7 +175,7 @@ RewriteProof *rewrite(Context *ctx, Expression *expr, Expression *lemma) {
     case (LAMBDA_EXPRESSION):
       return rewrite_lambda(ctx, expr, lemma);
     case (VAR_EXPRESSION):
-      return init_rewrite_proof(expr, expr, build_eq_refl(ctx, expr));
+      return rewrite_var(ctx, expr, lemma);
     default:
       return NULL;  // TODO: Unsupported.
   }

@@ -19,6 +19,7 @@ Expression *reduce_body(Expression *body, Expression *old, Expression *old_ty, E
       Context *result_context = context_combine(get_expression_context(body), old, old_ty, new);
       return init_app_expression(result_context, reduce_body(body->value.app.func, old, old_ty, new), reduce_body(body->value.app.arg, old, old_ty, new));
     }
+    case (HOLE_EXPRESSION):
     case (VAR_EXPRESSION): {
       return (body == old) ? new : body;
     }

@@ -135,6 +135,8 @@ DoublyLinkedList *get_expression_uplinks(Expression *expression);
 Expression *get_expression_type(Context *context, Expression *expression);
 Context *get_expression_context(Expression *expression);
 
+void fillHole(Expression *hole, Expression *term);
+
 void free_expression(Expression *expr);
 
 #endif  // EXPRESSION_H
