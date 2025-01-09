@@ -155,7 +155,7 @@ Expression *_unify(Context *exprA_ctx, Expression *exprA, Context *exprB_ctx, Ex
 
       Expression *exprB_ty = get_expression_type(exprB_ctx, exprB);
       Expression *expected_ty = hole_to_fill->type;
-      if (equivalent_under_computation(exprB_ty, expected_ty)) {
+      if (congruence(exprB_ty, expected_ty)) {
         return exprB;
       }
       return NULL;
@@ -219,7 +219,7 @@ Expression *_unify2(Context *exprA_ctx, Expression *exprA, Context *exprB_ctx, E
 
       Expression *exprB_ty = get_expression_type(exprB_ctx, exprB);
       Expression *expected_ty = hole_to_fill->value.hole.type;
-      if (equivalent_under_computation(exprB_ty, expected_ty)) {
+      if (congruence(exprB_ty, expected_ty)) {
         return exprB;
       }
       return NULL;

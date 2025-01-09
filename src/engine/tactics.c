@@ -89,7 +89,7 @@ RewriteProof *rewrite_lambda(Context *ctx, Expression *expr,
   Expression *T = get_binding_variable_type(bound_x);
   Expression *inner_orig = expr->value.lambda.body;
 
-  RewriteProof *inner_rw = rewrite(ctx, inner_orig, lemma);
+  RewriteProof *inner_rw = rewrite(bound_x, inner_orig, lemma);
   Expression *rrw = init_lambda_expression(bound_x, inner_rw->rewritten_expr);
   Expression *mid = replace_with_fresh_lambda(rrw);
 
@@ -103,7 +103,7 @@ RewriteProof *rewrite_lambda(Context *ctx, Expression *expr,
   Expression *eq_ty_lhs = replace_with_fresh_lambda(init_lambda_expression(bound_x, get_lhs_eq(eq_pf_ty)));
   Expression *eq_ty_rhs = replace_with_fresh_lambda(init_lambda_expression(bound_x, get_rhs_eq(eq_pf_ty)));
 
-  Expression *f_mid = build_lambda_extensionality(lambda_context, A, B, eq_ty_lhs, eq_ty_rhs, pre_func_ext);
+  Expression *f_mid = build_lambda_extensionality(ctx, A, B, eq_ty_lhs, eq_ty_rhs, pre_func_ext);
 
 
   // @functional_extensionality : forall (A B : Type) (f g : A -> B), (forall x

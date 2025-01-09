@@ -1,6 +1,15 @@
 #include "beta_reduction.h"
 #include "context.h"
 
+bool is_redex(Expression *app_expr) {
+  if (app_expr->type != APP_EXPRESSION) {
+    return false;
+  }
+
+  Expression *app_func = app_expr->value.app.func;
+  return (app_func->type == LAMBDA_EXPRESSION);
+}
+
 Expression *reduce_body(Expression *body, Expression *old, Expression *old_ty, Expression *new) {
   switch (body->type) {
     case (FORALL_EXPRESSION): {
@@ -17,7 +26,10 @@ Expression *reduce_body(Expression *body, Expression *old, Expression *old_ty, E
     }
     case (APP_EXPRESSION): {
       Context *result_context = context_combine(get_expression_context(body), old, old_ty, new);
-      return init_app_expression(result_context, reduce_body(body->value.app.func, old, old_ty, new), reduce_body(body->value.app.arg, old, old_ty, new));
+      Expression *new_func = reduce_body(body->value.app.func, old, old_ty, new);
+      Expression *new_arg = reduce_body(body->value.app.arg, old, old_ty, new); 
+
+      return (new_func->type == LAMBDA_EXPRESSION) ? reduce(new_func, new_arg) : init_app_expression(result_context, new_func, new_arg);
     }
     case (HOLE_EXPRESSION):
     case (VAR_EXPRESSION): {

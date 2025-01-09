@@ -14,6 +14,7 @@ Expression *c = NULL;
 Expression *eq_fa_a = NULL;
 Expression *eq_haa_a = NULL;
 Expression *nat = NULL;
+Context *ctx_with_axioms = NULL;
 Context *f_a_ctx = NULL;
 Context *g_f_a_ctx = NULL;
 Context *h_g_f_a_ctx = NULL;
@@ -187,13 +188,17 @@ void init_globals() {
   if (!eq_haa_a) eq_haa_a = init_var_expression("eq_haa_a");
   if (!nat) nat = init_var_expression("nat");
 
+  if (!ctx_with_axioms) {
+    ctx_with_axioms = context_create_empty();
+    ctx_with_axioms = extend_with_nat(ctx_with_axioms);
+    ctx_with_axioms = extend_with_eq(ctx_with_axioms);
+    ctx_with_axioms = extend_with_app_cong(ctx_with_axioms);
+    ctx_with_axioms = extend_with_eq_trans(ctx_with_axioms);
+    ctx_with_axioms = extend_with_lambda_extensionality(ctx_with_axioms);  
+  }
+
   if (!f_a_ctx) {
-    f_a_ctx = context_create_empty();
-    f_a_ctx = extend_with_nat(f_a_ctx);
-    f_a_ctx = extend_with_eq(f_a_ctx);
-    f_a_ctx = extend_with_app_cong(f_a_ctx);
-    f_a_ctx = extend_with_eq_trans(f_a_ctx);
-    f_a_ctx = extend_with_lambda_extensionality(f_a_ctx);
+    f_a_ctx = ctx_with_axioms;
 
     Expression *f_ty = init_arrow_expression(f_a_ctx, nat, nat);
     Expression *a_ty = nat;
@@ -239,33 +244,39 @@ void init_globals() {
   }
 }
 
-bool equivalent_under_computation(Expression *a, Expression *b) {
-  if (a == b) {
-    return true;
-  }
-
+bool _congruence(Expression *a, Expression *b, Map *mapping) {
+  // Mapping is a map from variables in a to variables in b.
   if (a->type == PROP_EXPRESSION && b->type == TYPE_EXPRESSION) {
-    return true; // TODO: A hint of subtyping...
-  }
-
-  if (a->type != b->type) {
+    return true;
+  } else if (a->type != b->type) {
     return false;
   }
 
   switch (a->type) {
-    case (TYPE_EXPRESSION):
-    case (PROP_EXPRESSION):
-      return true;
-    case (APP_EXPRESSION):
-      return equivalent_under_computation(a->value.app.func,
-                                          b->value.app.func) &&
-             equivalent_under_computation(a->value.app.arg,
-                                          b->value.app.arg);
-    case (FORALL_EXPRESSION):
-      return equivalent_under_computation(
-          a->value.forall.body,
-          b->value.forall.body);  // TODO: Needs to be tigher
-    default:
-      return false;  // do more later
+    case (TYPE_EXPRESSION): return true;
+    case (PROP_EXPRESSION): return true;  
+    case (APP_EXPRESSION): return _congruence(a->value.app.func, b->value.app.func, mapping) && _congruence(a->value.app.arg, b->value.app.arg, mapping);
+    case (FORALL_EXPRESSION): {
+      map_set(mapping, a->value.forall.bound_variable->variable, b->value.forall.bound_variable->variable);
+      return _congruence(a->value.forall.body, b->value.forall.body, mapping);
+    }
+    case (LAMBDA_EXPRESSION): {
+      map_set(mapping, a->value.lambda.bound_variable->variable, b->value.lambda.bound_variable->variable);
+      return _congruence(a->value.lambda.body, b->value.lambda.body, mapping);
+    }
+    case (VAR_EXPRESSION): {
+      return (a == b) || (map_get(mapping, a) == b);
+    }
+    case (HOLE_EXPRESSION): {
+      return (a == b); // I suspect this should be the same as the VAR_EXPRESSION case
+    }
   }
+}
+
+bool congruence(Expression *a, Expression *b) {
+  Map *mapping = map_new();
+  bool result = _congruence(a, b, mapping);
+  free(mapping->items);
+  free(mapping);
+  return result;
 }

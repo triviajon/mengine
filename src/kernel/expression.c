@@ -58,7 +58,7 @@ Expression *constr_app_type(Context *context, Expression *func,
   Expression *actual_arg_type =
       get_expression_type(context, arg);  // hopefully A, but we need to check.
 
-  if (equivalent_under_computation(actual_arg_type, expected_arg_type)) {
+  if (congruence(actual_arg_type, expected_arg_type)) {
     return new_reduce(func_type, arg);
   }
   return NULL;  // Bad app constr, for now set type to NULL
@@ -103,7 +103,8 @@ Expression *init_app_expression(Context *context, Expression *func,
   expr->value.app.func = func;
   add_to_parents(func, new_uplink(expr, APP_FUNC));
   expr->value.app.arg = arg;
-  add_to_parents(arg, new_uplink(expr, APP_ARG));  expr->value.app.type = constr_app_type(context, func, arg);
+  add_to_parents(arg, new_uplink(expr, APP_ARG)); 
+  expr->value.app.type = constr_app_type(context, func, arg);
   expr->value.app.cache = NULL;
   expr->value.app.uplinks = dll_create();
   return expr;
