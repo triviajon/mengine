@@ -10,6 +10,7 @@ typedef struct Context Context;
 char *stringify_expression(Expression *expression);
 char *stringify_context(Context *context);
 char *stringify_expression_with_let(Expression *expression);
+char *stringify_expression_with_let2(Expression *expression);
 
 char *stringify_expression2(Expression *expression);
 char *stringify_context2(Context *context);

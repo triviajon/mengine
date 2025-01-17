@@ -478,4 +478,199 @@ char *stringify_expression_with_let(Expression *expression) {
   return result;
 }
 
+char *_stringify_expression_with_let2(Expression *expression) {
+  char *result = NULL;
+
+  switch (expression->type) {
+    case VAR_EXPRESSION:
+      result = strdup(expression->value.var.name);
+      break;
+
+    case LAMBDA_EXPRESSION: {
+      if (dll_len(get_expression_uplinks(expression)) > 1) {
+        char buf[2 * sizeof(void *) + 1];
+        snprintf(buf, sizeof(buf), "%p", (void *)expression);
+        result = strdup(str_concat("var", buf));
+        break;
+      } else {
+        char *var_str = _stringify_expression_with_let2(expression->value.lambda.bound_variable->variable);
+        char *type_str = _stringify_expression_with_let2(expression->value.lambda.bound_variable->type);
+        char *body_str = _stringify_expression_with_let2(expression->value.lambda.body);
+        result = str_concat("fun (", var_str);
+        result = str_concat(result, ": ");
+        result = str_concat(result, type_str);
+        result = str_concat(result, ") => ");
+        result = str_concat(result, body_str);
+        result = parenthesize_and_free(result);
+        free(var_str);
+        free(type_str);
+        free(body_str);
+        break;
+      }
+    }
+    case APP_EXPRESSION: {
+      if (dll_len(get_expression_uplinks(expression)) > 1) {
+        char buf[2 * sizeof(void *) + 1];
+        snprintf(buf, sizeof(buf), "%p", (void *)expression);
+        result = strdup(str_concat("var", buf));
+        break;
+      } else {
+        char *func_str = _stringify_expression_with_let2(expression->value.app.func);
+        char *arg_str = _stringify_expression_with_let2(expression->value.app.arg);
+
+        char *app_str = str_concat(func_str, " ");
+        app_str = str_concat(app_str, arg_str);
+
+        result = parenthesize_and_free(app_str);
+        free(func_str);
+        free(arg_str);
+        break;
+      }
+    }
+
+    case FORALL_EXPRESSION: {
+      if (dll_len(get_expression_uplinks(expression)) > 1) {
+        char buf[2 * sizeof(void *) + 1];
+        snprintf(buf, sizeof(buf), "%p", (void *)expression);
+        result = strdup(str_concat("var", buf));
+        break;
+      } else {
+        char *var_str = _stringify_expression_with_let2(expression->value.forall.bound_variable->variable);
+        char *type_str = _stringify_expression_with_let2(expression->value.forall.bound_variable->type);
+        char *body_str = _stringify_expression_with_let2(expression->value.forall.body);
+        result = str_concat("forall (", var_str);
+        result = str_concat(result, ": ");
+        result = str_concat(result, type_str);
+        result = str_concat(result, "), ");
+        result = str_concat(result, body_str);
+        result = parenthesize_and_free(result);
+        free(var_str);
+        free(type_str);
+        free(body_str);
+        break;
+      }
+    }
+
+    case TYPE_EXPRESSION:
+      result = strdup("Type");
+      break;
+
+    case PROP_EXPRESSION:
+      result = strdup("Prop");
+      break;
+      
+    default:
+      result = strdup("Unknown expression");
+      break;
+  }
+
+  return result;
+}
+
+
+char *_top_level_stringify_expression_with_let2(Expression *expression) {
+  char *result = NULL;
+
+  switch (expression->type) {
+    case VAR_EXPRESSION:
+      result = strdup(expression->value.var.name);
+      break;
+
+    case LAMBDA_EXPRESSION: {
+      char *var_str = _stringify_expression_with_let2(expression->value.lambda.bound_variable->variable);
+      char *type_str = _stringify_expression_with_let2(expression->value.lambda.bound_variable->type);
+      char *body_str = _stringify_expression_with_let2(expression->value.lambda.body);
+      result = str_concat("fun (", var_str);
+      result = str_concat(result, ": ");
+      result = str_concat(result, type_str);
+      result = str_concat(result, ") => ");
+      result = str_concat(result, body_str);
+      result = parenthesize_and_free(result);
+      free(var_str);
+      free(type_str);
+      free(body_str);
+      break;
+    }
+    case APP_EXPRESSION: {
+      char *func_str = _stringify_expression_with_let2(expression->value.app.func);
+      char *arg_str = _stringify_expression_with_let2(expression->value.app.arg);
+
+      char *app_str = str_concat(func_str, " ");
+      app_str = str_concat(app_str, arg_str);
+
+      result = parenthesize_and_free(app_str);
+      free(func_str);
+      free(arg_str);
+      break;
+    }
+
+    case FORALL_EXPRESSION: {
+      char *var_str = _stringify_expression_with_let2(expression->value.forall.bound_variable->variable);
+      char *type_str = _stringify_expression_with_let2(expression->value.forall.bound_variable->type);
+      char *body_str = _stringify_expression_with_let2(expression->value.forall.body);
+      result = str_concat("forall (", var_str);
+      result = str_concat(result, ": ");
+      result = str_concat(result, type_str);
+      result = str_concat(result, "), ");
+      result = str_concat(result, body_str);
+      result = parenthesize_and_free(result);
+      free(var_str);
+      free(type_str);
+      free(body_str);
+      break;
+    }
+
+    case TYPE_EXPRESSION:
+      result = strdup("Type");
+      break;
+
+    case PROP_EXPRESSION:
+      result = strdup("Prop");
+      break;
+      
+    default:
+      result = strdup("Unknown expression");
+      break;
+  }
+
+  return result;
+}
+
+char *stringify_expression_with_let2(Expression *expression) {
+  Map *visited = map_new();  // maps addresses to visited bool
+  Map *counts = map_new();   // maps addresses to counts
+  _count_subexpression(expression, visited, counts);
+  DoublyLinkedList *ordering = topo_order(expression, counts);
+
+  char *result = NULL;
+  for (int i = dll_len(ordering) - 1; i >= 0; i--) {
+    DLLNode *node = dll_at(ordering, i);
+    Expression *node_expr = (Expression *)node->data;
+
+    if (node_expr->type != VAR_EXPRESSION && dll_len(get_expression_uplinks(node_expr)) > 1) {
+      char *str_adr = _get_str_addr(node_expr);
+      char *expr_string = _top_level_stringify_expression_with_let2(node_expr);
+      char *line = str_concat("let ", str_adr);
+      line = str_concat(line, " := ");
+      line = str_concat(line, expr_string);
+      line = str_concat(line, " in\n");
+
+      if (result != NULL) {
+        char *temp = str_concat(result, line);
+        free(result);
+        free(line);
+        result = temp;
+      } else {
+        result = line;
+      }
+
+    }
+  }
+
+  char *stringified_expr = _stringify_expression_with_let2(expression);
+  char *final_output = str_concat(result, stringified_expr);
+  return final_output;
+}
+
+
 bool expression_equal(Expression *a, Expression *b) { return a == b; }

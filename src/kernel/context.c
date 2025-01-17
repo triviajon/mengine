@@ -208,3 +208,28 @@ bool type_valid(Context *context, Expression *type) {
   return context_is_empty(type_context) ||
          context_is_ancestor(type_context, context);
 }
+
+Context *context_combine2(Context *old_context, Context *new_context, Expression *old, Expression *new) {
+  Context *lca_of_ctx = context_LCA(old_context, new_context);
+  DoublyLinkedList *old_context_listed = context_ancestors(old_context);
+
+  // Don't need to add anything before the LCA, so skip ahead.
+  DLLNode *curr = old_context_listed->head;
+  while (curr->data != lca_of_ctx) {
+    curr = curr->next;
+  }
+  curr = curr->next; 
+
+  Context *resulting_context = new_context;
+  // Now just add the rest. 
+  while (curr != NULL) {
+    Context *old_node = (Context *)curr->data;
+    Expression *old_node_var = old_node->variable;
+    Expression *old_node_type = subst(old_node->type, old, new, new_context);
+
+    resulting_context = context_insert(resulting_context, old_node_var, old_node_type);
+    curr = curr->next;
+  }
+
+  return resulting_context;
+}

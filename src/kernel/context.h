@@ -64,4 +64,6 @@ Context *context_tail(Context *context);
 
 bool type_valid(Context *context, Expression *type);
 
+Context *context_combine2(Context *old_context, Context *new_context, Expression *old, Expression *new);
+
 #endif  // CONTEXT_H

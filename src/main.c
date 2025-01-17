@@ -10,6 +10,7 @@
 #include "examples/rewrite_under_lambda.h"
 #include "examples/rewrite_open_holes.h"
 #include "examples/rewrite_let_in.h"
+#include "examples/rewrite_chained_mod.h"
 #include "kernel/context.h"
 #include "kernel/expression.h"
 #include "kernel/utils.h"
@@ -20,6 +21,7 @@ void print_usage() {
   fprintf(stderr, "  gfa <f_length> <g_wrap>\n");
   fprintf(stderr, "  haa <h_depth>\n");
   fprintf(stderr, "  let <n_depth>\n");
+  fprintf(stderr, "  mod <n_depth>\n");
   fprintf(stderr, "  lambda\n");
   fprintf(stderr, "  open\n");
 }
@@ -80,6 +82,18 @@ int main(int argc, char *argv[]) {
     }
     int n_depth = atoi(argv[2]);
     RewriteProof *rw_pf = rewrite_let_in__sharing(n_depth);
+    if (proof_flag == 0) {
+      print_rwpf__no_proof(rw_pf);
+    } else {
+      print_rwpf__coq_ready(rw_pf);
+    }
+  } else if (strcmp(argv[1], "mod") == 0) {
+    if (argc != 3) {
+      fprintf(stderr, "Usage: %s [--proof=0|1] let <n_depth>\n", argv[0]);
+      return 1;
+    }
+    int n_depth = atoi(argv[2]);
+    RewriteProof *rw_pf = rewrite_chained_mod(n_depth);
     if (proof_flag == 0) {
       print_rwpf__no_proof(rw_pf);
     } else {

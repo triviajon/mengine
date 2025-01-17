@@ -57,11 +57,55 @@ Expression *constr_app_type(Context *context, Expression *func,
       get_binding_variable_type(func_type->value.forall.bound_variable);  // A
   Expression *actual_arg_type =
       get_expression_type(context, arg);  // hopefully A, but we need to check.
+  Expression *return_type = func_type->value.forall.body; // B
 
   if (congruence(actual_arg_type, expected_arg_type)) {
-    return new_reduce(func_type, arg);
+    return subst(return_type, variable, arg, context); // return B[x -> arg]
   }
   return NULL;  // Bad app constr, for now set type to NULL
+}
+
+Expression *subst(Expression *expression, Expression *old, Expression *new, Context *new_context) {
+  switch (expression->type) {
+    case (VAR_EXPRESSION): return (expression == old) ? new : expression;
+    case (LAMBDA_EXPRESSION): {
+      Expression *lambda_body = expression->value.lambda.body;
+      Expression *new_body = subst(lambda_body, old, new, new_context);
+      Context *new_body_context = (new_body->type == VAR_EXPRESSION) ? new_context : get_expression_context(new_body);
+
+      Expression *lambda_var = expression->value.lambda.bound_variable->variable;
+      Expression *lambda_var_ty = expression->value.lambda.bound_variable->type;
+      Expression *new_lambda_var_type = subst(lambda_var_ty, old, new, new_context);
+
+      Context *new_lambda_bound_context = context_insert(new_body_context, lambda_var, new_lambda_var_type);
+      return init_lambda_expression(new_lambda_bound_context, new_body); 
+    }
+    case (APP_EXPRESSION): {
+      Context *expr_context = get_expression_context(expression); 
+      Context *combined_contexts = context_combine2(expr_context, new_context, old, new);
+      Expression *app_func = expression->value.app.func;
+      Expression *app_arg = expression->value.app.arg;
+
+      Expression *new_app_func = subst(app_func, old, new, new_context);
+      Expression *new_app_arg = subst(app_arg, old, new, new_context);
+      return (new_app_func->type == LAMBDA_EXPRESSION) ? reduce(new_app_func, new_app_arg) : init_app_expression(combined_contexts, new_app_func, new_app_arg);
+    }
+    case (FORALL_EXPRESSION): {
+      Expression *forall_body = expression->value.forall.body;
+      Expression *new_body = subst(forall_body, old, new, new_context);
+      Context *new_body_context = (new_body->type == VAR_EXPRESSION) ? new_context : get_expression_context(new_body);
+
+      Expression *forall_var = expression->value.forall.bound_variable->variable;
+      Expression *forall_var_ty = expression->value.forall.bound_variable->type;
+      Expression *new_forall_var_type = subst(forall_var_ty, old, new, new_context);
+
+      Context *new_forall_bound_context = context_insert(new_body_context, forall_var, new_forall_var_type);
+      return init_forall_expression(new_forall_bound_context, new_body); 
+    }
+    case (TYPE_EXPRESSION): return expression;
+    case (PROP_EXPRESSION): return expression;
+    case (HOLE_EXPRESSION): return (expression == old) ? new : expression;
+  }
 }
 
 Expression *new_reduce(Expression *func_type, Expression *arg) {
@@ -220,7 +264,7 @@ void fillHole(Expression *hole, Expression *term) {
 
   DoublyLinkedList *holepars = hole->value.hole.uplinks; 
   for (int i = 0; i < dll_len(holepars); i++) {
-    Uplink *uplink = dll_at(holepars, i);
+    Uplink *uplink = dll_at(holepars, i)->data;
     switch (uplink->relation) {
       case (APP_FUNC):
         uplink->expression->value.app.func = term;
