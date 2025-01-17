@@ -85,10 +85,6 @@ char *stringify_expression(Expression *expression) {
     case PROP_EXPRESSION:
       result = strdup("Prop");
       break;
-
-    default:
-      result = strdup("Unknown expression");
-      break;
   }
 
   return result;
@@ -223,8 +219,8 @@ char *stringify_expression2(Expression *expression) {
       result = strdup("Prop");
       break;
       
-    default:
-      result = strdup("Unknown expression");
+    case HOLE_EXPRESSION:
+      result = str_concat("?", strdup(expression->value.hole.name));
       break;
   }
 
@@ -558,6 +554,10 @@ char *_stringify_expression_with_let2(Expression *expression) {
     case PROP_EXPRESSION:
       result = strdup("Prop");
       break;
+
+    case HOLE_EXPRESSION:
+      result = str_concat("?", strdup(expression->value.hole.name));
+      break;
       
     default:
       result = strdup("Unknown expression");
@@ -626,6 +626,10 @@ char *_top_level_stringify_expression_with_let2(Expression *expression) {
 
     case PROP_EXPRESSION:
       result = strdup("Prop");
+      break;
+
+    case HOLE_EXPRESSION:
+      result = str_concat("?", strdup(expression->value.hole.name));
       break;
       
     default:

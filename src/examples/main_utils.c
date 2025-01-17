@@ -16,7 +16,7 @@ void print_rwpf__coq_ready(RewriteProof *rw_pf) {
   //         "f_Proper : Proper (eq ==> eq) f := f_equal f.\nInstance f_Proper : "
   //         "Proper (eq ==> eq) g := f_equal g.");
   fprintf(stdout, "\nCheck %s : eq (%s) (%s) (%s).\n",
-          stringify_expression_with_let2(proof),
+          stringify_expression2(proof),
           stringify_expression2(expr_ty),
           stringify_expression2(original),
           stringify_expression2(rewritten));

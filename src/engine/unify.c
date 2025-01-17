@@ -268,18 +268,23 @@ Expression *unify_and_instantiate(Context *ctx, Expression *lemma, Expression *l
   Expression *instantiated_lemma = lemma;
   Context *expr_ctx = get_expression_context(expr);
   Expression *lemma_ty_lhs = get_lhs_eq(curr_lemma_ty);
-  for (int i = 0; i < dll_len(holes) && has_holes(lemma_ty_lhs); i++) {
+  for (int i = 0; i < dll_len(holes); i++) {
     Expression *hole_to_fill = dll_at(holes, i)->data;
-    Expression *hole_subst = _unify2(ctx, lemma_ty_lhs, expr_ctx, expr, hole_to_fill);
-
-    if (hole_subst == NULL) {
-      return NULL;
-    }
-
-    instantiated_lemma = init_app_expression(ctx, instantiated_lemma, hole_subst);
-    fillHole(hole_to_fill, hole_subst);
-  }
   
+    if (has_holes(lemma_ty_lhs)) {
+      Expression *hole_subst = _unify2(ctx, lemma_ty_lhs, expr_ctx, expr, hole_to_fill);
+
+      if (hole_subst == NULL) {
+        return NULL;
+      }
+
+      instantiated_lemma = init_app_expression(ctx, instantiated_lemma, hole_subst);
+      fillHole(hole_to_fill, hole_subst);
+    } else {
+      instantiated_lemma = init_app_expression(ctx, instantiated_lemma, hole_to_fill);
+    }
+  }
+
   return instantiated_lemma;
 }
 

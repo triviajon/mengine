@@ -5,7 +5,7 @@ RewriteProof *rewrite_open_holes() {
 
   Expression *O = init_var_expression("O");
   Context *base_ctx = context_insert(g_f_a_ctx, O, nat); 
-  Expression *multiply_var = init_var_expression("*");
+  Expression *multiply_var = init_var_expression("mul");
   Expression *multiply_ty = init_arrow_expression(base_ctx, nat, init_arrow_expression(base_ctx, nat, nat));
   base_ctx = context_insert(base_ctx, multiply_var, multiply_ty);
 
