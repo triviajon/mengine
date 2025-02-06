@@ -34,23 +34,22 @@ bool expr_match(Expression *expr1, Expression *expr2) {
   return false;
 }
 
-RewriteProof *rewrite_head(Context *context, Expression *expr, Expression *lemma) {
+RewriteProof *rewrite_head(Expression *expr, Expression *lemma) {
   Context *e_ctx = get_expression_context(expr);
-  Context *ctx = (e_ctx == NULL) ? context : e_ctx;
-  Expression *lemma_ty = context_lookup(ctx, lemma);
+  Expression *lemma_ty = get_expression_type(lemma);
 
   if (lemma_ty->type == FORALL_EXPRESSION) {
-    Expression *instantiated_lemma = unify_and_instantiate(ctx, lemma, lemma_ty, expr);
+    Expression *instantiated_lemma = unify_and_instantiate(e_ctx, lemma, lemma_ty, expr);
     if (instantiated_lemma == NULL) {
       return NULL;
     }
 
-    Expression *lhs = get_lhs_eq(get_expression_type(ctx, instantiated_lemma));
-    Expression *rhs = get_rhs_eq(get_expression_type(ctx, instantiated_lemma));
+    Expression *lhs = get_lhs_eq(get_expression_type(instantiated_lemma));
+    Expression *rhs = get_rhs_eq(get_expression_type(instantiated_lemma));
     if (expr_match(lhs, expr)) {
       return init_rewrite_proof(expr, rhs, instantiated_lemma);
     } else {
-      return init_rewrite_proof(expr, expr, build_eq_refl(ctx, expr));
+      return init_rewrite_proof(expr, expr, build_eq_refl(expr));
     }
   }
 
@@ -59,56 +58,63 @@ RewriteProof *rewrite_head(Context *context, Expression *expr, Expression *lemma
   if (expr_match(lhs, expr)) {
     return init_rewrite_proof(expr, rhs, lemma);
   } else {
-    return init_rewrite_proof(expr, expr, build_eq_refl(ctx, expr));
+    return init_rewrite_proof(expr, expr, build_eq_refl(expr));
   }
 }
 
 // Given an expr := lambda x: T, B, returns the expression fun x': T, B where x'
 // has substituted all appearances of x in B and x' is a fresh variable.
 Expression *replace_with_fresh_lambda(Expression *expr) {
-  Context *bound_x = expr->value.lambda.bound_variable;
-  Expression *x = get_binding_variable(bound_x);
-  Expression *T = get_binding_variable_type(bound_x);
+  Expression *bound_x = expr->value.lambda.bound_variable;
+  Expression *bound_x_ty = bound_x->value.var.type;
 
-  char *xp_name = strcat(strdup(x->value.var.name), "'");
-  Expression *xp = init_var_expression(xp_name);
-  Context *par = bound_x->parent;
-  Context *bound_xp = context_insert(par, xp, T);
+  char *xp_name = strcat(strdup(bound_x->value.var.name), "'");
+  Expression *xp = init_var_expression(xp_name, bound_x_ty);
 
   Expression *beta_reduced = reduce(expr, xp);
-  Expression *fresh = init_lambda_expression(bound_xp, beta_reduced);
+  Expression *fresh = init_lambda_expression(xp, beta_reduced);
   return fresh;
 }
 
-RewriteProof *rewrite_lambda(Context *ctx, Expression *expr,
-                             Expression *lemma) {
-  Context *lambda_context = get_expression_context(expr);
+// Take a lambda expression as input, like fun x: T => B, and
+// return a new lambda expression with a fresh variable x' and
+// x substituted for by x'.
+Expression *refresh(Expression *expr) {
+  if (expr->type != LAMBDA_EXPRESSION) {
+    return NULL;
+  }
 
-  Context *bound_x = expr->value.lambda.bound_variable;
-  Expression *x = get_binding_variable(bound_x);
-  Expression *T = get_binding_variable_type(bound_x);
+  Expression *x = expr->value.lambda.bound_variable;
+  char *x_name = x->value.var.name;
+  Expression *T = get_expression_type(x);
+  Expression *B = expr->value.lambda.body;
+
+  char *xp_name = strcat(strdup(x_name), "'");
+  Expression *xp = init_var_expression(xp_name, T);
+  return init_lambda_expression(xp, subst(B, x, xp));
+}
+
+RewriteProof *rewrite_lambda(Expression *expr, Expression *lemma) {
+  Expression *x = expr->value.lambda.bound_variable;
+  Expression *T = get_expression_type(x);
   Expression *inner_orig = expr->value.lambda.body;
 
-  RewriteProof *inner_rw = rewrite(bound_x, inner_orig, lemma);
-  Expression *rrw = init_lambda_expression(bound_x, inner_rw->rewritten_expr);
-  Expression *mid = replace_with_fresh_lambda(rrw);
+  RewriteProof *inner_rw = rewrite(inner_orig, lemma);
+  Expression *mid = refresh(init_lambda_expression(x, inner_rw->rewritten_expr));
 
-  Expression *eq_pf_ty = get_expression_type(ctx, inner_rw->equality_proof);
-  Expression *rrw_pf = init_lambda_expression(bound_x, inner_rw->equality_proof);
-  Expression *pre_func_ext = replace_with_fresh_lambda(rrw_pf);
+  Expression *eq_pf_ty = get_expression_type(inner_rw->equality_proof);
+  Expression *pre_func_ext = refresh(init_lambda_expression(x, inner_rw->equality_proof));
 
   Expression *A = T;
-  Expression *B = get_expression_type(ctx, inner_orig); // ?
+  Expression *B = get_expression_type(inner_orig);
 
-  Expression *eq_ty_lhs = replace_with_fresh_lambda(init_lambda_expression(bound_x, get_lhs_eq(eq_pf_ty)));
-  Expression *eq_ty_rhs = replace_with_fresh_lambda(init_lambda_expression(bound_x, get_rhs_eq(eq_pf_ty)));
-
-  Expression *f_mid = build_lambda_extensionality(ctx, A, B, eq_ty_lhs, eq_ty_rhs, pre_func_ext);
-
+  Expression *eq_ty_lhs = refresh(init_lambda_expression(x, get_lhs_eq(eq_pf_ty)));
+  Expression *eq_ty_rhs = refresh(init_lambda_expression(x, get_rhs_eq(eq_pf_ty)));
 
   // @functional_extensionality : forall (A B : Type) (f g : A -> B), (forall x
   // : A, eq B (f x) (g x)) -> eq (A -> B) f g
-  RewriteProof *rewritten_mid = rewrite_head(ctx, mid, lemma);
+  Expression *f_mid = build_lambda_extensionality(A, B, eq_ty_lhs, eq_ty_rhs, pre_func_ext);
+  RewriteProof *rewritten_mid = rewrite_head(mid, lemma);
 
   if (nothing_rewritten(rewritten_mid)) {
     free_rewrite_proof(rewritten_mid);
@@ -116,51 +122,47 @@ RewriteProof *rewrite_lambda(Context *ctx, Expression *expr,
   } else {
     return init_rewrite_proof(
         expr, rewritten_mid->rewritten_expr,
-        build_eq_trans(lambda_context, init_rewrite_proof(expr, mid, f_mid),
-                       rewritten_mid));
+        build_eq_trans(init_rewrite_proof(expr, mid, f_mid), rewritten_mid));
   }
 }
 
-RewriteProof *rewrite_app(Context *ctx, Expression *expr, Expression *lemma) {
-  Context *app_context = get_expression_context(expr);
-
+RewriteProof *rewrite_app(Expression *expr, Expression *lemma) {
   Expression *func = expr->value.app.func;
   Expression *arg = expr->value.app.arg;
-  RewriteProof *rw_func_proof = rewrite(ctx, func, lemma);
-  RewriteProof *rw_arg_proof = rewrite(ctx, arg, lemma);
+  RewriteProof *rw_func_proof = rewrite(func, lemma);
+  RewriteProof *rw_arg_proof = rewrite(arg, lemma);
 
   RewriteProof *mid_rewrite_proof;
 
   if (nothing_rewritten(rw_func_proof) && nothing_rewritten(rw_arg_proof)) {
     mid_rewrite_proof =
-        init_rewrite_proof(expr, expr, build_eq_refl(ctx, expr));
+        init_rewrite_proof(expr, expr, build_eq_refl(expr));
   } else {
     mid_rewrite_proof = init_rewrite_proof(
         expr,
-        init_app_expression(expr->value.app.context,
-                            rw_func_proof->rewritten_expr,
+        init_app_expression(rw_func_proof->rewritten_expr,
                             rw_arg_proof->rewritten_expr),
-        build_app_cong(app_context, rw_func_proof, rw_arg_proof));
+        build_app_cong(rw_func_proof, rw_arg_proof));
   }
 
   Expression *mid = mid_rewrite_proof->rewritten_expr;
   Expression *fx_mid = mid_rewrite_proof->equality_proof;
 
-  RewriteProof *rewritten_mid = rewrite_head(ctx, mid, lemma);
+  RewriteProof *rewritten_mid = rewrite_head(mid, lemma);
   if (nothing_rewritten(rewritten_mid)) {
     free_rewrite_proof(rewritten_mid);
     return init_rewrite_proof(expr, mid, fx_mid);
   } else {
     return init_rewrite_proof(
         expr, rewritten_mid->rewritten_expr,
-        build_eq_trans(app_context, mid_rewrite_proof, rewritten_mid));
+        build_eq_trans(mid_rewrite_proof, rewritten_mid));
   }
 }
 
-RewriteProof *rewrite_var(Context *ctx, Expression *expr, Expression *lemma) {
-  RewriteProof *rewritten_expr = rewrite_head(ctx, expr, lemma);
+RewriteProof *rewrite_var(Expression *expr, Expression *lemma) {
+  RewriteProof *rewritten_expr = rewrite_head(expr, lemma);
   if (nothing_rewritten(rewritten_expr)) {
-    return init_rewrite_proof(expr, expr, build_eq_refl(ctx, expr));
+    return init_rewrite_proof(expr, expr, build_eq_refl(expr));
   } else {
     return rewritten_expr;
   }
@@ -168,14 +170,14 @@ RewriteProof *rewrite_var(Context *ctx, Expression *expr, Expression *lemma) {
 
 // Attempt an aggressive rewrite in expr using the provided lemma. The lemma
 // should be an opaque reference that is valid in the context.
-RewriteProof *rewrite(Context *ctx, Expression *expr, Expression *lemma) {
+RewriteProof *rewrite(Expression *expr, Expression *lemma) {
   switch (expr->type) {
     case (APP_EXPRESSION):
-      return rewrite_app(ctx, expr, lemma);
+      return rewrite_app(expr, lemma);
     case (LAMBDA_EXPRESSION):
-      return rewrite_lambda(ctx, expr, lemma);
+      return rewrite_lambda(expr, lemma);
     case (VAR_EXPRESSION):
-      return rewrite_var(ctx, expr, lemma);
+      return rewrite_var(expr, lemma);
     default:
       return NULL;  // TODO: Unsupported.
   }

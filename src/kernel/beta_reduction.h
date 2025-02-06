@@ -2,8 +2,10 @@
 #define BETA_REDUCTION_H
 
 #include "expression.h"
+#include "subst.h"
 
-Expression *reduce_body(Expression *body, Expression *old, Expression *old_ty, Expression *new);
+bool forms_redex(Expression *app_func, Expression *app_arg);
+
 Expression *reduce(Expression *app_func, Expression *app_arg);
 
 #endif  // BETA_REDUCTION_H

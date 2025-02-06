@@ -6,7 +6,7 @@ void print_rwpf__coq_ready(RewriteProof *rw_pf) {
   Expression *proof = rw_pf->equality_proof;
 
   Context *expr_ctx = get_expression_context(original);
-  Expression *expr_ty = get_expression_type(expr_ctx, original);
+  Expression *expr_ty = get_expression_type(original);
 
   fprintf(stdout, "Section Test.\n");
   fprintf(stdout, "Require Import Setoid Morphisms.\n");

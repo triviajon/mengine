@@ -15,9 +15,8 @@ Expression *get_type_eq(Expression *eq_type) {
     return NULL;
   }
 
-  Context *eq_type_ctx = get_expression_context(eq_type);
   Expression *eq_type_expr = eq_type->value.app.func->value.app.func->value.app.arg;
-  return get_expression_type(eq_type_ctx, eq_type_expr);
+  return get_expression_type(eq_type_expr);
 }
 
 
@@ -59,13 +58,12 @@ Expression *get_rhs_eq(Expression *eq_type) {
 Expression *instantiate_lemma_type(Context *context, Expression *lemma_ty) {
   switch (lemma_ty->type) {
     case (FORALL_EXPRESSION): {
-      Expression *bound_var =
-          get_binding_variable(lemma_ty->value.forall.bound_variable);
-      Expression *bound_var_ty =
-          get_binding_variable_type(lemma_ty->value.forall.bound_variable);
+      Expression *bound_var = lemma_ty->value.forall.bound_variable;
+      Expression *bound_var_ty = get_expression_type(bound_var);
       Expression *hole = init_hole_expression(bound_var->value.var.name,
                                               bound_var_ty, context);
-      Expression *new_body = new_reduce(lemma_ty, hole);
+      Expression *lemma_ty_body = lemma_ty->value.forall.body;
+      Expression *new_body = subst(lemma_ty_body, bound_var, hole);
       // The result of inner_inst should be the body of lemma with binding
       // variables substituted for holes
       Expression *inner_inst = instantiate_lemma_type(context, new_body);
@@ -77,17 +75,17 @@ Expression *instantiate_lemma_type(Context *context, Expression *lemma_ty) {
 }
 
 Expression *instantiate_lemma(Context *context, Expression *lemma) {
-  Expression *lemma_ty = context_lookup(context, lemma);
+  Expression *lemma_ty = get_expression_type(lemma);
   return instantiate_lemma_type(context, lemma_ty);
 }
 
 bool contains_holes(Expression *expr) {
   switch (expr->type) {
     case (LAMBDA_EXPRESSION):
-      return contains_holes(expr->value.lambda.bound_variable->type) ||
+      return contains_holes(expr->value.lambda.bound_variable->value.var.type) ||
              contains_holes(expr->value.lambda.body);
     case (FORALL_EXPRESSION):
-      return contains_holes(expr->value.forall.bound_variable->type) ||
+      return contains_holes(expr->value.forall.bound_variable->value.var.type) ||
              contains_holes(expr->value.forall.body);
     case (APP_EXPRESSION):
       return contains_holes(expr->value.app.func) ||
@@ -102,12 +100,12 @@ bool contains_holes(Expression *expr) {
 DoublyLinkedList *_list_holes(Expression *expr, DoublyLinkedList *curr) {
   switch (expr->type) {
     case (LAMBDA_EXPRESSION): {
-      curr = _list_holes(expr->value.lambda.bound_variable->type, curr); 
+      curr = _list_holes(expr->value.lambda.bound_variable->value.var.type, curr); 
       curr = _list_holes(expr->value.lambda.body, curr);
       return curr;
     }
     case (FORALL_EXPRESSION): {
-      curr = _list_holes(expr->value.forall.bound_variable->type, curr); 
+      curr = _list_holes(expr->value.forall.bound_variable->value.var.type, curr); 
       curr = _list_holes(expr->value.forall.body, curr);
       return curr;
     }
@@ -145,16 +143,16 @@ bool has_holes(Expression *expr) {
   return num_holes(expr) > 0;
 }
 
-Expression *_unify(Context *exprA_ctx, Expression *exprA, Context *exprB_ctx, Expression *exprB, Context *hole_to_fill) {
+Expression *_unify(Context *exprA_ctx, Expression *exprA, Context *exprB_ctx, Expression *exprB, Expression *hole_to_fill) {
   switch (exprA->type) {
     case VAR_EXPRESSION: {
-      if (exprA != hole_to_fill->variable) {
+      if (exprA != hole_to_fill) {
         // Don't care...
         return NULL;
       }
 
-      Expression *exprB_ty = get_expression_type(exprB_ctx, exprB);
-      Expression *expected_ty = hole_to_fill->type;
+      Expression *exprB_ty = get_expression_type(exprB);
+      Expression *expected_ty = hole_to_fill->value.hole.return_type;
       if (congruence(exprB_ty, expected_ty)) {
         return exprB;
       }
@@ -183,7 +181,7 @@ Expression *_unify(Context *exprA_ctx, Expression *exprA, Context *exprB_ctx, Ex
 }
 
 Map *unify(Context *exprA_ctx, Expression *exprA, Expression *exprB) {
-  DoublyLinkedList *binding_vars = dll_create(); // A list of var: type pairs (contexts)
+  DoublyLinkedList *binding_vars = dll_create(); // A list of var: type pairs (Expressions)
   Expression *current = exprA;
   while (current->type == FORALL_EXPRESSION) {
     dll_insert_at_tail(binding_vars, dll_new_node(current->value.forall.bound_variable));
@@ -195,14 +193,14 @@ Map *unify(Context *exprA_ctx, Expression *exprA, Expression *exprB) {
   DLLNode *current_binding_var_node = binding_vars->head;
   Context *exprB_ctx = get_expression_context(exprB);
   while (current_binding_var_node != NULL) {
-    Context *current_binding_var = current_binding_var_node->data;
+    Expression *current_binding_var = current_binding_var_node->data;
     // Greedily search for a subexpression in exprB with the correct type
     Expression *binded = _unify(exprA_ctx, body, exprB_ctx, exprB, current_binding_var);
     if (binded == NULL) {
       map_free(result);
       return NULL;
     }
-    map_set(result, current_binding_var->variable, binded);
+    map_set(result, current_binding_var, binded);
     current_binding_var_node = current_binding_var_node->next;
   }
   return result;
@@ -217,8 +215,8 @@ Expression *_unify2(Context *exprA_ctx, Expression *exprA, Context *exprB_ctx, E
         return NULL;
       }
 
-      Expression *exprB_ty = get_expression_type(exprB_ctx, exprB);
-      Expression *expected_ty = hole_to_fill->value.hole.type;
+      Expression *exprB_ty = get_expression_type(exprB);
+      Expression *expected_ty = hole_to_fill->value.hole.return_type;
       if (congruence(exprB_ty, expected_ty)) {
         return exprB;
       }
@@ -256,12 +254,13 @@ Expression *unify_and_instantiate(Context *ctx, Expression *lemma, Expression *l
   DoublyLinkedList *holes = dll_create();
   Expression *curr_lemma_ty = lemma_ty;
   while (curr_lemma_ty->type == FORALL_EXPRESSION) {
-    Expression *binding_var = curr_lemma_ty->value.forall.bound_variable->variable;
-    Expression *binding_var_type = curr_lemma_ty->value.forall.bound_variable->type;
+    Expression *binding_var = curr_lemma_ty->value.forall.bound_variable;
+    Expression *binding_var_type = binding_var->value.var.type;
     char *binding_var_name = binding_var->value.var.name;
     Expression *var_hole = init_hole_expression(binding_var_name, binding_var_type, curr_lemma_ty->value.forall.context);
     dll_insert_at_tail(holes, dll_new_node(var_hole));
-    curr_lemma_ty = new_reduce(curr_lemma_ty, var_hole);
+    Expression *curr_lemma_ty_body = curr_lemma_ty->value.forall.body;
+    curr_lemma_ty = subst(curr_lemma_ty_body, binding_var, var_hole);
   }
 
   // Now for unification. 
@@ -278,10 +277,10 @@ Expression *unify_and_instantiate(Context *ctx, Expression *lemma, Expression *l
         return NULL;
       }
 
-      instantiated_lemma = init_app_expression(ctx, instantiated_lemma, hole_subst);
+      instantiated_lemma = init_app_expression(instantiated_lemma, hole_subst);
       fillHole(hole_to_fill, hole_subst);
     } else {
-      instantiated_lemma = init_app_expression(ctx, instantiated_lemma, hole_to_fill);
+      instantiated_lemma = init_app_expression(instantiated_lemma, hole_to_fill);
     }
   }
 
@@ -289,14 +288,15 @@ Expression *unify_and_instantiate(Context *ctx, Expression *lemma, Expression *l
 }
 
 
-Expression *instantiate_lemma_with_bindings(Context *ctx, Expression *lemma, Expression *lemma_ty, Map *binders) {
+Expression *instantiate_lemma_with_bindings(Expression *lemma, Expression *lemma_ty, Map *binders) {
   Expression *final_expr = lemma;
   Expression *curr_forall = lemma_ty;
   while (curr_forall->type == FORALL_EXPRESSION) {
-    Expression *binding_var = curr_forall->value.forall.bound_variable->variable;
+    Expression *binding_var = curr_forall->value.forall.bound_variable;
     Expression *binding_result = map_get(binders, binding_var);
-    final_expr = init_app_expression(ctx, final_expr, binding_result);
-    curr_forall = new_reduce(curr_forall, binding_result);
+    final_expr = init_app_expression(final_expr, binding_result);
+    Expression *curr_forall_body = curr_forall->value.forall.body;
+    curr_forall = subst(curr_forall_body, binding_var, binding_result);
   }
   return final_expr;
 }

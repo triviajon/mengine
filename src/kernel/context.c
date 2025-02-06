@@ -1,235 +1,121 @@
 #include "context.h"
 
-#include "beta_reduction.h"
 #include "expression.h"
 
 Context *context_create_empty() {
   if (EMPTY_CONTEXT == NULL) {
     EMPTY_CONTEXT = (Context *)malloc(sizeof(Context));
-    EMPTY_CONTEXT->variable = NULL;
-    EMPTY_CONTEXT->type = NULL;
+    EMPTY_CONTEXT->var_type = NULL;
     EMPTY_CONTEXT->parent = NULL;
   }
   return EMPTY_CONTEXT;
 }
 
-bool context_is_empty(Context *context) { return context->parent == NULL; }
+bool context_is_empty(Context *context) { return context == EMPTY_CONTEXT; }
 
-Context *handle_bad_context() {
-  printf("Bad context creation.\n");
-  return NULL;
-}
+Context *context_insert(Context *context, Expression *var_type) {
+  if (var_type->type != VAR_EXPRESSION) {
+    return NULL;
+  }
 
-Context *context_insert(Context *context, Expression *var, Expression *type) {
+  Expression *expr_type = var_type->value.var.type;
+  if (!valid_in_context(expr_type, context)) {
+    return NULL;
+  }
+
   Context *new_ctx = (Context *)malloc(sizeof(Context));
+  new_ctx->var_type = var_type;
   new_ctx->parent = context;
-  new_ctx->variable = var;
-  // var->value.var.context = new_ctx;
-  // Context *type_context = get_expression_context(type);
-  // if (!context_is_empty(type_context) &&
-  //     !context_is_ancestor(type_context, new_ctx)) {
-  //   return handle_bad_context();
-  // }
-  new_ctx->type = type;
   return new_ctx;
 }
 
 int context_size(Context *context) {
-  int size = 0;
+  int count = 0;
   Context *curr = context;
-  while (!context_is_empty(context)) {
+  while (!context_is_empty(curr)) {
     curr = curr->parent;
-    size++;
+    count += 1;
   }
-  return size;
+  return count;
 }
 
 Context *context_find(Context *context, Expression *var) {
-  if (context_is_empty(context)) {
-    return NULL;
-  } else if (context->variable == var) {
-    return context;
-  } else {
-    return context_find(context->parent, var);
-  }
-}
+  Context *curr = context;
+  while (!context_is_empty(curr)) {
+    if (curr->var_type == var) {
+      return curr;
+    }
 
-Expression *context_lookup(Context *context, Expression *var) {
-  Context *defining_ctx = context_find(context, var);
-  if (defining_ctx != NULL) {
-    return defining_ctx->type;
+    curr = curr->parent;
   }
   return NULL;
 }
 
-bool context_is_ancestor(Context *context_A, Context *context_B) {
-  // context_A is an ancestor of context_B if at some point traveling the
-  // context_B parent chain, we encounter context_A.
-  Context *curr_B = context_B;
-  while (!context_is_empty(curr_B)) {
-    if (context_A == curr_B) {
-      return true;
-    }
-    curr_B = curr_B->parent;
-  }
-  return false;
-}
-
 DoublyLinkedList *context_ancestors(Context *context_A) {
-  DoublyLinkedList *list_A = dll_create();
-
-  for (Context *current = context_A; current != NULL;
-       current = current->parent) {
-    dll_insert_at_head(list_A, dll_new_node(current));
+  DoublyLinkedList *list = dll_create();
+  Context *curr_context = context_A;
+  while (!context_is_empty(curr_context)) {
+    Expression *node = curr_context->var_type;
+    dll_insert_at_tail(list, dll_new_node(node));
+    curr_context = curr_context->parent;
   }
-
-  return list_A;
+  return list;
 }
 
-Context *context_LCA(Context *context_A, Context *context_B) {
-  // Ancestors of context_A and context_B
-  DoublyLinkedList *list_A = dll_create();
-  DoublyLinkedList *list_B = dll_create();
+Context *context_LCA(Context *context_A, Context *context_B);
 
-  for (Context *current = context_A; current != NULL;
-       current = current->parent) {
-    dll_insert_at_head(list_A, dll_new_node(current));
+void context_free(Context *context) { 
+  free(context);
+}
+
+Context *context_add(Context *context_A, Context *context_B) {
+  if (context_A == context_B) {
+    return context_A;
   }
 
-  for (Context *current = context_B; current != NULL;
-       current = current->parent) {
-    dll_insert_at_head(list_B, dll_new_node(current));
-  }
+  DoublyLinkedList *A_ancestors = context_ancestors(context_A);
+  int n = dll_len(A_ancestors);
 
-  DLLNode *node_A = list_A->head;
-  DLLNode *node_B = list_B->head;
-  Context *last_common_ancestor = NULL;
-
-  while (node_A != NULL && node_B != NULL) {
-    if (node_A->data == node_B->data) {
-      last_common_ancestor = (Context *)node_A->data;
-      node_A = node_A->next;
-      node_B = node_B->next;
-    } else {
-      break;
+  Context *result = context_B;
+  for (int i = 0; i < n; i++) {
+    Context *curr_A_ctx = dll_at(A_ancestors, i)->data;
+    Expression *curr_A_expr = curr_A_ctx->var_type;
+    if (context_find(context_B, curr_A_expr) == NULL) {
+      result = context_insert(result, curr_A_expr);
     }
   }
 
-  dll_destroy(list_A);
-  dll_destroy(list_B);
-
-  return last_common_ancestor;
+  return result;
 }
 
-void context_free(Context *context) { return; }
+// Suppose context has the form [variable1: type1] ... [subtrahend:
+// subtrahendtype]... Then this function returns the context up until, but not
+// including, the subtrahend, or the original context if the subtrahend is not
+// found. Theoretically, one does not need to be so restrictive and can instead
+// check what future context nodes actually rely on the subtrahend, but this is
+// not what this function's purpose is.
+Context *context_minus(Context *context, Expression *subtrahend) {
+  if (context_find(context, subtrahend) == NULL) {
+    return context;
+  }
 
-/*
-  This function combines two context trees by finding their lowest common
-  ancestor (LCA), and appends the necessary context nodes with appropriate
-  substitutions to avoid redundancy and preserve context tree integrity.
-*/
-Context *context_combine(Context *body_context, Expression *old, Expression *old_ty, Expression *new) {
-  if (new->type == VAR_EXPRESSION || new->type == HOLE_EXPRESSION) {
-    // Then the returned context needs to contain new: old_ty, and anything required
-    // for old_ty to be valid. 
-    Context *old_defn = context_find(body_context, old);
-    if (old_defn == NULL) {
-      return body_context;
+  Context *curr_ctx = context;
+  while (curr_ctx->var_type != subtrahend) {
+    curr_ctx = curr_ctx->parent;
+  }
+
+  return curr_ctx->parent;
+}
+
+bool valid_in_context(Expression *expr, Context *context) {
+  Context *expr_ctx = get_expression_context(expr);
+  Context *curr_e_ctx = expr_ctx;
+  while (!context_is_empty(curr_e_ctx)) {
+    Expression *curr_var = curr_e_ctx->var_type;
+    if (context_find(context, curr_var) == NULL) {
+      return false;
     }
-
-    DoublyLinkedList *body_context_listed = context_ancestors(body_context);
-
-    DLLNode *curr = body_context_listed->head;
-    while (curr->data != old_defn) {
-      curr = curr->next;
-    }
-    curr = curr->next;
-
-    // Instead of old: old_ty, say new: old_ty.
-    Context *final_context = context_insert(old_defn->parent, new, old_ty);
-
-    // Then start adding in the rest of the context nodes, with proper
-    // replacements.
-    while (curr != NULL) {
-      Context *body_ctx_node = (Context *)curr->data;
-      Expression *body_ctx_node_type =
-          context_lookup(body_ctx_node, old) == NULL
-              ? body_ctx_node->type
-              : reduce_body(body_ctx_node->type, old, old_ty, new);
-      final_context = context_insert(final_context, body_ctx_node->variable,
-                                    body_ctx_node_type);
-      curr = curr->next;
-    }
-
-    return final_context;
+    curr_e_ctx = curr_e_ctx->parent;
   }
-
-  Context *new_context = get_expression_context(new);
-  Context *lca_of_ctx = context_LCA(body_context, new_context);
-
-  DoublyLinkedList *body_context_listed = context_ancestors(body_context);
-
-  DLLNode *curr = body_context_listed->head;
-  // Skip ahead to LCA in body_context_listed
-  while (curr->data != lca_of_ctx) {
-    curr = curr->next;
-  }
-
-  curr = curr->next;  // Start at the next after LCA.
-  Context *final_context =
-      new_context;  // Start from the context needed to define new.
-
-  // Then start adding in the rest of the context nodes, with proper
-  // replacements.
-  while (curr != NULL) {
-    Context *body_ctx_node = (Context *)curr->data;
-    Expression *body_ctx_node_type =
-        context_lookup(body_ctx_node, old) == NULL
-            ? body_ctx_node->type
-            : reduce_body(body_ctx_node->type, old, old_ty, new);
-    final_context = context_insert(final_context, body_ctx_node->variable,
-                                   body_ctx_node_type);
-    curr = curr->next;
-  }
-
-  return final_context;
-}
-
-Expression *get_binding_variable_type(Context *context) {
-  return context->type;
-}
-
-Expression *get_binding_variable(Context *context) { return context->variable; }
-
-Context *context_tail(Context *context) { return context->parent; }
-
-bool type_valid(Context *context, Expression *type) {
-  Context *type_context = get_expression_context(type);
-  return context_is_empty(type_context) ||
-         context_is_ancestor(type_context, context);
-}
-
-Context *context_combine2(Context *old_context, Context *new_context, Expression *old, Expression *new) {
-  Context *lca_of_ctx = context_LCA(old_context, new_context);
-  DoublyLinkedList *old_context_listed = context_ancestors(old_context);
-
-  // Don't need to add anything before the LCA, so skip ahead.
-  DLLNode *curr = old_context_listed->head;
-  while (curr->data != lca_of_ctx) {
-    curr = curr->next;
-  }
-  curr = curr->next; 
-
-  Context *resulting_context = new_context;
-  // Now just add the rest. 
-  while (curr != NULL) {
-    Context *old_node = (Context *)curr->data;
-    Expression *old_node_var = old_node->variable;
-    Expression *old_node_type = subst(old_node->type, old, new, new_context);
-
-    resulting_context = context_insert(resulting_context, old_node_var, old_node_type);
-    curr = curr->next;
-  }
-
-  return resulting_context;
+  return true;
 }

@@ -2,22 +2,19 @@
 
 RewriteProof *rewrite_haa(int h_depth) {
   init_globals();
-  Expression *haa = init_app_expression(
-      h_g_f_a_ctx, init_app_expression(h_g_f_a_ctx, h, a), a);
+  Expression *haa = init_app_expression(init_app_expression(h, a), a);
   Expression *current_expr = haa;
 
   for (int i = 0; i < h_depth; i++) {
-    Expression *intermediate =
-        init_app_expression(h_g_f_a_ctx, h, current_expr);
-    current_expr = init_app_expression(h_g_f_a_ctx, intermediate, current_expr);
+    Expression *intermediate = init_app_expression(h, current_expr);
+    current_expr = init_app_expression(intermediate, current_expr);
   }
 
-  return rewrite(get_expression_context(current_expr), current_expr, eq_haa_a);
+  return rewrite(current_expr, eq_haa_a);
 }
 
 RewriteProof *rewrite_hxy() {
   init_globals();
-  Expression *haa = init_app_expression(h_g_f_a_ctx, init_app_expression(h_g_f_a_ctx, h, a), a);
-  return rewrite(get_expression_context(haa), haa, eq_haa_a);
+  Expression *haa = init_app_expression(init_app_expression(h, a), a);
+  return rewrite(haa, eq_haa_a);
 }
-

@@ -7,6 +7,7 @@
 #include "context.h"
 #include "dyn_array_map.h"
 #include "doubly_linked_list.h"
+#include "subst.h"
 
 Expression *get_type_eq(Expression *eq_type);
 
@@ -38,6 +39,6 @@ Map *unify(Context *ctx, Expression *exprA, Expression *exprB);
 
 Expression *unify_and_instantiate(Context *ctx, Expression *lemma, Expression *lemma_ty, Expression *expr);
 
-Expression *instantiate_lemma_with_bindings(Context *ctx, Expression *lemma, Expression *lemma_ty, Map *binders);
+Expression *instantiate_lemma_with_bindings(Expression *lemma, Expression *lemma_ty, Map *binders);
 
 #endif  // UNIFY_H

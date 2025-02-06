@@ -28,56 +28,38 @@ An uplink is a combination of
     1) a pointer to a expression (one of my parents), and
     2) an uplink relation (how what am I to that parent)
 */
-typedef enum { LAMBDA_BODY, APP_FUNC, APP_ARG } Relation;
+typedef enum { LAMBDA_BODY, APP_FUNC, APP_ARG, FORALL_BODY } Relation;
 typedef struct {
   Expression *expression;
   Relation relation;
 } Uplink;
 
-/*
-A VarExpression is a combination of
-    1) a string name, and
-    2) a list of uplinks.
-
-VarExpression instances are responsibile for allocating and freeing the memory
-used to store the doubly-linked list of uplinks, but not the Uplinks within
-each DLLExpression. Each DLLExpression contains a pointer to an Uplink, which
-should be freed by the Expression it pointers to.
-*/
 typedef struct {
   char *name;
+  Expression *type;
   DoublyLinkedList *uplinks;
-  Context *context;
 } VarExpression;
 
-// A Lambda expression. The body provided must be valid under the given context.
-// 3
 typedef struct {
   Context *context;
-  Context *bound_variable;
+  Expression *bound_variable;
   Expression *type;
   Expression *body;
   DoublyLinkedList *uplinks;
 } LambdaExpression;
-/*
-Similar to VarExpression, but we also include an optional cache.
-*/
+
 typedef struct {
   Expression *func;
   Expression *arg;
-  Expression *cache;  // Possibly NULL
-  Expression *type;   // Type of the app expression, which should be the type of
-                      // func with it's binding variable substituted by arg
+  Expression *cache;
+  Expression *type; 
   Context *context;
   DoublyLinkedList *uplinks;
 } AppExpression;
 
-/*
-Represented the same way as a LambdaExpression.
-*/
 typedef struct {
   Context *context;
-  Context *bound_variable;
+  Expression *bound_variable;
   Expression *type;
   Expression *body;
   DoublyLinkedList *uplinks;
@@ -91,14 +73,13 @@ typedef struct {
   DoublyLinkedList *uplinks;
 } PropExpression;
 
-// Singleton
 static Expression *TYPE = NULL;
 static Expression *PROP = NULL;
 
 typedef struct {
   char *name;
-  Expression *type;  // The intended return type of the hole
-  Context *context;
+  Expression *return_type;
+  Context *defining_context;
   DoublyLinkedList *uplinks;
 } HoleExpression;
 
@@ -115,27 +96,21 @@ struct Expression {
   } value;
 };
 
-// Given an expression and an uplink, add the uplink to the expression's uplink list.
 void add_to_parents(Expression *expression, Uplink *uplink);
 Uplink *new_uplink(Expression *parent, Relation relation);
-Expression *new_reduce(Expression *func_type, Expression *arg);
 
-Expression *init_var_expression(const char *name);
-Expression *init_lambda_expression(Context *context, Expression *body);
-Expression *init_app_expression(Context *context, Expression *func,
-                                Expression *arg);
-Expression *init_forall_expression(Context *context, Expression *body);
+Expression *init_var_expression(const char *name, Expression *type);
+Expression *init_lambda_expression(Expression *bound_variable, Expression *body);
+Expression *init_app_expression(Expression *func, Expression *arg);
+Expression *init_forall_expression(Expression *bound_variable, Expression *body);
 Expression *init_type_expression();
 Expression *init_prop_expression();
-Expression *init_hole_expression(char *name, Expression *type,
-                                 Context *context);
-Expression *init_arrow_expression(Context *context, Expression *lhs, Expression *rhs);
+Expression *init_hole_expression(char *name, Expression *return_type, Context *defining_context);
+Expression *init_arrow_expression(Expression *lhs, Expression *rhs);
 
 DoublyLinkedList *get_expression_uplinks(Expression *expression);
-Expression *get_expression_type(Context *context, Expression *expression);
+Expression *get_expression_type(Expression *expression);
 Context *get_expression_context(Expression *expression);
-
-Expression *subst(Expression *expression, Expression *old, Expression *new, Context *new_context);
 
 void fillHole(Expression *hole, Expression *term);
 
