@@ -5,12 +5,12 @@ void print_rwpf__coq_ready(RewriteProof *rw_pf) {
   Expression *rewritten = rw_pf->rewritten_expr;
   Expression *proof = rw_pf->equality_proof;
 
-  Context *expr_ctx = get_expression_context(original);
+  Context *proof_ctx = get_expression_context(proof);
   Expression *expr_ty = get_expression_type(original);
 
   fprintf(stdout, "Section Test.\n");
   fprintf(stdout, "Require Import Setoid Morphisms.\n");
-  fprintf(stdout, "%s\n", stringify_context2(expr_ctx));
+  fprintf(stdout, "%s\n", stringify_context2(proof_ctx));
   // fprintf(stdout,
   //         "Declare Instance Equivalence_eq : Equivalence eq.\nInstance "
   //         "f_Proper : Proper (eq ==> eq) f := f_equal f.\nInstance f_Proper : "

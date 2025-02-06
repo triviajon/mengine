@@ -18,6 +18,10 @@ Context *context_insert(Context *context, Expression *var_type) {
     return NULL;
   }
 
+  if (context_find(context, var_type) != NULL) {
+    return context;
+  }
+
   Expression *expr_type = var_type->value.var.type;
   if (!valid_in_context(expr_type, context)) {
     return NULL;
@@ -56,7 +60,7 @@ DoublyLinkedList *context_ancestors(Context *context_A) {
   Context *curr_context = context_A;
   while (!context_is_empty(curr_context)) {
     Expression *node = curr_context->var_type;
-    dll_insert_at_tail(list, dll_new_node(node));
+    dll_insert_at_head(list, dll_new_node(node));
     curr_context = curr_context->parent;
   }
   return list;
@@ -78,8 +82,7 @@ Context *context_add(Context *context_A, Context *context_B) {
 
   Context *result = context_B;
   for (int i = 0; i < n; i++) {
-    Context *curr_A_ctx = dll_at(A_ancestors, i)->data;
-    Expression *curr_A_expr = curr_A_ctx->var_type;
+    Expression *curr_A_expr = dll_at(A_ancestors, i)->data;
     if (context_find(context_B, curr_A_expr) == NULL) {
       result = context_insert(result, curr_A_expr);
     }
@@ -88,23 +91,27 @@ Context *context_add(Context *context_A, Context *context_B) {
   return result;
 }
 
-// Suppose context has the form [variable1: type1] ... [subtrahend:
-// subtrahendtype]... Then this function returns the context up until, but not
-// including, the subtrahend, or the original context if the subtrahend is not
-// found. Theoretically, one does not need to be so restrictive and can instead
-// check what future context nodes actually rely on the subtrahend, but this is
-// not what this function's purpose is.
+// If the given context does not contain the subtrahend, this function
+// simply returns the given context. If it does contain the subtrahend, then
+// it returns a context which does not define subtrahend, and additional nodes
+// are removed iff they rely on subtrahend being defined in the context.  
 Context *context_minus(Context *context, Expression *subtrahend) {
   if (context_find(context, subtrahend) == NULL) {
     return context;
   }
 
-  Context *curr_ctx = context;
-  while (curr_ctx->var_type != subtrahend) {
-    curr_ctx = curr_ctx->parent;
-  }
+  // We know for sure that the given context contains subtrahend. 
+  DoublyLinkedList *given_ancestors = context_ancestors(context);
+  int n = dll_len(given_ancestors);
+  Context *result = context_create_empty();
 
-  return curr_ctx->parent;
+  for (int i = 0; i < n; i++) {
+    Expression *curr_vartype = dll_at(given_ancestors, i)->data;
+    if (curr_vartype != subtrahend) {
+      result = context_insert(result, curr_vartype);
+    }
+  }
+  return result;
 }
 
 bool valid_in_context(Expression *expr, Context *context) {

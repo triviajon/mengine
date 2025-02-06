@@ -89,6 +89,9 @@ Expression *p_subst(Expression *expression, DoublyLinkedList *old_exprs, DoublyL
       Expression *lambda_body = expression->value.lambda.body;
       Expression *new_body = p_subst(lambda_body, old_exprs, new_exprs);
 
+      dll_remove_tail(old_exprs);
+      dll_remove_tail(new_exprs);
+
       return init_lambda_expression(new_lambda_var, new_body); 
     }
     case (APP_EXPRESSION): {
@@ -114,6 +117,9 @@ Expression *p_subst(Expression *expression, DoublyLinkedList *old_exprs, DoublyL
 
       Expression *forall_body = expression->value.forall.body;
       Expression *new_body = p_subst(forall_body, old_exprs, new_exprs);
+
+      dll_remove_tail(old_exprs);
+      dll_remove_tail(new_exprs);
 
       return init_forall_expression(new_forall_var, new_body); 
     }

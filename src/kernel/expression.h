@@ -37,6 +37,7 @@ typedef struct {
 typedef struct {
   char *name;
   Expression *type;
+  Context *context;
   DoublyLinkedList *uplinks;
 } VarExpression;
 

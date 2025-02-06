@@ -4,7 +4,8 @@ RewriteProof *rewrite_lambda_f_x() {
   init_globals();
 
   Expression *x = init_var_expression("x", nat);
-  Expression *expr = init_lambda_expression(x, init_app_expression(f, x));
+  Expression *f = init_var_expression("f", init_arrow_expression(nat, nat));
+  Expression *expr = init_lambda_expression(f, init_lambda_expression(x, init_app_expression(f, x)));
 
   return rewrite(expr, eq_fa_a);
 }

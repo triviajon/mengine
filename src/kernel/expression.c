@@ -40,14 +40,36 @@ Uplink *new_uplink(Expression *parent, Relation relation) {
   return new_uplink;
 }
 
-// Helper function to construct a lambda type
-Expression *constr_lambda_type(Expression *bound_variable, Expression *body) {
-  Expression *type = init_forall_expression(bound_variable, get_expression_type(body));
-  return type;
+bool something_janky_is_up(Expression *bv, Expression *body) {
+  if (body->type == VAR_EXPRESSION && strcmp(bv->value.var.name, body->value.var.name) == 0) {
+    return bv != body;
+  }
+  
+  switch (body->type) {
+    case LAMBDA_EXPRESSION:
+      return something_janky_is_up(bv, body->value.lambda.body);
+    case APP_EXPRESSION:
+      return something_janky_is_up(bv, body->value.app.func) || something_janky_is_up(bv, body->value.app.arg);
+    case FORALL_EXPRESSION:
+      return something_janky_is_up(bv, body->value.forall.body);
+    default:
+      return false;
+  }
 }
 
 void hello() {
   return;
+}
+
+// Helper function to construct a lambda type
+Expression *constr_lambda_type(Expression *bound_variable, Expression *body) {
+  Expression *type = init_forall_expression(bound_variable, get_expression_type(body));
+  if (something_janky_is_up(bound_variable, get_expression_type(body))) {
+    hello();
+  } else if (something_janky_is_up(bound_variable, body)) {
+    hello();
+  }
+  return type;
 }
 
 // Helper function to construct a app type
@@ -59,7 +81,8 @@ Expression *constr_app_type(Expression *func, Expression *arg) {
   Expression *return_type = func_type->value.forall.body; // B
 
   if (congruence(actual_arg_type, expected_arg_type)) {
-    return subst(return_type, variable, arg); // return B[x -> arg]
+    Expression *typed_substd = subst(return_type, variable, arg); // return B[x -> arg]
+    return typed_substd;
   }
 
   hello();
@@ -75,6 +98,7 @@ Expression *init_var_expression(const char *name, Expression *type) {
   expr->type = VAR_EXPRESSION;
   expr->value.var.name = strdup(name);
   expr->value.var.type = type;
+  expr->value.var.context = context_insert(get_expression_context(type), expr);
   expr->value.var.uplinks = dll_create();
   return expr;
 }
@@ -109,7 +133,7 @@ Expression *init_app_expression(Expression *func, Expression *arg) {
 Expression *init_forall_expression(Expression *bound_variable, Expression *body) {
   Expression *expr = (Expression *)malloc(sizeof(Expression));
   expr->type = FORALL_EXPRESSION;
-  expr->value.forall.context = context_minus(get_expression_context(body), bound_variable);
+  expr->value.forall.context = context_minus(context_add(get_expression_context(bound_variable), get_expression_context(body)), bound_variable);
   expr->value.forall.bound_variable = bound_variable;
   expr->value.forall.type = init_prop_expression();
   expr->value.forall.body = body;
@@ -194,7 +218,7 @@ Expression *get_expression_type(Expression *expression) {
 Context *get_expression_context(Expression *expression) {
   switch (expression->type) {
     case (VAR_EXPRESSION):
-      return get_expression_context(expression->value.var.type);
+      return expression->value.var.context;
     case (LAMBDA_EXPRESSION):
       return expression->value.lambda.context;
     case (APP_EXPRESSION):
