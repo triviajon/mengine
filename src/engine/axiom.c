@@ -14,26 +14,18 @@ Expression *c = NULL;
 Expression *eq_fa_a = NULL;
 Expression *eq_haa_a = NULL;
 Expression *nat = NULL;
-Context *ctx_with_axioms = NULL;
-Context *f_a_ctx = NULL;
-Context *g_f_a_ctx = NULL;
-Context *h_g_f_a_ctx = NULL;
 
-// Takes in any context, and extends it with nat.
-Context *extend_with_nat(Context *ctx) {
+void init_nat() {
   if (!nat) nat = init_var_expression("nat", init_type_expression());
-  return context_insert(ctx, nat);
 }
 
-// Takes in a context in which nat is defined, and extends it with eq, eq_refl.
-Context *extend_with_eq(Context *ctx) {
+void init_eq() {
   // defining the eq type. eq : forall A : Type, A -> A -> Prop
   Expression *prop = init_prop_expression();
   Expression *type = init_type_expression();
   Expression *A = init_var_expression("A", type);
   Expression *eq_ty = init_forall_expression(A, init_arrow_expression(A, init_arrow_expression(A, prop)));
   if (!eq) eq = init_var_expression("eq", eq_ty);
-  Context *ctx_with_eq = context_insert(ctx, eq);
 
   // defining the refl type. eq_refl : forall (B : Type) (x : B), eq B x x. 
   Expression *B = init_var_expression("B", type);
@@ -42,14 +34,9 @@ Context *extend_with_eq(Context *ctx) {
     init_forall_expression(x, 
       init_app_expression(init_app_expression(init_app_expression(eq, B), x), x)));
   if (!eq_refl) eq_refl = init_var_expression("eq_refl", refl_ty);
-  Context *ctx_with_eq_and_refl = context_insert(ctx_with_eq, eq_refl);
-
-  return ctx_with_eq_and_refl;
 }
 
-// Takes in a context which has nat and eq defined within it, and extends it
-// with app_cong.
-Context *extend_with_app_cong(Context *ctx) {
+void init_app_cong() {
   Expression *type = init_type_expression();
 
   Expression *A = init_var_expression("A", type);
@@ -84,12 +71,9 @@ Context *extend_with_app_cong(Context *ctx) {
           init_forall_expression(x, 
             init_forall_expression(y, app_cong_body))))));
   if (!app_cong) app_cong = init_var_expression("app_cong", app_cong_ty);
-  return context_insert(ctx, app_cong);
 }
 
-// Takes in a context which has nat and eq defined within it, and extends it
-// with eq_trans
-Context *extend_with_eq_trans(Context *ctx) {
+void init_eq_trans() {
   // defining the eq_trans type
   Expression *x = init_var_expression("x", nat);
   Expression *y = init_var_expression("y", nat);
@@ -110,10 +94,9 @@ Context *extend_with_eq_trans(Context *ctx) {
       init_forall_expression(z, eq_trans_body)));
 
   if (!eq_trans) eq_trans = init_var_expression("eq_trans", eq_trans_ty);
-  return context_insert(ctx, eq_trans);
 }
 
-Context *extend_with_lambda_extensionality(Context *ctx) {
+void init_lambda_extensionality() {
   Expression *type = init_type_expression();
 
   Expression *A = init_var_expression("A", type);
@@ -142,71 +125,51 @@ Context *extend_with_lambda_extensionality(Context *ctx) {
           init_forall_expression(H, lambda_extensionality_concl)))));
     
   if (!lambda_extensionality) lambda_extensionality = init_var_expression("lambda_extensionality", lambda_extensionality_ty);
-  return context_insert(ctx, lambda_extensionality);
+}
+
+void init_temporary() {
+  Expression *f_ty = init_arrow_expression(nat, nat);
+  Expression *a_ty = nat;
+
+  if (!f) f = init_var_expression("f", f_ty);
+  if (!a) a = init_var_expression("a", a_ty);
+  if (!b) b = init_var_expression("b", a_ty);
+
+  Expression *fa_a_equality = init_app_expression(
+      init_app_expression(init_app_expression(
+        eq, nat), init_app_expression(f, a)), a);
+
+  Expression *eq_fa_a_ty = init_forall_expression(a, fa_a_equality);
+  if (!eq_fa_a) eq_fa_a = init_var_expression("eq_fa_a", eq_fa_a_ty);
+
+  Expression *g_ty = init_arrow_expression(nat, nat);
+  if (!g) g = init_var_expression("g", g_ty);
+
+  Expression *h_ty = init_arrow_expression(nat, init_arrow_expression(nat, nat));
+  if (!h) h = init_var_expression("h", h_ty);
+  if (!c) c = init_var_expression("c", nat);
+
+
+  Expression *x = init_var_expression("x", nat);
+  Expression *y = init_var_expression("y", nat);
+
+  Expression *hxy = init_app_expression(init_app_expression(h, x), y);
+
+  Expression *hxy_c_equality = init_app_expression(init_app_expression(init_app_expression(
+    eq, nat), hxy), c);
+
+  Expression *hab_a_ty = init_forall_expression(x, init_forall_expression(y, hxy_c_equality));
+  if (!eq_haa_a) eq_haa_a = init_var_expression("eq_haa_a", hab_a_ty);
 }
 
 void init_globals() {
-  if (!ctx_with_axioms) {
-    ctx_with_axioms = context_create_empty();
-    ctx_with_axioms = extend_with_nat(ctx_with_axioms);
-    ctx_with_axioms = extend_with_eq(ctx_with_axioms);
-    ctx_with_axioms = extend_with_app_cong(ctx_with_axioms);
-    ctx_with_axioms = extend_with_eq_trans(ctx_with_axioms);
-    ctx_with_axioms = extend_with_lambda_extensionality(ctx_with_axioms);  
-  }
+  init_nat();
+  init_eq();
+  init_app_cong();
+  init_eq_trans();
+  init_lambda_extensionality();
 
-  if (!f_a_ctx) {    
-    f_a_ctx = ctx_with_axioms;
-
-    Expression *f_ty = init_arrow_expression(nat, nat);
-    Expression *a_ty = nat;
-
-    if (!f) f = init_var_expression("f", f_ty);
-    if (!a) a = init_var_expression("a", a_ty);
-    if (!b) b = init_var_expression("b", a_ty);
-
-    f_a_ctx = context_insert(f_a_ctx, b);
-    f_a_ctx = context_insert(f_a_ctx, f);
-    f_a_ctx = context_insert(f_a_ctx, a);
-
-    Expression *fa_a_equality = init_app_expression(
-        init_app_expression(init_app_expression(
-          eq, nat), init_app_expression(f, a)), a);
-
-    // forall (a: nat), f a = a.all
-    Expression *eq_fa_a_ty = init_forall_expression(a, fa_a_equality);
-    if (!eq_fa_a) eq_fa_a = init_var_expression("eq_fa_a", eq_fa_a_ty);
-    f_a_ctx = context_insert(f_a_ctx, eq_fa_a);
-  };
-
-  if (!g_f_a_ctx) {
-    Expression *g_ty = init_arrow_expression(nat, nat);
-    if (!g) g = init_var_expression("g", g_ty);
-    g_f_a_ctx = context_insert(f_a_ctx, g);
-  };
-
-  if (!h_g_f_a_ctx) {
-    Expression *h_ty = init_arrow_expression(nat, init_arrow_expression(nat, nat));
-    if (!h) h = init_var_expression("h", h_ty);
-    if (!c) c = init_var_expression("c", nat);
-    h_g_f_a_ctx = context_insert(g_f_a_ctx, h);
-    h_g_f_a_ctx = context_insert(h_g_f_a_ctx, c);
-
-    Expression *x = init_var_expression("x", nat);
-    Expression *y = init_var_expression("y", nat);
-    Context *x_ctx = context_insert(h_g_f_a_ctx, x);
-    h_g_f_a_ctx = context_insert(x_ctx, y);
-
-    Expression *hxy = init_app_expression(init_app_expression(h, x), y);
-
-    Expression *hxy_c_equality = init_app_expression(init_app_expression(init_app_expression(
-      eq, nat), hxy), c);
-
-    Expression *hab_a_ty = init_forall_expression(x, init_forall_expression(y, hxy_c_equality));
-    if (!eq_haa_a) eq_haa_a = init_var_expression("eq_haa_a", hab_a_ty);
-
-    h_g_f_a_ctx = context_insert(h_g_f_a_ctx, eq_haa_a);
-  }
+  init_temporary();
 }
 
 bool _congruence(Expression *a, Expression *b, Map *mapping) {

@@ -9,7 +9,7 @@
 #include "examples/rewrite_single_argument.h"
 #include "examples/rewrite_under_lambda.h"
 #include "examples/rewrite_open_holes.h"
-#include "examples/rewrite_let_in.h"
+#include "examples/rewrite_addr0.h"
 #include "examples/rewrite_chained_mod.h"
 #include "kernel/context.h"
 #include "kernel/expression.h"
@@ -20,7 +20,7 @@ void print_usage() {
   fprintf(stderr, "Available examples:\n");
   fprintf(stderr, "  gfa <f_length> <g_wrap>\n");
   fprintf(stderr, "  haa <h_depth>\n");
-  fprintf(stderr, "  let <n_depth>\n");
+  fprintf(stderr, "  addr0 <native|letin|tree> <n_depth>\n");
   fprintf(stderr, "  mod <n_depth>\n");
   fprintf(stderr, "  lambda\n");
   fprintf(stderr, "  open\n");
@@ -31,6 +31,8 @@ int main(int argc, char *argv[]) {
     print_usage();
     return 1;
   }
+
+  init_globals();
 
   int proof_flag = 1;
   if (strncmp(argv[1], "--proof=", 8) == 0) {
@@ -75,13 +77,25 @@ int main(int argc, char *argv[]) {
     } else {
       print_rwpf__coq_ready(rw_pf);
     }
-  } else if (strcmp(argv[1], "let") == 0) {
-    if (argc != 3) {
-      fprintf(stderr, "Usage: %s [--proof=0|1] let <n_depth>\n", argv[0]);
+  } else if (strcmp(argv[1], "addr0") == 0) {
+    if (argc != 4) {
+      fprintf(stderr, "Usage: %s [--proof=0|1] addr0 <native|letin|tree> <n_depth>\n", argv[0]);
       return 1;
     }
-    int n_depth = atoi(argv[2]);
-    RewriteProof *rw_pf = rewrite_let_in__sharing(n_depth);
+    int n_depth = atoi(argv[3]);
+
+    RewriteProof *rw_pf;
+    if (strcmp(argv[2], "native") == 0) {
+      rw_pf = rewrite_addr0__native(n_depth);
+    } else if (strcmp(argv[2], "letin") == 0) {
+      rw_pf = rewrite_addr0__letin(n_depth);
+    } else if (strcmp(argv[2], "tree") == 0) {
+      rw_pf = rewrite_addr0__tree(n_depth);
+    } else {
+      fprintf(stderr, "Invalid addr0 type. Expected: native, letin, or tree.\n");
+      return 1;
+    }
+
     if (proof_flag == 0) {
       print_rwpf__no_proof(rw_pf);
     } else {

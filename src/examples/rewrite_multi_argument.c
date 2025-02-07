@@ -1,7 +1,6 @@
 #include "rewrite_multi_argument.h"
 
 RewriteProof *rewrite_haa(int h_depth) {
-  init_globals();
   Expression *haa = init_app_expression(init_app_expression(h, a), a);
   Expression *current_expr = haa;
 
@@ -14,7 +13,6 @@ RewriteProof *rewrite_haa(int h_depth) {
 }
 
 RewriteProof *rewrite_hxy() {
-  init_globals();
   Expression *haa = init_app_expression(init_app_expression(h, a), a);
   return rewrite(haa, eq_haa_a);
 }

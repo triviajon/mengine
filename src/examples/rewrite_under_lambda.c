@@ -1,7 +1,6 @@
 #include "rewrite_under_lambda.h"
 
 RewriteProof *rewrite_lambda_f_x() {
-  init_globals();
 
   Expression *x = init_var_expression("x", nat);
   Expression *f = init_var_expression("f", init_arrow_expression(nat, nat));

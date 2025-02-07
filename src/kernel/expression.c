@@ -40,35 +40,10 @@ Uplink *new_uplink(Expression *parent, Relation relation) {
   return new_uplink;
 }
 
-bool something_janky_is_up(Expression *bv, Expression *body) {
-  if (body->type == VAR_EXPRESSION && strcmp(bv->value.var.name, body->value.var.name) == 0) {
-    return bv != body;
-  }
-  
-  switch (body->type) {
-    case LAMBDA_EXPRESSION:
-      return something_janky_is_up(bv, body->value.lambda.body);
-    case APP_EXPRESSION:
-      return something_janky_is_up(bv, body->value.app.func) || something_janky_is_up(bv, body->value.app.arg);
-    case FORALL_EXPRESSION:
-      return something_janky_is_up(bv, body->value.forall.body);
-    default:
-      return false;
-  }
-}
-
-void hello() {
-  return;
-}
 
 // Helper function to construct a lambda type
 Expression *constr_lambda_type(Expression *bound_variable, Expression *body) {
   Expression *type = init_forall_expression(bound_variable, get_expression_type(body));
-  if (something_janky_is_up(bound_variable, get_expression_type(body))) {
-    hello();
-  } else if (something_janky_is_up(bound_variable, body)) {
-    hello();
-  }
   return type;
 }
 
@@ -81,13 +56,9 @@ Expression *constr_app_type(Expression *func, Expression *arg) {
   Expression *return_type = func_type->value.forall.body; // B
 
   if (congruence(actual_arg_type, expected_arg_type)) {
-    Expression *typed_substd = subst(return_type, variable, arg); // return B[x -> arg]
-    return typed_substd;
+    return subst(return_type, variable, arg); // return B[x -> arg]
   }
 
-  hello();
-  congruence(actual_arg_type, expected_arg_type);
-  
   return NULL; // Bad app constr, for now set type to NULL
 }
 

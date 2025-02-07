@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.ms": "BluespecSystemVerilog",
         "*.embeddedhtml": "html",
         "beta_reduction.h": "c",
         "charconv": "c",
@@ -59,6 +60,8 @@
         "streambuf": "c",
         "system_error": "c",
         "typeinfo": "c",
-        "subst.h": "c"
+        "subst.h": "c",
+        "rewrite_under_lambda.h": "c",
+        "rewrite_addr0.h": "c"
     }
 }

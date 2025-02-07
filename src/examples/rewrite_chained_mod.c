@@ -1,7 +1,6 @@
 #include "rewrite_chained_mod.h"
 
 RewriteProof *rewrite_chained_mod(int n_depth) {
-  init_globals();
 
   // Define modulo. mod : nat -> (nat -> nat).
   Expression *mod_ty = init_arrow_expression(

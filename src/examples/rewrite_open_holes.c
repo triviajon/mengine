@@ -1,7 +1,6 @@
 #include "rewrite_open_holes.h"
 
 RewriteProof *rewrite_open_holes() { 
-  init_globals();
 
   Expression *O = init_var_expression("O", nat);
   Expression *multiply_ty = init_arrow_expression(nat, init_arrow_expression(nat, nat));

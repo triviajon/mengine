@@ -19,10 +19,6 @@ extern Expression *c;
 extern Expression *eq_fa_a;
 extern Expression *eq_haa_a;
 extern Expression *nat;
-extern Context *ctx_with_axioms;
-extern Context *f_a_ctx; 
-extern Context *g_f_a_ctx; 
-extern Context *h_g_f_a_ctx;
 
 
 void init_globals();

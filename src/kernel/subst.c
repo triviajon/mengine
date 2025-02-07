@@ -1,6 +1,11 @@
 #include "subst.h"
 
 Expression *subst(Expression *expression, Expression *old_e, Expression *new_e) {
+  Context *e_ctx = get_expression_context(expression);
+  if (context_find(e_ctx, old_e) == NULL) {
+    return expression;
+  }
+
   switch (expression->type) {
     case (VAR_EXPRESSION): 
     case (HOLE_EXPRESSION): return (expression == old_e) ? new_e : expression;
