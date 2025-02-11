@@ -2,8 +2,8 @@
 
 #include "axiom.h"
 #include "beta_reduction.h"
-#include "subst.h"
 #include "context.h"
+#include "subst.h"
 
 void add_to_parents(Expression *expression, Uplink *uplink) {
   switch (expression->type) {
@@ -11,15 +11,13 @@ void add_to_parents(Expression *expression, Uplink *uplink) {
       dll_insert_at_head(expression->value.var.uplinks, dll_new_node(uplink));
       break;
     case (LAMBDA_EXPRESSION):
-      dll_insert_at_head(expression->value.lambda.uplinks,
-                         dll_new_node(uplink));
+      dll_insert_at_head(expression->value.lambda.uplinks, dll_new_node(uplink));
       break;
     case (APP_EXPRESSION):
       dll_insert_at_head(expression->value.app.uplinks, dll_new_node(uplink));
       break;
     case (FORALL_EXPRESSION):
-      dll_insert_at_head(expression->value.forall.uplinks,
-                         dll_new_node(uplink));
+      dll_insert_at_head(expression->value.forall.uplinks, dll_new_node(uplink));
       break;
     case (TYPE_EXPRESSION):
     case (PROP_EXPRESSION):
@@ -40,7 +38,6 @@ Uplink *new_uplink(Expression *parent, Relation relation) {
   return new_uplink;
 }
 
-
 // Helper function to construct a lambda type
 Expression *constr_lambda_type(Expression *bound_variable, Expression *body) {
   Expression *type = init_forall_expression(bound_variable, get_expression_type(body));
@@ -49,20 +46,18 @@ Expression *constr_lambda_type(Expression *bound_variable, Expression *body) {
 
 // Helper function to construct a app type
 Expression *constr_app_type(Expression *func, Expression *arg) {
-  Expression *func_type = get_expression_type(func); // something like Forall x: A, B
-  Expression *variable = func_type->value.forall.bound_variable; // x
-  Expression *expected_arg_type = get_expression_type(variable); // A
-  Expression *actual_arg_type = get_expression_type(arg); // hopefully A, but we need to check.
-  Expression *return_type = func_type->value.forall.body; // B
+  Expression *func_type = get_expression_type(func);              // something like Forall x: A, B
+  Expression *variable = func_type->value.forall.bound_variable;  // x
+  Expression *expected_arg_type = get_expression_type(variable);  // A
+  Expression *actual_arg_type = get_expression_type(arg);         // hopefully A, but we need to check.
+  Expression *return_type = func_type->value.forall.body;         // B
 
   if (congruence(actual_arg_type, expected_arg_type)) {
-    return subst(return_type, variable, arg); // return B[x -> arg]
+    return subst(return_type, variable, arg);  // return B[x -> arg]
   }
 
-  return NULL; // Bad app constr, for now set type to NULL
+  return NULL;  // Bad app constr, for now set type to NULL
 }
-
-
 
 Expression *init_var_expression(const char *name, Expression *type) {
   Expression *expr = (Expression *)malloc(sizeof(Expression));
@@ -94,7 +89,7 @@ Expression *init_app_expression(Expression *func, Expression *arg) {
   expr->value.app.func = func;
   add_to_parents(func, new_uplink(expr, APP_FUNC));
   expr->value.app.arg = arg;
-  add_to_parents(arg, new_uplink(expr, APP_ARG)); 
+  add_to_parents(arg, new_uplink(expr, APP_ARG));
   expr->value.app.type = constr_app_type(func, arg);
   expr->value.app.cache = NULL;
   expr->value.app.uplinks = dll_create();
@@ -106,7 +101,7 @@ Expression *init_forall_expression(Expression *bound_variable, Expression *body)
   expr->type = FORALL_EXPRESSION;
   expr->value.forall.context = context_minus(context_add(get_expression_context(bound_variable), get_expression_context(body)), bound_variable);
   expr->value.forall.bound_variable = bound_variable;
-  expr->value.forall.type = init_prop_expression();
+  expr->value.forall.type = init_type_expression();
   expr->value.forall.body = body;
   add_to_parents(body, new_uplink(expr, FORALL_BODY));
   expr->value.forall.uplinks = dll_create();
@@ -131,8 +126,7 @@ Expression *init_type_expression() {
   return TYPE;
 }
 
-Expression *init_hole_expression(char *name, Expression *type,
-                                 Context *context) {
+Expression *init_hole_expression(char *name, Expression *type, Context *context) {
   Expression *expr = (Expression *)malloc(sizeof(Expression));
   expr->type = HOLE_EXPRESSION;
   expr->value.hole.name = name;
@@ -207,10 +201,10 @@ Context *get_expression_context(Expression *expression) {
 
 void fillHole(Expression *hole, Expression *term) {
   if (hole->type != HOLE_EXPRESSION) {
-    return; 
+    return;
   }
 
-  DoublyLinkedList *holepars = hole->value.hole.uplinks; 
+  DoublyLinkedList *holepars = hole->value.hole.uplinks;
   for (int i = 0; i < dll_len(holepars); i++) {
     Uplink *uplink = dll_at(holepars, i)->data;
     switch (uplink->relation) {

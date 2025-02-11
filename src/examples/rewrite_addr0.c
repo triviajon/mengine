@@ -1,27 +1,7 @@
 #include "rewrite_addr0.h"
 
 RewriteProof *rewrite_addr0__letin(int n_depth) {
-
-  // Define addition. add : nat -> (nat -> nat).
-  Expression *add_ty = init_arrow_expression(nat, init_arrow_expression(nat, nat));
-  Expression *add = init_var_expression("add", add_ty);
-
-  // Define O : nat.
-  Expression *O = init_var_expression("O", nat);
-
-  // Axiomize Lemma add_r_O : forall (n : nat), eq nat ((add n) O) n.
-  // Need to build the context which the lemma's type is valid under.
-  Expression *n = init_var_expression("n", nat);
-  Expression *add_r_O_ty = init_forall_expression(n,
-    init_app_expression(
-      init_app_expression(
-        init_app_expression(eq, nat),
-        init_app_expression(init_app_expression(add, n), O)),
-    n)
-  );
-  Expression *add_r_O = init_var_expression("add_r_O", add_r_O_ty);
-
-  // Now define LetIn : nat -> (nat -> nat) -> nat
+  // LetIn : nat -> (nat -> nat) -> nat
   Expression *LetIn_ty = init_arrow_expression(
       nat, init_arrow_expression(init_arrow_expression(nat, nat), nat));
   Expression *LetIn = init_var_expression("LetIn", LetIn_ty);
@@ -58,37 +38,34 @@ RewriteProof *rewrite_addr0__letin(int n_depth) {
   return rewrite(curr_expr, add_r_O);
 }
 
-RewriteProof *rewrite_addr0__tree(int n_depth) {
+Expression *build_vi(Expression *v0, int i) {
+  if (i == 0) {
+    return v0;
+  } else {
+    Expression *vim1_a = build_vi(v0, i - 1);
+    Expression *vim1_b = build_vi(v0, i - 1);
+    return init_app_expression(
+      init_app_expression(add, 
+        init_app_expression(init_app_expression(add, vim1_a), vim1_b)), 
+    O);
+  }
+}
 
+RewriteProof *rewrite_addr0__tree(int n_depth) {
+  Expression *v0 = init_var_expression("v0", nat);
+  Expression *vn = build_vi(v0, n_depth + 1);
+  return rewrite(vn, add_r_O);
 }
 
 RewriteProof *rewrite_addr0__native(int n_depth) {
-
-  // Define addition. add : nat -> (nat -> nat).
-  Expression *add_ty = init_arrow_expression(nat, init_arrow_expression(nat, nat));
-  Expression *add = init_var_expression("add", add_ty);
-
-  // Define O : nat.
-  Expression *O = init_var_expression("O", nat);
-
-  // Axiomize Lemma add_r_O : forall (n : nat), eq nat ((add n) O) n.
-  // Need to build the context which the lemma's type is valid under.
-  Expression *n = init_var_expression("n", nat);
-  Expression *add_r_O_ty = init_forall_expression(n,
-    init_app_expression(
-      init_app_expression(
-        init_app_expression(eq, nat),
-        init_app_expression(init_app_expression(add, n), O)),
-    n)
-  );
-  Expression *add_r_O = init_var_expression("add_r_O", add_r_O_ty);
-  
+  // v0 : nat
   Expression *vnm1 = init_var_expression("v0", nat);
+
   for (int i = 1; i <= n_depth; i++) {
-    vnm1 = init_app_expression(
-      init_app_expression(add, 
-        init_app_expression(init_app_expression(add, vnm1), vnm1)), 
-    O);
+    // v_{n} = v_{n - 1} + v_{n - 1} + 0
+    // make use of native sharing by both v_{n - 1} reference the same place
+    Expression *doubled = init_app_expression(init_app_expression(add, vnm1), vnm1);
+    vnm1 = init_app_expression(init_app_expression(add, doubled), O);
   }
   Expression *expr = init_app_expression(
     init_app_expression(add, 

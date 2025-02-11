@@ -14,6 +14,9 @@ Expression *c = NULL;
 Expression *eq_fa_a = NULL;
 Expression *eq_haa_a = NULL;
 Expression *nat = NULL;
+Expression *add = NULL;
+Expression *add_r_O = NULL;
+Expression *O = NULL;
 
 void init_nat() {
   if (!nat) nat = init_var_expression("nat", init_type_expression());
@@ -127,6 +130,24 @@ void init_lambda_extensionality() {
   if (!lambda_extensionality) lambda_extensionality = init_var_expression("lambda_extensionality", lambda_extensionality_ty);
 }
 
+void init_add() {
+    // Define addition. add : nat -> (nat -> nat).
+  Expression *add_ty = init_arrow_expression(nat, init_arrow_expression(nat, nat));
+  if (!add) add = init_var_expression("add", add_ty);
+  if (!O) O = init_var_expression("O", nat);
+
+  // Axiomize Lemma add_r_O : forall (n : nat), eq nat ((add n) O) n.
+  Expression *n = init_var_expression("n", nat);
+  Expression *add_r_O_ty = init_forall_expression(n,
+    init_app_expression(
+      init_app_expression(
+        init_app_expression(eq, nat),
+        init_app_expression(init_app_expression(add, n), O)),
+    n)
+  );
+  if (!add_r_O) add_r_O = init_var_expression("add_r_O", add_r_O_ty); 
+}
+
 void init_temporary() {
   Expression *f_ty = init_arrow_expression(nat, nat);
   Expression *a_ty = nat;
@@ -168,6 +189,7 @@ void init_globals() {
   init_app_cong();
   init_eq_trans();
   init_lambda_extensionality();
+  init_add();
 
   init_temporary();
 }

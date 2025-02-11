@@ -9,6 +9,39 @@ bool rewrite_failed(RewriteProof *rewrite_proof) {
   return rewrite_proof == NULL;
 }
 
+RewriteProof *get_rresult(Expression *expr) {
+  switch (expr->type) {
+    case (APP_EXPRESSION): {
+      return expr->value.app.rresult;
+    }
+    case (LAMBDA_EXPRESSION): {
+      return expr->value.lambda.rresult;
+    }
+    case (VAR_EXPRESSION): {
+      return expr->value.var.rresult;
+    }
+    default: 
+      return NULL;
+  }
+}
+
+void set_rresult(Expression *expr, RewriteProof *rresult) {
+  switch (expr->type) {
+    case (APP_EXPRESSION): {
+      expr->value.app.rresult = rresult; break;
+    }
+    case (LAMBDA_EXPRESSION): {
+      expr->value.lambda.rresult = rresult; break;
+    }
+    case (VAR_EXPRESSION): {
+      expr->value.var.rresult = rresult; break;
+    }
+    default: 
+      break;
+  }
+}
+
+
 bool expr_match(Expression *expr1, Expression *expr2) {
   switch (expr1->type) {
     case VAR_EXPRESSION:
@@ -99,7 +132,7 @@ RewriteProof *rewrite_lambda(Expression *expr, Expression *lemma) {
   Expression *T = get_expression_type(x);
   Expression *inner_orig = expr->value.lambda.body;
 
-  RewriteProof *inner_rw = rewrite(inner_orig, lemma);
+  RewriteProof *inner_rw = _rewrite(inner_orig, lemma);
   Expression *mid = refresh(init_lambda_expression(x, inner_rw->rewritten_expr));
 
   Expression *eq_pf_ty = get_expression_type(inner_rw->equality_proof);
@@ -118,19 +151,23 @@ RewriteProof *rewrite_lambda(Expression *expr, Expression *lemma) {
 
   if (nothing_rewritten(rewritten_mid)) {
     free_rewrite_proof(rewritten_mid);
-    return init_rewrite_proof(expr, mid, f_mid);
+    RewriteProof *result = init_rewrite_proof(expr, mid, f_mid);
+    set_rresult(expr, result);
+    return result;
   } else {
-    return init_rewrite_proof(
+    RewriteProof *result = init_rewrite_proof(
         expr, rewritten_mid->rewritten_expr,
         build_eq_trans(init_rewrite_proof(expr, mid, f_mid), rewritten_mid));
+    set_rresult(expr, result);
+    return result;
   }
 }
 
 RewriteProof *rewrite_app(Expression *expr, Expression *lemma) {
   Expression *func = expr->value.app.func;
   Expression *arg = expr->value.app.arg;
-  RewriteProof *rw_func_proof = rewrite(func, lemma);
-  RewriteProof *rw_arg_proof = rewrite(arg, lemma);
+  RewriteProof *rw_func_proof = _rewrite(func, lemma);
+  RewriteProof *rw_arg_proof = _rewrite(arg, lemma);
 
   RewriteProof *mid_rewrite_proof;
 
@@ -151,26 +188,37 @@ RewriteProof *rewrite_app(Expression *expr, Expression *lemma) {
   RewriteProof *rewritten_mid = rewrite_head(mid, lemma);
   if (nothing_rewritten(rewritten_mid)) {
     free_rewrite_proof(rewritten_mid);
-    return init_rewrite_proof(expr, mid, fx_mid);
+    RewriteProof *result = init_rewrite_proof(expr, mid, fx_mid);
+    set_rresult(expr, result);
+    return result;
   } else {
-    return init_rewrite_proof(
+    RewriteProof *result = init_rewrite_proof(
         expr, rewritten_mid->rewritten_expr,
         build_eq_trans(mid_rewrite_proof, rewritten_mid));
+    set_rresult(expr, result);
+    return result;
   }
 }
 
 RewriteProof *rewrite_var(Expression *expr, Expression *lemma) {
   RewriteProof *rewritten_expr = rewrite_head(expr, lemma);
   if (nothing_rewritten(rewritten_expr)) {
-    return init_rewrite_proof(expr, expr, build_eq_refl(expr));
+    RewriteProof *result = init_rewrite_proof(expr, expr, build_eq_refl(expr));
+    set_rresult(expr, result);
+    return result;
   } else {
+    set_rresult(expr, rewritten_expr);
     return rewritten_expr;
   }
 }
 
-// Attempt an aggressive rewrite in expr using the provided lemma. The lemma
-// should be an opaque reference that is valid in the context.
-RewriteProof *rewrite(Expression *expr, Expression *lemma) {
+// Internal rewriting function.
+RewriteProof *_rewrite(Expression *expr, Expression *lemma) {
+  RewriteProof *cached_result = get_rresult(expr);
+  if (cached_result != NULL) {
+    return cached_result;
+  }
+
   switch (expr->type) {
     case (APP_EXPRESSION):
       return rewrite_app(expr, lemma);
@@ -181,4 +229,45 @@ RewriteProof *rewrite(Expression *expr, Expression *lemma) {
     default:
       return NULL;  // TODO: Unsupported.
   }
+}
+
+void clear_rewrite_proofs(Expression *expr) {
+  switch (expr->type) {
+    case (APP_EXPRESSION): {
+      expr->value.app.rresult = NULL;
+      clear_rewrite_proofs(expr->value.app.func);
+      clear_rewrite_proofs(expr->value.app.arg);
+      break;
+    }
+    case (LAMBDA_EXPRESSION): {
+      expr->value.lambda.rresult = NULL;
+      clear_rewrite_proofs(expr->value.lambda.body);
+      break;
+    }
+    case (VAR_EXPRESSION): {
+      expr->value.var.rresult = NULL;
+      break;
+    }
+    default: 
+      break;
+  }
+}
+
+// Top level rewriting function. Is responsible for clearing the cached
+// RewriteProof results of Expressions.
+RewriteProof *rewrite(Expression *expr, Expression *lemma) {
+  RewriteProof *result = NULL;
+  switch (expr->type) {
+    case (APP_EXPRESSION):
+      result = rewrite_app(expr, lemma); break;
+    case (LAMBDA_EXPRESSION):
+      result = rewrite_lambda(expr, lemma); break;
+    case (VAR_EXPRESSION):
+      result = rewrite_var(expr, lemma); break;
+    default:
+      return NULL;  // TODO: Unsupported.
+  }
+
+  clear_rewrite_proofs(expr);
+  return result;
 }

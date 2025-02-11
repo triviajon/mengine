@@ -19,10 +19,12 @@ extern Expression *c;
 extern Expression *eq_fa_a;
 extern Expression *eq_haa_a;
 extern Expression *nat;
+extern Expression *add;
+extern Expression *add_r_O;
+extern Expression *O;
 
 
 void init_globals();
-Expression *build_fa();
 bool congruence(Expression *a, Expression *b);
 
 #endif // AXIOM_H
