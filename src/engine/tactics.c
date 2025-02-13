@@ -1,5 +1,8 @@
 #include "tactics.h"
 
+static int rewrite_cache_hits = 0;
+static int rewrite_locations = 0;
+
 bool nothing_rewritten(RewriteProof *rewrite_proof) {
   return rewrite_proof == NULL ||
          rewrite_proof->expr == rewrite_proof->rewritten_expr;
@@ -80,6 +83,7 @@ RewriteProof *rewrite_head(Expression *expr, Expression *lemma) {
     Expression *lhs = get_lhs_eq(get_expression_type(instantiated_lemma));
     Expression *rhs = get_rhs_eq(get_expression_type(instantiated_lemma));
     if (expr_match(lhs, expr)) {
+      rewrite_locations++;
       return init_rewrite_proof(expr, rhs, instantiated_lemma);
     } else {
       return init_rewrite_proof(expr, expr, build_eq_refl(expr));
@@ -89,6 +93,7 @@ RewriteProof *rewrite_head(Expression *expr, Expression *lemma) {
   Expression *lhs = get_lhs_eq(lemma_ty);
   Expression *rhs = get_rhs_eq(lemma_ty);
   if (expr_match(lhs, expr)) {
+    rewrite_locations++;
     return init_rewrite_proof(expr, rhs, lemma);
   } else {
     return init_rewrite_proof(expr, expr, build_eq_refl(expr));
@@ -212,10 +217,19 @@ RewriteProof *rewrite_var(Expression *expr, Expression *lemma) {
   }
 }
 
+int get_rewrite_cache_hits() {
+  return rewrite_cache_hits;
+}
+
+int get_rewrite_locations() {
+  return rewrite_locations;
+}
+
 // Internal rewriting function.
 RewriteProof *_rewrite(Expression *expr, Expression *lemma) {
   RewriteProof *cached_result = get_rresult(expr);
-  if (cached_result != NULL) {
+  if (expr->type != VAR_EXPRESSION && cached_result != NULL) {
+    rewrite_cache_hits++;
     return cached_result;
   }
 

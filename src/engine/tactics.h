@@ -9,6 +9,9 @@
 #include "rewrite_proof.h"
 #include "unify.h"
 
+int get_rewrite_cache_hits();
+int get_rewrite_locations();
+
 RewriteProof *_rewrite(Expression *expr, Expression *lemma);
 void clear_rewrite_proofs(Expression *expr);
 

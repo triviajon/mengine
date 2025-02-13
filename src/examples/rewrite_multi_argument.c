@@ -9,10 +9,5 @@ RewriteProof *rewrite_haa(int h_depth) {
     current_expr = init_app_expression(intermediate, current_expr);
   }
 
-  return rewrite(current_expr, eq_haa_a);
-}
-
-RewriteProof *rewrite_hxy() {
-  Expression *haa = init_app_expression(init_app_expression(h, a), a);
-  return rewrite(haa, eq_haa_a);
+  return rewrite(current_expr, eq_hxx_x);
 }

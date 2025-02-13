@@ -18,9 +18,4 @@
 // Attempts to rewrite the resulting expression using the lemma eq_haa_a.
 RewriteProof *rewrite_haa(int h_depth);
 
-
-RewriteProof *rewrite_hxy();
-
-
-
 #endif  // REWRITE_MULTI_ARGUMENTS_H

@@ -12,7 +12,7 @@ Expression *a = NULL;
 Expression *b = NULL;
 Expression *c = NULL;
 Expression *eq_fa_a = NULL;
-Expression *eq_haa_a = NULL;
+Expression *eq_hxx_x = NULL;
 Expression *nat = NULL;
 Expression *add = NULL;
 Expression *add_r_O = NULL;
@@ -172,15 +172,14 @@ void init_temporary() {
 
 
   Expression *x = init_var_expression("x", nat);
-  Expression *y = init_var_expression("y", nat);
 
-  Expression *hxy = init_app_expression(init_app_expression(h, x), y);
+  Expression *hxx = init_app_expression(init_app_expression(h, x), x);
 
-  Expression *hxy_c_equality = init_app_expression(init_app_expression(init_app_expression(
-    eq, nat), hxy), c);
+  Expression *hxx_x_equality = init_app_expression(init_app_expression(init_app_expression(
+    eq, nat), hxx), x);
 
-  Expression *hab_a_ty = init_forall_expression(x, init_forall_expression(y, hxy_c_equality));
-  if (!eq_haa_a) eq_haa_a = init_var_expression("eq_haa_a", hab_a_ty);
+  Expression *hxx_x_ty = init_forall_expression(x, hxx_x_equality);
+  if (!eq_hxx_x) eq_hxx_x = init_var_expression("eq_hxx_x", hxx_x_ty);
 }
 
 void init_globals() {

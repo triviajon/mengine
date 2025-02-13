@@ -21,6 +21,8 @@ void print_rwpf__coq_ready(RewriteProof *rw_pf) {
           stringify_expression2(original),
           stringify_expression2(rewritten));
   fprintf(stdout, "End Test.\n");
+  fprintf(stdout, "Hits: %d\n", get_rewrite_cache_hits());
+  fprintf(stdout, "Rewrite locations: %d\n", get_rewrite_locations());
 }
 
 void print_rwpf__no_proof(RewriteProof *rw_pf) {
