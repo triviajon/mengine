@@ -199,6 +199,8 @@ bool _congruence(Expression *a, Expression *b, Map *mapping) {
     return true;
   } else if (a->type != b->type) {
     return false;
+  } else if (a == b) {
+    return true;
   }
 
   switch (a->type) {

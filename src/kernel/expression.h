@@ -26,15 +26,19 @@ typedef enum {
 } ExpressionType;
 
 // Represents a parent-child relationship between expressions
-typedef enum { LAMBDA_BODY, APP_FUNC, APP_ARG, FORALL_BODY } Relation;
+typedef enum { LAMBDA_BODY, APP_FUNC, APP_ARG, FORALL_BODY, CTX_VAR, HOLE_TYPE } Relation;
 
 /*
 An uplink is a combination of
-    1) a pointer to a expression (one of my parents), and
+    1a) a pointer to a expression (one of my parents) OR 
+    1b) a pointer to a context (where I am referenced)
     2) an uplink relation (how what am I to that parent)
+
+    Either 1a or 1b will ever be true, but never both.
 */
 typedef struct {
   Expression *expression;
+  Context *context;
   Relation relation;
 } Uplink;
 
@@ -123,6 +127,7 @@ struct Expression {
 
 void add_to_parents(Expression *expression, Uplink *uplink);
 Uplink *new_uplink(Expression *parent, Relation relation);
+Uplink *new_uplink2(Context *parent, Relation relation);
 
 Expression *init_var_expression(const char *name, Expression *type);
 Expression *init_lambda_expression(Expression *bound_variable, Expression *body);

@@ -671,8 +671,8 @@ char *stringify_expression_with_let2(Expression *expression) {
     }
   }
 
-  char *stringified_expr = _stringify_expression_with_let2(expression);
-  char *final_output = str_concat(result, stringified_expr);
+  char *stringified_expr = _stringify_expression_with_let2(expression); 
+  char *final_output = (result == NULL) ? stringified_expr : str_concat(result, stringified_expr);
   return final_output;
 }
 

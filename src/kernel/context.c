@@ -30,6 +30,7 @@ Context *context_insert(Context *context, Expression *var_type) {
   Context *new_ctx = (Context *)malloc(sizeof(Context));
   new_ctx->var_type = var_type;
   new_ctx->parent = context;
+  add_to_parents(var_type, new_uplink2(new_ctx, CTX_VAR));
   return new_ctx;
 }
 

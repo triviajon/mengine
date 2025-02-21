@@ -4,8 +4,7 @@ static int rewrite_cache_hits = 0;
 static int rewrite_locations = 0;
 
 bool nothing_rewritten(RewriteProof *rewrite_proof) {
-  return rewrite_proof == NULL ||
-         rewrite_proof->expr == rewrite_proof->rewritten_expr;
+  return rewrite_proof->expr == rewrite_proof->rewritten_expr;
 }
 
 bool rewrite_failed(RewriteProof *rewrite_proof) {
@@ -46,6 +45,10 @@ void set_rresult(Expression *expr, RewriteProof *rresult) {
 
 
 bool expr_match(Expression *expr1, Expression *expr2) {
+  if (expr1 == expr2) {
+    return true;
+  }
+
   switch (expr1->type) {
     case VAR_EXPRESSION:
       if (expr2->type == VAR_EXPRESSION) {
@@ -76,18 +79,17 @@ RewriteProof *rewrite_head(Expression *expr, Expression *lemma) {
 
   if (lemma_ty->type == FORALL_EXPRESSION) {
     Expression *instantiated_lemma = unify_and_instantiate(e_ctx, lemma, lemma_ty, expr);
-    if (instantiated_lemma == NULL) {
-      return NULL;
+    if (instantiated_lemma != NULL) {
+      Expression *lhs = get_lhs_eq(get_expression_type(instantiated_lemma));
+      Expression *rhs = get_rhs_eq(get_expression_type(instantiated_lemma));
+
+      if (expr_match(lhs, expr)) {
+        rewrite_locations++;
+        return init_rewrite_proof(expr, rhs, instantiated_lemma);
+      }
     }
 
-    Expression *lhs = get_lhs_eq(get_expression_type(instantiated_lemma));
-    Expression *rhs = get_rhs_eq(get_expression_type(instantiated_lemma));
-    if (expr_match(lhs, expr)) {
-      rewrite_locations++;
-      return init_rewrite_proof(expr, rhs, instantiated_lemma);
-    } else {
-      return init_rewrite_proof(expr, expr, build_eq_refl(expr));
-    }
+    return init_rewrite_proof(expr, expr, build_eq_refl(expr));
   }
 
   Expression *lhs = get_lhs_eq(lemma_ty);
@@ -154,18 +156,18 @@ RewriteProof *rewrite_lambda(Expression *expr, Expression *lemma) {
   Expression *f_mid = build_lambda_extensionality(A, B, eq_ty_lhs, eq_ty_rhs, pre_func_ext);
   RewriteProof *rewritten_mid = rewrite_head(mid, lemma);
 
+  RewriteProof *result;
   if (nothing_rewritten(rewritten_mid)) {
-    free_rewrite_proof(rewritten_mid);
-    RewriteProof *result = init_rewrite_proof(expr, mid, f_mid);
-    set_rresult(expr, result);
-    return result;
+    result = init_rewrite_proof(expr, mid, f_mid);
   } else {
-    RewriteProof *result = init_rewrite_proof(
+    result = init_rewrite_proof(
         expr, rewritten_mid->rewritten_expr,
         build_eq_trans(init_rewrite_proof(expr, mid, f_mid), rewritten_mid));
-    set_rresult(expr, result);
-    return result;
   }
+
+  free_rewrite_proof(rewritten_mid);
+  set_rresult(expr, result);
+  return result;
 }
 
 RewriteProof *rewrite_app(Expression *expr, Expression *lemma) {
@@ -191,18 +193,20 @@ RewriteProof *rewrite_app(Expression *expr, Expression *lemma) {
   Expression *fx_mid = mid_rewrite_proof->equality_proof;
 
   RewriteProof *rewritten_mid = rewrite_head(mid, lemma);
+  RewriteProof *result;
   if (nothing_rewritten(rewritten_mid)) {
-    free_rewrite_proof(rewritten_mid);
-    RewriteProof *result = init_rewrite_proof(expr, mid, fx_mid);
-    set_rresult(expr, result);
-    return result;
+    result = init_rewrite_proof(expr, mid, fx_mid);
   } else {
-    RewriteProof *result = init_rewrite_proof(
+    result = init_rewrite_proof(
         expr, rewritten_mid->rewritten_expr,
         build_eq_trans(mid_rewrite_proof, rewritten_mid));
-    set_rresult(expr, result);
-    return result;
   }
+
+  free_rewrite_proof(mid_rewrite_proof);
+  free_rewrite_proof(rewritten_mid);
+
+  set_rresult(expr, result);
+  return result;
 }
 
 RewriteProof *rewrite_var(Expression *expr, Expression *lemma) {
@@ -228,7 +232,7 @@ int get_rewrite_locations() {
 // Internal rewriting function.
 RewriteProof *_rewrite(Expression *expr, Expression *lemma) {
   RewriteProof *cached_result = get_rresult(expr);
-  if (expr->type != VAR_EXPRESSION && cached_result != NULL) {
+  if (cached_result != NULL) {
     rewrite_cache_hits++;
     return cached_result;
   }
@@ -246,14 +250,22 @@ RewriteProof *_rewrite(Expression *expr, Expression *lemma) {
 }
 
 void clear_rewrite_proofs(Expression *expr) {
+  // Need to double check for correctness.
+
   switch (expr->type) {
     case (APP_EXPRESSION): {
+      if (expr->value.app.rresult == NULL) {
+        break;
+      }
       expr->value.app.rresult = NULL;
       clear_rewrite_proofs(expr->value.app.func);
       clear_rewrite_proofs(expr->value.app.arg);
       break;
     }
     case (LAMBDA_EXPRESSION): {
+      if (expr->value.lambda.rresult == NULL) {
+        break;
+      }
       expr->value.lambda.rresult = NULL;
       clear_rewrite_proofs(expr->value.lambda.body);
       break;

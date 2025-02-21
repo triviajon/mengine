@@ -38,6 +38,18 @@ Uplink *new_uplink(Expression *parent, Relation relation) {
   return new_uplink;
 }
 
+Uplink *new_uplink2(Context *parent, Relation relation) {
+  Uplink *new_uplink = malloc(sizeof(Uplink));
+  if (new_uplink == NULL) {
+    return NULL;
+  }
+  new_uplink->context = parent;
+  new_uplink->relation = relation;
+  return new_uplink;
+}
+
+
+
 // Helper function to construct a lambda type
 Expression *constr_lambda_type(Expression *bound_variable, Expression *body) {
   Expression *type = init_forall_expression(bound_variable, get_expression_type(body));
@@ -64,8 +76,8 @@ Expression *init_var_expression(const char *name, Expression *type) {
   expr->type = VAR_EXPRESSION;
   expr->value.var.name = strdup(name);
   expr->value.var.type = type;
-  expr->value.var.context = context_insert(get_expression_context(type), expr);
   expr->value.var.uplinks = dll_create();
+  expr->value.var.context = context_insert(get_expression_context(type), expr);
   return expr;
 }
 
@@ -132,6 +144,7 @@ Expression *init_hole_expression(char *name, Expression *type, Context *context)
   expr->value.hole.name = name;
   expr->value.hole.defining_context = context;
   expr->value.hole.return_type = type;
+  add_to_parents(type, new_uplink(expr, HOLE_TYPE));
   expr->value.hole.uplinks = dll_create();
   return expr;
 }
@@ -260,6 +273,7 @@ void free_expression(Expression *expr) {
 
 void free_var_expression(Expression *expr) {
   if (expr && expr->type == VAR_EXPRESSION) {
+    context_free(expr->value.var.context);
     free(expr->value.var.name);
     dll_destroy(expr->value.var.uplinks);
     free(expr);
@@ -270,7 +284,6 @@ void free_lambda_expression(Expression *expr) {
   if (expr && expr->type == LAMBDA_EXPRESSION) {
     context_free(expr->value.lambda.context);
     free_expression(expr->value.lambda.type);
-    free_expression(expr->value.lambda.body);
     dll_destroy(expr->value.lambda.uplinks);
     free(expr);
   }
@@ -278,8 +291,6 @@ void free_lambda_expression(Expression *expr) {
 
 void free_app_expression(Expression *expr) {
   if (expr && expr->type == APP_EXPRESSION) {
-    free_expression(expr->value.app.func);
-    free_expression(expr->value.app.arg);
     if (expr->value.app.cache) {
       free_expression(expr->value.app.cache);
     }

@@ -1,6 +1,8 @@
 #ifndef REWRITE_PROOF_H
 #define REWRITE_PROOF_H
 
+#include <stdlib.h>
+
 typedef struct Expression Expression;
 
 typedef struct {

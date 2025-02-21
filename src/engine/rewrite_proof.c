@@ -11,10 +11,6 @@ RewriteProof *init_rewrite_proof(Expression *expr, Expression *rewritten_expr,
 
 void free_rewrite_proof(RewriteProof *proof) {
   if (proof) {
-    // We should not be responsible for freeing the initial expression. 
-    // free_expression(proof->expr);
-    // free_expression(proof->rewritten_expr);
-    // free_expression(proof->equality_proof);
-    // free(proof);
+    free(proof);
   }
 }
