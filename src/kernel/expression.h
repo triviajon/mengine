@@ -195,6 +195,7 @@ Expression *get_expression_type(Expression *expression);
 Context *get_expression_context(Expression *expression);
 Expression *get_innermost_func(Expression *expression);
 
+bool can_fill(Expression *hole, Expression *term);
 void fillHole(Expression *hole, Expression *term);
 
 void free_expression(Expression *expr);
@@ -204,6 +205,8 @@ Expression *match_and_subst(Expression *a, Expression *b, Expression *to_subst);
 void match_holes(Expression *a, Expression *b);
 bool congruence2(Expression *a, Expression *b);
 
+extern char c_counter;
+char *get_char();
 
 // Take a lambda expression as input, like fun x: T => B, and
 // return a new lambda expression with a fresh variable x' and

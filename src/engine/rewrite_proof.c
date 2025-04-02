@@ -29,32 +29,16 @@ void free_rewritten_goal(RewrittenGoal *rewritten_goal) {
 }
 
 
-IntroReturn *init_intro_return(Expression *old_proof, Expression *new_proof, Expression *unsolved_goal) {
+IntroReturn *init_intro_return(Expression *old_goal, Expression *new_goal, Expression *proof_of_old) {
   IntroReturn *intro_return = malloc(sizeof(IntroReturn));
-  intro_return->old_proof = old_proof;
-  intro_return->new_proof = new_proof;
-  intro_return->unsolved_goal =unsolved_goal;
+  intro_return->old_goal = old_goal;
+  intro_return->new_goal = new_goal;
+  intro_return->proof_of_old = proof_of_old;
   return intro_return;
 }
 
 void free_intro_return(IntroReturn *intro_return) {
   if (intro_return) {
     free(intro_return);
-  }
-}
-
-
-IntrosReturn *init_intros_return(DoublyLinkedList *hypotheses, Expression *old_proof, Expression *new_proof, Expression *unsolved_goal) {
-  IntrosReturn *intros_return = malloc(sizeof(IntrosReturn));
-  intros_return->hypotheses = hypotheses;
-  intros_return->old_proof = old_proof;
-  intros_return->new_proof = new_proof;
-  intros_return->unsolved_goal =unsolved_goal;
-  return intros_return;
-}
-
-void free_intros_return(IntrosReturn *intros_return) {
-  if (intros_return) {
-    free(intros_return);
   }
 }

@@ -75,3 +75,9 @@ void map_free(Map *m) {
     free(m->items);
     free(m);
 }
+
+/** @brief Clears and then deletes the map. */
+void map_clear_free(Map *m) {
+    free(m->items);
+    free(m);
+}

@@ -266,37 +266,6 @@ Expression *get_innermost_func(Expression *e) {
 	}
 }
 
-
-void fillHole(Expression *hole, Expression *term) {
-  if (hole->type != HOLE_EXPRESSION) {
-    return;
-  }
-
-  // check if term satisfies hole type...
-  match_holes(get_expression_type(hole), get_expression_type(term));
-
-  DoublyLinkedList *holepars = hole->value.hole.uplinks;
-  for (int i = 0; i < dll_len(holepars); i++) {
-    Uplink *uplink = dll_at(holepars, i)->data;
-    switch (uplink->relation) {
-      case (APP_FUNC):
-        uplink->expression->value.app.func = term;
-        break;
-      case (APP_ARG):
-        uplink->expression->value.app.arg = term;
-        break;
-      case (LAMBDA_BODY):
-        uplink->expression->value.lambda.body = term;
-        break;
-      case (HOLE_TYPE):
-        uplink->expression->value.hole.return_type = term;
-        break;
-      default:
-        break;
-    }
-  }
-}
-
 // Forward declarations. No need to expose them in expression.h.
 void free_var_expression(Expression *expr);
 void free_lambda_expression(Expression *expr);
@@ -501,7 +470,6 @@ void _match_and_subst(Expression *a, Expression *b, Map *mapping) {
   }
 }
 
-
 Expression *match_and_subst(Expression *a, Expression *b, Expression *to_subst) {
   Map *mapping = map_new();
   _match_and_subst(a, b, mapping);
@@ -524,29 +492,146 @@ Expression *match_and_subst(Expression *a, Expression *b, Expression *to_subst) 
   return result;
 }
 
-void match_holes(Expression *a, Expression *b) {
-  Map *mapping = map_new();
-  _match_and_subst(a, b, mapping);
-
-  int n = mapping->size;
-  for (int i = 0; i < n; i++) {
-    Expression *hole = (mapping->items + i)->key;
-    if (hole->type != HOLE_EXPRESSION) {
-      free(mapping->items);
-      free(mapping);
-      return;
-    }
+bool _match_under_holes(Expression *a, Expression *b, Map *alpha_equivalences, Map *required_holes) {
+  if (a == b) {
+    return true;
   }
-  
+
+  if (a->type == HOLE_EXPRESSION && b->type == HOLE_EXPRESSION) {
+    return false; // TODO: what do we do in this case?
+  } else if (a->type == HOLE_EXPRESSION) {
+    bool b_can_fill = can_fill(a, b); 
+    if (b_can_fill) {
+      map_set(required_holes, a, b);
+      return true;
+    } else {
+      return false;
+    }
+  } else if (b->type == HOLE_EXPRESSION) {
+    bool a_can_fill = can_fill(b, a); 
+    if (a_can_fill) {
+      map_set(required_holes, b, a);
+      return true;
+    } else {
+      return false;
+    }
+  } 
+
+  if (a->type != b->type) {
+    return false;
+  }
+
+  switch (a->type) {
+    case (TYPE_EXPRESSION): return true;
+    case (PROP_EXPRESSION): return true; 
+    case (APP_EXPRESSION): {
+      bool result1 = _match_under_holes(a->value.app.func, b->value.app.func, alpha_equivalences, required_holes);
+      bool result2 = _match_under_holes(a->value.app.arg, b->value.app.arg, alpha_equivalences, required_holes);
+      return result1 && result2;
+    }    
+    case (FORALL_EXPRESSION): {
+      map_set(alpha_equivalences, a->value.forall.bound_variable, b->value.forall.bound_variable);
+      bool result = _match_under_holes(a->value.forall.body, b->value.forall.body, alpha_equivalences, required_holes);
+      return result;
+    }
+    case (LAMBDA_EXPRESSION): {
+      map_set(alpha_equivalences, a->value.lambda.bound_variable, b->value.lambda.bound_variable);
+      bool result = _match_under_holes(a->value.lambda.body, b->value.lambda.body, alpha_equivalences, required_holes);
+      return result;
+    }
+    case (VAR_EXPRESSION): {
+      return (a == b) || map_get(alpha_equivalences, a) == b;
+    }
+    case (FIX_EXPRESSION): {
+      map_set(alpha_equivalences, a->value.fix.ident, b->value.fix.ident);
+      map_set(alpha_equivalences, a->value.fix.bound_variable, b->value.fix.bound_variable);
+      bool result = _match_under_holes(a->value.fix.body, b->value.fix.body, alpha_equivalences, required_holes);
+      return result;
+    }
+    case (MATCH_EXPR_EXPRESSION): {
+      map_set(alpha_equivalences, a->value.matchExpr.match_scrutinee, b->value.matchExpr.match_scrutinee);
+      bool result1 = _match_under_holes(a->value.matchExpr.literal_case_item, b->value.matchExpr.literal_case_item, alpha_equivalences, required_holes) ;
+      bool result2 = _match_under_holes(a->value.matchExpr.literal_result, b->value.matchExpr.literal_result, alpha_equivalences, required_holes);
+      bool result3 = _match_under_holes(a->value.matchExpr.var_case_item, b->value.matchExpr.var_case_item, alpha_equivalences, required_holes);
+      bool result4 = _match_under_holes(a->value.matchExpr.var_result, b->value.matchExpr.var_result, alpha_equivalences, required_holes);
+      bool result5 = _match_under_holes(a->value.matchExpr.op_case_item, b->value.matchExpr.op_case_item, alpha_equivalences, required_holes);
+      bool result6 = _match_under_holes(a->value.matchExpr.op_result, b->value.matchExpr.op_result, alpha_equivalences, required_holes);
+      bool result7 = _match_under_holes(a->value.matchExpr.type, b->value.matchExpr.type, alpha_equivalences, required_holes);
+      return result1 && result2 && result3 && result4 && result5 && result6 && result7;
+    } 
+    default: return false;
+  }
+}
+
+// Returns true if you can safely substitute term into a hole. 
+// This means two things:
+//    1) The type(term) == expected return type of hole.
+//    2) TODO: The defining context of hole contains the context(term).
+// This does no modifications/creates no new objects.  
+bool can_fill(Expression *hole, Expression *term) {
+  Map *alpha_equivalences = map_new();
+  Map *required_holes = map_new();
+  bool types_match = _match_under_holes(get_expression_type(hole), get_expression_type(term), alpha_equivalences, required_holes);
+  map_clear_free(alpha_equivalences);
+  map_clear_free(required_holes);
+  return types_match; 
+}
+
+void fillHole(Expression *hole, Expression *term) {
+  if (hole->type != HOLE_EXPRESSION) {
+    return;
+  }
+
+  // check if term satisfies hole type...
+  Map *alpha_equivalences = map_new();
+  Map *required_holes = map_new();
+  bool types_match = _match_under_holes(get_expression_type(hole), get_expression_type(term), alpha_equivalences, required_holes);
+  if (!types_match) {
+    map_clear_free(alpha_equivalences);
+    map_clear_free(required_holes);
+    return; // Todo: signal that this has failed?
+  }
+
+  int n = required_holes->size;
   for (int i = 0; i < n; i++) {
-    Expression *hole = (mapping->items + i)->key;
-    Expression *substitute = (mapping->items + i)->val;
+    Expression *hole = (required_holes->items + i)->key;
+    Expression *substitute = (required_holes->items + i)->val;
     fillHole(hole, substitute);
   }
 
-  free(mapping->items);
-  free(mapping);
+  DoublyLinkedList *holepars = hole->value.hole.uplinks;
+  for (int i = 0; i < dll_len(holepars); i++) {
+    Uplink *uplink = dll_at(holepars, i)->data;
+    switch (uplink->relation) {
+      case (APP_FUNC):
+        uplink->expression->value.app.func = term;
+        break;
+      case (APP_ARG):
+        uplink->expression->value.app.arg = term;
+        break;
+      case (LAMBDA_BODY):
+        uplink->expression->value.lambda.body = term;
+        break;
+      case (HOLE_TYPE):
+        uplink->expression->value.hole.return_type = term;
+        break;
+      default:
+        break;
+    }
+  }
+
+  map_clear_free(alpha_equivalences);
+  map_clear_free(required_holes);
 }
+
+char c_counter = 'a';
+char *get_char() {
+  char temp[2] = {c_counter, '\0'};
+  c_counter += 1;
+  if (c_counter > 'z') c_counter = 'a';
+  return strdup(temp);
+}
+
 
 Expression *refresh(Expression *expr) {
   if (expr->type == LAMBDA_EXPRESSION) {
@@ -564,7 +649,8 @@ Expression *refresh(Expression *expr) {
     Expression *T = get_expression_type(x);
     Expression *B = expr->value.forall.body;
   
-    char *xp_name = strcat(strdup(x_name), "'");
+    char *xp_name = strcat(strdup(x_name), get_char());
+
     Expression *xp = init_var_expression(xp_name, T);
     return init_forall_expression(xp, subst(B, x, xp));
   } else {

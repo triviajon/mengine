@@ -141,7 +141,7 @@ Expression *_unify(Expression *exprA, Expression *exprB, Expression *hole_to_fil
       }
 
       Expression *new_func = _unify(exprA->value.app.func, exprB->value.app.func, hole_to_fill);
-      if (new_func != NULL) {
+      if (new_func != NULL && new_func->type != HOLE_EXPRESSION) {
         return new_func;
       }
 
@@ -150,7 +150,7 @@ Expression *_unify(Expression *exprA, Expression *exprB, Expression *hole_to_fil
         return new_arg;
       }
 
-      return NULL;
+      return new_func;
     }
     default:
       return NULL;

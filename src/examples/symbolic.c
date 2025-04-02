@@ -332,8 +332,8 @@ void init_partial_map() {
 
 void init_exec() {
 	// exec
-	exec = init_var_expression("exec", init_arrow_expression(trace, 
-		init_arrow_expression(cmd,
+	exec = init_var_expression("exec", init_arrow_expression(cmd, 
+		init_arrow_expression(trace,
 			init_arrow_expression(mem,
 				init_arrow_expression(locals,
 					init_arrow_expression(
@@ -352,7 +352,7 @@ void init_exec() {
 					init_forall_expression(post1, 
 						init_arrow_expression(
 							init_app_expression(init_app_expression(init_app_expression(post1, t1), m1), l1), 
-							init_app_expression(init_app_expression(init_app_expression(init_app_expression(init_app_expression(exec, t1), cmd_skip), m1), l1), post1)
+							init_app_expression(init_app_expression(init_app_expression(init_app_expression(init_app_expression(exec, cmd_skip), t1), m1), l1), post1)
 						))))));
 	
 	// exec_set
@@ -381,10 +381,8 @@ void init_exec() {
 	Expression *C2 = init_app_expression(
 		init_app_expression(
 			init_app_expression(
-				init_app_expression(init_app_expression(exec, t2), 
-					init_app_expression(
-						init_app_expression(cmd_set, x2), e2)
-				), m2), l2), post2);
+				init_app_expression(init_app_expression(exec, 
+					init_app_expression(init_app_expression(cmd_set, x2), e2)), t2), m2), l2), post2);
 
 	exec_set = init_var_expression("exec_set", 
 		init_forall_expression(t2, 
@@ -413,14 +411,14 @@ void init_exec() {
 		init_lambda_expression(l3_p,
 			init_app_expression(init_app_expression(
 			init_app_expression(init_app_expression(
-				init_app_expression(exec, t3_p), c2_3), m3_p), l3_p), post3
+				init_app_expression(exec, c2_3), t3_p), m3_p), l3_p), post3
 	))));
 	Expression *H3 = init_app_expression(init_app_expression(init_app_expression(init_app_expression(
-		init_app_expression(exec, t3), c1_3), m3), l3), mid_post3);
+		init_app_expression(exec, c1_3), t3), m3), l3), mid_post3);
 
 	Expression *C3 = init_app_expression(init_app_expression(init_app_expression(
-		init_app_expression(init_app_expression(exec, t3), 
-			init_app_expression(init_app_expression(cmd_seq, c1_3), c2_3)),
+		init_app_expression(init_app_expression(exec, init_app_expression(init_app_expression(cmd_seq, c1_3), c2_3)), 
+			t3),
 		m3), l3), post3); 
 	
 	exec_seq = init_var_expression("exec_seq", 
@@ -435,7 +433,7 @@ void init_exec() {
 
 	// exec_input : forall t lhs m l post,
 	// 	(forall v : word, post (list_cons IOEvent (IOEvent_IN v) t) m (partial_map_put string word l lhs v)) ->
-    //     exec t (cmd_input lhs) m l pos
+    //     exec (cmd_input lhs) t m l pos
 	Expression *t4 = init_var_expression("t", trace);
 	Expression *lhs4 = init_var_expression("lhs", string);
 	Expression *m4 = init_var_expression("m", mem);
@@ -450,10 +448,10 @@ void init_exec() {
 		init_app_expression(init_app_expression(init_app_expression(post4, t4_sub), m4_sub), l4_sub));
 	
 	Expression *C4 = init_app_expression(init_app_expression(init_app_expression(init_app_expression(init_app_expression(
-		exec, t4), init_app_expression(cmd_input, lhs4)), m4), l4), post4);
+		exec, init_app_expression(cmd_input, lhs4)), t4), m4), l4), post4);
 	
-	exec_input = init_forall_expression(t4, init_forall_expression(lhs4, init_forall_expression(m4, 
-		init_forall_expression(l4, init_forall_expression(post4, init_arrow_expression(H4, C4))))));
+	exec_input = init_var_expression("exec_input", init_forall_expression(t4, init_forall_expression(lhs4, init_forall_expression(m4, 
+		init_forall_expression(l4, init_forall_expression(post4, init_arrow_expression(H4, C4)))))));
 }
 
 void init_properties() {
@@ -467,7 +465,7 @@ void init_properties() {
 	));
 }
 
-Expression *make_exec_test_1() {
+Expression *make_exec_test_3() {
 	// prog := (cmd.seq (cmd.set "b" (expr.op bopname.add "a" 0)) (cmd.set "c" "b")).
 	Expression *prog_sub1 = init_app_expression(init_app_expression(init_app_expression(expr_op, bopname_add), init_app_expression(expr_var, a_string)), init_app_expression(expr_literal, Z0));
 	Expression *prog_sub2 = init_app_expression(init_app_expression(cmd_set, b_string), prog_sub1);
@@ -496,7 +494,7 @@ Expression *make_exec_test_1() {
 	Expression *post = init_lambda_expression(t_prime, init_lambda_expression(m_prime, init_lambda_expression(l_prime, post_sub5)));
 
 	// conclusion := exec t prog m l (fun t' m' l' => t' = t /\ (m' = m /\ map.get l' "c" = Some a_val))
-	Expression *conclusion = init_app_expression(init_app_expression(init_app_expression(init_app_expression(init_app_expression(exec, t), prog), m), l), post);
+	Expression *conclusion = init_app_expression(init_app_expression(init_app_expression(init_app_expression(init_app_expression(exec, prog), t), m), l), post);
 	Expression *cmd_ok_theorem = init_forall_expression(t, init_forall_expression(m, init_forall_expression(a_val, conclusion)));
 	return cmd_ok_theorem;
 }
@@ -519,11 +517,11 @@ Expression *make_exec_test_2() {
 		init_app_expression(init_app_expression(and, post_sub0), init_app_expression(init_app_expression(and, post_sub1), post_sub2)))));
 
 	Expression *cmd_ok_theorem = init_forall_expression(t, init_forall_expression(m, init_forall_expression(l, 
-		init_app_expression(init_app_expression(init_app_expression(init_app_expression(exec, cmd), m), l), post))));
+		init_app_expression(init_app_expression(init_app_expression(init_app_expression(init_app_expression(exec, cmd), t), m), l), post))));
 	return cmd_ok_theorem;
 }
 
-Expression *make_exec_test_3() {
+Expression *make_exec_test_1() {
 	// forall t m l, exec cmd.skip m l (fun m' l' => and (t' = t) (and (m' = m) (l' = l)))
 	Expression *t = init_var_expression("t", trace);
 	Expression *m = init_var_expression("m", mem);
@@ -540,9 +538,73 @@ Expression *make_exec_test_3() {
 		init_app_expression(init_app_expression(and, post_sub0), init_app_expression(init_app_expression(and, post_sub1), post_sub2)))));
 
 	Expression *cmd_ok_theorem = init_forall_expression(t, init_forall_expression(m, init_forall_expression(l, 
-		init_app_expression(init_app_expression(init_app_expression(init_app_expression(exec, cmd), m), l), post))));
+		init_app_expression(init_app_expression(init_app_expression(init_app_expression(init_app_expression(exec, cmd), t), m), l), post))));
 	return cmd_ok_theorem;
 }
+
+Expression *make_exec_test_4() {
+	Expression *m = init_var_expression("m", mem);
+	Expression *l = init_var_expression("l", locals);	
+	Expression *t = init_app_expression(list_nil, IOEvent);
+	Expression *cmd = init_app_expression(cmd_input, a_string);
+	
+	Expression *t_prime = init_var_expression("t'", trace);
+	Expression *m_prime = init_var_expression("m'", mem);
+	Expression *l_prime = init_var_expression("l'", locals);
+	Expression *post_sub0 = init_app_expression(init_app_expression(init_app_expression(eq, mem), m_prime), m);
+	
+	Expression *v = init_var_expression("v", word);
+	Expression *post_sub1 = init_app_expression(init_app_expression(init_app_expression(eq, init_app_expression(list, IOEvent)), t_prime), 
+		init_app_expression(init_app_expression(init_app_expression(list_cons, IOEvent), init_app_expression(IOEvent_IN, v)), init_app_expression(list_nil, IOEvent)));
+	Expression *post = init_lambda_expression(t_prime, init_lambda_expression(m_prime, init_lambda_expression(l_prime,  
+		init_app_expression(init_app_expression(ex, word), init_lambda_expression(v, post_sub1)))));
+
+	Expression *cmd_ok_theorem = init_forall_expression(m, init_forall_expression(l, 
+		init_app_expression(init_app_expression(init_app_expression(init_app_expression(init_app_expression(exec, cmd), t), m), l), post)));
+	return cmd_ok_theorem;
+}
+
+Expression *make_exec_test_5() {
+	// forall m l, let t := (list_nil IOEvent) in 
+	// exec (cmd_input a) m l (fun t' m' l' => 
+	// 		and (eq (partial_map word byte) m' m) 
+	// 			(ex word (fun v => 
+	//              			  ((and (eq (list IOEvent) t' (list_cons IOEvent (IOEvent_IN v) (list_nil IOEvent))))) 
+	// 	 				  		  	    (eq (option word) (partial_map_get string word l' a) (option_some word v)))
+	Expression *m = init_var_expression("m", mem);
+	Expression *l = init_var_expression("l", locals);	
+	Expression *t = init_app_expression(list_nil, IOEvent);
+	Expression *cmd = init_app_expression(cmd_input, a_string);
+	
+	Expression *t_prime = init_var_expression("t'", trace);
+	Expression *m_prime = init_var_expression("m'", mem);
+	Expression *l_prime = init_var_expression("l'", locals);
+	Expression *post_sub0 = init_app_expression(init_app_expression(init_app_expression(eq, mem), m_prime), m);
+	
+	Expression *v = init_var_expression("v", word);
+	Expression *post_sub1 = init_app_expression(init_app_expression(init_app_expression(eq, init_app_expression(list, IOEvent)), t_prime), 
+		init_app_expression(init_app_expression(init_app_expression(list_cons, IOEvent), init_app_expression(IOEvent_IN, v)), init_app_expression(list_nil, IOEvent)));
+	Expression *post_sub2 = init_app_expression(init_app_expression(init_app_expression(eq, init_app_expression(option, word)), 
+		init_app_expression(init_app_expression(init_app_expression(init_app_expression(partial_map_get, string), word), l_prime), a_string)), 
+		init_app_expression(init_app_expression(option_some, word), v));
+	Expression *post = init_lambda_expression(t_prime, init_lambda_expression(m_prime, init_lambda_expression(l_prime, 
+		init_app_expression(init_app_expression(and, post_sub0), 
+			init_app_expression(init_app_expression(ex, word), init_lambda_expression(v, 
+				init_app_expression(init_app_expression(and, post_sub1), post_sub2)))))));
+
+	Expression *cmd_ok_theorem = init_forall_expression(m, init_forall_expression(l, 
+		init_app_expression(init_app_expression(init_app_expression(init_app_expression(init_app_expression(exec, cmd), t), m), l), post)));
+	return cmd_ok_theorem;
+}
+
+Expression *make_test_0() {
+	Expression *v = init_var_expression("v", word);
+	Expression *P = init_lambda_expression(v, 
+		init_app_expression(init_app_expression(init_app_expression(eq, word), v), init_app_expression(word_of_Z, Z0))
+	);
+	return init_app_expression(init_app_expression(ex, word), P);
+}
+
 
 Expression *get_cmd_type(Expression *cmd) {
 	Expression *curr_cmd = cmd;
@@ -594,8 +656,19 @@ DoublyLinkedList *solve_eq(Expression *goal) {
 	remaining_goals = apply(try2_2->new_goal, eq_refl);
 	if (remaining_goals != NULL) return remaining_goals;
 
-	// all failed
+	// all failed	
 	return NULL;
+}
+
+Expression *solve_ex(Expression *goal) {
+	DoublyLinkedList *remaining_goals = eapply(goal, ex_intro);
+	if (dll_len(remaining_goals) != 2) {
+		return NULL;
+	}
+
+	Expression *goal_to_solve = dll_at(remaining_goals, 1)->data;
+	dll_destroy(remaining_goals);
+	return goal_to_solve;
 }
 
 Expression *solve_set(Expression *goal) {
@@ -617,62 +690,81 @@ Expression *solve_set(Expression *goal) {
 	return remaining_goal;
 }
 
+Expression *solve_input(Expression *goal) {
+	DoublyLinkedList *remaining_goals = apply(goal, exec_input);
+	Expression *remaining_goal = dll_remove_tail(remaining_goals)->data;
+	dll_destroy(remaining_goals);
+	return remaining_goal;
+}
 
-Expression *_sym_solve(DoublyLinkedList *hypotheses, Expression *initial_goal) {
+Expression *_sym_solve(Expression *initial_goal) {
+	// TODO: This is a workaround to be able to retrieve the proof term after solving.
+	Expression *temp = init_lambda_expression(init_var_expression("temp", init_type_expression()), initial_goal);
+	DoublyLinkedList *hypotheses = dll_create();
 
 	DoublyLinkedList *goals_to_solve = dll_create();
 	dll_insert_at_tail(goals_to_solve, dll_new_node(initial_goal));
-
-	// TODO: This is a workaround to be able to retrieve the proof term after solving.
-	Expression *temp = init_lambda_expression(init_var_expression("temp", init_type_expression()), initial_goal);
 
 	while (dll_len(goals_to_solve) > 0) {
 		Expression *goal = (Expression *)dll_remove_head(goals_to_solve)->data;
 		Expression *goal_type = get_expression_type(goal);
 
-		Expression *innermost = get_innermost_func(goal_type);
-		if (innermost == exec) {
-			Expression *post = goal_type->value.app.arg;
-			Expression *locals = goal_type->value.app.func->value.app.arg;
-			Expression *memory = goal_type->value.app.func->value.app.func->value.app.arg;
-			Expression *cmd = goal_type->value.app.func->value.app.func->value.app.func->value.app.arg;
-			Expression *cmd_type = get_cmd_type(cmd);
-
-			if (cmd_type == cmd_skip) {
-				dll_insert_at_tail(goals_to_solve, dll_new_node(solve_skip(goal)));
-			} else if (cmd_type == cmd_seq) {
-				dll_insert_at_tail(goals_to_solve, dll_new_node(solve_seq(goal)));
-			} else if (cmd_type == cmd_set) {
-				dll_insert_at_tail(goals_to_solve, dll_new_node(solve_set(goal)));
+		switch (goal_type->type) {
+			case (FORALL_EXPRESSION): {
+				IntroReturn *intro_return = intro(goal);
+				dll_insert_at_tail(hypotheses, dll_new_node(intro_return->proof_of_old->value.lambda.bound_variable));
+				dll_insert_at_tail(goals_to_solve, dll_new_node(intro_return->new_goal));
+				free_intro_return(intro_return);
+				break;
+			} 
+			case (APP_EXPRESSION): {
+				Expression *innermost = get_innermost_func(goal_type);
+				if (innermost == exec) {
+					Expression *post = goal_type->value.app.arg;
+					Expression *locals = goal_type->value.app.func->value.app.arg;
+					Expression *memory = goal_type->value.app.func->value.app.func->value.app.arg;
+					Expression *trace = goal_type->value.app.func->value.app.func->value.app.func->value.app.arg;
+					Expression *cmd = goal_type->value.app.func->value.app.func->value.app.func->value.app.func->value.app.arg;
+					Expression *cmd_type = get_cmd_type(cmd);
+		
+					if (cmd_type == cmd_skip) {
+						dll_insert_at_tail(goals_to_solve, dll_new_node(solve_skip(goal)));
+					} else if (cmd_type == cmd_seq) {
+						dll_insert_at_tail(goals_to_solve, dll_new_node(solve_seq(goal)));
+					} else if (cmd_type == cmd_set) {
+						dll_insert_at_tail(goals_to_solve, dll_new_node(solve_set(goal)));
+					} else if (cmd_type == cmd_input) {
+						dll_insert_at_head(goals_to_solve, dll_new_node(solve_input(goal)));
+					}
+				} else if (innermost == and) {
+					DoublyLinkedList *new_goals = solve_and(goal);
+					int n = dll_len(new_goals);
+					for (int i = 0; i < n; i++) {
+						dll_insert_at_tail(goals_to_solve, dll_new_node(dll_at(new_goals, i)->data));
+					}
+					dll_destroy(new_goals);
+				} else if (innermost == eq) {
+					DoublyLinkedList *new_goals = solve_eq(goal);
+					int n = dll_len(new_goals);
+					for (int i = 0; i < n; i++) {
+						dll_insert_at_tail(goals_to_solve, dll_new_node(dll_at(new_goals, i)->data));
+					}
+					dll_destroy(new_goals);
+				} else if (innermost == ex) {
+					dll_insert_at_tail(goals_to_solve, dll_new_node(solve_ex(goal)));
+				}
+				break;
 			}
-		} else if (innermost == and) {
-			DoublyLinkedList *new_goals = solve_and(goal);
-			int n = dll_len(new_goals);
-			for (int i = 0; i < n; i++) {
-				dll_insert_at_tail(goals_to_solve, dll_new_node(dll_at(new_goals, i)->data));
-			}
-			dll_destroy(new_goals);
-		} else if (innermost == eq) {
-			DoublyLinkedList *new_goals = solve_eq(goal);
-			int n = dll_len(new_goals);
-			for (int i = 0; i < n; i++) {
-				dll_insert_at_tail(goals_to_solve, dll_new_node(dll_at(new_goals, i)->data));
-			}
-			dll_destroy(new_goals);
 		}
 	}
 
 	return temp->value.lambda.body;
 }
 
-
 Expression *straightline_solve(Expression *e) {
-	Expression *proof = init_hole_expression("Goal", e, get_expression_context(e));
-	IntrosReturn *intros_return = intros(proof);
-	DoublyLinkedList *hypotheses = intros_return->hypotheses;
-	Expression *unsolved_goal = intros_return->unsolved_goal;
-	Expression *proof_term = _sym_solve(hypotheses, unsolved_goal);
-	return intros_return->new_proof;
+	Expression *goal = init_hole_expression("Goal", e, get_expression_context(e));
+	Expression *result = _sym_solve(goal);
+	return result;
 }
 
 void run_symbolic() {
@@ -692,7 +784,7 @@ void run_symbolic() {
 	init_exec();
 	init_properties();
 
-	Expression *cmd_ok_theorem = make_exec_test_1();
+	Expression *cmd_ok_theorem = make_exec_test_5();
 	Expression *proof = straightline_solve(cmd_ok_theorem);
 
 	printf("%s\n\n%s\n", stringify_expression2(cmd_ok_theorem), stringify_expression2(proof));
