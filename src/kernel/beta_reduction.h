@@ -8,4 +8,8 @@ bool forms_redex(Expression *app_func, Expression *app_arg);
 
 Expression *reduce(Expression *app_func, Expression *app_arg);
 
+Expression *normalize(Expression *expression);
+
+void normalize_hole_type(Expression *expression);
+
 #endif  // BETA_REDUCTION_H

@@ -48,24 +48,22 @@ Uplink *new_uplink2(Context *parent, Relation relation) {
   return new_uplink;
 }
 
-
-
 // Helper function to construct a lambda type
 Expression *constr_lambda_type(Expression *bound_variable, Expression *body) {
   Expression *type = init_forall_expression(bound_variable, get_expression_type(body));
-  return type;
+  return normalize(type);
 }
 
 // Helper function to construct a app type
 Expression *constr_app_type(Expression *func, Expression *arg) {
   Expression *func_type = get_expression_type(func);              // something like Forall x: A, B
   Expression *variable = func_type->value.forall.bound_variable;  // x
-  Expression *expected_arg_type = get_expression_type(variable);  // A
-  Expression *actual_arg_type = get_expression_type(arg);         // hopefully A, but we need to check.
+  Expression *expected_arg_type = normalize(get_expression_type(variable));  // A
+  Expression *actual_arg_type = normalize(get_expression_type(arg));         // hopefully A, but we need to check.
   Expression *return_type = func_type->value.forall.body;         // B
 
   if (congruence(actual_arg_type, expected_arg_type)) {
-    return subst(return_type, variable, arg);  // return B[x -> arg]
+    return normalize(subst(return_type, variable, arg));  // return B[x -> arg]
   }
 
   return NULL;  // Bad app constr, for now set type to NULL
@@ -149,6 +147,46 @@ Expression *init_hole_expression(char *name, Expression *type, Context *context)
   return expr;
 }
 
+Expression *init_fix_expression(Expression *ident, Expression *bound_variable, Expression *body) {
+  Expression *expr = (Expression *)malloc(sizeof(Expression));
+  expr->type = FIX_EXPRESSION;
+  expr->value.fix.ident = ident;
+  expr->value.fix.bound_variable = bound_variable;
+  expr->value.fix.body = body;
+  expr->value.fix.context = context_minus(get_expression_context(body), bound_variable);
+  expr->value.fix.type = constr_lambda_type(bound_variable, body);
+  expr->value.fix.uplinks = dll_create();
+  return expr;
+}
+
+Expression *init_match_expr_expression(Expression *match_scrutinee, Expression *literal_case_item, Expression *literal_result, Expression *var_case_item, Expression *var_result,
+                                       Expression *op_case_item, Expression *op_result, Expression *type) {
+  Expression *expr = (Expression *)malloc(sizeof(Expression));
+  expr->type = MATCH_EXPR_EXPRESSION;
+  expr->value.matchExpr.match_scrutinee = match_scrutinee;
+  expr->value.matchExpr.literal_case_item = literal_case_item;
+  expr->value.matchExpr.literal_result = literal_result;
+  expr->value.matchExpr.var_case_item = var_case_item;
+  expr->value.matchExpr.var_result = var_result;
+  expr->value.matchExpr.op_case_item = op_case_item;
+  expr->value.matchExpr.op_result = op_result;
+  expr->value.matchExpr.type = type;
+  expr->value.matchExpr.context = context_add(
+    context_add(
+      context_add(
+        get_expression_context(literal_case_item), 
+        get_expression_context(var_case_item)), 
+        get_expression_context(op_case_item)), 
+    context_add(
+      context_add(
+        get_expression_context(literal_result), 
+        get_expression_context(var_result)), 
+        get_expression_context(op_result))
+  );
+  expr->value.matchExpr.uplinks = dll_create();
+  return expr;
+}
+
 Expression *init_arrow_expression(Expression *lhs, Expression *rhs) {
   // lhs -> rhs <-> Forall _: lhs, rhs
   Expression *unnamed_variable = init_var_expression("_", lhs);
@@ -190,6 +228,10 @@ Expression *get_expression_type(Expression *expression) {
       return expression;
     case (HOLE_EXPRESSION):
       return expression->value.hole.return_type;
+    case (FIX_EXPRESSION):
+      return expression->value.fix.type;
+    case (MATCH_EXPR_EXPRESSION):
+      return expression->value.matchExpr.type;
   }
 }
 
@@ -209,13 +251,29 @@ Context *get_expression_context(Expression *expression) {
       return context_create_empty();
     case (HOLE_EXPRESSION):
       return expression->value.hole.defining_context;
+    case (MATCH_EXPR_EXPRESSION):
+      return expression->value.matchExpr.context;
+    case (FIX_EXPRESSION):
+      return expression->value.fix.context;
   }
 }
+
+Expression *get_innermost_func(Expression *e) {
+	if (e->type == APP_EXPRESSION) {
+		return get_innermost_func(e->value.app.func);
+	} else {
+		return e;
+	}
+}
+
 
 void fillHole(Expression *hole, Expression *term) {
   if (hole->type != HOLE_EXPRESSION) {
     return;
   }
+
+  // check if term satisfies hole type...
+  match_holes(get_expression_type(hole), get_expression_type(term));
 
   DoublyLinkedList *holepars = hole->value.hole.uplinks;
   for (int i = 0; i < dll_len(holepars); i++) {
@@ -229,6 +287,9 @@ void fillHole(Expression *hole, Expression *term) {
         break;
       case (LAMBDA_BODY):
         uplink->expression->value.lambda.body = term;
+        break;
+      case (HOLE_TYPE):
+        uplink->expression->value.hole.return_type = term;
         break;
       default:
         break;
@@ -333,4 +394,242 @@ void free_hole_expression(Expression *expr) {
     dll_destroy(expr->value.forall.uplinks);
     free(expr);
   }
+}
+
+bool _congruence(Expression *a, Expression *b, Map *mapping) {
+  // Mapping is a map from variables in a to variables in b.
+  if (a->type == PROP_EXPRESSION && b->type == TYPE_EXPRESSION) {
+    return true;
+  } else if (a->type != b->type) {
+    return false;
+  } else if (a == b) {
+    return true;
+  }
+
+  switch (a->type) {
+    case (TYPE_EXPRESSION): return true;
+    case (PROP_EXPRESSION): return true;  
+    case (APP_EXPRESSION): return _congruence(a->value.app.func, b->value.app.func, mapping) && _congruence(a->value.app.arg, b->value.app.arg, mapping);
+    case (FORALL_EXPRESSION): {
+      map_set(mapping, a->value.forall.bound_variable, b->value.forall.bound_variable);
+      return _congruence(a->value.forall.body, b->value.forall.body, mapping);
+    }
+    case (LAMBDA_EXPRESSION): {
+      map_set(mapping, a->value.lambda.bound_variable, b->value.lambda.bound_variable);
+      return _congruence(a->value.lambda.body, b->value.lambda.body, mapping);
+    }
+    case (VAR_EXPRESSION): {
+      return (a == b) || (map_get(mapping, a) == b);
+    }
+    case (HOLE_EXPRESSION): {
+      return (a == b) || (map_get(mapping, a) == b);
+    }
+    case (FIX_EXPRESSION): {
+      map_set(mapping, a->value.fix.ident, b->value.fix.ident);
+      map_set(mapping, a->value.fix.bound_variable, b->value.fix.bound_variable);
+      return _congruence(a->value.fix.body, b->value.fix.body, mapping);
+    }
+    case (MATCH_EXPR_EXPRESSION): {
+      map_set(mapping, a->value.matchExpr.match_scrutinee, b->value.matchExpr.match_scrutinee);
+      return _congruence(a->value.matchExpr.literal_case_item, b->value.matchExpr.literal_case_item, mapping) &&
+        _congruence(a->value.matchExpr.literal_result, b->value.matchExpr.literal_result, mapping) &&
+        _congruence(a->value.matchExpr.var_case_item, b->value.matchExpr.var_case_item, mapping) &&
+        _congruence(a->value.matchExpr.var_result, b->value.matchExpr.var_result, mapping) &&
+        _congruence(a->value.matchExpr.op_case_item, b->value.matchExpr.op_case_item, mapping) &&
+        _congruence(a->value.matchExpr.op_result, b->value.matchExpr.op_result, mapping) &&
+        _congruence(a->value.matchExpr.type, b->value.matchExpr.type, mapping);
+    }
+  }
+}
+
+bool congruence(Expression *a, Expression *b) {
+  Map *mapping = map_new();
+  bool result = _congruence(a, b, mapping);
+  free(mapping->items);
+  free(mapping);
+  return result;
+}
+
+void _match_and_subst(Expression *a, Expression *b, Map *mapping) {
+  // Mapping is a map from variables in a to variables in b.
+  if (a == b) {
+    return;
+  }
+
+  switch (a->type) {
+    case (TYPE_EXPRESSION): break;
+    case (PROP_EXPRESSION): break;  
+    case (APP_EXPRESSION): 
+      _match_and_subst(a->value.app.func, b->value.app.func, mapping);
+      _match_and_subst(a->value.app.arg, b->value.app.arg, mapping);
+      break;
+    case (FORALL_EXPRESSION): {
+      map_set(mapping, a->value.forall.bound_variable, b->value.forall.bound_variable);
+      _match_and_subst(a->value.forall.body, b->value.forall.body, mapping);
+      break;
+    }
+    case (LAMBDA_EXPRESSION): {
+      map_set(mapping, a->value.lambda.bound_variable, b->value.lambda.bound_variable);
+      _match_and_subst(a->value.lambda.body, b->value.lambda.body, mapping);
+      break;
+    }
+    case (VAR_EXPRESSION): {
+      if (a != b) (map_set(mapping, a, b));
+      break;
+    }
+    case (HOLE_EXPRESSION): {
+      if (a != b) (map_set(mapping, a, b));
+      break;
+    }
+    case (FIX_EXPRESSION): {
+      map_set(mapping, a->value.fix.ident, b->value.fix.ident);
+      map_set(mapping, a->value.fix.bound_variable, b->value.fix.bound_variable);
+      _match_and_subst(a->value.fix.body, b->value.fix.body, mapping);
+      break;
+    }
+    case (MATCH_EXPR_EXPRESSION): {
+      map_set(mapping, a->value.matchExpr.match_scrutinee, b->value.matchExpr.match_scrutinee);
+      _match_and_subst(a->value.matchExpr.literal_case_item, b->value.matchExpr.literal_case_item, mapping) ;
+      _match_and_subst(a->value.matchExpr.literal_result, b->value.matchExpr.literal_result, mapping);
+      _match_and_subst(a->value.matchExpr.var_case_item, b->value.matchExpr.var_case_item, mapping);
+      _match_and_subst(a->value.matchExpr.var_result, b->value.matchExpr.var_result, mapping);
+      _match_and_subst(a->value.matchExpr.op_case_item, b->value.matchExpr.op_case_item, mapping);
+      _match_and_subst(a->value.matchExpr.op_result, b->value.matchExpr.op_result, mapping);
+      _match_and_subst(a->value.matchExpr.type, b->value.matchExpr.type, mapping);
+      break;
+    }
+  }
+}
+
+
+Expression *match_and_subst(Expression *a, Expression *b, Expression *to_subst) {
+  Map *mapping = map_new();
+  _match_and_subst(a, b, mapping);
+
+  DoublyLinkedList *old_exprs = dll_create();
+  DoublyLinkedList *new_exprs = dll_create();
+
+  int n = mapping->size;
+  for (int i = 0; i < n; i++) {
+    dll_insert_at_tail(old_exprs, dll_new_node((mapping->items + i)->key));
+    dll_insert_at_tail(new_exprs, dll_new_node((mapping->items + i)->val));
+  }
+
+  Expression *result = p_subst(to_subst, old_exprs, new_exprs);
+
+  dll_destroy(old_exprs);
+  dll_destroy(new_exprs);
+  free(mapping->items);
+  free(mapping);
+  return result;
+}
+
+void match_holes(Expression *a, Expression *b) {
+  Map *mapping = map_new();
+  _match_and_subst(a, b, mapping);
+
+  int n = mapping->size;
+  for (int i = 0; i < n; i++) {
+    Expression *hole = (mapping->items + i)->key;
+    if (hole->type != HOLE_EXPRESSION) {
+      free(mapping->items);
+      free(mapping);
+      return;
+    }
+  }
+  
+  for (int i = 0; i < n; i++) {
+    Expression *hole = (mapping->items + i)->key;
+    Expression *substitute = (mapping->items + i)->val;
+    fillHole(hole, substitute);
+  }
+
+  free(mapping->items);
+  free(mapping);
+}
+
+Expression *refresh(Expression *expr) {
+  if (expr->type == LAMBDA_EXPRESSION) {
+    Expression *x = expr->value.lambda.bound_variable;
+    char *x_name = x->value.var.name;
+    Expression *T = get_expression_type(x);
+    Expression *B = expr->value.lambda.body;
+  
+    char *xp_name = strcat(strdup(x_name), "'");
+    Expression *xp = init_var_expression(xp_name, T);
+    return init_lambda_expression(xp, subst(B, x, xp));
+  } else if (expr->type == FORALL_EXPRESSION) {
+    Expression *x = expr->value.forall.bound_variable;
+    char *x_name = x->value.var.name;
+    Expression *T = get_expression_type(x);
+    Expression *B = expr->value.forall.body;
+  
+    char *xp_name = strcat(strdup(x_name), "'");
+    Expression *xp = init_var_expression(xp_name, T);
+    return init_forall_expression(xp, subst(B, x, xp));
+  } else {
+    return NULL;
+  }
+
+
+}
+
+
+
+bool _congruence2(Expression *a, Expression *b, Map *mapping) {
+  // Mapping is a map from variables in a to variables in b.
+  if (a == b) {
+    return true;
+  }
+
+  if (a->type == b->type) {
+    switch (a->type) {
+      case (TYPE_EXPRESSION): return true;
+      case (PROP_EXPRESSION): return true;  
+      case (APP_EXPRESSION): return _congruence2(a->value.app.func, b->value.app.func, mapping) && _congruence2(a->value.app.arg, b->value.app.arg, mapping);
+      case (FORALL_EXPRESSION): {
+        map_set(mapping, a->value.forall.bound_variable, b->value.forall.bound_variable);
+        return _congruence2(a->value.forall.body, b->value.forall.body, mapping);
+      }
+      case (LAMBDA_EXPRESSION): {
+        map_set(mapping, a->value.lambda.bound_variable, b->value.lambda.bound_variable);
+        return _congruence2(a->value.lambda.body, b->value.lambda.body, mapping);
+      }
+      case (VAR_EXPRESSION): {
+        return (a == b) || (map_get(mapping, a) == b);
+      }
+      case (HOLE_EXPRESSION): {
+        return (a == b) || (map_get(mapping, a) == b);
+      }
+      case (FIX_EXPRESSION): {
+        map_set(mapping, a->value.fix.ident, b->value.fix.ident);
+        map_set(mapping, a->value.fix.bound_variable, b->value.fix.bound_variable);
+        return _congruence2(a->value.fix.body, b->value.fix.body, mapping);
+      }
+      case (MATCH_EXPR_EXPRESSION): {
+        map_set(mapping, a->value.matchExpr.match_scrutinee, b->value.matchExpr.match_scrutinee);
+        return _congruence2(a->value.matchExpr.literal_case_item, b->value.matchExpr.literal_case_item, mapping) &&
+          _congruence2(a->value.matchExpr.literal_result, b->value.matchExpr.literal_result, mapping) &&
+          _congruence2(a->value.matchExpr.var_case_item, b->value.matchExpr.var_case_item, mapping) &&
+          _congruence2(a->value.matchExpr.var_result, b->value.matchExpr.var_result, mapping) &&
+          _congruence2(a->value.matchExpr.op_case_item, b->value.matchExpr.op_case_item, mapping) &&
+          _congruence2(a->value.matchExpr.op_result, b->value.matchExpr.op_result, mapping) &&
+          _congruence2(a->value.matchExpr.type, b->value.matchExpr.type, mapping);
+      }
+    }  
+  } else {
+    if (a->type == HOLE_EXPRESSION || b->type == HOLE_EXPRESSION) {
+      map_set(mapping, a, b);
+      return true;
+    }
+  }
+
+ }
+
+bool congruence2(Expression *a, Expression *b) {
+  Map *mapping = map_new();
+  bool result = _congruence2(a, b, mapping);
+  free(mapping->items);
+  free(mapping);
+  return result;
 }

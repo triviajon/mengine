@@ -7,7 +7,12 @@
 
 extern Expression *eq;
 extern Expression *eq_refl;
+extern Expression *eq_subst;
+extern Expression *and;
+extern Expression *and_conj;
 extern Expression *app_cong;
+extern Expression *ex;
+extern Expression *ex_intro;
 extern Expression *eq_trans;
 extern Expression *lambda_extensionality;
 extern Expression *f;
@@ -25,6 +30,5 @@ extern Expression *O;
 
 
 void init_globals();
-bool congruence(Expression *a, Expression *b);
 
 #endif // AXIOM_H

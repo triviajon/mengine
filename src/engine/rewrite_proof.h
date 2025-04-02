@@ -2,6 +2,7 @@
 #define REWRITE_PROOF_H
 
 #include <stdlib.h>
+#include "doubly_linked_list.h"
 
 typedef struct Expression Expression;
 
@@ -14,5 +15,33 @@ typedef struct {
 RewriteProof *init_rewrite_proof(Expression *expr, Expression *rewritten_expr,
                                  Expression *equality_proof);
 void free_rewrite_proof(RewriteProof *proof);
+
+typedef struct {
+  Expression *new_goal;
+  Expression *proof;
+} RewrittenGoal;
+
+RewrittenGoal *init_rewritten_goal(Expression *new_goal, Expression *proof);
+void free_rewritten_goal(RewrittenGoal *rewritten_goal);
+
+typedef struct {
+  Expression *old_proof;
+  Expression *new_proof;
+  Expression *unsolved_goal;
+} IntroReturn;
+
+IntroReturn *init_intro_return(Expression *old_proof, Expression *new_proof, Expression *unsolved_goal);
+void free_intro_return(IntroReturn *intro_return);
+
+
+typedef struct {
+  DoublyLinkedList *hypotheses;
+  Expression *old_proof;
+  Expression *new_proof;
+  Expression *unsolved_goal;
+} IntrosReturn;
+
+IntrosReturn *init_intros_return(DoublyLinkedList *hypotheses, Expression *old_proof, Expression *new_proof, Expression *unsolved_goal);
+void free_intros_return(IntrosReturn *intros_return);
 
 #endif  // REWRITE_PROOF_H

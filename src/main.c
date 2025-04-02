@@ -11,6 +11,7 @@
 #include "examples/rewrite_open_holes.h"
 #include "examples/rewrite_single_argument.h"
 #include "examples/rewrite_under_lambda.h"
+#include "examples/symbolic.h"
 #include "kernel/context.h"
 #include "kernel/expression.h"
 #include "kernel/utils.h"
@@ -20,6 +21,7 @@ void print_usage() {
   fprintf(stderr, "Options:\n\n");
   fprintf(stderr, "\t--proof=[0|1] ... Include a Coq-parsable proof should in the output. Defaults to 1. \n");
   fprintf(stderr, "\t--withlet=[0|1] ...  Print the output with let bindings. Defaults to 1. \n");
+  fprintf(stderr, "\t--debug=[0|1] ...  Include debug information in output. Defaults to 0. \n");
 
   fprintf(stderr, "\n");
 
@@ -40,6 +42,7 @@ int main(int argc, char *argv[]) {
 
   int proof_flag = 1;
   int withlet_flag = 1;
+  int debug_flag = 0;
 
   while (argc > 1 && strncmp(argv[1], "--", 2) == 0) {
     if (strncmp(argv[1], "--proof=", 8) == 0) {
@@ -52,6 +55,12 @@ int main(int argc, char *argv[]) {
       withlet_flag = atoi(argv[1] + 10);
       if (withlet_flag != 0 && withlet_flag != 1) {
         fprintf(stderr, "Invalid value for --withlet. Use --withlet=0 or --withlet=1.\n");
+        return 1;
+      }
+    } else if (strncmp(argv[1], "--debug=", 8) == 0) {
+      debug_flag = atoi(argv[1] + 8);
+      if (debug_flag != 0 && debug_flag != 1) {
+        fprintf(stderr, "Invalid value for --debug. Use --debug=0 or --debug=1.\n");
         return 1;
       }
     } else {
@@ -78,9 +87,9 @@ int main(int argc, char *argv[]) {
     int g_wrap = atoi(argv[3]);
     RewriteProof *rw_pf = rewrite_gfa(f_length, g_wrap);
     if (proof_flag == 0) {
-      print_rwpf__no_proof(rw_pf, withlet_flag);
+      print_rwpf__no_proof(rw_pf, withlet_flag, debug_flag);
     } else {
-      print_rwpf__coq_ready(rw_pf, withlet_flag);
+      print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
     }
   } else if (strcmp(argv[1], "haa") == 0) {
     if (argc != 3) {
@@ -90,9 +99,9 @@ int main(int argc, char *argv[]) {
     int h_depth = atoi(argv[2]);
     RewriteProof *rw_pf = rewrite_haa(h_depth);
     if (proof_flag == 0) {
-      print_rwpf__no_proof(rw_pf, withlet_flag);
+      print_rwpf__no_proof(rw_pf, withlet_flag, debug_flag);
     } else {
-      print_rwpf__coq_ready(rw_pf, withlet_flag);
+      print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
     }
   } else if (strcmp(argv[1], "addr0") == 0) {
     if (argc != 4) {
@@ -114,9 +123,9 @@ int main(int argc, char *argv[]) {
     }
 
     if (proof_flag == 0) {
-      print_rwpf__no_proof(rw_pf, withlet_flag);
+      print_rwpf__no_proof(rw_pf, withlet_flag, debug_flag);
     } else {
-      print_rwpf__coq_ready(rw_pf, withlet_flag);
+      print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
     }
   } else if (strcmp(argv[1], "mod") == 0) {
     if (argc != 3) {
@@ -126,24 +135,26 @@ int main(int argc, char *argv[]) {
     int n_depth = atoi(argv[2]);
     RewriteProof *rw_pf = rewrite_chained_mod(n_depth);
     if (proof_flag == 0) {
-      print_rwpf__no_proof(rw_pf, withlet_flag);
+      print_rwpf__no_proof(rw_pf, withlet_flag, debug_flag);
     } else {
-      print_rwpf__coq_ready(rw_pf, withlet_flag);
+      print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
     }
   } else if (strcmp(argv[1], "lambda") == 0) {
     RewriteProof *rw_pf = rewrite_lambda_f_x();
     if (proof_flag == 0) {
-      print_rwpf__no_proof(rw_pf, withlet_flag);
+      print_rwpf__no_proof(rw_pf, withlet_flag, debug_flag);
     } else {
-      print_rwpf__coq_ready(rw_pf, withlet_flag);
+      print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
     }
   } else if (strcmp(argv[1], "open") == 0) {
     RewriteProof *rw_pf = rewrite_open_holes();
     if (proof_flag == 0) {
-      print_rwpf__no_proof(rw_pf, withlet_flag);
+      print_rwpf__no_proof(rw_pf, withlet_flag, debug_flag);
     } else {
-      print_rwpf__coq_ready(rw_pf, withlet_flag);
+      print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
     }
+  } else if (strcmp(argv[1], "sym") == 0) {
+    run_symbolic();
   } else {
     fprintf(stderr, "Unknown example: %s\n", argv[1]);
     print_usage();

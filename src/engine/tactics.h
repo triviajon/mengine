@@ -17,5 +17,12 @@ void clear_rewrite_proofs(Expression *expr);
 
 RewriteProof *rewrite_head(Expression *expr, Expression *lemma);
 RewriteProof *rewrite(Expression *expr, Expression *lemma);
+RewrittenGoal *rewrite_transform(Expression *goal, Expression *rewrite_lemma);
+
+DoublyLinkedList *apply(Expression *goal, Expression *lemma);
+DoublyLinkedList *eapply(Expression *goal, Expression *lemma); 
+
+IntroReturn *intro(Expression *old_proof);
+IntrosReturn *intros(Expression *old_proof);
 
 #endif  // TACTICS_H

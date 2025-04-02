@@ -28,17 +28,21 @@ Expression *get_rhs_eq(Expression *eq_type);
 // expression is defined with the given context
 Expression *instantiate_lemma(Context *context, Expression *lemma);
 
-// Returns true iff the expr is or contains an expression with type HOLE_EXPRESSION
-bool contains_holes(Expression *expr);
-
 // Returns a DLL of hole expressions in expr
 DoublyLinkedList *list_holes(Expression *expr);
 
-// Create a mapping of holes in exprA to terms in exprB
-Map *unify(Context *ctx, Expression *exprA, Expression *exprB);
-
-Expression *unify_and_instantiate(Context *ctx, Expression *lemma, Expression *lemma_ty, Expression *expr);
+Expression *unify_and_instantiate(Expression *lemma, Expression *lemma_ty, Expression *expr);
 
 Expression *instantiate_lemma_with_bindings(Expression *lemma, Expression *lemma_ty, Map *binders);
+
+typedef struct {
+	Expression *lemma_instantiation;
+	DoublyLinkedList *new_goals;
+} UnificationResult;
+
+UnificationResult *init_unification_result(Expression *lemma_instantiation, DoublyLinkedList *new_goals);
+void free_unification_result(UnificationResult *unification_result);
+
+UnificationResult *eunify(Expression *lemma, Expression *expr);
 
 #endif  // UNIFY_H

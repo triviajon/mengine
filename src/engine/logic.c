@@ -50,13 +50,15 @@ Expression *build_eq_trans(RewriteProof *x_y_equality,
   Expression *y = x_y_equality->rewritten_expr;
   Expression *x_y = x_y_equality->equality_proof;
   // can assert y's are the same
+  // can also assert x, y, and z types are the same
   Expression *z = y_z_equality->rewritten_expr;
   Expression *y_z = y_z_equality->equality_proof;
+  Expression *A = get_expression_type(x);
 
   return init_app_expression(
       init_app_expression(
           init_app_expression(
-              init_app_expression(init_app_expression(eq_trans, x), y), z),
+              init_app_expression(init_app_expression(init_app_expression(eq_trans, A), x), y), z),
           x_y),
       y_z);
 }

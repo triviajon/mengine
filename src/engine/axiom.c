@@ -2,8 +2,13 @@
 
 Expression *eq = NULL;
 Expression *eq_refl = NULL;
+Expression *eq_subst = NULL;
 Expression *app_cong = NULL;
 Expression *eq_trans = NULL;
+Expression *and = NULL;
+Expression *and_conj = NULL;
+Expression *ex = NULL;
+Expression *ex_intro = NULL;
 Expression *lambda_extensionality = NULL;
 Expression *f = NULL;
 Expression *g = NULL;
@@ -17,6 +22,32 @@ Expression *nat = NULL;
 Expression *add = NULL;
 Expression *add_r_O = NULL;
 Expression *O = NULL;
+
+void init_and() {
+	and = init_var_expression("and", init_arrow_expression(init_prop_expression(), 
+		init_arrow_expression(init_prop_expression(), init_prop_expression())));
+
+	Expression *A = init_var_expression("A", init_prop_expression());
+	Expression *B = init_var_expression("B", init_prop_expression());
+	and_conj = init_var_expression("and_conj", init_forall_expression(A, 
+		init_forall_expression(B, 
+			init_arrow_expression(A, 
+				init_arrow_expression(B, init_app_expression(init_app_expression(and, A), B))))));
+}
+
+void init_ex() {
+  Expression *A1 = init_var_expression("A", init_type_expression());
+  Expression *P1 = init_var_expression("P", init_arrow_expression(A1, init_prop_expression()));
+  ex = init_var_expression("ex", init_forall_expression(A1, 
+    init_forall_expression(P1, init_prop_expression())));
+  
+  Expression *A2 = init_var_expression("A", init_type_expression());
+  Expression *P2 = init_var_expression("P", init_arrow_expression(A1, init_prop_expression()));
+  Expression *x2 = init_var_expression("x", A2);
+  ex_intro = init_var_expression("ex_intro", init_forall_expression(A2, init_forall_expression(P2,
+    init_forall_expression(x2, init_arrow_expression(init_app_expression(P2, x2),
+      init_app_expression(init_app_expression(ex, A2), P2))))));
+}
 
 void init_nat() {
   if (!nat) nat = init_var_expression("nat", init_type_expression());
@@ -37,6 +68,15 @@ void init_eq() {
     init_forall_expression(x, 
       init_app_expression(init_app_expression(init_app_expression(eq, B), x), x)));
   if (!eq_refl) eq_refl = init_var_expression("eq_refl", refl_ty);
+
+  // eq_subst: forall (P Q : Prop) (_: eq Prop P Q) (_: Q), P
+  Expression *P3 = init_var_expression("P", init_prop_expression());
+  Expression *Q3 = init_var_expression("Q", init_prop_expression());
+  Expression *H3_1 = init_var_expression("_", init_app_expression(init_app_expression(init_app_expression(eq, init_prop_expression()), P3), Q3));
+  Expression *H3_2 = init_var_expression("_", Q3);
+  Expression *subst_ty = init_forall_expression(P3, init_forall_expression(Q3, 
+    init_forall_expression(H3_1, init_forall_expression(H3_2, P3))));
+  if (!eq_subst) eq_subst = init_var_expression("eq_subst", subst_ty);
 }
 
 void init_app_cong() {
@@ -78,23 +118,24 @@ void init_app_cong() {
 
 void init_eq_trans() {
   // defining the eq_trans type
-  Expression *x = init_var_expression("x", nat);
-  Expression *y = init_var_expression("y", nat);
-  Expression *z = init_var_expression("z", nat);
+  Expression *A = init_var_expression("A", init_type_expression());
+  Expression *x = init_var_expression("x", A);
+  Expression *y = init_var_expression("y", A);
+  Expression *z = init_var_expression("z", A);
 
   Expression *eq_trans_H1 = init_app_expression(init_app_expression(init_app_expression(
-    eq, nat), x), y);
+    eq, A), x), y);
   Expression *eq_trans_H2 = init_app_expression(init_app_expression(init_app_expression(
-    eq, nat), y), z);
+    eq, A), y), z);
   Expression *eq_trans_concl = init_app_expression(init_app_expression(init_app_expression(
-    eq, nat), x), z);
+    eq, A), x), z);
 
   Expression *eq_trans_body = init_arrow_expression(eq_trans_H1, 
     init_arrow_expression(eq_trans_H2, eq_trans_concl));
 
-  Expression *eq_trans_ty = init_forall_expression(x, 
+  Expression *eq_trans_ty = init_forall_expression(A, init_forall_expression(x, 
     init_forall_expression(y, 
-      init_forall_expression(z, eq_trans_body)));
+      init_forall_expression(z, eq_trans_body))));
 
   if (!eq_trans) eq_trans = init_var_expression("eq_trans", eq_trans_ty);
 }
@@ -183,6 +224,8 @@ void init_temporary() {
 }
 
 void init_globals() {
+	init_and();
+  init_ex();
   init_nat();
   init_eq();
   init_app_cong();
@@ -191,43 +234,4 @@ void init_globals() {
   init_add();
 
   init_temporary();
-}
-
-bool _congruence(Expression *a, Expression *b, Map *mapping) {
-  // Mapping is a map from variables in a to variables in b.
-  if (a->type == PROP_EXPRESSION && b->type == TYPE_EXPRESSION) {
-    return true;
-  } else if (a->type != b->type) {
-    return false;
-  } else if (a == b) {
-    return true;
-  }
-
-  switch (a->type) {
-    case (TYPE_EXPRESSION): return true;
-    case (PROP_EXPRESSION): return true;  
-    case (APP_EXPRESSION): return _congruence(a->value.app.func, b->value.app.func, mapping) && _congruence(a->value.app.arg, b->value.app.arg, mapping);
-    case (FORALL_EXPRESSION): {
-      map_set(mapping, a->value.forall.bound_variable, b->value.forall.bound_variable);
-      return _congruence(a->value.forall.body, b->value.forall.body, mapping);
-    }
-    case (LAMBDA_EXPRESSION): {
-      map_set(mapping, a->value.lambda.bound_variable, b->value.lambda.bound_variable);
-      return _congruence(a->value.lambda.body, b->value.lambda.body, mapping);
-    }
-    case (VAR_EXPRESSION): {
-      return (a == b) || (map_get(mapping, a) == b);
-    }
-    case (HOLE_EXPRESSION): {
-      return (a == b); // I suspect this should be the same as the VAR_EXPRESSION case
-    }
-  }
-}
-
-bool congruence(Expression *a, Expression *b) {
-  Map *mapping = map_new();
-  bool result = _congruence(a, b, mapping);
-  free(mapping->items);
-  free(mapping);
-  return result;
 }

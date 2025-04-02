@@ -1,6 +1,6 @@
 #include "main_utils.h"
 
-void print_rwpf__coq_ready(RewriteProof *rw_pf, int withlet_flag) {
+void print_rwpf__coq_ready(RewriteProof *rw_pf, int withlet_flag, int debug_flag) {
   Expression *original = rw_pf->expr;
   Expression *rewritten = rw_pf->rewritten_expr;
   Expression *proof = rw_pf->equality_proof;
@@ -26,11 +26,13 @@ void print_rwpf__coq_ready(RewriteProof *rw_pf, int withlet_flag) {
   }
 
   fprintf(stdout, "End Test.\n");
-  fprintf(stdout, "Hits: %d\n", get_rewrite_cache_hits());
-  fprintf(stdout, "Rewrite locations: %d\n", get_rewrite_locations());
+  if (debug_flag) {
+    fprintf(stdout, "Hits: %d\n", get_rewrite_cache_hits());
+    fprintf(stdout, "Rewrite locations: %d\n", get_rewrite_locations());  
+  }
 }
 
-void print_rwpf__no_proof(RewriteProof *rw_pf, int withlet_flag) {
+void print_rwpf__no_proof(RewriteProof *rw_pf, int withlet_flag, int debug_flag) {
   Expression *original = rw_pf->expr;
   Expression *rewritten = rw_pf->rewritten_expr;
 
@@ -42,6 +44,9 @@ void print_rwpf__no_proof(RewriteProof *rw_pf, int withlet_flag) {
   } else {
     fprintf(stdout, "%s\n", stringify_expression2(rewritten));
   }
-  fprintf(stdout, "Hits: %d\n", get_rewrite_cache_hits());
-  fprintf(stdout, "Rewrite locations: %d\n", get_rewrite_locations());
+  
+  if (debug_flag) {
+    fprintf(stdout, "Hits: %d\n", get_rewrite_cache_hits());
+    fprintf(stdout, "Rewrite locations: %d\n", get_rewrite_locations());  
+  }
 }

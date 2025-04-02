@@ -74,11 +74,10 @@ bool expr_match(Expression *expr1, Expression *expr2) {
 }
 
 RewriteProof *rewrite_head(Expression *expr, Expression *lemma) {
-  Context *e_ctx = get_expression_context(expr);
   Expression *lemma_ty = get_expression_type(lemma);
 
   if (lemma_ty->type == FORALL_EXPRESSION) {
-    Expression *instantiated_lemma = unify_and_instantiate(e_ctx, lemma, lemma_ty, expr);
+    Expression *instantiated_lemma = unify_and_instantiate(lemma, lemma_ty, expr);
     if (instantiated_lemma != NULL) {
       Expression *lhs = get_lhs_eq(get_expression_type(instantiated_lemma));
       Expression *rhs = get_rhs_eq(get_expression_type(instantiated_lemma));
@@ -116,10 +115,7 @@ Expression *replace_with_fresh_lambda(Expression *expr) {
   return fresh;
 }
 
-// Take a lambda expression as input, like fun x: T => B, and
-// return a new lambda expression with a fresh variable x' and
-// x substituted for by x'.
-Expression *refresh(Expression *expr) {
+Expression *refresh2(Expression *expr, char suffix, bool add_suffix) {
   if (expr->type != LAMBDA_EXPRESSION) {
     return NULL;
   }
@@ -129,10 +125,17 @@ Expression *refresh(Expression *expr) {
   Expression *T = get_expression_type(x);
   Expression *B = expr->value.lambda.body;
 
-  char *xp_name = strcat(strdup(x_name), "'");
+  size_t len = strlen(x_name);
+  char *xp_name = (char *)malloc(len + (add_suffix ? 2 : 1));
+  strcpy(xp_name, x_name);
+  if (add_suffix) xp_name[len] = suffix;
+  xp_name[len + (add_suffix ? 1 : 0)] = '\0';
+
   Expression *xp = init_var_expression(xp_name, T);
+  free(xp_name);
   return init_lambda_expression(xp, subst(B, x, xp));
 }
+
 
 RewriteProof *rewrite_lambda(Expression *expr, Expression *lemma) {
   Expression *x = expr->value.lambda.bound_variable;
@@ -221,6 +224,10 @@ RewriteProof *rewrite_var(Expression *expr, Expression *lemma) {
   }
 }
 
+RewriteProof *rewrite_hole(Expression *expr) {
+  return init_rewrite_proof(expr, expr, build_eq_refl(expr));
+}
+
 int get_rewrite_cache_hits() {
   return rewrite_cache_hits;
 }
@@ -244,6 +251,8 @@ RewriteProof *_rewrite(Expression *expr, Expression *lemma) {
       return rewrite_lambda(expr, lemma);
     case (VAR_EXPRESSION):
       return rewrite_var(expr, lemma);
+    case (HOLE_EXPRESSION):
+      return rewrite_hole(expr);
     default:
       return NULL;  // TODO: Unsupported.
   }
@@ -296,4 +305,91 @@ RewriteProof *rewrite(Expression *expr, Expression *lemma) {
 
   clear_rewrite_proofs(expr);
   return result;
+}
+
+// Given a goal (a hole with an expected return type) and a lemma, 
+// this function attempts to transform the goal's return type according to the lemma.
+// I.e., on a successful rewrite of the goal's type, this function will return two things:
+// 	1) A new hole, representing the new goal to find a term which has it's return type.
+//  2) A proof term that satisfies the original goal. This proof term will have the above mentioned hole,
+//     which will need to be filled.
+RewrittenGoal *rewrite_transform(Expression *goal, Expression *rewrite_lemma) {
+  Expression *goal_type = get_expression_type(goal);
+  RewriteProof *rewrite_proof = rewrite(goal_type, rewrite_lemma);
+  
+  Expression *new_goal = init_hole_expression("Goal", rewrite_proof->rewritten_expr, get_expression_context(goal));
+  Expression *proof = init_app_expression(init_app_expression(init_app_expression(init_app_expression(
+		eq_subst, rewrite_proof->expr), rewrite_proof->rewritten_expr), rewrite_proof->equality_proof), new_goal);
+  
+  fillHole(goal, proof);
+
+  return init_rewritten_goal(new_goal, proof);
+}
+
+
+DoublyLinkedList *apply(Expression *goal, Expression *lemma) {
+  UnificationResult *unification_result = eunify(lemma, get_expression_type(goal));
+  Expression *instantiated_lemma = unification_result->lemma_instantiation;
+  DoublyLinkedList *new_goals = unification_result->new_goals;
+  if (congruence2(get_expression_type(goal), get_expression_type(instantiated_lemma))) {
+    fillHole(goal, instantiated_lemma);
+    return new_goals;
+  }
+  return NULL;
+}
+
+DoublyLinkedList *eapply(Expression *goal, Expression *lemma) {
+  UnificationResult *unification_result = eunify(lemma, get_expression_type(goal));
+  Expression *instantiated_lemma = unification_result->lemma_instantiation;
+  DoublyLinkedList *new_goals = unification_result->new_goals;
+  fillHole(goal, instantiated_lemma);
+  return new_goals;
+}
+
+IntroReturn *intro(Expression *old_proof) {
+  if (old_proof->type != HOLE_EXPRESSION) return NULL;
+
+  Expression *old_proof_ty = get_expression_type(old_proof);
+  if (old_proof_ty->type != FORALL_EXPRESSION) return NULL;
+
+  Expression *old_proof_ty_bv = old_proof_ty->value.forall.bound_variable;
+  Expression *old_proof_ty_body = old_proof_ty->value.forall.body;
+
+  Expression *unsolved_goal_no_refresh = init_hole_expression("Goal", old_proof_ty_body, get_expression_context(old_proof_ty_body));
+  Expression *new_proof = refresh2(init_lambda_expression(old_proof_ty_bv, unsolved_goal_no_refresh), ' ', false);
+
+  return init_intro_return(old_proof, new_proof, new_proof->value.lambda.body);
+}
+
+IntrosReturn *intros(Expression *old_proof) {
+  if (old_proof->type != HOLE_EXPRESSION) return NULL;
+  DoublyLinkedList *hypotheses = dll_create();
+  Expression *curr_proof = old_proof;
+  Expression *curr_proof_ty = get_expression_type(curr_proof);
+
+  IntroReturn *curr_proof_intro_result = intro(curr_proof);
+
+  Expression *return_new_proof = curr_proof_intro_result->new_proof;
+  Expression *return_new_proof_bv = return_new_proof->value.lambda.bound_variable;
+  dll_insert_at_tail(hypotheses, dll_new_node(return_new_proof_bv));
+
+  fillHole(curr_proof, return_new_proof);
+
+  curr_proof = curr_proof_intro_result->unsolved_goal;
+  curr_proof_ty = get_expression_type(curr_proof);
+
+  while (curr_proof_ty->type == FORALL_EXPRESSION) {
+    IntroReturn *curr_proof_intro_result = intro(curr_proof);
+
+    Expression *intro_new_proof = curr_proof_intro_result->new_proof;
+    Expression *intro_new_proof_bv = intro_new_proof->value.lambda.bound_variable;
+    dll_insert_at_tail(hypotheses, dll_new_node(intro_new_proof_bv));
+
+    fillHole(curr_proof, intro_new_proof);
+
+    curr_proof = curr_proof_intro_result->unsolved_goal;
+    curr_proof_ty = get_expression_type(curr_proof);
+  }
+
+  return init_intros_return(hypotheses, old_proof, return_new_proof, curr_proof);
 }
