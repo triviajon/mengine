@@ -231,15 +231,19 @@ void free_unification_result(UnificationResult *unification_result) {
  * unfilled holes and the lemma instantiation. 
  */
 
-UnificationResult *eunify(Expression *lemma, Expression *expr) {
+UnificationResult *eunify(Expression *lemma, Expression *goal) {
+  Expression *goal_ty = get_expression_type(goal);
+
   DoublyLinkedList *holes = dll_create();
   Expression *curr_lemma_ty = get_expression_type(lemma);
+  Context *goal_ctx = get_expression_context(goal);
+
   while (curr_lemma_ty->type == FORALL_EXPRESSION) {
     Expression *binding_var = curr_lemma_ty->value.forall.bound_variable;
     Expression *binding_var_type = binding_var->value.var.type;
 
     char *binding_var_name = binding_var->value.var.name;
-    Expression *var_hole = init_hole_expression(binding_var_name, binding_var_type, curr_lemma_ty->value.forall.context);
+    Expression *var_hole = init_hole_expression(binding_var_name, binding_var_type, goal_ctx);
 
     dll_insert_at_tail(holes, dll_new_node(var_hole));
     Expression *curr_lemma_ty_body = curr_lemma_ty->value.forall.body;
@@ -254,7 +258,7 @@ UnificationResult *eunify(Expression *lemma, Expression *expr) {
   while (curr_dll != NULL) {
     Expression *hole_to_fill = (Expression *)curr_dll->data;
     normalize_hole_type(hole_to_fill);
-    Expression *hole_subst = _unify(curr_lemma_ty, expr, hole_to_fill);
+    Expression *hole_subst = _unify(curr_lemma_ty, goal_ty, hole_to_fill);
     // For now, assume that failure means that we couldn't figure out what to substitute with yet-- 
     // It could be impossible, but we won't assume that for now.
     if (hole_subst == NULL) {

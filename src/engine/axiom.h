@@ -28,6 +28,8 @@ extern Expression *add;
 extern Expression *add_r_O;
 extern Expression *O;
 
+extern Context *std_lib_ctx;
+
 
 void init_globals();
 

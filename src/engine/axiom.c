@@ -23,7 +23,9 @@ Expression *add = NULL;
 Expression *add_r_O = NULL;
 Expression *O = NULL;
 
-void init_and() {
+Context *std_lib_ctx = NULL;
+
+Context *init_and(Context *c) {
 	and = init_var_expression("and", init_arrow_expression(init_prop_expression(), 
 		init_arrow_expression(init_prop_expression(), init_prop_expression())));
 
@@ -33,27 +35,32 @@ void init_and() {
 		init_forall_expression(B, 
 			init_arrow_expression(A, 
 				init_arrow_expression(B, init_app_expression(init_app_expression(and, A), B))))));
+
+  return context_insert_n(c, 2, and, and_conj);
 }
 
-void init_ex() {
+Context *init_ex(Context *c) {
   Expression *A1 = init_var_expression("A", init_type_expression());
   Expression *P1 = init_var_expression("P", init_arrow_expression(A1, init_prop_expression()));
   ex = init_var_expression("ex", init_forall_expression(A1, 
     init_forall_expression(P1, init_prop_expression())));
   
   Expression *A2 = init_var_expression("A", init_type_expression());
-  Expression *P2 = init_var_expression("P", init_arrow_expression(A1, init_prop_expression()));
+  Expression *P2 = init_var_expression("P", init_arrow_expression(A2, init_prop_expression()));
   Expression *x2 = init_var_expression("x", A2);
   ex_intro = init_var_expression("ex_intro", init_forall_expression(A2, init_forall_expression(P2,
     init_forall_expression(x2, init_arrow_expression(init_app_expression(P2, x2),
       init_app_expression(init_app_expression(ex, A2), P2))))));
+
+  return context_insert_n(c, 2, ex, ex_intro);
 }
 
-void init_nat() {
+Context *init_nat(Context *c) {
   if (!nat) nat = init_var_expression("nat", init_type_expression());
+  return context_insert_n(c, 1, nat);
 }
 
-void init_eq() {
+Context *init_eq(Context *c) {
   // defining the eq type. eq : forall A : Type, A -> A -> Prop
   Expression *prop = init_prop_expression();
   Expression *type = init_type_expression();
@@ -77,9 +84,11 @@ void init_eq() {
   Expression *subst_ty = init_forall_expression(P3, init_forall_expression(Q3, 
     init_forall_expression(H3_1, init_forall_expression(H3_2, P3))));
   if (!eq_subst) eq_subst = init_var_expression("eq_subst", subst_ty);
+
+  return context_insert_n(c, 3, eq, eq_refl, eq_subst);
 }
 
-void init_app_cong() {
+Context *init_app_cong(Context *c) {
   Expression *type = init_type_expression();
 
   Expression *A = init_var_expression("A", type);
@@ -114,9 +123,11 @@ void init_app_cong() {
           init_forall_expression(x, 
             init_forall_expression(y, app_cong_body))))));
   if (!app_cong) app_cong = init_var_expression("app_cong", app_cong_ty);
+
+  return context_insert_n(c, 1, app_cong);
 }
 
-void init_eq_trans() {
+Context *init_eq_trans(Context *c) {
   // defining the eq_trans type
   Expression *A = init_var_expression("A", init_type_expression());
   Expression *x = init_var_expression("x", A);
@@ -138,9 +149,11 @@ void init_eq_trans() {
       init_forall_expression(z, eq_trans_body))));
 
   if (!eq_trans) eq_trans = init_var_expression("eq_trans", eq_trans_ty);
+
+  return context_insert_n(c, 1, eq_trans);
 }
 
-void init_lambda_extensionality() {
+Context *init_lambda_extensionality(Context *c) {
   Expression *type = init_type_expression();
 
   Expression *A = init_var_expression("A", type);
@@ -169,9 +182,11 @@ void init_lambda_extensionality() {
           init_forall_expression(H, lambda_extensionality_concl)))));
     
   if (!lambda_extensionality) lambda_extensionality = init_var_expression("lambda_extensionality", lambda_extensionality_ty);
+
+  return context_insert_n(c, 1, lambda_extensionality);
 }
 
-void init_add() {
+Context *init_add(Context *c) {
     // Define addition. add : nat -> (nat -> nat).
   Expression *add_ty = init_arrow_expression(nat, init_arrow_expression(nat, nat));
   if (!add) add = init_var_expression("add", add_ty);
@@ -187,9 +202,11 @@ void init_add() {
     n)
   );
   if (!add_r_O) add_r_O = init_var_expression("add_r_O", add_r_O_ty); 
+
+  return context_insert_n(c, 3, add, O, add_r_O);
 }
 
-void init_temporary() {
+Context *init_temporary(Context *ctx) {
   Expression *f_ty = init_arrow_expression(nat, nat);
   Expression *a_ty = nat;
 
@@ -211,7 +228,6 @@ void init_temporary() {
   if (!h) h = init_var_expression("h", h_ty);
   if (!c) c = init_var_expression("c", nat);
 
-
   Expression *x = init_var_expression("x", nat);
 
   Expression *hxx = init_app_expression(init_app_expression(h, x), x);
@@ -221,17 +237,23 @@ void init_temporary() {
 
   Expression *hxx_x_ty = init_forall_expression(x, hxx_x_equality);
   if (!eq_hxx_x) eq_hxx_x = init_var_expression("eq_hxx_x", hxx_x_ty);
+
+  return context_insert_n(ctx, 8, f, a, b, eq_fa_a, g, h, c, eq_hxx_x);
 }
 
 void init_globals() {
-	init_and();
-  init_ex();
-  init_nat();
-  init_eq();
-  init_app_cong();
-  init_eq_trans();
-  init_lambda_extensionality();
-  init_add();
+  Context *c = context_create_empty();
 
-  init_temporary();
+	c = init_and(c);
+  c = init_ex(c);
+  c = init_nat(c);
+  c = init_eq(c);
+  c = init_app_cong(c);
+  c = init_eq_trans(c);
+  c = init_lambda_extensionality(c);
+  c = init_add(c);
+
+  std_lib_ctx = c;
+
+  init_temporary(c);
 }

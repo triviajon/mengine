@@ -100,36 +100,44 @@ Expression *exec_input = NULL;
 Expression *word_add_0_r = NULL;
 
 
-void init_positive() {
+Context *init_positive(Context *c) {
 	positive = init_var_expression("positive", init_type_expression());
 
 	xI = init_var_expression("xI", init_arrow_expression(positive, positive));
 	xO = init_var_expression("xO", init_arrow_expression(positive, positive));
 	xH = init_var_expression("xH", positive);
+
+	return context_insert_n(c, 4, positive, xI, xO, xH);
 }
 
-void init_N() {
+Context *init_N(Context *c) {
 	N = init_var_expression("N", init_type_expression());
 	N0 = init_var_expression("N0", N);
 	Npos = init_var_expression("Npos", init_arrow_expression(positive, N));
+
+	return context_insert_n(c, 3, N, N0, Npos);
 }
 
-void init_Z() {
+Context *init_Z(Context *c) {
 	Z = init_var_expression("Z", init_type_expression());
 	Z0 = init_var_expression("Z0", Z);
 	Zpos = init_var_expression("Zpos", init_arrow_expression(positive, Z));
 	Zneg = init_var_expression("Zneg", init_arrow_expression(positive, Z));
+
+	return context_insert_n(c, 4, Z, Z0, Zpos, Zneg);
 }
 
-void init_string() {
+Context *init_string(Context *c) {
 	string = init_var_expression("string", init_type_expression());
 	a_string = init_var_expression("a", string);
 	b_string = init_var_expression("b", string);
 	c_string = init_var_expression("c", string);
 	terminator_string = init_var_expression("\\0", string);
+
+	return context_insert_n(c, 5, string, a_string, b_string, c_string, terminator_string);
 }
 
-void init_list() {
+Context *init_list(Context *c) {
 	list = init_var_expression("list", init_arrow_expression(init_type_expression(), init_type_expression()));
 	Expression *bind1 = init_var_expression("A", init_type_expression());
 	list_nil = init_var_expression("list_nil", 
@@ -142,13 +150,17 @@ void init_list() {
 				init_arrow_expression(init_app_expression(list, bind2),
 					init_app_expression(list, bind2)
 			))));
+
+	return context_insert_n(c, 3, list, list_nil, list_cons);
 }
 
-void init_word() {
+Context *init_word(Context *c) {
 	word = init_var_expression("word", init_type_expression());
+
+	return context_insert_n(c, 1, word);
 }
 
-void init_storage() {
+Context *init_storage(Context *c) {
 	word_of_Z = init_var_expression("word_of_Z", init_arrow_expression(Z, word));
 	word_add = init_var_expression("word_add", 
 		init_arrow_expression(
@@ -158,9 +170,11 @@ void init_storage() {
 	trace = init_app_expression(list, IOEvent);
 	mem = init_app_expression(init_app_expression(partial_map, word), byte);
 	locals = init_app_expression(init_app_expression(partial_map, string), word);
+
+	return context_insert_n(c, 3, word_of_Z, word_add, byte);
 }
 
-void init_bopname() {
+Context *init_bopname(Context *c) {
 	bopname = init_var_expression("bopname", init_type_expression());
 	bopname_add = init_var_expression("bopname_add", bopname);
 	bopname_sub = init_var_expression("bopname_sub", bopname);
@@ -188,9 +202,11 @@ void init_bopname() {
 				init_app_expression(init_app_expression(init_app_expression(interp_binop, bopname_add), w1), w2)),
 				init_app_expression(init_app_expression(word_add, w1), w2))
 			)));
+
+	return context_insert_n(c, 4, bopname, bopname_add, interp_binop, binop_add_to_word_add);
 }
 
-void init_expr() {
+Context *init_expr(Context *c) {
 	expr = init_var_expression("expr", init_type_expression());
 	expr_literal = init_var_expression("expr_literal", init_forall_expression(init_var_expression("v", Z), expr));
 	expr_var = init_var_expression("expr_var", init_forall_expression(init_var_expression("x", string), expr));
@@ -229,10 +245,11 @@ void init_expr() {
 			)
 	);
 	eval_expr = init_lambda_expression(eval_expr_m, init_lambda_expression(eval_expr_l, eval_expr_fix));
-
+	
+	return context_insert_n(c, 5, expr, expr_literal, expr_var, expr_op, expr_ite);
 }
 
-void init_cmd() {
+Context *init_cmd(Context *c) {
 	cmd = init_var_expression("cmd", init_type_expression());
 	cmd_skip = init_var_expression("cmd_skip", cmd);
 	cmd_set = init_var_expression("cmd_set", 
@@ -252,9 +269,11 @@ void init_cmd() {
 				cmd)));
 	cmd_input = init_var_expression("cmd_input", init_forall_expression(init_var_expression("lhs", string), cmd));
 	cmd_output = init_var_expression("cmd_output", init_forall_expression(init_var_expression("arg", string), cmd));
+
+	return context_insert_n(c, 8, cmd, cmd_skip, cmd_set, cmd_unset, cmd_cond, cmd_seq, cmd_input, cmd_output);
 }
 
-void init_option() {   
+Context *init_option(Context *c) {   
     option = init_var_expression("option", init_arrow_expression(init_type_expression(), init_type_expression()));
     
 	Expression *A1 = init_var_expression("A", init_type_expression());
@@ -264,16 +283,20 @@ void init_option() {
 	Expression *A2 = init_var_expression("A", init_type_expression());
     option_none = init_var_expression("option_none", 
         init_forall_expression(A2, init_app_expression(option, A2)));
+
+	return context_insert_n(c, 3, option, option_some, option_none);
 }
 
-void init_io_event() {
+Context *init_io_event(Context *c) {
 	IOEvent = init_var_expression("IOEvent", init_type_expression());
 	IOEvent_IN = init_var_expression("IOEvent_IN", init_arrow_expression(word, IOEvent));
 	IOEvent_OUT = init_var_expression("IOEvent_OUT", init_arrow_expression(word, IOEvent));
+
+	return context_insert_n(c, 3, IOEvent, IOEvent_IN, IOEvent_OUT);
 }
 
 
-void init_partial_map() {
+Context *init_partial_map(Context *c) {
 
 	partial_map = init_var_expression("partial_map", init_arrow_expression(init_type_expression(), init_arrow_expression(init_type_expression(), init_type_expression())));
 
@@ -328,9 +351,11 @@ void init_partial_map() {
 				sub5_2),
 				init_app_expression(init_app_expression(option_some, B5), v5)))))))); 
 	partial_map_get_put_diff = NULL;
+
+	return context_insert_n(c, 6, partial_map, partial_map_empty, partial_map_get, partial_map_put, partial_map_remove, partial_map_get_put_same);
 }
 
-void init_exec() {
+Context *init_exec(Context *c) {
 	// exec
 	exec = init_var_expression("exec", init_arrow_expression(cmd, 
 		init_arrow_expression(trace,
@@ -452,9 +477,11 @@ void init_exec() {
 	
 	exec_input = init_var_expression("exec_input", init_forall_expression(t4, init_forall_expression(lhs4, init_forall_expression(m4, 
 		init_forall_expression(l4, init_forall_expression(post4, init_arrow_expression(H4, C4)))))));
+
+	return context_insert_n(c, 5, exec, exec_skip, exec_set, exec_seq, exec_input);
 }
 
-void init_properties() {
+Context *init_properties(Context *c) {
 	Expression *x = init_var_expression("x", word);
 	word_add_0_r = init_var_expression("word_add_0_r", init_forall_expression(x, 
 		init_app_expression(init_app_expression(init_app_expression(
@@ -463,6 +490,8 @@ void init_properties() {
 			init_app_expression(init_app_expression(option_some, word), init_app_expression(word_of_Z, Z0)))), 
 			x)
 	));
+
+	return context_insert_n(c, 1, word_add_0_r);
 }
 
 Expression *make_exec_test_3() {
@@ -564,7 +593,7 @@ Expression *make_exec_test_4() {
 	return cmd_ok_theorem;
 }
 
-Expression *make_exec_test_5() {
+Expression *make_exec_test_5(Context *ctx) {
 	// forall m l, let t := (list_nil IOEvent) in 
 	// exec (cmd_input a) m l (fun t' m' l' => 
 	// 		and (eq (partial_map word byte) m' m) 
@@ -593,7 +622,7 @@ Expression *make_exec_test_5() {
 				init_app_expression(init_app_expression(and, post_sub1), post_sub2)))))));
 
 	Expression *cmd_ok_theorem = init_forall_expression(m, init_forall_expression(l, 
-		init_app_expression(init_app_expression(init_app_expression(init_app_expression(init_app_expression(exec, cmd), t), m), l), post)));
+		init_app_expression(init_app_expression(init_app_expression(init_app_expression(init_app_expression_wc(exec, cmd, ctx), t), m), l), post)));
 	return cmd_ok_theorem;
 }
 
@@ -768,23 +797,26 @@ Expression *straightline_solve(Expression *e) {
 }
 
 void run_symbolic() {
-	init_word();
-	init_option();
-	init_positive();
-	init_N();
-	init_Z();
-	init_string();
-	init_list();
-	init_partial_map();
-	init_io_event();
-	init_storage();
-	init_bopname();
-	init_expr();
-	init_cmd();
-	init_exec();
-	init_properties();
+	Context *c = std_lib_ctx;
 
-	Expression *cmd_ok_theorem = make_exec_test_5();
+	c = init_word(c);
+	c = init_option(c);
+	c = init_positive(c);
+	c = init_N(c);
+	c = init_Z(c);
+	c = init_string(c);
+	c = init_list(c);
+	c = init_partial_map(c);
+	c = init_io_event(c);
+	c = init_storage(c);
+	c = init_bopname(c);
+	c = init_expr(c);
+	c = init_cmd(c);
+	c = init_exec(c);
+	c = init_properties(c);
+
+	Expression *cmd_ok_theorem = make_exec_test_5(c);
+	
 	Expression *proof = straightline_solve(cmd_ok_theorem);
 
 	printf("%s\n\n%s\n", stringify_expression2(cmd_ok_theorem), stringify_expression2(proof));

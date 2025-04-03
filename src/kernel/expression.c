@@ -153,7 +153,8 @@ Expression *init_fix_expression(Expression *ident, Expression *bound_variable, E
   expr->value.fix.ident = ident;
   expr->value.fix.bound_variable = bound_variable;
   expr->value.fix.body = body;
-  expr->value.fix.context = context_minus(get_expression_context(body), bound_variable);
+  // TODO: wrong for similar reasons to match_expr. 
+  expr->value.fix.context = get_expression_context(body);
   expr->value.fix.type = constr_lambda_type(bound_variable, body);
   expr->value.fix.uplinks = dll_create();
   return expr;
@@ -171,20 +172,102 @@ Expression *init_match_expr_expression(Expression *match_scrutinee, Expression *
   expr->value.matchExpr.op_case_item = op_case_item;
   expr->value.matchExpr.op_result = op_result;
   expr->value.matchExpr.type = type;
-  expr->value.matchExpr.context = context_add(
-    context_add(
-      context_add(
-        get_expression_context(literal_case_item), 
-        get_expression_context(var_case_item)), 
-        get_expression_context(op_case_item)), 
-    context_add(
-      context_add(
-        get_expression_context(literal_result), 
-        get_expression_context(var_result)), 
-        get_expression_context(op_result))
-  );
+  // TODO: this is blatantly wrong, should treat each case item as functions over its arguments 
+  // and then assembly the context from the resulting contexts of each case. 
+  expr->value.matchExpr.context = get_expression_context(type); 
   expr->value.matchExpr.uplinks = dll_create();
   return expr;
+}
+
+Expression *init_var_expression_wc(const char *name, Expression *type, Context *defining_context) {
+  if (!valid_in_context(type, defining_context)) return NULL;
+
+  Expression *expr = (Expression *)malloc(sizeof(Expression));
+  expr->type = VAR_EXPRESSION;
+  expr->value.var.name = strdup(name);
+  expr->value.var.type = type;
+  expr->value.var.uplinks = dll_create();
+  expr->value.var.context = defining_context;
+  return expr;
+}
+
+Expression *init_lambda_expression_wc(Expression *bound_variable, Expression *body, Context *context) {
+  if (!valid_in_context(body, context)) return NULL;
+  
+  Expression *expr = (Expression *)malloc(sizeof(Expression));
+  expr->type = LAMBDA_EXPRESSION;
+  expr->value.lambda.context = context_minus(context, bound_variable);
+  expr->value.lambda.bound_variable = bound_variable;
+  expr->value.lambda.type = constr_lambda_type(bound_variable, body);
+  expr->value.lambda.body = body;
+  add_to_parents(body, new_uplink(expr, LAMBDA_BODY));
+  expr->value.lambda.uplinks = dll_create();
+  return expr;
+}
+
+Expression *init_app_expression_wc(Expression *func, Expression *arg, Context *context) {
+  if (!valid_in_context(func, context)) return NULL;
+  if (!valid_in_context(arg, context)) return NULL;
+
+  Expression *expr = (Expression *)malloc(sizeof(Expression));
+  expr->type = APP_EXPRESSION;
+  Context *combined_ctx = context;
+  expr->value.app.context = combined_ctx;
+  expr->value.app.func = func;
+  add_to_parents(func, new_uplink(expr, APP_FUNC));
+  expr->value.app.arg = arg;
+  add_to_parents(arg, new_uplink(expr, APP_ARG));
+  expr->value.app.type = constr_app_type(func, arg);
+  expr->value.app.cache = NULL;
+  expr->value.app.uplinks = dll_create();
+  return expr;
+}
+
+Expression *init_forall_expression_wc(Expression *bound_variable, Expression *body, Context *context) {
+  if (!valid_in_context(body, context)) return NULL;
+
+  Expression *expr = (Expression *)malloc(sizeof(Expression));
+  expr->type = FORALL_EXPRESSION;
+  expr->value.forall.context = context_minus(context, bound_variable);
+  expr->value.forall.bound_variable = bound_variable;
+  expr->value.forall.type = init_type_expression();
+  expr->value.forall.body = body;
+  add_to_parents(body, new_uplink(expr, FORALL_BODY));
+  expr->value.forall.uplinks = dll_create();
+  return expr;
+}
+
+Expression *extend_expression_context(Expression *expression, Expression *variable) {
+  Context *original_context = get_expression_context(expression);
+  if (!valid_to_add_to_context(variable, original_context)) return NULL;
+
+  switch (expression->type) {
+    case (VAR_EXPRESSION): {
+      return init_var_expression_wc(
+        expression->value.var.name, 
+        expression->value.var.type,
+        context_insert(original_context, variable));
+    }
+    case (LAMBDA_EXPRESSION): {
+      return init_lambda_expression_wc(
+        expression->value.lambda.bound_variable,
+        expression->value.lambda.body,
+        context_insert(original_context, variable));
+    }
+    case (APP_EXPRESSION): {
+      return init_app_expression_wc(
+        expression->value.app.func,
+        expression->value.app.arg,
+        context_insert(original_context, variable));
+    }
+    case (FORALL_EXPRESSION): {
+      return init_forall_expression_wc(
+        expression->value.forall.bound_variable,
+        expression->value.forall.body,
+        context_insert(original_context, variable));
+    }
+    default: return NULL;
+  }
 }
 
 Expression *init_arrow_expression(Expression *lhs, Expression *rhs) {
@@ -574,7 +657,7 @@ bool can_fill(Expression *hole, Expression *term) {
   bool types_match = _match_under_holes(get_expression_type(hole), get_expression_type(term), alpha_equivalences, required_holes);
   map_clear_free(alpha_equivalences);
   map_clear_free(required_holes);
-  return types_match; 
+  return types_match && valid_in_context(term, get_expression_context(hole));
 }
 
 void fillHole(Expression *hole, Expression *term) {

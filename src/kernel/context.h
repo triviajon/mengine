@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #include "doubly_linked_list.h"
 
@@ -11,9 +12,10 @@ typedef struct Expression Expression;
 
 // A (var) expression can be re-used in multiple Context chains, as long as
 // the chain remains valid.
-typedef struct Context {
+typedef struct Context
+{
   Expression *var_type;
-  struct Context *parent;  // if Γ[variable: type] is this context, then Γ is our parent.
+  struct Context *parent; // if Γ[variable: type] is this context, then Γ is our parent.
 } Context;
 
 // Singleton, initialized with first call to context_create_empty()
@@ -27,6 +29,9 @@ bool context_is_empty(Context *context);
 
 // Add a variable-type binding to the context, and return the new context
 Context *context_insert(Context *context, Expression *var_type);
+
+// Adds n variable-type bindings to the context, in order of given arguments, and returns the new context.
+Context *context_insert_n(Context *context, int n, ...);
 
 // Gets the size of the content. Empty context has size 0.
 int context_size(Context *context);
@@ -46,15 +51,24 @@ DoublyLinkedList *context_ancestors(Context *context_A);
 // Finds least common ancestor of context_A and context_B
 Context *context_LCA(Context *context_A, Context *context_B);
 
+// Given two contexts, returns the "sum" of the contexts.
+// Specifically each variable binding in context_B, starting from the empty context, 
+// will be inserted to the end of context_A if it is not already found in context_A.
 Context *context_add(Context *context_A, Context *context_B);
 
-// Suppose context has the form [variable1: type1] ... [subtrahend: subtrahendtype]...  
-// Then this function returns the context up until, but not including, the subtrahend,
-// or the original context if the subtrahend is not found.
+// If subtrahend is not a variable found in the given context, this function returns context unchanged.
+// Otherwise, this function removes the subtrahend node (and its dependencies) from a context tree. 
+// It ensures that only the minimal set of nodes is removed, preserving the context tree's integrity. 
 Context *context_minus(Context *context, Expression *subtrahend);
 
 void context_free(Context *context);
 
+// Returns true iff expr is well defined under the given context. This happpens 
+// when the context of expr is a subset of the given context.
 bool valid_in_context(Expression *expr, Context *context);
 
-#endif  // CONTEXT_H
+// Returns true iff expr is a variable, and it is valid to add it to the given context.
+// This happens when the context needed to define type(expr) is a subset of the given context.
+bool valid_to_add_to_context(Expression *expr, Context *context);
+
+#endif // CONTEXT_H

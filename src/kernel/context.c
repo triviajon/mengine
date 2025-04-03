@@ -34,6 +34,22 @@ Context *context_insert(Context *context, Expression *var_type) {
   return new_ctx;
 }
 
+Context *context_insert_n(Context *context, int n, ...) {
+  va_list argptr;
+  va_start(argptr, n);
+
+  Context *final = context;
+  for (int i = 0; i < n; i++) {
+    Expression *curr = va_arg(argptr, Expression*);
+    final = context_insert(final, curr);
+    if (final == NULL) {
+      return NULL;
+    }
+  }
+
+  return final;
+}
+
 int context_size(Context *context) {
   int count = 0;
   Context *curr = context;
@@ -78,24 +94,20 @@ Context *context_add(Context *context_A, Context *context_B) {
     return context_A;
   }
 
-  DoublyLinkedList *A_ancestors = context_ancestors(context_A);
-  int n = dll_len(A_ancestors);
+  DoublyLinkedList *B_ancestors = context_ancestors(context_B);
+  int n = dll_len(B_ancestors);
 
-  Context *result = context_B;
+  Context *result = context_A;
   for (int i = 0; i < n; i++) {
-    Expression *curr_A_expr = dll_at(A_ancestors, i)->data;
-    if (context_find(context_B, curr_A_expr) == NULL) {
-      result = context_insert(result, curr_A_expr);
+    Expression *curr_B_expr = dll_at(B_ancestors, i)->data;
+    if (context_find(context_A, curr_B_expr) == NULL) {
+      result = context_insert(result, curr_B_expr);
     }
   }
 
   return result;
 }
 
-// If the given context does not contain the subtrahend, this function
-// simply returns the given context. If it does contain the subtrahend, then
-// it returns a context which does not define subtrahend, and additional nodes
-// are removed iff they rely on subtrahend being defined in the context.  
 Context *context_minus(Context *context, Expression *subtrahend) {
   if (context_find(context, subtrahend) == NULL) {
     return context;
@@ -108,7 +120,7 @@ Context *context_minus(Context *context, Expression *subtrahend) {
 
   for (int i = 0; i < n; i++) {
     Expression *curr_vartype = dll_at(given_ancestors, i)->data;
-    if (curr_vartype != subtrahend) {
+    if (curr_vartype != subtrahend && valid_to_add_to_context(curr_vartype, result)) {
       result = context_insert(result, curr_vartype);
     }
   }
@@ -116,14 +128,23 @@ Context *context_minus(Context *context, Expression *subtrahend) {
 }
 
 bool valid_in_context(Expression *expr, Context *context) {
-  Context *expr_ctx = get_expression_context(expr);
-  Context *curr_e_ctx = expr_ctx;
-  while (!context_is_empty(curr_e_ctx)) {
-    Expression *curr_var = curr_e_ctx->var_type;
+  Context *curr_expr_ctx = get_expression_context(expr);
+  while (!context_is_empty(curr_expr_ctx)) {
+    Expression *curr_var = curr_expr_ctx->var_type;
     if (context_find(context, curr_var) == NULL) {
       return false;
     }
-    curr_e_ctx = curr_e_ctx->parent;
+    curr_expr_ctx = curr_expr_ctx->parent;
   }
   return true;
 }
+
+bool valid_to_add_to_context(Expression *expr, Context *context) {
+  if (expr->type != VAR_EXPRESSION) {
+    return false;
+  }
+
+  Expression *expr_type = get_expression_type(expr);
+  return valid_in_context(expr_type, context);
+}
+

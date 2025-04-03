@@ -188,6 +188,29 @@ Expression *init_hole_expression(char *name, Expression *return_type, Context *d
 Expression *init_fix_expression(Expression *ident, Expression *bound_variable, Expression *body);
 Expression *init_match_expr_expression(Expression *match_scrutinee, Expression *literal_scrutinee, Expression *literal_result, Expression *var_scrutinee, Expression *var_result,
                                        Expression *op_scrutinee, Expression *op_result, Expression *type);
+
+// Initialize a new variable expression with a given name, type, and defining context. 
+// The variable's type must be valid in the defining context.
+Expression *init_var_expression_wc(const char *name, Expression *type, Context *defining_context);
+
+// Initialize a new lambda expression with a bound variable, body, and context. 
+// The body must be valid in the given context.
+Expression *init_lambda_expression_wc(Expression *bound_variable, Expression *body, Context *context);
+
+// Initialize a new application expression with a function, argument, and context.
+// The function and argument must be valid in the given context.
+Expression *init_app_expression_wc(Expression *func, Expression *arg, Context *context);
+
+// Initialize a new forall expression with a bound variable, body, and context.
+// The body must be valid in the given context.
+Expression *init_forall_expression_wc(Expression *bound_variable, Expression *body, Context *context);
+
+// Extends the context of a given expression by adding another variable binding, and then returning a
+// fresh expression object of the same type as the original. The given variable must be valid in the 
+// context associated with expression, otherwise this function returns NULL. 
+// TODO: Handle hole, fix, and match_expr appropriately. 
+Expression *extend_expression_context(Expression *expression, Expression *variable);
+
 Expression *init_arrow_expression(Expression *lhs, Expression *rhs);
 
 DoublyLinkedList *get_expression_uplinks(Expression *expression);

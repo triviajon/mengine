@@ -43,6 +43,6 @@ typedef struct {
 UnificationResult *init_unification_result(Expression *lemma_instantiation, DoublyLinkedList *new_goals);
 void free_unification_result(UnificationResult *unification_result);
 
-UnificationResult *eunify(Expression *lemma, Expression *expr);
+UnificationResult *eunify(Expression *lemma, Expression *goal);
 
 #endif  // UNIFY_H
