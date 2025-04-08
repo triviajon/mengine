@@ -10,5 +10,5 @@ RewriteProof *rewrite_gfa(int f_length, int g_wrap) {
     current_expr = init_app_expression(g, current_expr);
   }
 
-  return rewrite(current_expr, eq_fa_a);
+  return rewrite(get_expression_context(current_expr), current_expr, eq_fa_a);
 }

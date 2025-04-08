@@ -96,4 +96,13 @@ void dll_foreach(DoublyLinkedList *list, void (*func)(void *data));
 
 DLLNode *dll_new_node(void *val);
 
+/*
+ * Merge two doubly linked lists into one.
+ * The second list will be appended to the first list.
+ * @list1: Pointer to the first list
+ * @list2: Pointer to the second list
+ * @return: Pointer to the merged list (same as list1)
+ */
+DoublyLinkedList *dll_merge(DoublyLinkedList *list1, DoublyLinkedList *list2);
+
 #endif // DOUBLY_LINKED_LIST_H

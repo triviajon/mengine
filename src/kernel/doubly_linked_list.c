@@ -194,3 +194,35 @@ DLLNode *dll_new_node(void *val)
     self->data = val;
     return self;
 }
+
+/*
+ * Merge two doubly linked lists into one.
+ * The second list will be appended to the first list.
+ * @list1: Pointer to the first list
+ * @list2: Pointer to the second list
+ * @return: Pointer to the merged list (same as list1)
+ */
+DoublyLinkedList *dll_merge(DoublyLinkedList *list1, DoublyLinkedList *list2)
+{
+    if (!list1 || !list2)
+        return NULL;
+
+    if (!list1->head)
+    {
+        free(list1);
+        return list2;
+    }
+
+    if (!list2->head)
+    {
+        free(list2);
+        return list1;
+    }
+
+    list1->tail->next = list2->head;
+    list2->head->prev = list1->tail;
+    list1->tail = list2->tail;
+
+    free(list2);
+    return list1;
+}

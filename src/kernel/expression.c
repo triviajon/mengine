@@ -51,20 +51,27 @@ Uplink *new_uplink2(Context *parent, Relation relation) {
 // Helper function to construct a lambda type
 Expression *constr_lambda_type(Expression *bound_variable, Expression *body) {
   Expression *type = init_forall_expression(bound_variable, get_expression_type(body));
-  return normalize(type);
+  return type;
 }
 
 // Helper function to construct a app type
 Expression *constr_app_type(Expression *func, Expression *arg) {
   Expression *func_type = get_expression_type(func);              // something like Forall x: A, B
   Expression *variable = func_type->value.forall.bound_variable;  // x
-  Expression *expected_arg_type = normalize(get_expression_type(variable));  // A
-  Expression *actual_arg_type = normalize(get_expression_type(arg));         // hopefully A, but we need to check.
+  Expression *expected_arg_type = get_expression_type(variable);  // A
+  Expression *actual_arg_type = get_expression_type(arg);         // hopefully A, but we need to check.
   Expression *return_type = func_type->value.forall.body;         // B
 
   if (congruence(actual_arg_type, expected_arg_type)) {
-    return normalize(subst(return_type, variable, arg));  // return B[x -> arg]
-  }
+    return subst(return_type, variable, arg);  // return B[x -> arg]
+  } 
+
+  // We if need to, normalize the arguments
+  Expression *norm_actual_arg_ty = normalize(actual_arg_type);
+  Expression *norm_expected_arg_ty = normalize(expected_arg_type);
+  if (congruence(norm_actual_arg_ty, norm_expected_arg_ty)) {
+    return subst(return_type, variable, arg);  // return B[x -> arg]
+  } 
 
   return NULL;  // Bad app constr, for now set type to NULL
 }
@@ -72,7 +79,7 @@ Expression *constr_app_type(Expression *func, Expression *arg) {
 Expression *init_var_expression(const char *name, Expression *type) {
   Expression *expr = (Expression *)malloc(sizeof(Expression));
   expr->type = VAR_EXPRESSION;
-  expr->value.var.name = strdup(name);
+  expr->value.var.name = name;
   expr->value.var.type = type;
   expr->value.var.uplinks = dll_create();
   expr->value.var.context = context_insert(get_expression_context(type), expr);
@@ -164,17 +171,19 @@ Expression *init_match_expr_expression(Expression *match_scrutinee, Expression *
                                        Expression *op_case_item, Expression *op_result, Expression *type) {
   Expression *expr = (Expression *)malloc(sizeof(Expression));
   expr->type = MATCH_EXPR_EXPRESSION;
-  expr->value.matchExpr.match_scrutinee = match_scrutinee;
-  expr->value.matchExpr.literal_case_item = literal_case_item;
-  expr->value.matchExpr.literal_result = literal_result;
-  expr->value.matchExpr.var_case_item = var_case_item;
-  expr->value.matchExpr.var_result = var_result;
-  expr->value.matchExpr.op_case_item = op_case_item;
-  expr->value.matchExpr.op_result = op_result;
+  expr->value.matchExpr.match_scrutinee = get_innermost_body(match_scrutinee);
+  expr->value.matchExpr.literal_case_item = get_innermost_body(literal_case_item);
+  expr->value.matchExpr.literal_result = get_innermost_body(literal_result);
+  expr->value.matchExpr.var_case_item = get_innermost_body(var_case_item);
+  expr->value.matchExpr.var_result = get_innermost_body(var_result);
+  expr->value.matchExpr.op_case_item = get_innermost_body(op_case_item);
+  expr->value.matchExpr.op_result = get_innermost_body(op_result);
   expr->value.matchExpr.type = type;
-  // TODO: this is blatantly wrong, should treat each case item as functions over its arguments 
-  // and then assembly the context from the resulting contexts of each case. 
-  expr->value.matchExpr.context = get_expression_context(type); 
+  expr->value.matchExpr.context = context_add(context_add(
+    context_add(get_expression_context(literal_case_item), get_expression_context(literal_result)),
+    context_add(get_expression_context(var_case_item), get_expression_context(var_result))),
+    context_add(get_expression_context(op_case_item), get_expression_context(op_result)));
+   
   expr->value.matchExpr.uplinks = dll_create();
   return expr;
 }
@@ -339,6 +348,16 @@ Context *get_expression_context(Expression *expression) {
     case (FIX_EXPRESSION):
       return expression->value.fix.context;
   }
+}
+
+Expression *get_innermost_body(Expression *e) {
+	if (e->type == LAMBDA_EXPRESSION) {
+		return get_innermost_body(e->value.lambda.body);
+	} else if (e->type == FORALL_EXPRESSION) {
+		return get_innermost_body(e->value.forall.body);    
+  } else {
+		return e;
+	}
 }
 
 Expression *get_innermost_func(Expression *e) {

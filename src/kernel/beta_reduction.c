@@ -34,15 +34,15 @@ Expression *eval_fix(Expression *app_func, Expression *app_arg) {
   
   Expression *innermost = get_innermost_func(app_arg);
   Expression *match_result = NULL;
-  if (innermost == get_innermost_func(match_statement->value.matchExpr.literal_case_item)) {
-    match_result = match_and_subst(match_statement->value.matchExpr.literal_case_item, app_arg, 
-      match_statement->value.matchExpr.literal_result);
-  } else if (innermost == get_innermost_func(match_statement->value.matchExpr.var_case_item)) {
-    match_result = match_and_subst(match_statement->value.matchExpr.var_case_item, app_arg, 
-      match_statement->value.matchExpr.var_result);
-  } else if (innermost == get_innermost_func(match_statement->value.matchExpr.op_case_item)) {
-    match_result = match_and_subst(match_statement->value.matchExpr.op_case_item, app_arg, 
-      match_statement->value.matchExpr.op_result);
+  if (innermost == get_innermost_func(get_innermost_body(match_statement->value.matchExpr.literal_case_item))) {
+    match_result = match_and_subst(get_innermost_body(match_statement->value.matchExpr.literal_case_item), app_arg, 
+      get_innermost_body(match_statement->value.matchExpr.literal_result));
+  } else if (innermost == get_innermost_func(get_innermost_body(match_statement->value.matchExpr.var_case_item))) {
+    match_result = match_and_subst(get_innermost_body(match_statement->value.matchExpr.var_case_item), app_arg, 
+      get_innermost_body(match_statement->value.matchExpr.var_result));
+  } else if (innermost == get_innermost_func(get_innermost_body(match_statement->value.matchExpr.op_case_item))) {
+    match_result = match_and_subst(get_innermost_body(match_statement->value.matchExpr.op_case_item), app_arg, 
+      get_innermost_body(match_statement->value.matchExpr.op_result));
   }
 
   if (match_result == NULL) return NULL;
@@ -68,11 +68,11 @@ Expression *normalize(Expression *expression) {
     }
     case (LAMBDA_EXPRESSION): {
       Expression *new_body = normalize(expression->value.lambda.body);
-      return refresh(init_lambda_expression(expression->value.lambda.bound_variable, new_body));
+      return init_lambda_expression(expression->value.lambda.bound_variable, new_body);
     }
     case (FORALL_EXPRESSION): {
       Expression *new_body = normalize(expression->value.forall.body);
-      return refresh(init_forall_expression(expression->value.forall.bound_variable, new_body));
+      return init_forall_expression(expression->value.forall.bound_variable, new_body);
     }
     default:
       return expression;

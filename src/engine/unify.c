@@ -157,10 +157,15 @@ Expression *_unify(Expression *exprA, Expression *exprB, Expression *hole_to_fil
   }
 }
 
-Expression *unify_and_instantiate(Expression *lemma, Expression *lemma_ty, Expression *expr) {
+UnificationResult *unify_and_instantiate(Context *goal_context, Expression *lemma, Expression *lemma_ty, Expression *expr) {
   // Lemma_ty is like Forall x1: T1, ...
   // Want to first replace all leading binding variables of lemma_ty by hole expressions,
   // then try to do unification to instantiate the lemma. It is possible for there to remain open holes.
+
+  // Optimization: before trying to blindly unify, check to see if this could possibly match.
+  // if (!congruence(get_expression_type(expr), get_innermost_body(lemma_ty))) {
+  //   return init_unification_result(NULL, NULL);
+  // }
 
   // First want to replace binding variables -> hole expressions
   DoublyLinkedList *holes = dll_create();
@@ -169,33 +174,38 @@ Expression *unify_and_instantiate(Expression *lemma, Expression *lemma_ty, Expre
     Expression *binding_var = curr_lemma_ty->value.forall.bound_variable;
     Expression *binding_var_type = binding_var->value.var.type;
     char *binding_var_name = binding_var->value.var.name;
-    Expression *var_hole = init_hole_expression(binding_var_name, binding_var_type, curr_lemma_ty->value.forall.context);
+    Expression *var_hole = init_hole_expression(binding_var_name, binding_var_type, goal_context);
     dll_insert_at_tail(holes, dll_new_node(var_hole));
     Expression *curr_lemma_ty_body = curr_lemma_ty->value.forall.body;
     curr_lemma_ty = subst(curr_lemma_ty_body, binding_var, var_hole);
   }
 
   // Now for unification.
-  Expression *instantiated_lemma = lemma;
   Expression *lemma_ty_lhs = get_lhs_eq(curr_lemma_ty);
-  for (int i = 0; i < dll_len(holes); i++) {
-    Expression *hole_to_fill = dll_at(holes, i)->data;
-
-    if (has_holes(lemma_ty_lhs)) {
-      Expression *hole_subst = _unify(lemma_ty_lhs, expr, hole_to_fill);
-
-      if (hole_subst == NULL) {
-        return NULL;
-      }
-
+  Expression *instantiated_lemma = lemma;
+  DoublyLinkedList *remaining_open = dll_create();
+  
+  DLLNode *curr_dll = holes->head;
+  while (curr_dll != NULL) {
+    Expression *hole_to_fill = (Expression *)curr_dll->data;
+    // normalize_hole_type(hole_to_fill);
+    Expression *hole_subst = _unify(lemma_ty_lhs, expr, hole_to_fill);
+    // For now, assume that failure means that we couldn't figure out what to substitute with yet-- 
+    // It could be impossible, but we won't assume that for now.
+    if (hole_subst == NULL) {
+      instantiated_lemma = init_app_expression(instantiated_lemma, hole_to_fill);
+      dll_insert_at_tail(remaining_open, dll_new_node(hole_to_fill));
+    } else {
       instantiated_lemma = init_app_expression(instantiated_lemma, hole_subst);
       fillHole(hole_to_fill, hole_subst);
-    } else {
-      instantiated_lemma = init_app_expression(instantiated_lemma, hole_to_fill);
     }
+
+    curr_dll = curr_dll->next;
   }
 
-  return instantiated_lemma;
+  dll_destroy(holes);
+
+  return init_unification_result(instantiated_lemma, remaining_open);
 }
 
 Expression *instantiate_lemma_with_bindings(Expression *lemma, Expression *lemma_ty, Map *binders) {
@@ -259,8 +269,6 @@ UnificationResult *eunify(Expression *lemma, Expression *goal) {
     Expression *hole_to_fill = (Expression *)curr_dll->data;
     normalize_hole_type(hole_to_fill);
     Expression *hole_subst = _unify(curr_lemma_ty, goal_ty, hole_to_fill);
-    // For now, assume that failure means that we couldn't figure out what to substitute with yet-- 
-    // It could be impossible, but we won't assume that for now.
     if (hole_subst == NULL) {
       instantiated_lemma = init_app_expression(instantiated_lemma, hole_to_fill);
       dll_insert_at_tail(remaining_open, dll_new_node(hole_to_fill));

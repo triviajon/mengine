@@ -13,6 +13,17 @@ Context *context_create_empty() {
 
 bool context_is_empty(Context *context) { return context == EMPTY_CONTEXT; }
 
+bool context_contains_name(Context *context, char *name) {
+  Context *curr = context;
+  while (!context_is_empty(curr)) {
+    if (strcmp(curr->var_type->value.var.name, name) == 0) {
+      return true;
+    }
+    curr = curr->parent;
+  }
+  return false;
+}
+
 Context *context_insert(Context *context, Expression *var_type) {
   if (var_type->type != VAR_EXPRESSION) {
     return NULL;
@@ -58,6 +69,24 @@ int context_size(Context *context) {
     count += 1;
   }
   return count;
+}
+
+bool context_is_ancestor(Context *contextA, Context *contextB) {
+  if (contextA == contextB) {
+    return true;
+  } else if (context_is_empty(contextA)) {
+    return true;
+  }
+
+  Context *curr_ctxB = contextB;
+  while (!context_is_empty(curr_ctxB)) {
+    if (contextA == curr_ctxB) {
+      return true;
+    }
+    curr_ctxB = curr_ctxB->parent;
+  }
+
+  return false;
 }
 
 Context *context_find(Context *context, Expression *var) {
@@ -129,6 +158,10 @@ Context *context_minus(Context *context, Expression *subtrahend) {
 
 bool valid_in_context(Expression *expr, Context *context) {
   Context *curr_expr_ctx = get_expression_context(expr);
+  if (context_is_ancestor(curr_expr_ctx, context)) {
+    return true;
+  }
+
   while (!context_is_empty(curr_expr_ctx)) {
     Expression *curr_var = curr_expr_ctx->var_type;
     if (context_find(context, curr_var) == NULL) {

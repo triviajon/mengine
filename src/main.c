@@ -154,7 +154,12 @@ int main(int argc, char *argv[]) {
       print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
     }
   } else if (strcmp(argv[1], "sym") == 0) {
-    run_symbolic();
+    if (argc != 3) {
+      fprintf(stderr, "Usage: %s [--proof=0|1] sym <n>\n", argv[0]);
+      return 1;
+    }
+    int n = atoi(argv[2]);
+    run_symbolic(n);
   } else {
     fprintf(stderr, "Unknown example: %s\n", argv[1]);
     print_usage();

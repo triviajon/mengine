@@ -35,7 +35,7 @@ RewriteProof *rewrite_addr0__letin(int n_depth) {
   curr_expr = init_app_expression(
       init_app_expression(LetIn, subexpr), curr_expr);
 
-  return rewrite(curr_expr, add_r_O);
+  return rewrite(get_expression_context(curr_expr), curr_expr, add_r_O);
 }
 
 Expression *build_vi(Expression *v0, int i) {
@@ -54,7 +54,7 @@ Expression *build_vi(Expression *v0, int i) {
 RewriteProof *rewrite_addr0__tree(int n_depth) {
   Expression *v0 = init_var_expression("v0", nat);
   Expression *vn = build_vi(v0, n_depth + 1);
-  return rewrite(vn, add_r_O);
+  return rewrite(get_expression_context(vn), vn, add_r_O);
 }
 
 RewriteProof *rewrite_addr0__native(int n_depth) {
@@ -71,5 +71,5 @@ RewriteProof *rewrite_addr0__native(int n_depth) {
     init_app_expression(add, 
       init_app_expression(init_app_expression(add, vnm1), vnm1)), 
   O);
-  return rewrite(expr, add_r_O);
+  return rewrite(get_expression_context(expr), expr, add_r_O);
 }

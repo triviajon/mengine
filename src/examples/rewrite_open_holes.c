@@ -15,5 +15,5 @@ RewriteProof *rewrite_open_holes() {
 
   Expression *expr = init_app_expression(f, O);
 
-  return rewrite(expr, mult_n_O);
+  return rewrite(get_expression_context(expr), expr, mult_n_O);
 }

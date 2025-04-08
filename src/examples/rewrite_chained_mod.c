@@ -33,5 +33,5 @@ RewriteProof *rewrite_chained_mod(int n_depth) {
     curr_expr = init_app_expression(init_app_expression(mod, curr_expr), p);
   }
   
-  return rewrite(curr_expr, mod_mod);
+  return rewrite(get_expression_context(curr_expr), curr_expr, mod_mod);
 }

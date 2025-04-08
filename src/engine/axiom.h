@@ -7,9 +7,11 @@
 
 extern Expression *eq;
 extern Expression *eq_refl;
+extern Expression *eq_sym;
 extern Expression *eq_subst;
 extern Expression *and;
 extern Expression *and_conj;
+extern Expression *not;
 extern Expression *app_cong;
 extern Expression *ex;
 extern Expression *ex_intro;

@@ -31,14 +31,14 @@ Expression *instantiate_lemma(Context *context, Expression *lemma);
 // Returns a DLL of hole expressions in expr
 DoublyLinkedList *list_holes(Expression *expr);
 
-Expression *unify_and_instantiate(Expression *lemma, Expression *lemma_ty, Expression *expr);
-
-Expression *instantiate_lemma_with_bindings(Expression *lemma, Expression *lemma_ty, Map *binders);
-
 typedef struct {
 	Expression *lemma_instantiation;
 	DoublyLinkedList *new_goals;
 } UnificationResult;
+
+UnificationResult *unify_and_instantiate(Context *goal_context, Expression *lemma, Expression *lemma_ty, Expression *expr);
+
+Expression *instantiate_lemma_with_bindings(Expression *lemma, Expression *lemma_ty, Map *binders);
 
 UnificationResult *init_unification_result(Expression *lemma_instantiation, DoublyLinkedList *new_goals);
 void free_unification_result(UnificationResult *unification_result);

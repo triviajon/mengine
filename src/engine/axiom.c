@@ -2,11 +2,13 @@
 
 Expression *eq = NULL;
 Expression *eq_refl = NULL;
+Expression *eq_sym = NULL;
 Expression *eq_subst = NULL;
 Expression *app_cong = NULL;
 Expression *eq_trans = NULL;
 Expression *and = NULL;
 Expression *and_conj = NULL;
+Expression *not = NULL;
 Expression *ex = NULL;
 Expression *ex_intro = NULL;
 Expression *lambda_extensionality = NULL;
@@ -37,6 +39,11 @@ Context *init_and(Context *c) {
 				init_arrow_expression(B, init_app_expression(init_app_expression(and, A), B))))));
 
   return context_insert_n(c, 2, and, and_conj);
+}
+
+Context *init_not(Context *c) {
+  not = init_var_expression("not",  init_arrow_expression(init_prop_expression(), init_prop_expression()));
+  return context_insert_n(c, 1, not);
 }
 
 Context *init_ex(Context *c) {
@@ -76,6 +83,16 @@ Context *init_eq(Context *c) {
       init_app_expression(init_app_expression(init_app_expression(eq, B), x), x)));
   if (!eq_refl) eq_refl = init_var_expression("eq_refl", refl_ty);
 
+  // eq_sym : forall (A : Type) (x y : A), eq A x y -> eq A y x.
+  Expression *A_sym = init_var_expression("A", init_type_expression());
+  Expression *x_sym = init_var_expression("x", A_sym);
+  Expression *y_sym = init_var_expression("y", A_sym);
+  Expression *H_sym = init_app_expression(init_app_expression(init_app_expression(eq, A_sym), x_sym), y_sym);
+  Expression *C_sym = init_app_expression(init_app_expression(init_app_expression(eq, A_sym), y_sym), x_sym);
+  Expression *sym_ty = init_forall_expression(A_sym, init_forall_expression(x_sym, init_forall_expression(y_sym, 
+    init_arrow_expression(H_sym, C_sym))));
+  if (!eq_sym) eq_sym = init_var_expression("eq_sym", sym_ty);
+
   // eq_subst: forall (P Q : Prop) (_: eq Prop P Q) (_: Q), P
   Expression *P3 = init_var_expression("P", init_prop_expression());
   Expression *Q3 = init_var_expression("Q", init_prop_expression());
@@ -85,7 +102,7 @@ Context *init_eq(Context *c) {
     init_forall_expression(H3_1, init_forall_expression(H3_2, P3))));
   if (!eq_subst) eq_subst = init_var_expression("eq_subst", subst_ty);
 
-  return context_insert_n(c, 3, eq, eq_refl, eq_subst);
+  return context_insert_n(c, 4, eq, eq_refl, eq_sym, eq_subst);
 }
 
 Context *init_app_cong(Context *c) {
@@ -245,6 +262,7 @@ void init_globals() {
   Context *c = context_create_empty();
 
 	c = init_and(c);
+	c = init_not(c);
   c = init_ex(c);
   c = init_nat(c);
   c = init_eq(c);

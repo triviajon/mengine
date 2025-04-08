@@ -9,5 +9,5 @@ RewriteProof *rewrite_haa(int h_depth) {
     current_expr = init_app_expression(intermediate, current_expr);
   }
 
-  return rewrite(current_expr, eq_hxx_x);
+  return rewrite(get_expression_context(current_expr), current_expr, eq_hxx_x);
 }

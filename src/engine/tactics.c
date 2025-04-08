@@ -73,31 +73,32 @@ bool expr_match(Expression *expr1, Expression *expr2) {
   return false;
 }
 
-RewriteProof *rewrite_head(Expression *expr, Expression *lemma) {
+RewriteProof *rewrite_head(Context *goal_context, Expression *expr, Expression *lemma) {
   Expression *lemma_ty = get_expression_type(lemma);
 
   if (lemma_ty->type == FORALL_EXPRESSION) {
-    Expression *instantiated_lemma = unify_and_instantiate(lemma, lemma_ty, expr);
+    UnificationResult *unification_result = unify_and_instantiate(goal_context, lemma, lemma_ty, expr);
+    Expression *instantiated_lemma = unification_result->lemma_instantiation;
     if (instantiated_lemma != NULL) {
       Expression *lhs = get_lhs_eq(get_expression_type(instantiated_lemma));
       Expression *rhs = get_rhs_eq(get_expression_type(instantiated_lemma));
 
       if (expr_match(lhs, expr)) {
         rewrite_locations++;
-        return init_rewrite_proof(expr, rhs, instantiated_lemma);
+        return init_rewrite_proof(expr, rhs, instantiated_lemma, unification_result->new_goals);
       }
     }
 
-    return init_rewrite_proof(expr, expr, build_eq_refl(expr));
+    return init_rewrite_proof(expr, expr, build_eq_refl(expr), dll_create());
   }
 
   Expression *lhs = get_lhs_eq(lemma_ty);
   Expression *rhs = get_rhs_eq(lemma_ty);
   if (expr_match(lhs, expr)) {
     rewrite_locations++;
-    return init_rewrite_proof(expr, rhs, lemma);
+    return init_rewrite_proof(expr, rhs, lemma, dll_create());
   } else {
-    return init_rewrite_proof(expr, expr, build_eq_refl(expr));
+    return init_rewrite_proof(expr, expr, build_eq_refl(expr), dll_create());
   }
 }
 
@@ -137,12 +138,12 @@ Expression *refresh2(Expression *expr, char suffix, bool add_suffix) {
 }
 
 
-RewriteProof *rewrite_lambda(Expression *expr, Expression *lemma) {
+RewriteProof *rewrite_lambda(Context *goal_context, Expression *expr, Expression *lemma) {
   Expression *x = expr->value.lambda.bound_variable;
   Expression *T = get_expression_type(x);
   Expression *inner_orig = expr->value.lambda.body;
 
-  RewriteProof *inner_rw = _rewrite(inner_orig, lemma);
+  RewriteProof *inner_rw = _rewrite(goal_context, inner_orig, lemma);
   Expression *mid = refresh(init_lambda_expression(x, inner_rw->rewritten_expr));
 
   Expression *eq_pf_ty = get_expression_type(inner_rw->equality_proof);
@@ -157,15 +158,16 @@ RewriteProof *rewrite_lambda(Expression *expr, Expression *lemma) {
   // @functional_extensionality : forall (A B : Type) (f g : A -> B), (forall x
   // : A, eq B (f x) (g x)) -> eq (A -> B) f g
   Expression *f_mid = build_lambda_extensionality(A, B, eq_ty_lhs, eq_ty_rhs, pre_func_ext);
-  RewriteProof *rewritten_mid = rewrite_head(mid, lemma);
+  RewriteProof *rewritten_mid = rewrite_head(goal_context, mid, lemma);
 
   RewriteProof *result;
   if (nothing_rewritten(rewritten_mid)) {
-    result = init_rewrite_proof(expr, mid, f_mid);
+    result = init_rewrite_proof(expr, mid, f_mid, dll_create());
   } else {
     result = init_rewrite_proof(
         expr, rewritten_mid->rewritten_expr,
-        build_eq_trans(init_rewrite_proof(expr, mid, f_mid), rewritten_mid));
+        build_eq_trans(init_rewrite_proof(expr, mid, f_mid, dll_create()), rewritten_mid)
+        , dll_create());
   }
 
   free_rewrite_proof(rewritten_mid);
@@ -173,36 +175,39 @@ RewriteProof *rewrite_lambda(Expression *expr, Expression *lemma) {
   return result;
 }
 
-RewriteProof *rewrite_app(Expression *expr, Expression *lemma) {
+RewriteProof *rewrite_app(Context *goal_context, Expression *expr, Expression *lemma) {
   Expression *func = expr->value.app.func;
   Expression *arg = expr->value.app.arg;
-  RewriteProof *rw_func_proof = _rewrite(func, lemma);
-  RewriteProof *rw_arg_proof = _rewrite(arg, lemma);
+  RewriteProof *rw_func_proof = _rewrite(goal_context, func, lemma);
+  RewriteProof *rw_arg_proof = _rewrite(goal_context, arg, lemma);
 
   RewriteProof *mid_rewrite_proof;
 
   if (nothing_rewritten(rw_func_proof) && nothing_rewritten(rw_arg_proof)) {
     mid_rewrite_proof =
-        init_rewrite_proof(expr, expr, build_eq_refl(expr));
+        init_rewrite_proof(expr, expr, build_eq_refl(expr), dll_create());
   } else {
+    DoublyLinkedList *merged = dll_merge(rw_func_proof->remaining_goals, rw_arg_proof->remaining_goals);
     mid_rewrite_proof = init_rewrite_proof(
         expr,
         init_app_expression(rw_func_proof->rewritten_expr,
                             rw_arg_proof->rewritten_expr),
-        build_app_cong(rw_func_proof, rw_arg_proof));
+        build_app_cong(rw_func_proof, rw_arg_proof), merged);
   }
 
   Expression *mid = mid_rewrite_proof->rewritten_expr;
   Expression *fx_mid = mid_rewrite_proof->equality_proof;
+  DoublyLinkedList *mid_goals = mid_rewrite_proof->remaining_goals;
 
-  RewriteProof *rewritten_mid = rewrite_head(mid, lemma);
+  RewriteProof *rewritten_mid = rewrite_head(goal_context, mid, lemma);
   RewriteProof *result;
   if (nothing_rewritten(rewritten_mid)) {
-    result = init_rewrite_proof(expr, mid, fx_mid);
+    result = init_rewrite_proof(expr, mid, fx_mid, mid_goals);
   } else {
+    DoublyLinkedList *merged = dll_merge(mid_goals, rewritten_mid->remaining_goals);
     result = init_rewrite_proof(
         expr, rewritten_mid->rewritten_expr,
-        build_eq_trans(mid_rewrite_proof, rewritten_mid));
+        build_eq_trans(mid_rewrite_proof, rewritten_mid), merged);
   }
 
   free_rewrite_proof(mid_rewrite_proof);
@@ -212,10 +217,10 @@ RewriteProof *rewrite_app(Expression *expr, Expression *lemma) {
   return result;
 }
 
-RewriteProof *rewrite_var(Expression *expr, Expression *lemma) {
-  RewriteProof *rewritten_expr = rewrite_head(expr, lemma);
+RewriteProof *rewrite_var(Context *goal_context, Expression *expr, Expression *lemma) {
+  RewriteProof *rewritten_expr = rewrite_head(goal_context, expr, lemma);
   if (nothing_rewritten(rewritten_expr)) {
-    RewriteProof *result = init_rewrite_proof(expr, expr, build_eq_refl(expr));
+    RewriteProof *result = init_rewrite_proof(expr, expr, build_eq_refl(expr), dll_create());
     set_rresult(expr, result);
     return result;
   } else {
@@ -224,8 +229,8 @@ RewriteProof *rewrite_var(Expression *expr, Expression *lemma) {
   }
 }
 
-RewriteProof *rewrite_hole(Expression *expr) {
-  return init_rewrite_proof(expr, expr, build_eq_refl(expr));
+RewriteProof *rewrite_hole(Context *goal_context, Expression *expr) {
+  return init_rewrite_proof(expr, expr, build_eq_refl(expr), dll_create());
 }
 
 int get_rewrite_cache_hits() {
@@ -237,7 +242,7 @@ int get_rewrite_locations() {
 }
 
 // Internal rewriting function.
-RewriteProof *_rewrite(Expression *expr, Expression *lemma) {
+RewriteProof *_rewrite(Context *goal_context, Expression *expr, Expression *lemma) {
   RewriteProof *cached_result = get_rresult(expr);
   if (cached_result != NULL) {
     rewrite_cache_hits++;
@@ -246,13 +251,13 @@ RewriteProof *_rewrite(Expression *expr, Expression *lemma) {
 
   switch (expr->type) {
     case (APP_EXPRESSION):
-      return rewrite_app(expr, lemma);
+      return rewrite_app(goal_context, expr, lemma);
     case (LAMBDA_EXPRESSION):
-      return rewrite_lambda(expr, lemma);
+      return rewrite_lambda(goal_context,expr, lemma);
     case (VAR_EXPRESSION):
-      return rewrite_var(expr, lemma);
+      return rewrite_var(goal_context,expr, lemma);
     case (HOLE_EXPRESSION):
-      return rewrite_hole(expr);
+      return rewrite_hole(goal_context, expr);
     default:
       return NULL;  // TODO: Unsupported.
   }
@@ -290,15 +295,20 @@ void clear_rewrite_proofs(Expression *expr) {
 
 // Top level rewriting function. Is responsible for clearing the cached
 // RewriteProof results of Expressions.
-RewriteProof *rewrite(Expression *expr, Expression *lemma) {
+// The reason this function calls for a goal context is that usually, expr is
+// the expected return type of a hole, and we are working to rewrite the return type itself
+// so that we can more easily find an inhabitant of the type. In the case where 
+// rewrite generates more goals so solve, those new goals should have the same context as the original goal context.
+// In an ideal world, TODO:, reimplement rewrite to operate given a hole instead of a type.  
+RewriteProof *rewrite(Context *goal_context, Expression *expr, Expression *lemma) {
   RewriteProof *result = NULL;
   switch (expr->type) {
     case (APP_EXPRESSION):
-      result = rewrite_app(expr, lemma); break;
+      result = rewrite_app(goal_context, expr, lemma); break;
     case (LAMBDA_EXPRESSION):
-      result = rewrite_lambda(expr, lemma); break;
+      result = rewrite_lambda(goal_context, expr, lemma); break;
     case (VAR_EXPRESSION):
-      result = rewrite_var(expr, lemma); break;
+      result = rewrite_var(goal_context, expr, lemma); break;
     default:
       return NULL;  // TODO: Unsupported.
   }
@@ -315,7 +325,7 @@ RewriteProof *rewrite(Expression *expr, Expression *lemma) {
 //     which will need to be filled.
 RewrittenGoal *rewrite_transform(Expression *goal, Expression *rewrite_lemma) {
   Expression *goal_type = get_expression_type(goal);
-  RewriteProof *rewrite_proof = rewrite(goal_type, rewrite_lemma);
+  RewriteProof *rewrite_proof = rewrite(get_expression_context(goal), goal_type, rewrite_lemma);
   
   Expression *new_goal = init_hole_expression("Goal", rewrite_proof->rewritten_expr, get_expression_context(goal));
   Expression *proof = init_app_expression(init_app_expression(init_app_expression(init_app_expression(
@@ -323,8 +333,42 @@ RewrittenGoal *rewrite_transform(Expression *goal, Expression *rewrite_lemma) {
   
   fillHole(goal, proof);
 
-  return init_rewritten_goal(new_goal, proof);
+  return init_rewritten_goal(new_goal, rewrite_proof->remaining_goals);
 }
+
+// Similar to rewrite_transform, but accepts an arbitrary number of lemmas and applies each of them
+// sequentially, forever, until the goal is no longer transformed by any of the lemmas.
+RewrittenGoal *rewrites_transform(Expression *goal, int n, ...) {
+  va_list argptr;
+  DoublyLinkedList *remaining_open = dll_create();
+
+  Expression *curr_goal = goal;
+  while (true) {
+    va_start(argptr, n);
+    bool rewrote = false;
+    for (int i = 0; i < n; i++) {
+      Expression *rewrite_lemma = va_arg(argptr, Expression*);
+      Expression *goal_type = get_expression_type(curr_goal);
+      RewriteProof *rewrite_proof = rewrite(get_expression_context(curr_goal), goal_type, rewrite_lemma);
+      remaining_open = dll_merge(remaining_open, rewrite_proof->remaining_goals);
+      if (!nothing_rewritten(rewrite_proof)) {
+        rewrote = true;
+      }
+  
+      Expression *new_goal = init_hole_expression("Goal", rewrite_proof->rewritten_expr, get_expression_context(curr_goal));
+      Expression *proof = init_app_expression(init_app_expression(init_app_expression(init_app_expression(
+        eq_subst, rewrite_proof->expr), rewrite_proof->rewritten_expr), rewrite_proof->equality_proof), new_goal);
+      
+      fillHole(curr_goal, proof);
+      curr_goal = new_goal;
+    }
+    va_end(argptr);
+    if (!rewrote) break;
+  }
+
+  return init_rewritten_goal(curr_goal, remaining_open);
+}
+
 
 
 DoublyLinkedList *apply(Expression *goal, Expression *lemma) {

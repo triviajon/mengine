@@ -24,6 +24,8 @@ static Context *EMPTY_CONTEXT = NULL;
 // Returns a pointer to the empty context.
 Context *context_create_empty();
 
+bool context_contains_name(Context *context, char *name);
+
 // Returns true if context is the empty context.
 bool context_is_empty(Context *context);
 
@@ -37,7 +39,7 @@ Context *context_insert_n(Context *context, int n, ...);
 int context_size(Context *context);
 
 // Returns true if contextA is an ancestor of contextB. I.e., returns
-// true iff contextA == contextB or contextA == contextB->...->parent.
+// true iff contextA ==z contextB or contextA == contextB->...->parent.
 bool context_is_ancestor(Context *contextA, Context *contextB);
 
 // Finds the parent context whose context_node contains var, or NULL in case of

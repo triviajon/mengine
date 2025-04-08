@@ -178,7 +178,10 @@ Expression *p_subst(Expression *expression, DoublyLinkedList *old_exprs, DoublyL
       Expression *lambda_var = expression->value.lambda.bound_variable;
       Expression *lambda_var_ty = get_expression_type(lambda_var);
       Expression *new_lambda_var_type = p_subst(lambda_var_ty, old_exprs, new_exprs);
-      Expression *new_lambda_var = init_var_expression(lambda_var->value.var.name, new_lambda_var_type);
+      char *new_var_name = malloc(strlen(lambda_var->value.var.name) + 2);
+      strcpy(new_var_name, lambda_var->value.var.name);
+      strcat(new_var_name, "'");
+      Expression *new_lambda_var = init_var_expression(new_var_name, new_lambda_var_type);
 
       dll_insert_at_tail(old_exprs, dll_new_node(lambda_var));
       dll_insert_at_tail(new_exprs, dll_new_node(new_lambda_var));

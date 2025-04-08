@@ -216,6 +216,7 @@ Expression *init_arrow_expression(Expression *lhs, Expression *rhs);
 DoublyLinkedList *get_expression_uplinks(Expression *expression);
 Expression *get_expression_type(Expression *expression);
 Context *get_expression_context(Expression *expression);
+Expression *get_innermost_body(Expression *expression);
 Expression *get_innermost_func(Expression *expression);
 
 bool can_fill(Expression *hole, Expression *term);

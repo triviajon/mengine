@@ -28,7 +28,7 @@ extern Expression *string;
 extern Expression *a_string;
 extern Expression *b_string;
 extern Expression *c_string;
-extern Expression *terminator_string;
+extern Expression *not_eq_string_b_a;
 
 extern Expression *list;
 extern Expression *list_nil;
@@ -41,6 +41,7 @@ extern Expression *option_none;
 extern Expression *word;
 extern Expression *word_of_Z;
 extern Expression *word_add;
+extern Expression *word_sub;
 extern Expression *byte;
 extern Expression *trace;
 extern Expression *mem;
@@ -64,12 +65,14 @@ extern Expression *bopname_ltu;
 extern Expression *bopname_eq;
 extern Expression *interp_binop;
 extern Expression *binop_add_to_word_add;
+extern Expression *binop_add_to_word_sub;
 
 extern Expression *expr;
 extern Expression *expr_literal;
 extern Expression *expr_var;
 extern Expression *expr_op;
 extern Expression *expr_ite;
+extern Expression *eval_expr_ref;
 extern Expression *eval_expr;
 
 extern Expression *cmd;
@@ -101,7 +104,8 @@ extern Expression *exec_seq;
 extern Expression *exec_input;
 
 extern Expression *word_add_0_r;
+extern Expression *word_add_sub_cancel;
 
-void run_symbolic();
+void run_symbolic(int n);
 
 #endif // SYMBOLIC_H
