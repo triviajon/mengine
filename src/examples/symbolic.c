@@ -824,7 +824,7 @@ void solve_not(Expression *goal) {
 	}
 }
 
-Expression *solve_set(Expression *goal) {
+DoublyLinkedList *solve_set(Expression *goal) {
 	DoublyLinkedList *remaining_goals = eapply(goal, exec_set);
 	if (remaining_goals == NULL) printf("solve_set failed to find a solution\n");
 	if (dll_len(remaining_goals) != 3) {
@@ -837,11 +837,13 @@ Expression *solve_set(Expression *goal) {
 	RewrittenGoal *result1 = rewrite_transform(eq_goal, binop_add_to_word_add);
 	RewrittenGoal *result2  = rewrite_transform(result1->new_goal, partial_map_get_put_same);
 
-	solve_eq(result2->new_goal);
+	DoublyLinkedList *goals_from_eq = solve_eq(result2->new_goal);
 
 	Expression *remaining_goal = dll_remove_tail(remaining_goals)->data;
 	dll_destroy(remaining_goals);
-	return remaining_goal;
+
+	dll_insert_at_tail(goals_from_eq, dll_new_node(remaining_goal));
+	return goals_from_eq;
 }
 
 Expression *solve_input(Expression *goal) {
@@ -887,7 +889,12 @@ Expression *_sym_solve(Expression *initial_goal) {
 					} else if (cmd_type == cmd_seq) {
 						dll_insert_at_tail(goals_to_solve, dll_new_node(solve_seq(goal)));
 					} else if (cmd_type == cmd_set) {
-						dll_insert_at_tail(goals_to_solve, dll_new_node(solve_set(goal)));
+						DoublyLinkedList *new_goals = solve_set(goal);
+						int n = dll_len(new_goals);
+						for (int i = 0; i < n; i++) {
+							dll_insert_at_tail(goals_to_solve, dll_new_node(dll_at(new_goals, i)->data));
+						}
+						dll_destroy(new_goals);
 					} else if (cmd_type == cmd_input) {
 						dll_insert_at_head(goals_to_solve, dll_new_node(solve_input(goal)));
 					}

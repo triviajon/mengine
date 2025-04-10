@@ -107,8 +107,9 @@ RewriteProof *rewrite_head(Context *goal_context, Expression *expr,
   Expression *lemma_ty = get_expression_type(lemma);
 
   if (lemma_ty->type == FORALL_EXPRESSION) {
-    UnificationResult *unification_result =
-        unify_and_instantiate(goal_context, lemma, lemma_ty, expr);
+    UnificationResult *unification_result = unify_and_instantiate(goal_context, lemma, lemma_ty, expr);
+    if (unification_result == NULL) return init_rewrite_proof(expr, expr, build_eq_refl(expr), dll_create());
+
     Expression *instantiated_lemma = unification_result->lemma_instantiation;
     if (instantiated_lemma != NULL) {
       Expression *lhs = get_lhs_eq(get_expression_type(instantiated_lemma));
@@ -145,6 +146,7 @@ RewriteProof *rewrites_head(Context *goal_context, Expression *expr, int n, va_l
       Expression *ith_lemma_ty = get_expression_type(ith_lemma);
 
       UnificationResult *unification_result = unify_and_instantiate(goal_context, ith_lemma, ith_lemma_ty, current_expr);
+      if (unification_result == NULL) continue;
       Expression *instantiated_lemma = unification_result->lemma_instantiation;
 
       if (instantiated_lemma != NULL) {

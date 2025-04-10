@@ -679,6 +679,16 @@ bool can_fill(Expression *hole, Expression *term) {
   return types_match && valid_in_context(term, get_expression_context(hole));
 }
 
+bool match_until_holes(Expression *with_holes, Expression *term) {
+  Map *alpha_equivalences = map_new();
+  Map *required_holes = map_new();
+  bool types_match = _match_under_holes(with_holes, term, alpha_equivalences, required_holes);
+  map_clear_free(alpha_equivalences);
+  map_clear_free(required_holes);
+  return types_match;
+}
+
+
 void fillHole(Expression *hole, Expression *term) {
   if (hole->type != HOLE_EXPRESSION) {
     return;

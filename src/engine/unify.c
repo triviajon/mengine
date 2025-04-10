@@ -162,10 +162,6 @@ UnificationResult *unify_and_instantiate(Context *goal_context, Expression *lemm
   // Want to first replace all leading binding variables of lemma_ty by hole expressions,
   // then try to do unification to instantiate the lemma. It is possible for there to remain open holes.
 
-  // Optimization: before trying to blindly unify, check to see if this could possibly match.
-  // if (!congruence(get_expression_type(expr), get_innermost_body(lemma_ty))) {
-  //   return init_unification_result(NULL, NULL);
-  // }
 
   // First want to replace binding variables -> hole expressions
   DoublyLinkedList *holes = dll_create();
@@ -178,6 +174,11 @@ UnificationResult *unify_and_instantiate(Context *goal_context, Expression *lemm
     dll_insert_at_tail(holes, dll_new_node(var_hole));
     Expression *curr_lemma_ty_body = curr_lemma_ty->value.forall.body;
     curr_lemma_ty = subst(curr_lemma_ty_body, binding_var, var_hole);
+  }
+
+  // Optimization: before trying to blindly unify, check to see if this could possibly match.
+  if (!match_until_holes(get_expression_type(expr), get_expression_type(get_lhs_eq(get_innermost_body(curr_lemma_ty))))) {
+    return NULL;
   }
 
   // Now for unification.

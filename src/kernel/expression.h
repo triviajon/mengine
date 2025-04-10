@@ -222,6 +222,9 @@ Expression *get_innermost_func(Expression *expression);
 bool can_fill(Expression *hole, Expression *term);
 void fillHole(Expression *hole, Expression *term);
 
+
+bool match_until_holes(Expression *with_holes, Expression *term);
+
 void free_expression(Expression *expr);
 
 bool congruence(Expression *a, Expression *b);

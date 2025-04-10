@@ -8,17 +8,7 @@
 #include "proof_state.h"
 #include "rewrite_proof.h"
 #include "unify.h"
-
-int get_rewrite_cache_hits();
-int get_rewrite_locations();
-
-RewriteProof *_rewrite(Context *goal_context, Expression *expr, Expression *lemma);
-void clear_rewrite_proofs(Expression *expr);
-
-RewriteProof *rewrite_head(Context *goal_context, Expression *expr, Expression *lemma);
-RewriteProof *rewrite(Context *goal_context, Expression *expr, Expression *lemma);
-RewrittenGoal *rewrite_transform(Expression *goal, Expression *rewrite_lemma);
-RewrittenGoal *rewrites_transform(Expression *goal, int n, ...);
+#include "rewrites.h"
 
 DoublyLinkedList *apply(Expression *goal, Expression *lemma);
 DoublyLinkedList *eapply(Expression *goal, Expression *lemma); 

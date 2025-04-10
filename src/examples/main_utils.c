@@ -27,8 +27,6 @@ void print_rwpf__coq_ready(RewriteProof *rw_pf, int withlet_flag, int debug_flag
 
   fprintf(stdout, "End Test.\n");
   if (debug_flag) {
-    fprintf(stdout, "Hits: %d\n", get_rewrite_cache_hits());
-    fprintf(stdout, "Rewrite locations: %d\n", get_rewrite_locations());  
   }
 }
 
@@ -46,7 +44,5 @@ void print_rwpf__no_proof(RewriteProof *rw_pf, int withlet_flag, int debug_flag)
   }
   
   if (debug_flag) {
-    fprintf(stdout, "Hits: %d\n", get_rewrite_cache_hits());
-    fprintf(stdout, "Rewrite locations: %d\n", get_rewrite_locations());  
   }
 }
