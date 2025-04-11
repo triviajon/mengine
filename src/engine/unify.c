@@ -157,11 +157,51 @@ Expression *_unify(Expression *exprA, Expression *exprB, Expression *hole_to_fil
   }
 }
 
+bool _could_apply(Expression *expr, Expression *lemma_ty_body, DoublyLinkedList *ignore_as_holes) {
+  switch (lemma_ty_body->type) {
+    case (APP_EXPRESSION): {
+      if (expr->type != APP_EXPRESSION) return false;
+      // todo: what if it's a hole
+      return _could_apply(expr->value.app.func, lemma_ty_body->value.app.func, ignore_as_holes) &&
+             _could_apply(expr->value.app.arg, lemma_ty_body->value.app.arg, ignore_as_holes);
+    } 
+    case (VAR_EXPRESSION): {
+      if (expr == lemma_ty_body) return true;
+
+      bool is_hole = false;
+      DLLNode *curr = ignore_as_holes->head;
+      while (curr != NULL) {
+        if (lemma_ty_body == curr->data) {
+          is_hole = true;
+          break;
+        }
+        curr = curr->next;
+      }
+
+      return is_hole;
+    }
+  }
+}
+
+bool could_apply(Expression *expr, Expression *lemma_ty) { 
+  DoublyLinkedList *ignore_as_holes = dll_create();
+  Expression *curr_lemma_ty = lemma_ty;
+  while (curr_lemma_ty->type == FORALL_EXPRESSION) {
+    dll_insert_at_tail(ignore_as_holes, dll_new_node(curr_lemma_ty->value.forall.bound_variable));
+    curr_lemma_ty = curr_lemma_ty->value.forall.body;
+  }
+
+  bool result = _could_apply(expr, get_lhs_eq(curr_lemma_ty), ignore_as_holes);
+  dll_destroy(ignore_as_holes);
+  return result;
+}
+
+
 UnificationResult *unify_and_instantiate(Context *goal_context, Expression *lemma, Expression *lemma_ty, Expression *expr) {
   // Lemma_ty is like Forall x1: T1, ...
   // Want to first replace all leading binding variables of lemma_ty by hole expressions,
   // then try to do unification to instantiate the lemma. It is possible for there to remain open holes.
-
+  if (!could_apply(expr, lemma_ty)) return NULL; 
 
   // First want to replace binding variables -> hole expressions
   DoublyLinkedList *holes = dll_create();
