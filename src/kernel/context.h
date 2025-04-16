@@ -16,6 +16,7 @@ typedef struct Context
 {
   Expression *var_type;
   struct Context *parent; // if Γ[variable: type] is this context, then Γ is our parent.
+  int length;
 } Context;
 
 // Singleton, initialized with first call to context_create_empty()

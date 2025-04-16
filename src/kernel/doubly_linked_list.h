@@ -70,6 +70,9 @@ DLLNode *dll_insert_at_head(DoublyLinkedList *list, DLLNode *node);
  */
 DLLNode *dll_search(DoublyLinkedList *list, void *data);
 
+
+int dll_search_for_idx(DoublyLinkedList *list, void *data);
+
 /*
  * Return the node at the given index or NULL.
  * @list: Pointer to the list for finding given index 

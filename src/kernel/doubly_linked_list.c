@@ -124,6 +124,24 @@ DLLNode *dll_search(DoublyLinkedList *list, void *data)
     return NULL;
 }
 
+int dll_search_for_idx(DoublyLinkedList *list, void *data)
+{
+    DLLNode *node = list->head;
+    int i = 0;
+    while (node)
+    {
+        if (data == node->data)
+        {
+            return i;
+        }
+        node = node->next;
+        i++;
+    }
+
+    return -1;
+}
+
+
 int dll_len(DoublyLinkedList *list) {
     DLLNode *node = list->head;
     int count = 0;
