@@ -3,19 +3,15 @@ import subprocess
 import time
 import os
 import glob
+import re
 
-benchmark_results_fn = "mengine_benchmark_results.json"
-context_fn = "base.v"
-program = "coqc"
+benchmark_results_fn = "mengine_benchmark_2_results.json"
+context_fn = "base.lean"
+program = "lean"
 
-rewrite_strategies = [
-    "repeat rewrite eq_fa_a.",
-    "rewrite! eq_fa_a.",
-    "rewrite_strat topdown eq_fa_a.",
-    "rewrite_strat bottomup eq_fa_a.",
-]
+rewrite_strategies = ["sorry", "repeat' rw [eq_fa_a]", "simp only [eq_fa_a]"]
 
-SKIP_STRATEGIES = {"repeat rewrite eq_fa_a.", "rewrite! eq_fa_a."}
+SKIP_STRATEGIES = {}
 
 
 def get_theorem_with_file_content(
@@ -24,7 +20,8 @@ def get_theorem_with_file_content(
     with open(filename, "r") as file:
         content = file.readlines()
 
-    theorem_str = f"\nTheorem test_{index} : eq nat ({input_expr}) ({expected_equality}). Proof. {rewrite_strat_str} reflexivity. Qed. End Test."
+    indented_rewrite_strat_str = rewrite_strat_str.replace("\n", "\n  ")
+    theorem_str = f"\nset_option trace.profiler true in\nset_option trace.profiler.threshold 0 in\nexample : ({input_expr}) = ({expected_equality}) := by\n  {indented_rewrite_strat_str}\nend Test"
     combined_content = "".join(content) + theorem_str + "\n"
 
     return combined_content
@@ -48,8 +45,8 @@ def run_tests():
     input_values = read_benchmark_results(benchmark_results_fn)
     results = {}
 
-    if os.path.exists("coq_benchmark_results.json"):
-        with open("coq_benchmark_results.json", "r") as f:
+    if os.path.exists("lean_benchmark_results.json"):
+        with open("lean_benchmark_results.json", "r") as f:
             results = json.load(f)
 
     for key, test_case in input_values.items():
@@ -70,27 +67,41 @@ def run_tests():
                 print(f"Test {key} with '{rewrite_command}': SKIPPED")
                 continue
 
-            coq_benchmark_content = get_theorem_with_file_content(
+            lean_benchmark_content = get_theorem_with_file_content(
                 context_fn, test_input, test_output, key, rewrite_strat
             )
 
-            test_filename = f"test_{key}.v"
+            test_filename = f"test_{key}.lean"
             with open(test_filename, "w") as f:
-                f.write(coq_benchmark_content)
+                f.write(lean_benchmark_content)
 
-            # Time how long it takes to run "coqc test_{key}.v"
+            # Time how long it takes to run "lean test_{key}.lean"
             start_time = time.time()
             result = subprocess.run(
-                [program, test_filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                [program, test_filename],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
             )
             elapsed_time = time.time() - start_time
 
-            vo_filename = f"test_{key}.vo"
+            times = re.findall(r"\[Elab.command\] \[(\d+\.\d+)\] example", result.stdout.decode("utf-8"))
+
             rewrite_result = {
                 "rewrite_command": rewrite_strat.strip(),
-                "status": "PASSED" if os.path.exists(vo_filename) else "FAILED",
-                "time": elapsed_time if os.path.exists(vo_filename) else None,
-            }
+                "status": "PASSED" if result.returncode == 0 else "FAILED",
+                "file_time": elapsed_time if result.returncode == 0 else None,
+                "time": max(map(float, times)) if len(times) != 0 else None,
+            } | (
+                {}
+                if result.returncode == 0 or len(times) != 1
+                else {
+                    "stdout": result.stdout.decode("utf-8"),
+                    "stderr": result.stderr.decode("utf-8"),
+                    "returncode": result.returncode,
+                    "times": times,
+                }
+            )
 
             results[key][rewrite_strat.strip()] = rewrite_result
             print(
@@ -100,7 +111,7 @@ def run_tests():
             for file in glob.glob(f"test_{key}.*") + glob.glob(f".test_{key}.*"):
                 os.remove(file)
 
-        with open("coq_benchmark_results.json", "w") as f:
+        with open("lean_benchmark_results.json", "w") as f:
             json.dump(results, f, indent=4)
 
     return results
