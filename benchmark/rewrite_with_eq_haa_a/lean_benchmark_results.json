@@ -1,0 +1,842 @@
+{
+    "0": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 1.0385069847106934,
+            "time": 0.001168
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.7584860324859619,
+            "time": 0.001553
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.7574279308319092,
+            "time": 0.001805
+        }
+    },
+    "1": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 0.7143979072570801,
+            "time": 0.001104
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.7686977386474609,
+            "time": 0.001665
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.7386257648468018,
+            "time": 0.001943
+        }
+    },
+    "2": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 0.7256298065185547,
+            "time": 0.001128
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.7120630741119385,
+            "time": 0.001567
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.7254912853240967,
+            "time": 0.001751
+        }
+    },
+    "3": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 0.7431070804595947,
+            "time": 0.001229
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.7413489818572998,
+            "time": 0.001914
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.7463517189025879,
+            "time": 0.002115
+        }
+    },
+    "4": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 0.7283890247344971,
+            "time": 0.001225
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.7204511165618896,
+            "time": 0.00178
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.748953104019165,
+            "time": 0.002081
+        }
+    },
+    "5": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 1.5763061046600342,
+            "time": 0.001229
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.7332780361175537,
+            "time": 0.001863
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.714972972869873,
+            "time": 0.00202
+        }
+    },
+    "6": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 0.7184898853302002,
+            "time": 0.001877
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.7464761734008789,
+            "time": 0.002147
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.7292506694793701,
+            "time": 0.002439
+        }
+    },
+    "7": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 0.7089390754699707,
+            "time": 0.001775
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.7551569938659668,
+            "time": 0.002352
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.7555630207061768,
+            "time": 0.002648
+        }
+    },
+    "8": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 0.7307698726654053,
+            "time": 0.001619
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.7326159477233887,
+            "time": 0.002184
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.7610471248626709,
+            "time": 0.002598
+        }
+    },
+    "9": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 0.7390179634094238,
+            "time": 0.002308
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.7413580417633057,
+            "time": 0.002855
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 1.8294572830200195,
+            "time": 0.003281
+        }
+    },
+    "10": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 0.7559731006622314,
+            "time": 0.002307
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.7774519920349121,
+            "time": 0.002859
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.8380410671234131,
+            "time": 0.003309
+        }
+    },
+    "11": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 0.7541689872741699,
+            "time": 0.002337
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.7638771533966064,
+            "time": 0.002883
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 1.7744300365447998,
+            "time": 0.003307
+        }
+    },
+    "12": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 0.7960638999938965,
+            "time": 0.003614
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.8253521919250488,
+            "time": 0.004166
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.8317561149597168,
+            "time": 0.004739
+        }
+    },
+    "13": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 0.8041291236877441,
+            "time": 0.003818
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.804628849029541,
+            "time": 0.004224
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.866710901260376,
+            "time": 0.004716
+        }
+    },
+    "14": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 0.7782180309295654,
+            "time": 0.003763
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.8100049495697021,
+            "time": 0.004171
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.8528289794921875,
+            "time": 0.00489
+        }
+    },
+    "15": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 0.9259390830993652,
+            "time": 0.006414
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.8991138935089111,
+            "time": 0.007137
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.9986598491668701,
+            "time": 0.007828
+        }
+    },
+    "16": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 0.9363620281219482,
+            "time": 0.006451
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 0.9299910068511963,
+            "time": 0.006908
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 1.0319092273712158,
+            "time": 0.007985
+        }
+    },
+    "17": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 1.0332129001617432,
+            "time": 0.006299
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 1.07698392868042,
+            "time": 0.006825
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 1.0141911506652832,
+            "time": 0.007719
+        }
+    },
+    "18": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 1.3239848613739014,
+            "time": 0.012473
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 1.1651020050048828,
+            "time": 0.013861
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 1.405290126800537,
+            "time": 0.014158
+        }
+    },
+    "19": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 1.1608850955963135,
+            "time": 0.01239
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 1.2159109115600586,
+            "time": 0.013454
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 1.3934299945831299,
+            "time": 0.013273
+        }
+    },
+    "20": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 1.194554090499878,
+            "time": 0.012759
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 1.1958961486816406,
+            "time": 0.012766
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 1.3939049243927002,
+            "time": 0.013458
+        }
+    },
+    "21": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 1.7664270401000977,
+            "time": 0.023073
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 1.8618311882019043,
+            "time": 0.0256
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 2.407528877258301,
+            "time": 0.024562
+        }
+    },
+    "22": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 1.8165760040283203,
+            "time": 0.025962
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 1.7687640190124512,
+            "time": 0.025799
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 2.188526153564453,
+            "time": 0.026328
+        }
+    },
+    "23": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 1.75050687789917,
+            "time": 0.022969
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 1.8420212268829346,
+            "time": 0.025218
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 2.1096761226654053,
+            "time": 0.025876
+        }
+    },
+    "24": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 3.376410722732544,
+            "time": 0.04654
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 3.439167022705078,
+            "time": 0.047656
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 3.7357518672943115,
+            "time": 0.048927
+        }
+    },
+    "25": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 3.367630958557129,
+            "time": 0.051381
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 3.4566900730133057,
+            "time": 0.048827
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 4.02093505859375,
+            "time": 0.054972
+        }
+    },
+    "26": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 3.5620369911193848,
+            "time": 0.050811
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 3.549133062362671,
+            "time": 0.048517
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 4.022313833236694,
+            "time": 0.047532
+        }
+    },
+    "27": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 10.367033004760742,
+            "time": 0.099608
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 10.27844500541687,
+            "time": 0.108983
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 10.444552183151245,
+            "time": 0.099648
+        }
+    },
+    "28": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 9.785251140594482,
+            "time": 0.096574
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 9.836464881896973,
+            "time": 0.097926
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 10.401023864746094,
+            "time": 0.102206
+        }
+    },
+    "29": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 9.752179861068726,
+            "time": 0.097029
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 9.854215145111084,
+            "time": 0.096444
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 10.314520835876465,
+            "time": 0.097767
+        }
+    },
+    "30": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 34.35830807685852,
+            "time": 0.202651
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 35.34646821022034,
+            "time": 0.199186
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 2367.9422619342804,
+            "time": 0.210974
+        }
+    },
+    "31": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 1052.5403130054474,
+            "time": 0.192997
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 33.483150005340576,
+            "time": 0.193517
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 33.77033710479736,
+            "time": 0.190337
+        }
+    },
+    "32": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 36.09439206123352,
+            "time": 0.192278
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 40.45110106468201,
+            "time": 0.199863
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 34.35187888145447,
+            "time": 0.199255
+        }
+    },
+    "33": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 1720.322633266449,
+            "time": 0.436156
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 366.242436170578,
+            "time": 1.163081
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 191.22963118553162,
+            "time": 0.450456
+        }
+    },
+    "34": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 137.99413990974426,
+            "time": 0.436943
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 163.3456859588623,
+            "time": 0.520221
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 227.10544991493225,
+            "time": 0.570814
+        }
+    },
+    "35": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 141.92512488365173,
+            "time": 0.426567
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 141.1051731109619,
+            "time": 0.443365
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 135.63515901565552,
+            "time": 0.404864
+        }
+    },
+    "36": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 533.4364929199219,
+            "time": 0.827376
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 517.2699098587036,
+            "time": 0.797139
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 517.1497831344604,
+            "time": 0.807243
+        }
+    },
+    "37": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 520.8516249656677,
+            "time": 0.801351
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 520.8111808300018,
+            "time": 0.814073
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 518.6797549724579,
+            "time": 0.82065
+        }
+    },
+    "38": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 534.228119134903,
+            "time": 0.836113
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 624.4381928443909,
+            "time": 0.861979
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 618.7837431430817,
+            "time": 0.87821
+        }
+    },
+    "39": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 2662.6949739456177,
+            "time": 1.80822
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 2368.884955883026,
+            "time": 1.802064
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 2361.2743332386017,
+            "time": 1.788921
+        }
+    },
+    "40": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 2343.573695898056,
+            "time": 1.761633
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 2361.007213115692,
+            "time": 1.749151
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 2352.0717046260834,
+            "time": 1.771644
+        }
+    },
+    "41": {
+        "sorry": {
+            "rewrite_command": "sorry",
+            "status": "PASSED",
+            "file_time": 2363.7235610485077,
+            "time": 1.770757
+        },
+        "repeat' rw [eq_haa_a]": {
+            "rewrite_command": "repeat' rw [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 2368.5442559719086,
+            "time": 1.767944
+        },
+        "simp only [eq_haa_a]": {
+            "rewrite_command": "simp only [eq_haa_a]",
+            "status": "PASSED",
+            "file_time": 2371.654742002487,
+            "time": 1.780969
+        }
+    }
+}
