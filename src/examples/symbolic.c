@@ -89,6 +89,7 @@ Expression *partial_map_put = NULL;
 Expression *partial_map_remove = NULL;
 Expression *partial_map_get_put_same = NULL;
 Expression *partial_map_get_put_diff = NULL;
+Expression *partial_map_put_put_same = NULL;
 
 Expression *IOEvent = NULL;
 Expression *IOEvent_IN = NULL;
@@ -402,7 +403,26 @@ Context *init_partial_map(Context *c) {
 				sub6_2),
 				sub6_3))))))))); 
 
-	return context_insert_n(c, 6, partial_map, partial_map_empty, partial_map_get, partial_map_put, partial_map_remove, partial_map_get_put_same);
+	Expression *A7 = init_var_expression("A", init_type_expression());
+	Expression *B7 = init_var_expression("B", init_type_expression());
+	Expression *map7 = init_var_expression("map", init_app_expression(init_app_expression(partial_map, A7), B7));
+	Expression *k7 = init_var_expression("k", A7);
+	Expression *v7_1 = init_var_expression("v1", B7);
+	Expression *v7_2 = init_var_expression("v2", B7);
+	Expression *sub7_1 = init_app_expression(init_app_expression(init_app_expression(
+		init_app_expression(init_app_expression(partial_map_put, A7), B7), 
+		map7), k7), v7_1);
+	Expression *sub7_2 = init_app_expression(init_app_expression(init_app_expression(init_app_expression(
+		init_app_expression(partial_map_put, A7), B7), sub7_1), k7), v7_2);
+	Expression *sub7_3 = init_app_expression(init_app_expression(init_app_expression(
+		init_app_expression(init_app_expression(partial_map_put, A7), B7), 
+		map7), k7), v7_2);
+
+	partial_map_put_put_same = init_var_expression("partial_map_put_put_same", init_forall_expression(A7, init_forall_expression(B7, 
+		init_forall_expression(map7, init_forall_expression(k7, init_forall_expression(v7_1, init_forall_expression(v7_2, 
+			init_app_expression(init_app_expression(init_app_expression(eq, init_app_expression(init_app_expression(partial_map, A7), B7)), sub7_2), sub7_3))))))));
+
+	return context_insert_n(c, 7, partial_map, partial_map_empty, partial_map_get, partial_map_put, partial_map_remove, partial_map_get_put_same, partial_map_put_put_same);
 }
 
 Context *init_exec(Context *c) {
@@ -794,8 +814,8 @@ DoublyLinkedList *solve_eq(Expression *goal) {
 	DoublyLinkedList *remaining_goals;
 
 	RewrittenGoal *rewrites_result = rewrites_transform(goal, 5, 
-		partial_map_get_put_same, binop_add_to_word_sub, 
-		partial_map_get_put_diff, partial_map_get_put_same, word_add_sub_cancel);
+		partial_map_get_put_same, binop_add_to_word_add, binop_add_to_word_sub, 
+		partial_map_get_put_diff, word_add_sub_cancel);
 	remaining_goals = apply(rewrites_result->new_goal, eq_refl);
 	if (remaining_goals != NULL) return dll_merge(rewrites_result->remaining_open, remaining_goals);
 	if (remaining_goals == NULL) printf("solve_eq failed to find a solution\n");
@@ -825,7 +845,9 @@ void solve_not(Expression *goal) {
 }
 
 DoublyLinkedList *solve_set(Expression *goal) {
-	DoublyLinkedList *remaining_goals = eapply(goal, exec_set);
+	RewrittenGoal *simplified_locals = rewrite_transform(goal, partial_map_put_put_same);
+	DoublyLinkedList *remaining_goals = eapply(simplified_locals->new_goal, exec_set);
+	// DoublyLinkedList *remaining_goals = eapply(goal, exec_set);
 	if (remaining_goals == NULL) printf("solve_set failed to find a solution\n");
 	if (dll_len(remaining_goals) != 3) {
 		return NULL;
@@ -834,10 +856,7 @@ DoublyLinkedList *solve_set(Expression *goal) {
 	Expression *eq_goal = (Expression *)dll_at(remaining_goals, 1)->data;
 	normalize_hole_type(eq_goal);
 
-	RewrittenGoal *result1 = rewrite_transform(eq_goal, binop_add_to_word_add);
-	RewrittenGoal *result2  = rewrite_transform(result1->new_goal, partial_map_get_put_same);
-
-	DoublyLinkedList *goals_from_eq = solve_eq(result2->new_goal);
+	DoublyLinkedList *goals_from_eq = solve_eq(eq_goal);
 
 	Expression *remaining_goal = dll_remove_tail(remaining_goals)->data;
 	dll_destroy(remaining_goals);
@@ -953,5 +972,6 @@ void run_symbolic(int n) {
 
 	Expression *cmd_ok_theorem = make_exec_test_6(c, n);
 	Expression *proof = straightline_solve(cmd_ok_theorem);
-	printf("%s\n\n%s\n", stringify_expression2(cmd_ok_theorem), stringify_expression2(proof));
+	// printf("%s\n\n%s\n", stringify_expression2(cmd_ok_theorem), stringify_expression2(proof));
+	printf("%s\n", stringify_expression2(get_expression_type(proof)));
 }

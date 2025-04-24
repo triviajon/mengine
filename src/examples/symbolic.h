@@ -91,6 +91,7 @@ extern Expression *partial_map_put;
 extern Expression *partial_map_remove;
 extern Expression *partial_map_get_put_same;
 extern Expression *partial_map_get_put_diff;
+extern Expression *partial_map_put_put_same;
 
 extern Expression *IOEvent;
 extern Expression *IOEvent_IN;

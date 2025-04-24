@@ -12,7 +12,7 @@ DoublyLinkedList *apply(Expression *goal, Expression *lemma) {
 }
 
 DoublyLinkedList *eapply(Expression *goal, Expression *lemma) {
-  UnificationResult *unification_result = eunify(lemma, goal);
+  UnificationResult *unification_result = eunify2(lemma, goal);
   Expression *instantiated_lemma = unification_result->lemma_instantiation;
   DoublyLinkedList *new_goals = unification_result->new_goals;
   fillHole(goal, instantiated_lemma);

@@ -235,8 +235,7 @@ Context *init_temporary(Context *ctx) {
       init_app_expression(init_app_expression(
         eq, nat), init_app_expression(f, a)), a);
 
-  Expression *eq_fa_a_ty = init_forall_expression(a, fa_a_equality);
-  if (!eq_fa_a) eq_fa_a = init_var_expression("eq_fa_a", eq_fa_a_ty);
+  if (!eq_fa_a) eq_fa_a = init_var_expression("eq_fa_a", fa_a_equality);
 
   Expression *g_ty = init_arrow_expression(nat, nat);
   if (!g) g = init_var_expression("g", g_ty);

@@ -373,7 +373,7 @@ RewriteProof *rewrite_hole(Context *goal_context, Expression *expr) {
 RewriteProof *_rewrite(Context *goal_context, Expression *expr,
                        Expression *lemma) {
   RewriteProof *cached_result = get_rresult(expr);
-  if (cached_result != NULL) {
+  if (cached_result != NULL && cached_result->expr != NULL) {
     return cached_result;
   }
 
@@ -391,7 +391,30 @@ RewriteProof *_rewrite(Context *goal_context, Expression *expr,
   }
 }
 
+void print_ptr_counts(void) {
+  if (ptr_counter == NULL) return;
+
+  for (int i = 0; i < ptr_counter->size; i++) {
+    void *key = (ptr_counter->items + i)->key;
+    int *count = (int *)((ptr_counter->items + i)->val);
+    if (*count > 0) {
+      printf("Pointer %p: %d times [%s]\n", key, *count, se(key));
+    }
+  }
+
+
+}
+
+
 RewriteProof *_rewrites(Context *goal_context, Expression *expr, int n, va_list lemmas) {
+  if (ptr_counter == NULL) ptr_counter = map_new();
+  // int *count = map_get(ptr_counter, expr);
+  // if (count == NULL) {
+  //   count = calloc(1, sizeof(int));
+  //   map_set(ptr_counter, expr, count);
+  // }
+  // (*count)++;
+
   RewriteProof *cached_result = get_rresult(expr);
   if (cached_result != NULL) {
     return cached_result;

@@ -43,6 +43,7 @@ int main(int argc, char *argv[]) {
   int proof_flag = 1;
   int withlet_flag = 1;
   int debug_flag = 0;
+  atexit(print_ptr_counts);
 
   while (argc > 1 && strncmp(argv[1], "--", 2) == 0) {
     if (strncmp(argv[1], "--proof=", 8) == 0) {
@@ -165,6 +166,5 @@ int main(int argc, char *argv[]) {
     print_usage();
     return 1;
   }
-
   return 0;
 }
