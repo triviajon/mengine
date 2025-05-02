@@ -15,8 +15,11 @@ DoublyLinkedList *eapply(Expression *goal, Expression *lemma) {
   UnificationResult *unification_result = eunify2(lemma, goal);
   Expression *instantiated_lemma = unification_result->lemma_instantiation;
   DoublyLinkedList *new_goals = unification_result->new_goals;
-  fillHole(goal, instantiated_lemma);
-  return new_goals;
+  if (can_fill(goal, instantiated_lemma)) {
+    fillHole(goal, instantiated_lemma);
+    return new_goals;
+  }  
+  return NULL;
 }
 
 IntroReturn *intro(Expression *goal) {

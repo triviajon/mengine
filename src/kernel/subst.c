@@ -169,12 +169,15 @@ Expression *p_subst(Expression *expression, DoublyLinkedList *old_exprs, DoublyL
 
   Context *e_ctx = get_expression_context(expression);
   bool needs_substitution = false;
-  for (int i = 0; i < n; i++) {
-    Expression *old_e = dll_at(old_exprs, i)->data;
+  
+  DLLNode *curr_old_expr_n = old_exprs->head;
+  while (curr_old_expr_n != NULL) {
+    Expression *old_e = curr_old_expr_n->data;
     if (context_find(e_ctx, old_e)) {
       needs_substitution = true;
       break;
     }
+    curr_old_expr_n = curr_old_expr_n->next;
   }
   
   if (!needs_substitution) {

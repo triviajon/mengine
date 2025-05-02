@@ -752,7 +752,8 @@ Expression *refresh(Expression *expr) {
     Expression *T = get_expression_type(x);
     Expression *B = expr->value.lambda.body;
   
-    char *xp_name = strcat(strdup(x_name), get_char());
+    // char *xp_name = strcat(strdup(x_name), get_char());
+    char *xp_name = strcat(strdup(x_name), "'");
     Expression *xp = init_var_expression(xp_name, T);
     return init_lambda_expression(xp, subst(B, x, xp));
   } else if (expr->type == FORALL_EXPRESSION) {
