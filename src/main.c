@@ -12,6 +12,7 @@
 #include "examples/rewrite_single_argument.h"
 #include "examples/rewrite_under_lambda.h"
 #include "examples/symbolic.h"
+#include "examples/sep.h"
 #include "kernel/context.h"
 #include "kernel/expression.h"
 #include "kernel/utils.h"
@@ -161,7 +162,9 @@ int main(int argc, char *argv[]) {
     }
     int n = atoi(argv[2]);
     run_symbolic(n);
-  } else {
+  } else if (strcmp(argv[1], "sep") == 0) {
+    run_sep();
+   } else {
     fprintf(stderr, "Unknown example: %s\n", argv[1]);
     print_usage();
     return 1;

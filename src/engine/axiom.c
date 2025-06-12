@@ -8,9 +8,20 @@ Expression *app_cong = NULL;
 Expression *eq_trans = NULL;
 Expression *and = NULL;
 Expression *and_conj = NULL;
+Expression *or = NULL;
+Expression *or_introl = NULL; 
+Expression *or_intror = NULL;
+Expression *iff1 = NULL;
+Expression *iff1_refl = NULL;
+Expression *iff1_sym = NULL;
+Expression *iff1_trans = NULL;
+Expression *iff1_subst = NULL;
+Expression *iff1_cong = NULL;
 Expression *not = NULL;
 Expression *ex = NULL;
 Expression *ex_intro = NULL;
+Expression *True = NULL;
+Expression *I = NULL;
 Expression *lambda_extensionality = NULL;
 Expression *f = NULL;
 Expression *g = NULL;
@@ -24,6 +35,17 @@ Expression *nat = NULL;
 Expression *add = NULL;
 Expression *add_r_O = NULL;
 Expression *O = NULL;
+Expression *option = NULL;
+Expression *option_some = NULL;
+Expression *option_none = NULL;
+Expression *partial_map = NULL;
+Expression *partial_map_empty = NULL;
+Expression *partial_map_get = NULL;
+Expression *partial_map_put = NULL;
+Expression *partial_map_remove = NULL;
+Expression *partial_map_get_put_same = NULL;
+Expression *partial_map_get_put_diff = NULL;
+Expression *partial_map_put_put_same = NULL;
 
 Context *std_lib_ctx = NULL;
 
@@ -39,6 +61,23 @@ Context *init_and(Context *c) {
 				init_arrow_expression(B, init_app_expression(init_app_expression(and, A), B))))));
 
   return context_insert_n(c, 2, and, and_conj);
+}
+
+Context *init_or(Context *c) {
+  or = init_var_expression("or", init_arrow_expression(init_prop_expression(), 
+    init_arrow_expression(init_prop_expression(), init_prop_expression())));
+
+  Expression *A = init_var_expression("A", init_prop_expression());
+  Expression *B = init_var_expression("B", init_prop_expression());
+  or_introl = init_var_expression("or_introl", init_forall_expression(A, 
+    init_forall_expression(B, 
+      init_arrow_expression(A, init_app_expression(init_app_expression(or, A), B)))));
+
+  or_intror = init_var_expression("or_intror", init_forall_expression(A, 
+    init_forall_expression(B, 
+      init_arrow_expression(B, init_app_expression(init_app_expression(or, A), B)))));
+
+  return context_insert_n(c, 3, or, or_introl, or_intror);
 }
 
 Context *init_not(Context *c) {
@@ -61,6 +100,311 @@ Context *init_ex(Context *c) {
 
   return context_insert_n(c, 2, ex, ex_intro);
 }
+
+Context *init_iff1(Context *c) {
+  // iff1 : forall T : Type, (T -> Prop) -> (T -> Prop) -> Prop
+  {
+    Expression *T = init_var_expression("T", init_type_expression());
+    Expression *T_Prop = init_arrow_expression(T, init_prop_expression());
+    iff1 = init_var_expression("iff1", init_forall_expression(T, 
+      init_arrow_expression(T_Prop, init_arrow_expression(T_Prop, init_prop_expression()))));
+  }
+
+
+  // iff1_refl : forall T : Type, (P : T -> Prop), iff1 P P
+  {
+    Expression *T = init_var_expression("T", init_type_expression());
+    Expression *P = init_var_expression("P", init_arrow_expression(T, init_prop_expression()));
+    iff1_refl = init_var_expression("iff1_refl", init_forall_expression(T, 
+      init_forall_expression(P, 
+        init_app_expression(init_app_expression(init_app_expression(iff1, T), P), P))));
+  }
+
+  // iff1_sym : forall T : Type, (P Q : T -> Prop), iff1 P Q -> iff1 Q P
+  {
+    Expression *T = init_var_expression("T", init_type_expression());
+    Expression *P = init_var_expression("P", init_arrow_expression(T, init_prop_expression()));
+    Expression *Q = init_var_expression("Q", init_arrow_expression(T, init_prop_expression()));
+    Expression *iff1_P_Q = init_app_expression(init_app_expression(init_app_expression(iff1, T), P), Q);
+    Expression *iff1_Q_P = init_app_expression(init_app_expression(init_app_expression(iff1, T), Q), P);
+
+    iff1_sym = init_var_expression("iff1_sym", init_forall_expression(T, 
+      init_forall_expression(P, 
+        init_forall_expression(Q, 
+          init_arrow_expression(iff1_P_Q, iff1_Q_P)))));
+  }
+
+  // iff1_trans : forall T : Type, (P Q R : T -> Prop), iff1 P Q -> iff1 Q R -> iff1 P R
+  {
+    Expression *T = init_var_expression("T", init_type_expression());
+    Expression *P = init_var_expression("P", init_arrow_expression(T, init_prop_expression()));
+    Expression *Q = init_var_expression("Q", init_arrow_expression(T, init_prop_expression()));
+    Expression *R = init_var_expression("R", init_arrow_expression(T, init_prop_expression()));
+
+    Expression *iff1_P_Q = init_app_expression(init_app_expression(init_app_expression(iff1, T), P), Q);
+    Expression *iff1_Q_R = init_app_expression(init_app_expression(init_app_expression(iff1, T), Q), R);
+    Expression *iff1_P_R = init_app_expression(init_app_expression(init_app_expression(iff1, T), P), R);
+
+    iff1_trans = init_var_expression("iff1_trans", init_forall_expression(T, 
+      init_forall_expression(P, 
+        init_forall_expression(Q, 
+          init_forall_expression(R, 
+            init_arrow_expression(iff1_P_Q, 
+              init_arrow_expression(iff1_Q_R, iff1_P_R)))))));
+  }
+
+  // iff1_subst : forall T : Type, (P Q R : T -> Prop),, iff1 Q R -> iff1 P Q -> iff1 P R 
+  {
+    Expression *T = init_var_expression("T", init_type_expression());
+    Expression *P = init_var_expression("P", init_arrow_expression(T, init_prop_expression()));
+    Expression *Q = init_var_expression("Q", init_arrow_expression(T, init_prop_expression()));
+    Expression *R = init_var_expression("R", init_arrow_expression(T, init_prop_expression()));
+
+    Expression *iff1_Q_R = init_app_expression(init_app_expression(init_app_expression(iff1, T), Q), R);
+    Expression *iff1_P_Q = init_app_expression(init_app_expression(init_app_expression(iff1, T), P), Q);
+    Expression *iff1_P_R = init_app_expression(init_app_expression(init_app_expression(iff1, T), P), R);
+
+    iff1_subst = init_var_expression("iff1_subst", init_forall_expression(T, 
+      init_forall_expression(P, 
+        init_forall_expression(Q, 
+          init_forall_expression(R, 
+            init_arrow_expression(iff1_Q_R, 
+              init_arrow_expression(iff1_P_Q, iff1_P_R)))))));
+  }
+
+  // iff1_cong : forall (T: Type), (P Q R S : T -> Prop), iff1 P Q -> iff1 R S -> iff1 Q S -> iff1 P R
+  {
+    Expression *T = init_var_expression("T", init_type_expression());
+    Expression *P = init_var_expression("P", init_arrow_expression(T, init_prop_expression()));
+    Expression *Q = init_var_expression("Q", init_arrow_expression(T, init_prop_expression()));
+    Expression *R = init_var_expression("R", init_arrow_expression(T, init_prop_expression()));
+    Expression *S = init_var_expression("S", init_arrow_expression(T, init_prop_expression()));
+
+    Expression *iff1_P_Q = init_app_expression(init_app_expression(init_app_expression(iff1, T), P), Q);
+    Expression *iff1_R_S = init_app_expression(init_app_expression(init_app_expression(iff1, T), R), S);
+    Expression *iff1_Q_S = init_app_expression(init_app_expression(init_app_expression(iff1, T), Q), S);
+    Expression *iff1_P_R = init_app_expression(init_app_expression(init_app_expression(iff1, T), P), R);
+    
+    iff1_cong = init_var_expression("iff1_cong", init_forall_expression(T, 
+      init_forall_expression(P, 
+        init_forall_expression(Q, 
+          init_forall_expression(R, 
+            init_forall_expression(S, 
+              init_arrow_expression(iff1_P_Q, 
+                init_arrow_expression(iff1_R_S, 
+                  init_arrow_expression(iff1_Q_S, iff1_P_R)))))))));
+
+  }
+
+  return context_insert_n(c, 6, iff1, iff1_refl, iff1_sym, iff1_trans, iff1_subst, iff1_cong);
+}
+
+Context *init_true(Context *c) {
+  True = init_var_expression("True", init_prop_expression());
+  I = init_var_expression("I", True);  
+  return context_insert_n(c, 2, True, I);
+} 
+
+Expression *iff(Expression *A, Expression *B) {
+  // iff = fun A B : Prop => (A -> B) /\ (B -> A)
+  if (get_expression_type(A) != init_prop_expression() || 
+      get_expression_type(B) != init_prop_expression()) {
+    fprintf(stderr, "Error: iff requires both arguments to be of type Prop.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  Expression *A_B = init_arrow_expression(A, B);
+  Expression *B_A = init_arrow_expression(B, A);
+  return init_app_expression(init_app_expression(and, A_B), B_A);
+}
+
+Expression *impl1 (Expression *T, Expression *P, Expression *Q) {
+  // impl1 {T: Type} (P Q: T -> Prop) := forall x, P x -> Q x.
+  if (T->type != TYPE_EXPRESSION) {
+    fprintf(stderr, "Error: impl1 requires T to be a type\n");
+    exit(EXIT_FAILURE);
+  }
+
+  Expression *x = init_var_expression("x", T);
+  Expression *impl1_body = init_arrow_expression(init_app_expression(P, x), init_app_expression(Q, x));
+  return init_forall_expression(x, impl1_body);
+}
+
+// Expression *iff1(Expression *T, Expression *P, Expression *Q) {
+//   // iff1 {T: Type} (P Q: T -> Prop) := forall x, P x <-> Q x.
+//   if (get_expression_type(T) != init_type_expression() && get_expression_type(T) != init_prop_expression()) {
+//     fprintf(stderr, "Error: iff1 requires T to be a type.\n");
+//     exit(EXIT_FAILURE);
+//   }
+
+//   Expression *x = init_var_expression("x", T);
+//   Expression *P_x = init_app_expression(P, x);
+//   Expression *Q_x = init_app_expression(Q, x);
+//   return iff(P_x, Q_x);
+// }
+
+Expression *and1(Expression *T, Expression *P, Expression *Q) {
+  // and1 {T: Type} (P Q: T -> Prop) := fun x, P x /\ Q x.
+  if (T->type != TYPE_EXPRESSION) {
+    fprintf(stderr, "Error: and1 requires T to be a type.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  Expression *x = init_var_expression("x", T);
+  Expression *P_x = init_app_expression(P, x);
+  Expression *Q_x = init_app_expression(Q, x);
+  Expression *and1_body = init_app_expression(init_app_expression(and, P_x), Q_x);
+
+  return init_forall_expression(x, and1_body);
+}
+
+Expression *or1(Expression *T, Expression *P, Expression *Q) {
+  // or1 {T: Type} (P Q: T -> Prop) := fun x, P x \/ Q x.
+  if (T->type != TYPE_EXPRESSION) {
+    fprintf(stderr, "Error: or1 requires T to be a type.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  Expression *x = init_var_expression("x", T);
+  Expression *P_x = init_app_expression(P, x);
+  Expression *Q_x = init_app_expression(Q, x);
+  Expression *or1_body = init_app_expression(init_app_expression(or, P_x), Q_x);
+  return init_forall_expression(x, or1_body);
+}
+
+Expression *ex1(Expression *A, Expression *B, Expression *P) {
+  // ex1 {A B} (P : A -> B -> Prop) := fun (b:B) => exists a:A, P a b.
+  if (A->type != TYPE_EXPRESSION || B->type != TYPE_EXPRESSION) {
+    fprintf(stderr, "Error: ex1 requires A and B to be types.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  Expression *b = init_var_expression("b", B);
+  Expression *a = init_var_expression("a", A);
+  Expression *P_ab = init_app_expression(init_app_expression(P, a), b);
+  Expression *ex1_body = init_app_expression(init_app_expression(ex, A), 
+    init_forall_expression(b, init_arrow_expression(P_ab, init_app_expression(init_app_expression(ex, A), P))));
+  return ex1_body;
+}
+
+Context *init_option(Context *c) {   
+    option = init_var_expression("option", init_arrow_expression(init_type_expression(), init_type_expression()));
+    
+	Expression *A1 = init_var_expression("A", init_type_expression());
+    option_some = init_var_expression("option_some", 
+        init_forall_expression(A1, init_arrow_expression(A1, init_app_expression(option, A1))));
+    
+	Expression *A2 = init_var_expression("A", init_type_expression());
+    option_none = init_var_expression("option_none", 
+        init_forall_expression(A2, init_app_expression(option, A2)));
+
+	return context_insert_n(c, 3, option, option_some, option_none);
+}
+
+Context *init_partial_map(Context *c) {
+
+	partial_map = init_var_expression("partial_map", init_arrow_expression(init_type_expression(), init_arrow_expression(init_type_expression(), init_type_expression())));
+
+	Expression *A1 = init_var_expression("A", init_type_expression());
+	Expression *B1 = init_var_expression("B", init_type_expression());
+	partial_map_empty = init_var_expression("partial_map_empty", init_forall_expression(A1, 
+		init_forall_expression(B1, 
+			init_app_expression(init_app_expression(partial_map, A1), B1))
+		));
+	
+	Expression *A2 = init_var_expression("A", init_type_expression());
+	Expression *B2 = init_var_expression("B", init_type_expression());
+	partial_map_get = init_var_expression("partial_map_get", init_forall_expression(A2, 
+		init_forall_expression(B2, 
+			init_arrow_expression(init_app_expression(init_app_expression(partial_map, A2), B2), 
+		init_arrow_expression(A2, init_app_expression(option, B2))))
+	));
+	
+	Expression *A3 = init_var_expression("A", init_type_expression());
+	Expression *B3 = init_var_expression("B", init_type_expression());
+	partial_map_put = init_var_expression("partial_map_put", init_forall_expression(A3, 
+		init_forall_expression(B3, 
+			init_arrow_expression(init_app_expression(init_app_expression(partial_map, A3), B3), 
+		init_arrow_expression(A3, init_arrow_expression(B3, init_app_expression(init_app_expression(partial_map, A3), B3)))))
+	));
+	
+	Expression *A4 = init_var_expression("A", init_type_expression());
+	Expression *B4 = init_var_expression("B", init_type_expression());
+	partial_map_remove = init_var_expression("partial_map_remove", init_forall_expression(A4, 
+		init_forall_expression(B4, 
+			init_arrow_expression(init_app_expression(init_app_expression(partial_map, A4), B4), 
+		init_arrow_expression(A4, init_app_expression(option, B4))))
+	));
+
+	// map.get_put_same : forall (key value : Type) (map : map key value)
+	// (k : key) (v : value), eq (map.get (map.put m k v) k) (Some v)
+	Expression *A5 = init_var_expression("A", init_type_expression());
+	Expression *B5 = init_var_expression("B", init_type_expression());
+	Expression *map5 = init_var_expression("map", init_app_expression(init_app_expression(partial_map, A5), B5));
+	Expression *k5 = init_var_expression("k", A5);
+	Expression *v5 = init_var_expression("v", B5);
+	Expression *sub5_1 = init_app_expression(init_app_expression(init_app_expression(
+		init_app_expression(init_app_expression(partial_map_put, A5), B5), 
+		map5), k5), v5);
+	Expression *sub5_2 = init_app_expression(init_app_expression(init_app_expression(
+		init_app_expression(partial_map_get, A5), B5), sub5_1), k5);
+
+	partial_map_get_put_same = init_var_expression("partial_map_get_put_same", init_forall_expression(A5, init_forall_expression(B5, 
+		init_forall_expression(map5, init_forall_expression(k5, init_forall_expression(v5, 
+			init_app_expression(init_app_expression(init_app_expression(
+				eq, init_app_expression(option, B5)), 
+				sub5_2),
+				init_app_expression(init_app_expression(option_some, B5), v5)))))))); 
+
+	// partial_map_get_put_diff : forall (A B : Type) (map : partial_map A B) (k : A) (v : B)
+    //  (k' : A), not (eq A k k') ->
+	//     eq (option B) (partial_map_get A B (partial_map_put A B map k' v) k)
+	//                   (partial_map_get A B map k)
+	Expression *A6 = init_var_expression("A", init_type_expression());
+	Expression *B6 = init_var_expression("B", init_type_expression());
+	Expression *map6 = init_var_expression("map", init_app_expression(init_app_expression(partial_map, A6), B6));
+	Expression *k6 = init_var_expression("k", A6);
+	Expression *v6 = init_var_expression("v", B6);
+	Expression *kp6 = init_var_expression("k'", A6);
+	Expression *H6 = init_app_expression(not, init_app_expression(init_app_expression(init_app_expression(eq, A6), k6), kp6));
+	Expression *sub6_1 = init_app_expression(init_app_expression(init_app_expression(
+		init_app_expression(init_app_expression(partial_map_put, A6), B6), 
+		map6), kp6), v6);
+	Expression *sub6_2 = init_app_expression(init_app_expression(init_app_expression(
+		init_app_expression(partial_map_get, A6), B6), sub6_1), k6);
+	Expression *sub6_3 = init_app_expression(init_app_expression(init_app_expression(
+		init_app_expression(partial_map_get, A6), B6), map6), k6);
+
+	partial_map_get_put_diff = init_var_expression("partial_map_get_put_diff", init_forall_expression(A6, init_forall_expression(B6, 
+		init_forall_expression(map6, init_forall_expression(k6, init_forall_expression(v6, init_forall_expression(kp6,
+			init_arrow_expression(H6, 
+			init_app_expression(init_app_expression(init_app_expression(
+				eq, init_app_expression(option, B6)), 
+				sub6_2),
+				sub6_3))))))))); 
+
+	Expression *A7 = init_var_expression("A", init_type_expression());
+	Expression *B7 = init_var_expression("B", init_type_expression());
+	Expression *map7 = init_var_expression("map", init_app_expression(init_app_expression(partial_map, A7), B7));
+	Expression *k7 = init_var_expression("k", A7);
+	Expression *v7_1 = init_var_expression("v1", B7);
+	Expression *v7_2 = init_var_expression("v2", B7);
+	Expression *sub7_1 = init_app_expression(init_app_expression(init_app_expression(
+		init_app_expression(init_app_expression(partial_map_put, A7), B7), 
+		map7), k7), v7_1);
+	Expression *sub7_2 = init_app_expression(init_app_expression(init_app_expression(init_app_expression(
+		init_app_expression(partial_map_put, A7), B7), sub7_1), k7), v7_2);
+	Expression *sub7_3 = init_app_expression(init_app_expression(init_app_expression(
+		init_app_expression(init_app_expression(partial_map_put, A7), B7), 
+		map7), k7), v7_2);
+
+	partial_map_put_put_same = init_var_expression("partial_map_put_put_same", init_forall_expression(A7, init_forall_expression(B7, 
+		init_forall_expression(map7, init_forall_expression(k7, init_forall_expression(v7_1, init_forall_expression(v7_2, 
+			init_app_expression(init_app_expression(init_app_expression(eq, init_app_expression(init_app_expression(partial_map, A7), B7)), sub7_2), sub7_3))))))));
+
+	return context_insert_n(c, 7, partial_map, partial_map_empty, partial_map_get, partial_map_put, partial_map_remove, partial_map_get_put_same, partial_map_put_put_same);
+}
+
 
 Context *init_nat(Context *c) {
   if (!nat) nat = init_var_expression("nat", init_type_expression());
@@ -258,16 +602,22 @@ Context *init_temporary(Context *ctx) {
 }
 
 void init_globals() {
+
   Context *c = context_create_empty();
 
 	c = init_and(c);
-	c = init_not(c);
+  c = init_or(c);
+  c = init_not(c);
   c = init_ex(c);
+  c = init_iff1(c);
+  c = init_true(c);
+  c = init_option(c);
   c = init_nat(c);
   c = init_eq(c);
   c = init_app_cong(c);
   c = init_eq_trans(c);
   c = init_lambda_extensionality(c);
+  c = init_partial_map(c);
   c = init_add(c);
 
   std_lib_ctx = c;

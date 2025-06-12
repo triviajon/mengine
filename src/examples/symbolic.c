@@ -32,10 +32,6 @@ Expression *list = NULL;
 Expression *list_nil = NULL;
 Expression *list_cons = NULL;
 
-Expression *option = NULL;
-Expression *option_some = NULL;
-Expression *option_none = NULL;
-
 Expression *word = NULL;
 Expression *word_of_Z = NULL;
 Expression *word_add = NULL;
@@ -81,15 +77,6 @@ Expression *cmd_cond = NULL;
 Expression *cmd_seq = NULL;
 Expression *cmd_input = NULL;
 Expression *cmd_output = NULL;
-
-Expression *partial_map = NULL;
-Expression *partial_map_empty = NULL;
-Expression *partial_map_get = NULL;
-Expression *partial_map_put = NULL;
-Expression *partial_map_remove = NULL;
-Expression *partial_map_get_put_same = NULL;
-Expression *partial_map_get_put_diff = NULL;
-Expression *partial_map_put_put_same = NULL;
 
 Expression *IOEvent = NULL;
 Expression *IOEvent_IN = NULL;
@@ -298,19 +285,6 @@ Context *init_cmd(Context *c) {
 	return context_insert_n(c, 8, cmd, cmd_skip, cmd_set, cmd_unset, cmd_cond, cmd_seq, cmd_input, cmd_output);
 }
 
-Context *init_option(Context *c) {   
-    option = init_var_expression("option", init_arrow_expression(init_type_expression(), init_type_expression()));
-    
-	Expression *A1 = init_var_expression("A", init_type_expression());
-    option_some = init_var_expression("option_some", 
-        init_forall_expression(A1, init_arrow_expression(A1, init_app_expression(option, A1))));
-    
-	Expression *A2 = init_var_expression("A", init_type_expression());
-    option_none = init_var_expression("option_none", 
-        init_forall_expression(A2, init_app_expression(option, A2)));
-
-	return context_insert_n(c, 3, option, option_some, option_none);
-}
 
 Context *init_io_event(Context *c) {
 	IOEvent = init_var_expression("IOEvent", init_type_expression());
@@ -318,111 +292,6 @@ Context *init_io_event(Context *c) {
 	IOEvent_OUT = init_var_expression("IOEvent_OUT", init_arrow_expression(word, IOEvent));
 
 	return context_insert_n(c, 3, IOEvent, IOEvent_IN, IOEvent_OUT);
-}
-
-
-Context *init_partial_map(Context *c) {
-
-	partial_map = init_var_expression("partial_map", init_arrow_expression(init_type_expression(), init_arrow_expression(init_type_expression(), init_type_expression())));
-
-	Expression *A1 = init_var_expression("A", init_type_expression());
-	Expression *B1 = init_var_expression("B", init_type_expression());
-	partial_map_empty = init_var_expression("partial_map_empty", init_forall_expression(A1, 
-		init_forall_expression(B1, 
-			init_app_expression(init_app_expression(partial_map, A1), B1))
-		));
-	
-	Expression *A2 = init_var_expression("A", init_type_expression());
-	Expression *B2 = init_var_expression("B", init_type_expression());
-	partial_map_get = init_var_expression("partial_map_get", init_forall_expression(A2, 
-		init_forall_expression(B2, 
-			init_arrow_expression(init_app_expression(init_app_expression(partial_map, A2), B2), 
-		init_arrow_expression(A2, init_app_expression(option, B2))))
-	));
-	
-	Expression *A3 = init_var_expression("A", init_type_expression());
-	Expression *B3 = init_var_expression("B", init_type_expression());
-	partial_map_put = init_var_expression("partial_map_put", init_forall_expression(A3, 
-		init_forall_expression(B3, 
-			init_arrow_expression(init_app_expression(init_app_expression(partial_map, A3), B3), 
-		init_arrow_expression(A3, init_arrow_expression(B3, init_app_expression(init_app_expression(partial_map, A3), B3)))))
-	));
-	
-	Expression *A4 = init_var_expression("A", init_type_expression());
-	Expression *B4 = init_var_expression("B", init_type_expression());
-	partial_map_remove = init_var_expression("partial_map_remove", init_forall_expression(A4, 
-		init_forall_expression(B4, 
-			init_arrow_expression(init_app_expression(init_app_expression(partial_map, A4), B4), 
-		init_arrow_expression(A4, init_app_expression(option, B4))))
-	));
-
-	// map.get_put_same : forall (key value : Type) (map : map key value)
-	// (k : key) (v : value), eq (map.get (map.put m k v) k) (Some v)
-	Expression *A5 = init_var_expression("A", init_type_expression());
-	Expression *B5 = init_var_expression("B", init_type_expression());
-	Expression *map5 = init_var_expression("map", init_app_expression(init_app_expression(partial_map, A5), B5));
-	Expression *k5 = init_var_expression("k", A5);
-	Expression *v5 = init_var_expression("v", B5);
-	Expression *sub5_1 = init_app_expression(init_app_expression(init_app_expression(
-		init_app_expression(init_app_expression(partial_map_put, A5), B5), 
-		map5), k5), v5);
-	Expression *sub5_2 = init_app_expression(init_app_expression(init_app_expression(
-		init_app_expression(partial_map_get, A5), B5), sub5_1), k5);
-
-	partial_map_get_put_same = init_var_expression("partial_map_get_put_same", init_forall_expression(A5, init_forall_expression(B5, 
-		init_forall_expression(map5, init_forall_expression(k5, init_forall_expression(v5, 
-			init_app_expression(init_app_expression(init_app_expression(
-				eq, init_app_expression(option, B5)), 
-				sub5_2),
-				init_app_expression(init_app_expression(option_some, B5), v5)))))))); 
-
-	// partial_map_get_put_diff : forall (A B : Type) (map : partial_map A B) (k : A) (v : B)
-    //  (k' : A), not (eq A k k') ->
-	//     eq (option B) (partial_map_get A B (partial_map_put A B map k' v) k)
-	//                   (partial_map_get A B map k)
-	Expression *A6 = init_var_expression("A", init_type_expression());
-	Expression *B6 = init_var_expression("B", init_type_expression());
-	Expression *map6 = init_var_expression("map", init_app_expression(init_app_expression(partial_map, A6), B6));
-	Expression *k6 = init_var_expression("k", A6);
-	Expression *v6 = init_var_expression("v", B6);
-	Expression *kp6 = init_var_expression("k'", A6);
-	Expression *H6 = init_app_expression(not, init_app_expression(init_app_expression(init_app_expression(eq, A6), k6), kp6));
-	Expression *sub6_1 = init_app_expression(init_app_expression(init_app_expression(
-		init_app_expression(init_app_expression(partial_map_put, A6), B6), 
-		map6), kp6), v6);
-	Expression *sub6_2 = init_app_expression(init_app_expression(init_app_expression(
-		init_app_expression(partial_map_get, A6), B6), sub6_1), k6);
-	Expression *sub6_3 = init_app_expression(init_app_expression(init_app_expression(
-		init_app_expression(partial_map_get, A6), B6), map6), k6);
-
-	partial_map_get_put_diff = init_var_expression("partial_map_get_put_diff", init_forall_expression(A6, init_forall_expression(B6, 
-		init_forall_expression(map6, init_forall_expression(k6, init_forall_expression(v6, init_forall_expression(kp6,
-			init_arrow_expression(H6, 
-			init_app_expression(init_app_expression(init_app_expression(
-				eq, init_app_expression(option, B6)), 
-				sub6_2),
-				sub6_3))))))))); 
-
-	Expression *A7 = init_var_expression("A", init_type_expression());
-	Expression *B7 = init_var_expression("B", init_type_expression());
-	Expression *map7 = init_var_expression("map", init_app_expression(init_app_expression(partial_map, A7), B7));
-	Expression *k7 = init_var_expression("k", A7);
-	Expression *v7_1 = init_var_expression("v1", B7);
-	Expression *v7_2 = init_var_expression("v2", B7);
-	Expression *sub7_1 = init_app_expression(init_app_expression(init_app_expression(
-		init_app_expression(init_app_expression(partial_map_put, A7), B7), 
-		map7), k7), v7_1);
-	Expression *sub7_2 = init_app_expression(init_app_expression(init_app_expression(init_app_expression(
-		init_app_expression(partial_map_put, A7), B7), sub7_1), k7), v7_2);
-	Expression *sub7_3 = init_app_expression(init_app_expression(init_app_expression(
-		init_app_expression(init_app_expression(partial_map_put, A7), B7), 
-		map7), k7), v7_2);
-
-	partial_map_put_put_same = init_var_expression("partial_map_put_put_same", init_forall_expression(A7, init_forall_expression(B7, 
-		init_forall_expression(map7, init_forall_expression(k7, init_forall_expression(v7_1, init_forall_expression(v7_2, 
-			init_app_expression(init_app_expression(init_app_expression(eq, init_app_expression(init_app_expression(partial_map, A7), B7)), sub7_2), sub7_3))))))));
-
-	return context_insert_n(c, 7, partial_map, partial_map_empty, partial_map_get, partial_map_put, partial_map_remove, partial_map_get_put_same, partial_map_put_put_same);
 }
 
 Context *init_exec(Context *c) {
@@ -955,13 +824,11 @@ void run_symbolic(int n) {
 	Context *c = std_lib_ctx;
 
 	c = init_word(c);
-	c = init_option(c);
 	c = init_positive(c);
 	c = init_N(c);
 	c = init_Z(c);
 	c = init_string(c);
 	c = init_list(c);
-	c = init_partial_map(c);
 	c = init_io_event(c);
 	c = init_storage(c);
 	c = init_bopname(c);

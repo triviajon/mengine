@@ -73,7 +73,8 @@ Expression *constr_app_type(Expression *func, Expression *arg) {
     return subst(return_type, variable, arg);  // return B[x -> arg]
   } 
 
-  return NULL;  // Bad app constr, for now set type to NULL
+  fprintf(stderr, "Error: Application does not type check.\n");
+  exit(EXIT_FAILURE);
 }
 
 Expression *init_var_expression(const char *name, Expression *type) {
@@ -118,7 +119,13 @@ Expression *init_forall_expression(Expression *bound_variable, Expression *body)
   expr->type = FORALL_EXPRESSION;
   expr->value.forall.context = context_minus(context_add(get_expression_context(bound_variable), get_expression_context(body)), bound_variable);
   expr->value.forall.bound_variable = bound_variable;
-  expr->value.forall.type = init_type_expression();
+  // Set the type of the forall expression based on the type of its body
+  Expression *body_type = get_expression_type(body);
+  if (body_type == init_prop_expression()) {
+    expr->value.forall.type = init_prop_expression();
+  } else {
+    expr->value.forall.type = init_type_expression();
+  }
   expr->value.forall.body = body;
   add_to_parents(body, new_uplink(expr, FORALL_BODY));
   expr->value.forall.uplinks = dll_create();

@@ -34,10 +34,6 @@ extern Expression *list;
 extern Expression *list_nil;
 extern Expression *list_cons;
 
-extern Expression *option;
-extern Expression *option_some;
-extern Expression *option_none;
-
 extern Expression *word;
 extern Expression *word_of_Z;
 extern Expression *word_add;
@@ -83,15 +79,6 @@ extern Expression *cmd_cond;
 extern Expression *cmd_seq;
 extern Expression *cmd_input;
 extern Expression *cmd_output;
-
-extern Expression *partial_map;
-extern Expression *partial_map_empty;
-extern Expression *partial_map_get;
-extern Expression *partial_map_put;
-extern Expression *partial_map_remove;
-extern Expression *partial_map_get_put_same;
-extern Expression *partial_map_get_put_diff;
-extern Expression *partial_map_put_put_same;
 
 extern Expression *IOEvent;
 extern Expression *IOEvent_IN;
