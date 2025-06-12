@@ -189,11 +189,11 @@ Context *init_sep(Context *c) {
 	{
 		Expression *A = init_var_expression("A", init_type_expression());
 		Expression *B = init_var_expression("B", init_type_expression());
-		Expression *partial_map_A_B = init_app_expression(init_app_expression(partial_map, A), B);
+		Expression *partial_map_A_B_prop = init_arrow_expression(init_app_expression(init_app_expression(partial_map, A), B), init_prop_expression());
 		ptsto = init_var_expression("ptsto", init_forall_expression(A, 
 			init_forall_expression(B, 
 				init_arrow_expression(A, 
-					init_arrow_expression(B, partial_map_A_B)))));
+					init_arrow_expression(B, partial_map_A_B_prop)))));
 	}
 
 	// read : forall A B : Type, A -> (B -> (partial_map A B) -> Prop) -> Prop
@@ -446,6 +446,37 @@ Expression *example_1() {
 	return init_app_expression(init_app_expression(init_app_expression(iff1, partial_map_A_B), LHS), RHS);
 }
 
+Expression *example_2() {
+	// Returns a goal of the form:
+	// forall (A B: Type) (x: A) (y: B) (m: partial_map A B -> Prop),
+	// 	exists (P: A) (Q: B) (R: partial_map A B -> Prop),
+	// 	iff1 (partial_map A B) (sep m (ptsto x y)) (sep (ptsto P Q) R)
+	Expression *A = init_var_expression("A", init_type_expression());
+	Expression *B = init_var_expression("B", init_type_expression());
+	Expression *partial_map_A_B = init_app_expression(init_app_expression(partial_map, A), B);
+	Expression *partial_map_A_B_prop = init_arrow_expression(partial_map_A_B, init_prop_expression());
+	Expression *x = init_var_expression("x", A);
+	Expression *y = init_var_expression("y", B);
+	Expression *m = init_var_expression("m", partial_map_A_B_prop);
+	Expression *P = init_var_expression("P", A);
+	Expression *Q = init_var_expression("Q", B);
+	Expression *R = init_var_expression("R", partial_map_A_B_prop);
+
+	Expression *sep_A_B = init_app_expression(init_app_expression(sep, A), B);
+	Expression *ptsto_A_B = init_app_expression(init_app_expression(ptsto, A), B);
+
+	Expression *lhs = init_app_expression(init_app_expression(sep_A_B, m), 
+		init_app_expression(init_app_expression(ptsto_A_B, x), y));
+
+	Expression *rhs = init_app_expression(init_app_expression(sep_A_B,
+		init_app_expression(init_app_expression(ptsto_A_B, P), Q)), R);
+
+	return init_app_expression(init_app_expression(ex, A), init_lambda_expression(P, 
+		init_app_expression(init_app_expression(ex, B), init_lambda_expression(Q, 
+			init_app_expression(init_app_expression(ex, partial_map_A_B_prop), init_lambda_expression(R,
+				init_app_expression(init_app_expression(init_app_expression(iff1, partial_map_A_B), lhs), rhs)))))));
+}
+
 Expression *get_sep_lhs(Expression *adj) {
 	// Given an adjunction of the form:
 	// 	(sep A B P Q)
@@ -665,10 +696,10 @@ FlattenProof *pull_to_front(Expression *v, Expression *adj) {
 	Expression *sep_A = get_sep_A(adj);
 	Expression *sep_B = get_sep_B(adj);
 
-	if (lhs == v) {
+	if (congruence2(lhs, v)) {
 		// If lhs is already v, we can just return the adjunction as is.
 		return init_flatten_proof(adj, init_app_expression(init_app_expression(iff1_refl, partial_map_A_B), adj));
-	} else if (rhs == v) {
+	} else if (congruence2(rhs, v)) {
 		// If rhs is v, we can just swap lhs and rhs.
 		Expression *new_adj = init_app_expression(init_app_expression(sep_A_B, rhs), lhs);
 		return init_flatten_proof(new_adj, init_app_expression(init_app_expression(init_app_expression(init_app_expression(sep_comm, sep_A), sep_B), lhs), rhs));
@@ -750,6 +781,57 @@ Expression *cancel(Expression *goal) {
 	return new_goal;
 }
 
+Expression *ecancel(Expression *goal) {
+	// Attempts to prove a goal of the form:
+	// 	iff1 (partial_map A B) LHS RHS
+	// where LHS and RHS are right-associated/"linked-list" sep adjunctions.
+	// Assuming RHS has the form "sep v0 (sep v1 (sep v2 ...))", 
+	// we pull v0 to the front of LHS and then apply sep_cancel_l, returning a new goal with one less leaf.
+
+	Expression *goal_type = get_expression_type(goal);
+	Expression *rest = goal_type->value.app.func;
+	Expression *partial_map_A_B = rest->value.app.func->value.app.arg;
+	Expression *lhs = rest->value.app.arg;
+	Expression *rhs = goal_type->value.app.arg;
+
+	if (is_leaf(rhs)) {
+		// If rhs is a leaf, the only way to cancel is if lhs and rhs are equal.
+		DoublyLinkedList *remaining_goals = apply(goal, iff1_refl);
+		if (!remaining_goals || dll_len(remaining_goals) != 0) {
+			fprintf(stderr, "Error: Expected exactly zero goals after applying iff1_refl.\n");
+			exit(EXIT_FAILURE);
+		}
+		return NULL; // No remaining goals, cancellation successful.
+	}
+
+	Expression *v = get_sep_lhs(rhs);
+	FlattenProof *fp_lhs = pull_to_front(v, lhs);
+	Expression *new_lhs = fp_lhs->rewritten_expr;
+	Expression *lhs__new_lhs = fp_lhs->equality_proof;
+
+	Expression *mid_type = init_app_expression(init_app_expression(init_app_expression(iff1, partial_map_A_B), new_lhs), rhs);
+	Expression *mid = init_hole_expression("mid", mid_type, get_expression_context(goal));
+
+	// iff1_trans lhs new_lhs rhs lhs__new_lhs ?mid
+	Expression *proof_to_mid = init_app_expression(init_app_expression(init_app_expression(init_app_expression(
+		init_app_expression(init_app_expression(iff1_trans, partial_map_A_B), lhs), new_lhs), rhs), lhs__new_lhs), mid);
+	if (!can_fill(goal, proof_to_mid)) {
+		fprintf(stderr, "Error: Cannot fill the mid hole with the proof.\n");
+		exit(EXIT_FAILURE);
+	}
+	fillHole(goal, proof_to_mid);
+ 
+	DoublyLinkedList *remaining_goals = apply(mid, sep_cancel_l);
+	if (!remaining_goals || dll_len(remaining_goals) != 1) {
+		fprintf(stderr, "Error: Expected exactly one goal after applying sep_cancel_l.\n");
+		exit(EXIT_FAILURE);
+	}
+
+	Expression *new_goal = dll_at(remaining_goals, 0)->data;
+	printf("New goal after cancel: %s\n", stringify_expression2(get_expression_type(new_goal)));
+	return new_goal;
+}
+
 void run_sep(void) {
 	Context *c = std_lib_ctx;
 
@@ -761,24 +843,25 @@ void run_sep(void) {
 
 	printf("Initialized SEP library with %d expressions.\n", c->length);
 
-	Expression *example = example_1();
+	Expression *example = example_2();
 	Context *hole_ctx = context_add(c, get_expression_context(example));
-
 	Expression *goal = init_hole_expression("Goal", example, hole_ctx);
 	// TODO: This is a workaround to be able to retrieve the proof term after solving.
 	Expression *temp = init_lambda_expression(init_var_expression("temp", init_type_expression()), goal);
 
 
-	Expression *fp_gl = flatten(goal);
-	if (fp_gl->type != HOLE_EXPRESSION) {
-		fprintf(stderr, "Error: Expected flattened goal to be a hole expression.\n");
-		exit(EXIT_FAILURE);
-	}
+	printf("Example goal: %s\n", stringify_expression2(example));
 
-	// Expression *iff1_rhs = get_expression_type(fp_gl)->value.app.arg;
-	// Expression *v = get_sep_rhs(get_sep_rhs(get_sep_rhs(iff1_rhs)));
-	// FlattenProof *fp_pulled = pull_to_front(v, iff1_rhs);
+	Expression *goal_to_solve = eexists(eexists(eexists(goal)));
+	ecancel(ecancel(flatten(goal_to_solve)));
 
-	cancel(cancel(cancel(cancel(fp_gl))));
-	printf("Proof: %s\n", stringify_expression2(temp->value.lambda.body));
+
+
+// 	Expression *fp_gl = flatten(goal);
+// 	// Expression *iff1_rhs = get_expression_type(fp_gl)->value.app.arg;
+// 	// Expression *v = get_sep_rhs(get_sep_rhs(get_sep_rhs(iff1_rhs)));
+// 	// FlattenProof *fp_pulled = pull_to_front(v, iff1_rhs);
+
+// 	cancel(cancel(cancel(cancel(fp_gl))));
+// 	printf("Proof: %s\n", stringify_expression2(temp->value.lambda.body));
 }

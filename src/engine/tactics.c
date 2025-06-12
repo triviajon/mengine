@@ -22,6 +22,22 @@ DoublyLinkedList *eapply(Expression *goal, Expression *lemma) {
   return NULL;
 }
 
+Expression *eexists(Expression *goal) {
+  if (goal->type != HOLE_EXPRESSION) return NULL;
+
+  Expression *goal_ty = get_expression_type(goal);
+  if (get_innermost_func(goal_ty) != ex) return NULL;
+  DoublyLinkedList *remaining_goals = eapply(goal, ex_intro);
+
+  if (!remaining_goals || dll_len(remaining_goals) != 2) {
+    fprintf(stderr, "Error: Expected exactly two goals after applying eexists.\n");
+    return NULL;
+  }
+
+  Expression *new_goal = dll_at(remaining_goals, 1)->data;
+  return new_goal;
+}
+
 IntroReturn *intro(Expression *goal) {
   if (goal->type != HOLE_EXPRESSION) return NULL;
 

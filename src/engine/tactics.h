@@ -12,6 +12,7 @@
 
 DoublyLinkedList *apply(Expression *goal, Expression *lemma);
 DoublyLinkedList *eapply(Expression *goal, Expression *lemma); 
+Expression *eexists(Expression *goal);
 
 IntroReturn *intro(Expression *old_proof);
 
