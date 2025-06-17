@@ -28,9 +28,10 @@ extern Expression *ptsto;
 extern Expression *read;
 
 extern Expression *sep_cancel_r;
-extern Expression *sep_cancel_l;
+
 extern Expression *sep_comm;
 extern Expression *sep_assoc;
+extern Expression *sep_assoc_inv;
 extern Expression *sep_neutral_r;
 extern Expression *sep_neutral_l;
 extern Expression *sep_assoc4;

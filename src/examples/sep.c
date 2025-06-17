@@ -17,6 +17,7 @@ Expression *sep_cancel_r = NULL;
 Expression *sep_cancel_l = NULL;
 Expression *sep_comm = NULL;
 Expression *sep_assoc = NULL;
+Expression *sep_assoc_inv = NULL;
 Expression *sep_neutral_r = NULL;
 Expression *sep_neutral_l = NULL;
 Expression *sep_assoc4 = NULL;
@@ -302,6 +303,31 @@ Context *init_sep_prop(Context *c) {
 								init_app_expression(init_app_expression(init_app_expression(iff1, partial_map_A_B), sep_A_B_sep_p_q_r), sep_A_B_p_sep_q_r)))))));
 	}
 
+	// sep_assoc_inv : forall (A B: Type) (p q r: partial_map A B -> Prop), iff1 (sep A B p (sep A B q r)) (sep A B (sep A B p q) r)
+	{
+		Expression *A = init_var_expression("A", init_type_expression());
+		Expression *B = init_var_expression("B", init_type_expression());
+		Expression *partial_map_A_B = init_app_expression(init_app_expression(partial_map, A), B);
+		Expression *partial_map_A_B_prop = init_arrow_expression(partial_map_A_B, init_prop_expression());
+		Expression *p = init_var_expression("p", partial_map_A_B_prop);
+		Expression *q = init_var_expression("q", partial_map_A_B_prop);
+		Expression *r = init_var_expression("r", partial_map_A_B_prop);
+		
+		Expression *sep_A_B_p_q = init_app_expression(init_app_expression(init_app_expression(init_app_expression(sep, A), B), p), q);
+		Expression *sep_A_B_q_r = init_app_expression(init_app_expression(init_app_expression(init_app_expression(sep, A), B), q), r);
+		
+		Expression *sep_A_B_sep_p_q_r = init_app_expression(init_app_expression(init_app_expression(init_app_expression(sep, A), B), sep_A_B_p_q), r);
+		Expression *sep_A_B_p_sep_q_r = init_app_expression(init_app_expression(init_app_expression(init_app_expression(sep, A), B), p), sep_A_B_q_r);
+
+		sep_assoc_inv = init_var_expression("sep_assoc_inv", 
+			init_forall_expression(A, 
+				init_forall_expression(B, 
+					init_forall_expression(p, 
+						init_forall_expression(q, 
+							init_forall_expression(r, 
+								init_app_expression(init_app_expression(init_app_expression(iff1, partial_map_A_B), sep_A_B_p_sep_q_r), sep_A_B_sep_p_q_r)))))));
+	}
+
 	// sep_neutral_r : forall (A B: Type) (p: partial_map A B -> Prop), iff1 (sep A B p (emp A B True)) p
 	{
 		Expression *A = init_var_expression("A", init_type_expression());
@@ -478,7 +504,7 @@ Context *init_sep_prop(Context *c) {
 									init_app_expression(init_app_expression(init_app_expression(iff1, partial_map_A_B), sep_R_P), sep_P_Q))))))));
 	}
 
-	return context_insert_n(c, 11, sep_cancel_r, sep_cancel_l, sep_comm, sep_assoc, sep_neutral_r, sep_neutral_l, sep_assoc4, sep_lift, sep_cong, sep_cancel, sep_cancel_r_leaf);
+	return context_insert_n(c, 12, sep_cancel_r, sep_cancel_l, sep_comm, sep_assoc, sep_assoc_inv, sep_neutral_r, sep_neutral_l, sep_assoc4, sep_lift, sep_cong, sep_cancel, sep_cancel_r_leaf);
 }
 
 Expression *example_1() {
@@ -531,6 +557,32 @@ Expression *example_2() {
 		init_app_expression(init_app_expression(ex, B), init_lambda_expression(Q, 
 			init_app_expression(init_app_expression(ex, partial_map_A_B_prop), init_lambda_expression(R,
 				init_app_expression(init_app_expression(init_app_expression(iff1, partial_map_A_B), lhs), rhs)))))));
+}
+
+Expression *example_3() {
+	// Returns a goal of the form: 
+	// forall (A B: Type) (P1 P2 P3 P4 P5: partial_map A B -> Prop),
+	// iff1 (partial_map A B) (sep P1 (sep P2 (sep P3 (sep P4 P5)))) (sep P3 (sep P2 (sep P1 (sep P4 P5))))
+	Expression *A = init_var_expression("A", init_type_expression());
+	Expression *B = init_var_expression("B", init_type_expression());
+	Expression *partial_map_A_B = init_app_expression(init_app_expression(partial_map, A), B);
+	Expression *partial_map_A_B_prop = init_arrow_expression(partial_map_A_B, init_prop_expression());
+	Expression *P1 = init_var_expression("P1", partial_map_A_B_prop);
+	Expression *P2 = init_var_expression("P2", partial_map_A_B_prop);
+	Expression *P3 = init_var_expression("P3", partial_map_A_B_prop);
+	Expression *P4 = init_var_expression("P4", partial_map_A_B_prop);
+	Expression *P5 = init_var_expression("P5", partial_map_A_B_prop);
+	Expression *sep_A_B = init_app_expression(init_app_expression(sep, A), B);
+
+	Expression *P4_P5 = init_app_expression(init_app_expression(sep_A_B, P4), P5);
+	Expression *P3_P4_P5 = init_app_expression(init_app_expression(sep_A_B, P3), P4_P5);
+	Expression *P2_P3_P4_P5 = init_app_expression(init_app_expression(sep_A_B, P2), P3_P4_P5);
+	Expression *LHS = init_app_expression(init_app_expression(sep_A_B, P1), P2_P3_P4_P5);
+
+	Expression *P1_P4_P5 = init_app_expression(init_app_expression(sep_A_B, P1), P4_P5);
+	Expression *P2_P1_P4_P5 = init_app_expression(init_app_expression(sep_A_B, P2), P1_P4_P5);
+	Expression *RHS = init_app_expression(init_app_expression(sep_A_B, P3), P2_P1_P4_P5);
+	return init_app_expression(init_app_expression(init_app_expression(iff1, partial_map_A_B), LHS), RHS);
 }
 
 Expression *get_sep_lhs(Expression *adj) {
@@ -942,6 +994,145 @@ void solve_sep(Expression *goal) {
 	new_cancel(flattened);
 }
 
+FlattenProof *associate_to_front(Expression *clause, Expression *v) {
+	Expression *sep_prefix = get_sep_prefix(clause);
+	Expression *A = get_sep_A(clause);
+	Expression *B = get_sep_B(clause);
+	Expression *partial_map_A_B = get_expression_type(clause)->value.forall.bound_variable->value.var.type;
+
+	Expression *original = clause;
+	Expression *current_clause = original;
+	Expression *proof_original_to_current = init_app_expression(init_app_expression(iff1_refl, partial_map_A_B), original);
+
+	while (get_sep_lhs(get_sep_rhs(current_clause)) != v) {
+		Expression *lhs = get_sep_lhs(current_clause);
+		Expression *w = get_sep_lhs(get_sep_rhs(current_clause));
+		Expression *rhs = get_sep_rhs(get_sep_rhs(current_clause));
+
+		Expression *new_lhs = init_app_expression(init_app_expression(sep_prefix, lhs), w);
+		Expression *new_rhs = rhs;
+		Expression *new_clause = init_app_expression(init_app_expression(sep_prefix, new_lhs), new_rhs);
+		Expression *proof_of_current_to_new = init_app_expression(init_app_expression(init_app_expression(init_app_expression(init_app_expression(
+			sep_assoc_inv, A), B), lhs), w), rhs);
+		Expression *proof_of_original_to_new = init_app_expression(init_app_expression(init_app_expression(
+			init_app_expression(init_app_expression(init_app_expression(iff1_trans, partial_map_A_B), original), current_clause), new_clause), proof_original_to_current), proof_of_current_to_new);
+			
+		current_clause = new_clause;
+		proof_original_to_current = proof_of_original_to_new;
+	}
+
+	return init_flatten_proof(current_clause, proof_original_to_current);
+}
+
+Expression *cancel_step(Expression *goal) {
+	// Given a goal of the form
+	//   "iff1 LHS RHS" where LHS and RHS are "flat", i.e., LHS = sep v1 (...) and RHS = sep w1 (...)
+	// this function reduces the goal by cancelling w1 from both LHS and RHS.
+	//
+	// In order to do this, we reassociate the LHS until it has the form sep (...) (sep w1 (...)), 
+	// then apply the sep_cancel lemma. Finally, this function reflattens the new LHS before returning the new goal,
+	// allowing the user to chain calls to cancel_step. 
+	Expression *goal_type = get_expression_type(goal);
+	if (goal_type->type != APP_EXPRESSION || get_innermost_func(goal_type) != iff1) {
+		fprintf(stderr, "Error: Expected goal to be of type iff1.\n");
+		exit(EXIT_FAILURE);
+	}
+
+	Expression *rest = goal_type->value.app.func;
+	Expression *partial_map_A_B = rest->value.app.func->value.app.arg;
+	Expression *LHS = rest->value.app.arg;
+	Expression *RHS = goal_type->value.app.arg;	
+
+
+	Expression *w1 = get_sep_lhs(RHS);
+	// w1 is what we want to cancel. first check if w1 already is at the front of LHS.
+	if (congruence2(get_sep_lhs(LHS), w1)) {
+		// We can directly apply sep_cancel_l:
+		DoublyLinkedList *result = apply(goal, sep_cancel_l);
+		if (result && dll_len(result) == 1) {
+			Expression *cancelled_goal = dll_at(result, 0)->data;		
+			return cancelled_goal;
+		} else {
+			fprintf(stderr, "Error: Unable to apply sep_cancel_l.\n");
+			exit(EXIT_FAILURE);
+		}
+	} else if (congruence2(get_sep_rhs(LHS), w1)) {
+		// or possible, the rhs of LHS is a leaf and is w1, so we can apply sep_cancel_r_leaf:
+		DoublyLinkedList *result = apply(goal, sep_cancel_r_leaf);
+		if (result && dll_len(result) == 1) {
+			Expression *cancelled_goal = dll_at(result, 0)->data;		
+			return cancelled_goal;
+		} else {
+			fprintf(stderr, "Error: Unable to apply sep_cancel_r_leaf.\n");
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	FlattenProof *associated__pf = associate_to_front(LHS, w1);
+
+	Expression *associated_LHS = associated__pf->rewritten_expr;
+	Expression *LHS_to_associated_LHS_proof = associated__pf->equality_proof;	
+
+	Expression *new_goal_type = init_app_expression(init_app_expression(init_app_expression(iff1, partial_map_A_B), associated_LHS), RHS);
+	Expression *new_goal = init_hole_expression("Goal", new_goal_type, get_expression_context(goal));
+	
+	// Let's take care of the old goal first:
+	Expression *old_goal_to_new_goal_proof = init_app_expression(
+		init_app_expression(
+			init_app_expression(
+				init_app_expression(
+					init_app_expression(
+						init_app_expression(iff1_trans, partial_map_A_B), LHS), associated_LHS), RHS), LHS_to_associated_LHS_proof), new_goal);
+	if (can_fill(goal, old_goal_to_new_goal_proof)) {
+		fillHole(goal, old_goal_to_new_goal_proof);
+	} else {
+		fprintf(stderr, "Error: Cannot fill the goal with the proof of reordering.\n");
+		exit(EXIT_FAILURE);
+	}
+
+	// Now we can apply the sep_cancel lemma:
+	DoublyLinkedList *result = apply(new_goal, sep_cancel);
+	if (result && dll_len(result) == 1) {
+		Expression *cancelled_goal = dll_at(result, 0)->data;		
+		Expression *flattened_goal = flatten(cancelled_goal);
+		return flattened_goal;
+	} else {
+		fprintf(stderr, "Error: Unable to apply sep_cancel.\n");
+		exit(EXIT_FAILURE);
+	}
+}
+
+void cancel(Expression *goal) {
+	// First, introduce all the quantifiers: and any existentials.
+	Expression *curr_goal = goal;
+	Expression *curr_goal_type = get_expression_type(curr_goal);
+
+	while (true) {
+		if (curr_goal_type->type == APP_EXPRESSION && get_innermost_func(curr_goal_type) == iff1) {
+			break;
+		} else if (curr_goal_type->type == FORALL_EXPRESSION) {
+			IntroReturn *intro_return = intro(curr_goal);
+			free_intro_return(intro_return);
+			curr_goal_type = get_expression_type(curr_goal);
+		} else if (curr_goal_type->type == APP_EXPRESSION && get_innermost_func(curr_goal_type) == ex) {
+			curr_goal = eexists(curr_goal);
+			curr_goal_type = get_expression_type(curr_goal);
+		} else {
+			break;
+		}
+	}
+
+	Expression *curr = flatten(curr_goal);
+	while (true) {
+		// Check if we can apply iff1_refl:
+		Expression *result = apply(curr, iff1_refl);
+		if (result && dll_len(result) == 0) {
+			return;
+		}
+		curr = cancel_step(curr);
+	}
+}
+
 void run_sep(void) {
 	Context *c = std_lib_ctx;
 
@@ -951,15 +1142,18 @@ void run_sep(void) {
 	c = init_sep(c);
 	c = init_sep_prop(c);
 
-	printf("Initialized SEP library with %d expressions.\n", c->length);
+	printf("(* Initialized SEP library with %d expressions. *)\n", c->length);
 
-	Expression *example = example_1();
+	Expression *example = example_3();
 	Context *hole_ctx = context_add(c, get_expression_context(example));
 	Expression *goal = init_hole_expression("Goal", example, hole_ctx);
 	// TODO: This is a workaround to be able to retrieve the proof term after solving.
 	Expression *temp = init_lambda_expression(init_var_expression("temp", init_type_expression()), goal);
 	
-	solve_sep(goal);
+	cancel(goal);
+	printf("(* Successfully solved the goal! *)\n");
+	printf("%s\n\n", stringify_context2(get_expression_context(goal)));
+	printf("Check %s : %s.\n", stringify_expression2(temp->value.lambda.body), stringify_expression2(get_expression_type(goal)));
 
 	exit(EXIT_SUCCESS);
 }
