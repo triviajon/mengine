@@ -118,8 +118,6 @@ int num_holes(Expression *expr) {
   return num_holes;
 }
 
-bool has_holes(Expression *expr) { return num_holes(expr) > 0; }
-
 Expression *_unify(Expression *exprA, Expression *exprB, Expression *hole_to_fill) {
   switch (exprA->type) {
     case HOLE_EXPRESSION: {

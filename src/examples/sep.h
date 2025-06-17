@@ -36,6 +36,8 @@ extern Expression *sep_neutral_l;
 extern Expression *sep_assoc4;
 extern Expression *sep_lift;
 extern Expression *sep_cong;
+extern Expression *sep_cancel;
+extern Expression *sep_cancel_r_leaf;
 
 typedef struct {
   Expression *rewritten_expr;

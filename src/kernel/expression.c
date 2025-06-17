@@ -672,6 +672,40 @@ bool _match_under_holes(Expression *a, Expression *b, Map *alpha_equivalences, M
   }
 }
 
+bool has_holes(Expression *expr) {
+  if (expr->type == HOLE_EXPRESSION) {
+    return true;
+  }
+
+  switch (expr->type) {
+    case (TYPE_EXPRESSION):
+    case (PROP_EXPRESSION):
+      return false;
+    case (APP_EXPRESSION):
+      return has_holes(expr->value.app.func) || has_holes(expr->value.app.arg);
+    case (FORALL_EXPRESSION):
+      return has_holes(expr->value.forall.body);
+    case (LAMBDA_EXPRESSION):
+      return has_holes(expr->value.lambda.body);
+    case (VAR_EXPRESSION):
+      return false;
+    case (FIX_EXPRESSION):
+      return has_holes(expr->value.fix.body);
+    case (MATCH_EXPR_EXPRESSION):
+      return has_holes(expr->value.matchExpr.match_scrutinee) ||
+             has_holes(expr->value.matchExpr.literal_case_item) ||
+             has_holes(expr->value.matchExpr.literal_result) ||
+             has_holes(expr->value.matchExpr.var_case_item) ||
+             has_holes(expr->value.matchExpr.var_result) ||
+             has_holes(expr->value.matchExpr.op_case_item) ||
+             has_holes(expr->value.matchExpr.op_result);
+  }
+}
+
+bool is_hole(Expression *expr) {
+  return expr->type == HOLE_EXPRESSION;
+}
+
 // Returns true if you can safely substitute term into a hole. 
 // This means two things:
 //    1) The type(term) == expected return type of hole.
