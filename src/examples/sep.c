@@ -696,15 +696,14 @@ FlattenProof *flatten_sep_adjunction(Expression *adj, Context *ctx) {
 		Expression *new_adj = init_app_expression(init_app_expression(init_app_expression(init_app_expression(sep, sep_A), sep_B), new_lhs->rewritten_expr), rhs);
 
 		// need a proof that iff1 (sep lhs rhs) (sep new_lhs rhs) given a proof of iff1 lhs.
-		// sep_cancel_r A B lhs rhs new_lhs->rewritten_expr new_lhs->equality_proof
+		// sep_cancel_r A B lhs new_lhs->rewritten_expr rhs new_lhs->equality_proof
 		Expression *equality_proof = init_app_expression(init_app_expression(init_app_expression(
-			init_app_expression(init_app_expression(init_app_expression(sep_cancel_r, sep_A), sep_B), lhs), rhs), new_lhs->rewritten_expr), new_lhs->equality_proof);
-
+			init_app_expression(init_app_expression(init_app_expression(sep_cancel_r, sep_A), sep_B), lhs), new_lhs->rewritten_expr), rhs), new_lhs->equality_proof);
 
 		Expression *flipped_adj = init_app_expression(init_app_expression(init_app_expression(init_app_expression(sep, sep_A), sep_B), rhs), new_lhs->rewritten_expr);
 		// now need a proof that we can flip the adjunction:
 		// sep_comm A B new_lhs->rewritten_expr rhs
-		Expression *flipped_equality_proof = init_app_expression(init_app_expression(init_app_expression(sep_comm, sep_A), sep_B), new_lhs->rewritten_expr);
+		Expression *flipped_equality_proof = init_app_expression(init_app_expression(init_app_expression(init_app_expression(sep_comm, sep_A), sep_B), new_lhs->rewritten_expr), rhs);
 		
 		// finally, a proof that the flipped adjunction is equal to the original adjunction:
 		// iff1_trans partial_map_A_B adj new_adj flipped_adj equality_proof flipped_equality_proof
@@ -877,7 +876,7 @@ Expression *reorder(Expression *goal) {
 			break;
 		}
 
-		curr_clause = get_sep_rhs(rhs);
+		curr_clause = rhs;
 	}
 
 	Expression *current_rhs = original_rhs;
@@ -931,69 +930,6 @@ Expression *reorder(Expression *goal) {
 	return new_goal;
 }
 
-void new_cancel(Expression *goal) {
-	Expression *curr = goal;
-	while (true) {
-		printf("Current goal: %s\n", stringify_expression2(get_expression_type(curr)));
-		DoublyLinkedList *result = apply(curr, sep_cancel_l);
-		if (result && dll_len(result) == 1) {
-			printf(" - Applying sep_cancel_l...\n");
-			curr = dll_at(result, 0)->data;
-			continue;
-		} 
-
-		result = apply(curr, sep_cancel);
-		if (result && dll_len(result) == 1) {
-			printf(" - Applying sep_cancel...\n");
-			curr = dll_at(result, 0)->data;
-			continue;
-			
-		}
-
-		result = apply(curr, sep_cancel_r_leaf);
-		if (result && dll_len(result) == 1) {
-			printf(" - Applying sep_cancel_r_leaf...\n");
-			curr = dll_at(result, 0)->data;
-			continue;
-		}
-
-		result = apply(curr, iff1_refl);
-		if (result && dll_len(result) == 0) {
-			printf(" - Applying iff1_refl...\n");
-			printf("Successfully cancelled.\n");
-			return;
-		}
-
-		printf("Unable to cancel further. Final goal: %s\n", stringify_expression2(get_expression_type(curr)));
-		exit(EXIT_FAILURE);
-	}
-}
-
-void solve_sep(Expression *goal) {
-	// Given a goal of the form:
-	// 	iff1 (partial_map A B) LHS RHS
-	// where LHS and RHS are sep expressions, this function attempts to solve it.
-	// It will reorder the goal, flatten the sep expressions, and apply cancellation rules.
-	
-	printf("Solving goal: %s\n", stringify_expression2(get_expression_type(goal)));
-
-	Expression *curr_goal = goal;
-	Expression *innermost = get_innermost_func(get_expression_type(curr_goal));
-	while (innermost != iff1) {
-		if (innermost == ex) {
-			printf(" -- eexist...\n");
-			curr_goal = eexists(curr_goal);
-		}
-
-		innermost = get_innermost_func(get_expression_type(curr_goal));
-	}
-
-
-	Expression *flattened = reorder(flatten(curr_goal));
-	printf("Reordered and flattened goal: %s : %s\n", stringify_expression2(flattened), stringify_expression2(get_expression_type(flattened)));
-	new_cancel(flattened);
-}
-
 FlattenProof *associate_to_front(Expression *clause, Expression *v) {
 	Expression *sep_prefix = get_sep_prefix(clause);
 	Expression *A = get_sep_A(clause);
@@ -1019,6 +955,25 @@ FlattenProof *associate_to_front(Expression *clause, Expression *v) {
 			
 		current_clause = new_clause;
 		proof_original_to_current = proof_of_original_to_new;
+
+		if (is_leaf(get_sep_rhs(current_clause))) {
+			// We reached the end, so get_sep_rhs(current_clause)) must be v.
+			if (!congruence2(get_sep_rhs(current_clause), v)) {
+				fprintf(stderr, "Error: Unable to associate to front, variable not found.\n");
+				exit(EXIT_FAILURE);
+			}
+
+			// Swap the two sides:
+			Expression *final_clause = init_app_expression(init_app_expression(sep_prefix, get_sep_rhs(current_clause)), get_sep_lhs(current_clause));
+			Expression *proof_current_to_final = init_app_expression(init_app_expression(init_app_expression(init_app_expression(
+				sep_comm, A), B), get_sep_lhs(current_clause)), get_sep_rhs(current_clause));
+			Expression *proof_original_to_final = init_app_expression(init_app_expression(init_app_expression(
+				init_app_expression(init_app_expression(init_app_expression(iff1_trans, partial_map_A_B), original), current_clause), final_clause), proof_original_to_current), proof_current_to_final);
+			
+			current_clause = final_clause;
+			proof_original_to_current = proof_original_to_final;
+			break;
+		}
 	}
 
 	return init_flatten_proof(current_clause, proof_original_to_current);
@@ -1090,8 +1045,16 @@ Expression *cancel_step(Expression *goal) {
 		exit(EXIT_FAILURE);
 	}
 
-	// Now we can apply the sep_cancel lemma:
-	DoublyLinkedList *result = apply(new_goal, sep_cancel);
+	// Try applying sep_cancel_l:
+	DoublyLinkedList *result = apply(new_goal, sep_cancel_l);
+	if (result && dll_len(result) == 1) {
+		Expression *cancelled_goal = dll_at(result, 0)->data;		
+		Expression *flattened_goal = flatten(cancelled_goal);
+		return flattened_goal;
+	} 
+
+	// Otherwise, we should be able to apply the sep_cancel lemma:
+	result = apply(new_goal, sep_cancel);
 	if (result && dll_len(result) == 1) {
 		Expression *cancelled_goal = dll_at(result, 0)->data;		
 		Expression *flattened_goal = flatten(cancelled_goal);
@@ -1122,7 +1085,7 @@ void cancel(Expression *goal) {
 		}
 	}
 
-	Expression *curr = flatten(curr_goal);
+	Expression *curr = reorder(flatten(curr_goal));
 	while (true) {
 		// Check if we can apply iff1_refl:
 		Expression *result = apply(curr, iff1_refl);
