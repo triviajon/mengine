@@ -80,7 +80,7 @@ Expression *constr_app_type(Expression *func, Expression *arg) {
 Expression *init_var_expression(const char *name, Expression *type) {
   Expression *expr = (Expression *)malloc(sizeof(Expression));
   expr->type = VAR_EXPRESSION;
-  expr->value.var.name = name;
+  expr->value.var.name = strdup(name);
   expr->value.var.type = type;
   expr->value.var.uplinks = dll_create();
   expr->value.var.context = context_insert(get_expression_context(type), expr);

@@ -162,8 +162,20 @@ int main(int argc, char *argv[]) {
     }
     int n = atoi(argv[2]);
     run_symbolic(n);
-  } else if (strcmp(argv[1], "sep") == 0) {
-    run_sep();
+  } else if (strcmp(argv[1], "sep1") == 0) {
+    if (argc != 3) {
+      fprintf(stderr, "Usage: %s [--proof=0|1] sep1 <n>\n", argv[0]);
+      return 1;
+    }
+    int n = atoi(argv[2]);
+    run_sep1(n);
+   } else if (strcmp(argv[1], "sep2") == 0) {
+    if (argc != 3) {
+      fprintf(stderr, "Usage: %s [--proof=0|1] sep2 <n>\n", argv[0]);
+      return 1;
+    }
+    int n = atoi(argv[2]);
+    run_sep2(n);
    } else {
     fprintf(stderr, "Unknown example: %s\n", argv[1]);
     print_usage();

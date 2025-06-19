@@ -25,6 +25,7 @@ Expression *sep_lift = NULL;
 Expression *sep_cong = NULL;
 Expression *sep_cancel = NULL;
 Expression *sep_cancel_r_leaf = NULL;
+Expression *sep_swap = NULL;
 
 Context *init_map_prop(Context *c) {
 	// putmany : forall (A B : Type), (partial_map A B) -> (partial_map A B) -> (partial_map A B) 
@@ -504,8 +505,68 @@ Context *init_sep_prop(Context *c) {
 									init_app_expression(init_app_expression(init_app_expression(iff1, partial_map_A_B), sep_R_P), sep_P_Q))))))));
 	}
 
-	return context_insert_n(c, 12, sep_cancel_r, sep_cancel_l, sep_comm, sep_assoc, sep_assoc_inv, sep_neutral_r, sep_neutral_l, sep_assoc4, sep_lift, sep_cong, sep_cancel, sep_cancel_r_leaf);
+	// sep_swap : forall (A B: Type) (P Q R1 R2: partial_map A B -> Prop), iff1 (sep (sep P R1) (sep Q R2)) (sep (sep Q R1) (sep P R2))
+	{
+		Expression *A = init_var_expression("A", init_type_expression());
+		Expression *B = init_var_expression("B", init_type_expression());
+		Expression *partial_map_A_B = init_app_expression(init_app_expression(partial_map, A), B);
+		Expression *partial_map_A_B_prop = init_arrow_expression(partial_map_A_B, init_prop_expression());
+		Expression *P = init_var_expression("P", partial_map_A_B_prop);
+		Expression *Q = init_var_expression("Q", partial_map_A_B_prop);
+		Expression *R1 = init_var_expression("R1", partial_map_A_B_prop);
+		Expression *R2 = init_var_expression("R2", partial_map_A_B_prop);
+
+		Expression *sep_A_B_P_R1 = init_app_expression(init_app_expression(init_app_expression(init_app_expression(sep, A), B), P), R1);
+		Expression *sep_A_B_Q_R2 = init_app_expression(init_app_expression(init_app_expression(init_app_expression(sep, A), B), Q), R2);
+		
+		Expression *sep_A_B_sep_P_R1_sep_Q_R2 = init_app_expression(init_app_expression(init_app_expression(init_app_expression(sep, A), B), sep_A_B_P_R1), sep_A_B_Q_R2);
+
+		Expression *sep_A_B_Q_R1 = init_app_expression(init_app_expression(init_app_expression(init_app_expression(sep, A), B), Q), R1);
+		Expression *sep_A_B_P_R2 = init_app_expression(init_app_expression(init_app_expression(init_app_expression(sep, A), B), P), R2);
+		Expression *sep_A_B_sep_Q_R1_sep_P_R2 = init_app_expression(init_app_expression(init_app_expression(init_app_expression(sep, A), B), sep_A_B_Q_R1), sep_A_B_P_R2);
+		sep_swap = init_var_expression("sep_swap", 
+			init_forall_expression(A, 
+				init_forall_expression(B, 
+					init_forall_expression(P, 
+						init_forall_expression(Q, 
+							init_forall_expression(R1, 
+								init_forall_expression(R2, 
+									init_app_expression(init_app_expression(init_app_expression(iff1, partial_map_A_B), sep_A_B_sep_P_R1_sep_Q_R2), sep_A_B_sep_Q_R1_sep_P_R2))))))));
+	}
+
+
+	return context_insert_n(c, 13, sep_cancel_r, sep_cancel_l, sep_comm, sep_assoc, sep_assoc_inv, sep_neutral_r, sep_neutral_l, 
+		sep_assoc4, sep_lift, sep_cong, sep_cancel, sep_cancel_r_leaf, sep_swap);
 }
+
+Expression *example_0(int n) {
+	// Returns a goal of the form:
+	// forall (A B: Type) (P1 P2 ... Pn: partial_map A B -> Prop),
+	// iff1 (partial_map A B) (sep P1 (sep P2 ... (sep P(n-1) Pn)...)) (sep Pn (sep P(n-1) ... (sep P2 P1)...))
+	Expression *A = init_var_expression("A", init_type_expression());
+	Expression *B = init_var_expression("B", init_type_expression());
+	Expression *partial_map_A_B = init_app_expression(init_app_expression(partial_map, A), B);
+	Expression *partial_map_A_B_prop = init_arrow_expression(partial_map_A_B, init_prop_expression());
+	Expression **Ps = malloc(n * sizeof(Expression *));
+	for (int i = 0; i < n; i++) {
+		char buf[16];
+		snprintf(buf, sizeof(buf), "P%d", i + 1);
+		Ps[i] = init_var_expression(buf, partial_map_A_B_prop);
+	}
+	Expression *sep_A_B = init_app_expression(init_app_expression(sep, A), B);
+	Expression *LHS = Ps[n - 1];
+	for (int i = n - 2; i >= 0; i--) {
+		LHS = init_app_expression(init_app_expression(sep_A_B, Ps[i]), LHS);
+	}
+	Expression *RHS = Ps[0];
+	for (int i = 1; i < n; i++) {
+		RHS = init_app_expression(init_app_expression(sep_A_B, Ps[i]), RHS);
+	}
+	free(Ps);
+	return init_app_expression(init_app_expression(init_app_expression(iff1, partial_map_A_B), LHS), RHS);
+}
+
+
 
 Expression *example_1() {
 	// Returns a goal of the form:
@@ -584,6 +645,55 @@ Expression *example_3() {
 	Expression *RHS = init_app_expression(init_app_expression(sep_A_B, P3), P2_P1_P4_P5);
 	return init_app_expression(init_app_expression(init_app_expression(iff1, partial_map_A_B), LHS), RHS);
 }
+
+Expression *example_4(int n) {
+	// Returns a goal of the form:
+	// forall (A B: Type) (P0 P1 P2 ... Pn: partial_map A B -> Prop) (a : A) (b: B),
+	// exists (k: A) (v: B) (R: partial_map A B -> Prop),
+	// iff1 (sep (a -> b) (sep P0 (sep P1 ...)))
+	//      (sep P1 (sep P2 ... (sep Pn (sep (k->v) R))...))                    
+	Expression *A = init_var_expression("A", init_type_expression());
+	Expression *B = init_var_expression("B", init_type_expression());
+	Expression *partial_map_A_B = init_app_expression(init_app_expression(partial_map, A), B);
+	Expression *partial_map_A_B_prop = init_arrow_expression(partial_map_A_B, init_prop_expression());
+	Expression **Ps = malloc(n * sizeof(Expression *));
+	for (int i = 0; i < n; i++) {
+		char buf[16];
+		snprintf(buf, sizeof(buf), "P%d", i + 1);
+		Ps[i] = init_var_expression(buf, partial_map_A_B_prop);
+	}
+	Expression *sep_A_B = init_app_expression(init_app_expression(sep, A), B);
+	Expression *P0 = init_var_expression("P0", partial_map_A_B_prop);
+	Expression *a = init_var_expression("a", A);
+	Expression *b = init_var_expression("b", B);
+	Expression *k = init_var_expression("k", A);
+	Expression *v = init_var_expression("v", B);
+	Expression *R = init_var_expression("R", partial_map_A_B_prop);
+
+	Expression *lhs = init_app_expression(init_app_expression(sep_A_B, Ps[n - 2]), Ps[n - 1]);
+	for (int i = n - 3; i >= 0; i--) {
+		lhs = init_app_expression(init_app_expression(sep_A_B, Ps[i]), lhs);
+	}
+	lhs = init_app_expression(init_app_expression(sep_A_B, P0), lhs);
+	Expression *a_pts_to_b = init_app_expression(init_app_expression(init_app_expression(init_app_expression(ptsto, A), B), a), b);
+	lhs = init_app_expression(init_app_expression(sep_A_B, a_pts_to_b), lhs);
+
+	Expression *k_pts_to_v = init_app_expression(init_app_expression(init_app_expression(init_app_expression(ptsto, A), B), k), v);
+	Expression *rhs = init_app_expression(init_app_expression(sep_A_B, k_pts_to_v), R);
+	for (int i = n - 1; i >= 0; i--) {
+		rhs = init_app_expression(init_app_expression(sep_A_B, Ps[i]), rhs);
+	}
+
+	free(Ps);
+
+	Expression *iff1_statement = init_app_expression(init_app_expression(init_app_expression(iff1, partial_map_A_B), lhs), rhs);
+	Expression *exists_clause = init_app_expression(init_app_expression(ex, A), init_lambda_expression(k, 
+		init_app_expression(init_app_expression(ex, B), init_lambda_expression(v, 
+			init_app_expression(init_app_expression(ex, partial_map_A_B_prop), init_lambda_expression(R, iff1_statement))))));
+	return exists_clause;
+}
+
+
 
 Expression *get_sep_lhs(Expression *adj) {
 	// Given an adjunction of the form:
@@ -664,7 +774,7 @@ FlattenProof *free_flatten_proof(FlattenProof *fp) {
 	return NULL;
 }
 
-FlattenProof *flatten_sep_adjunction(Expression *adj, Context *ctx) {
+FlattenProof *flatten_sep_adjunction(Expression *adj) {
 	// Given an arbitrary adjunction of sep expressions,
 	// returns an equivalent adjunction where the sep expressions are flattened.
 
@@ -681,7 +791,7 @@ FlattenProof *flatten_sep_adjunction(Expression *adj, Context *ctx) {
 
 	if (is_leaf(lhs)) {
 		// adj has form sep lhs rhs where lhs is a leaf.
-		FlattenProof *new_rhs = flatten_sep_adjunction(rhs, ctx);
+		FlattenProof *new_rhs = flatten_sep_adjunction(rhs);
 		Expression *new_adj = init_app_expression(init_app_expression(init_app_expression(init_app_expression(sep, sep_A), sep_B), lhs), new_rhs->rewritten_expr);
 
 		// need a proof that iff1 (sep lhs rhs) (sep lhs new_rhs) given a proof of iff1 rhs.
@@ -692,7 +802,7 @@ FlattenProof *flatten_sep_adjunction(Expression *adj, Context *ctx) {
 		return init_flatten_proof(new_adj, equality_proof);
 	} else if (is_leaf(rhs)) {
 		// adj has form sep lhs rhs where rhs is a leaf.
-		FlattenProof *new_lhs = flatten_sep_adjunction(lhs, ctx);
+		FlattenProof *new_lhs = flatten_sep_adjunction(lhs);
 		Expression *new_adj = init_app_expression(init_app_expression(init_app_expression(init_app_expression(sep, sep_A), sep_B), new_lhs->rewritten_expr), rhs);
 
 		// need a proof that iff1 (sep lhs rhs) (sep new_lhs rhs) given a proof of iff1 lhs.
@@ -712,8 +822,8 @@ FlattenProof *flatten_sep_adjunction(Expression *adj, Context *ctx) {
 		return init_flatten_proof(flipped_adj, final_equality_proof);
 	} else {
 		// adj has form sep lhs rhs where both lhs and rhs are not leaves.
-		FlattenProof *new_lhs = flatten_sep_adjunction(lhs, ctx);
-		FlattenProof *new_rhs = flatten_sep_adjunction(rhs, ctx);
+		FlattenProof *new_lhs = flatten_sep_adjunction(lhs);
+		FlattenProof *new_rhs = flatten_sep_adjunction(rhs);
 
 		Expression *mid = init_app_expression(init_app_expression(init_app_expression(init_app_expression(sep, sep_A), sep_B), new_lhs->rewritten_expr), new_rhs->rewritten_expr);
 		Expression *adj_to_mid = init_app_expression(init_app_expression(init_app_expression(init_app_expression(init_app_expression(init_app_expression(init_app_expression(init_app_expression(
@@ -732,7 +842,7 @@ FlattenProof *flatten_sep_adjunction(Expression *adj, Context *ctx) {
 			sep_assoc4, sep_A), sep_B), new_lhs_1), new_lhs_2), new_rhs_1), new_rhs_2);
 
 		// We've reduced the problem by at least 2 leaves, so we call flatten_sep_adjunction recursively on the rearranged expression.
-		FlattenProof *reduced_proof = flatten_sep_adjunction(mid2, ctx);
+		FlattenProof *reduced_proof = flatten_sep_adjunction(mid2);
 		Expression *final = reduced_proof->rewritten_expr;
 		Expression *mid2_to_final = reduced_proof->equality_proof;
 
@@ -764,8 +874,8 @@ Expression *flatten(Expression *goal) {
 	Expression *rest = goal_type->value.app.func;
 	Expression *LHS = rest->value.app.arg;
 	Expression *RHS = goal_type->value.app.arg;
-	FlattenProof *fp_l = flatten_sep_adjunction(LHS, get_expression_context(goal));
-	FlattenProof *fp_r = flatten_sep_adjunction(RHS, get_expression_context(goal));
+	FlattenProof *fp_l = flatten_sep_adjunction(LHS);
+	FlattenProof *fp_r = flatten_sep_adjunction(RHS);
 
 	Expression *partial_map_A_B = rest->value.app.func->value.app.arg;
 	Expression *rewritten_expr = init_app_expression(init_app_expression(init_app_expression(iff1, partial_map_A_B), fp_l->rewritten_expr), fp_r->rewritten_expr);
@@ -785,55 +895,42 @@ Expression *flatten(Expression *goal) {
 	exit(EXIT_FAILURE);
 }
 
+
 FlattenProof *pull_to_front(Expression *v, Expression *adj) {
-	// Given a right-associated adjunction of the form:
-	// 	(sep A B P Q)
-	// where the left hand of each sep is a leave, returns
-	// an equivalent adjunction where the variable v is pulled to the top-most level.
-	if (adj->type != APP_EXPRESSION || get_innermost_func(adj) != sep) {
-		fprintf(stderr, "Error: Expected innermost func to be sep.\n");
-		exit(EXIT_FAILURE);
-	}
-	
-	Expression *sep_A_B = get_sep_prefix(adj);
-	Expression *lhs = get_sep_lhs(adj);
-	Expression *rhs = get_sep_rhs(adj);
 	Expression *partial_map_A_B = get_expression_type(adj)->value.forall.bound_variable->value.var.type;
+
+	if (get_sep_lhs(adj) == v) {
+		// v is already at the front, no need to pull it.
+		return init_flatten_proof(adj, init_app_expression(init_app_expression(iff1_refl, partial_map_A_B), adj));
+	}
+
 	Expression *sep_A = get_sep_A(adj);
 	Expression *sep_B = get_sep_B(adj);
+	Expression *sep_A_B = get_sep_prefix(adj);
 
-	if (congruence2(lhs, v)) {
-		// If lhs is already v, we can just return the adjunction as is.
-		return init_flatten_proof(adj, init_app_expression(init_app_expression(iff1_refl, partial_map_A_B), adj));
-	} else if (congruence2(rhs, v)) {
-		// If rhs is v, we can just swap lhs and rhs.
-		Expression *new_adj = init_app_expression(init_app_expression(sep_A_B, rhs), lhs);
-		return init_flatten_proof(new_adj, init_app_expression(init_app_expression(init_app_expression(init_app_expression(sep_comm, sep_A), sep_B), lhs), rhs));
+	FlattenProof *associated__pf = associate_to_front(adj, v);
+	Expression *associated_adj = associated__pf->rewritten_expr;
+	Expression *adj_to_associated_adj_proof = associated__pf->equality_proof;	
+
+	Expression *P = get_sep_lhs(associated_adj);
+	Expression *Q = get_sep_lhs(get_sep_rhs(associated_adj)); // should be v
+	Expression *R = get_sep_rhs(get_sep_rhs(associated_adj));
+
+	// todo bug: sometimes associate_to_front returns v at the front instead of the expected P.
+	if (P == v) {
+		// If P is v, we can just return the associated_adj.
+		return init_flatten_proof(associated_adj, adj_to_associated_adj_proof);
 	}
 
-	Expression *curr_leaf = lhs;
+	Expression *pulled = init_app_expression(init_app_expression(sep_A_B, Q), init_app_expression(init_app_expression(sep_A_B, P), R));
+	Expression *associated_to_pulled = init_app_expression(init_app_expression(init_app_expression(init_app_expression(init_app_expression(
+		sep_lift, sep_A), sep_B), P), Q), R);
 
-	// If neither lhs nor rhs is v, we need to pull v out of the rhs. 
-	FlattenProof *rhs_rearranged = pull_to_front(v, rhs);
-	Expression *rhs__new_rhs = rhs_rearranged->equality_proof;
-	Expression *new_rhs = rhs_rearranged->rewritten_expr;
-	// At this point, rhs_rearranged->rewritten_expr is of the form:
-	// 	(sep A B v Q)
-	// So now we can just pull v out of this and prove the equivalence.
-	Expression *mid = init_app_expression(init_app_expression(sep_A_B, curr_leaf), new_rhs);
-	Expression *adj_to_mid = init_app_expression(init_app_expression(init_app_expression(init_app_expression(init_app_expression(init_app_expression(
-		sep_cancel_l, sep_A), sep_B), curr_leaf), rhs), new_rhs), rhs__new_rhs);
+	Expression *adj_to_pulled = init_app_expression(init_app_expression(
+		init_app_expression(init_app_expression(init_app_expression(init_app_expression(
+			iff1_trans, partial_map_A_B), adj), associated_adj), pulled), adj_to_associated_adj_proof), associated_to_pulled);
 
-	Expression *swap_leaf = get_sep_lhs(rhs_rearranged->rewritten_expr);
-	Expression *rest_of_rhs = get_sep_rhs(rhs_rearranged->rewritten_expr);
-	
-	Expression *final = init_app_expression(init_app_expression(sep_A_B, swap_leaf), init_app_expression(init_app_expression(sep_A_B, curr_leaf), rest_of_rhs));
-	Expression *mid_to_final = init_app_expression(init_app_expression(init_app_expression(
-		init_app_expression(init_app_expression(sep_lift, sep_A), sep_B), curr_leaf), swap_leaf), rest_of_rhs);
-	
-	Expression *full_proof = init_app_expression(init_app_expression(init_app_expression(
-		init_app_expression(init_app_expression(init_app_expression(iff1_trans, partial_map_A_B), adj), mid), final), adj_to_mid), mid_to_final);
-	return init_flatten_proof(final, full_proof);
+	return init_flatten_proof(pulled, adj_to_pulled);
 }
 
 Expression *reorder(Expression *goal) {
@@ -877,6 +974,11 @@ Expression *reorder(Expression *goal) {
 		}
 
 		curr_clause = rhs;
+	}
+
+	if (dll_len(are_holes) == 0 && dll_len(with_holes) == 0) {
+		// No holes, nothing to reorder.
+		return goal;
 	}
 
 	Expression *current_rhs = original_rhs;
@@ -976,7 +1078,11 @@ FlattenProof *associate_to_front(Expression *clause, Expression *v) {
 		}
 	}
 
-	return init_flatten_proof(current_clause, proof_original_to_current);
+	FlattenProof *flattened = flatten_sep_adjunction(current_clause); 
+	Expression *final = flattened->rewritten_expr;
+	Expression *final_proof = init_app_expression(init_app_expression(init_app_expression(
+		init_app_expression(init_app_expression(init_app_expression(iff1_trans, partial_map_A_B), original), current_clause), final), proof_original_to_current), flattened->equality_proof);
+	return init_flatten_proof(final, final_proof);
 }
 
 Expression *cancel_step(Expression *goal) {
@@ -1003,7 +1109,7 @@ Expression *cancel_step(Expression *goal) {
 	// w1 is what we want to cancel. first check if w1 already is at the front of LHS.
 	if (congruence2(get_sep_lhs(LHS), w1)) {
 		// We can directly apply sep_cancel_l:
-		DoublyLinkedList *result = apply(goal, sep_cancel_l);
+		DoublyLinkedList *result = eapply(goal, sep_cancel_l);
 		if (result && dll_len(result) == 1) {
 			Expression *cancelled_goal = dll_at(result, 0)->data;		
 			return cancelled_goal;
@@ -1013,7 +1119,7 @@ Expression *cancel_step(Expression *goal) {
 		}
 	} else if (congruence2(get_sep_rhs(LHS), w1)) {
 		// or possible, the rhs of LHS is a leaf and is w1, so we can apply sep_cancel_r_leaf:
-		DoublyLinkedList *result = apply(goal, sep_cancel_r_leaf);
+		DoublyLinkedList *result = eapply(goal, sep_cancel_r_leaf);
 		if (result && dll_len(result) == 1) {
 			Expression *cancelled_goal = dll_at(result, 0)->data;		
 			return cancelled_goal;
@@ -1046,7 +1152,7 @@ Expression *cancel_step(Expression *goal) {
 	}
 
 	// Try applying sep_cancel_l:
-	DoublyLinkedList *result = apply(new_goal, sep_cancel_l);
+	DoublyLinkedList *result = eapply(new_goal, sep_cancel_l);
 	if (result && dll_len(result) == 1) {
 		Expression *cancelled_goal = dll_at(result, 0)->data;		
 		Expression *flattened_goal = flatten(cancelled_goal);
@@ -1054,7 +1160,7 @@ Expression *cancel_step(Expression *goal) {
 	} 
 
 	// Otherwise, we should be able to apply the sep_cancel lemma:
-	result = apply(new_goal, sep_cancel);
+	result = eapply(new_goal, sep_cancel);
 	if (result && dll_len(result) == 1) {
 		Expression *cancelled_goal = dll_at(result, 0)->data;		
 		Expression *flattened_goal = flatten(cancelled_goal);
@@ -1088,7 +1194,7 @@ void cancel(Expression *goal) {
 	Expression *curr = reorder(flatten(curr_goal));
 	while (true) {
 		// Check if we can apply iff1_refl:
-		Expression *result = apply(curr, iff1_refl);
+		Expression *result = eapply(curr, iff1_refl);
 		if (result && dll_len(result) == 0) {
 			return;
 		}
@@ -1096,7 +1202,7 @@ void cancel(Expression *goal) {
 	}
 }
 
-void run_sep(void) {
+void run_sep1(int n) {
 	Context *c = std_lib_ctx;
 
  	c = init_map_prop(c);
@@ -1107,7 +1213,7 @@ void run_sep(void) {
 
 	printf("(* Initialized SEP library with %d expressions. *)\n", c->length);
 
-	Expression *example = example_3();
+	Expression *example = example_0(n);
 	Context *hole_ctx = context_add(c, get_expression_context(example));
 	Expression *goal = init_hole_expression("Goal", example, hole_ctx);
 	// TODO: This is a workaround to be able to retrieve the proof term after solving.
@@ -1115,8 +1221,33 @@ void run_sep(void) {
 	
 	cancel(goal);
 	printf("(* Successfully solved the goal! *)\n");
-	printf("%s\n\n", stringify_context2(get_expression_context(goal)));
-	printf("Check %s : %s.\n", stringify_expression2(temp->value.lambda.body), stringify_expression2(get_expression_type(goal)));
+	// printf("%s\n\n", stringify_context2(get_expression_context(goal)));
+	// printf("Check %s : %s.\n", stringify_expression2(temp->value.lambda.body), stringify_expression2(get_expression_type(goal)));
+
+	exit(EXIT_SUCCESS);
+}
+
+void run_sep2(int n) {
+	Context *c = std_lib_ctx;
+
+ 	c = init_map_prop(c);
+	c = init_disjoint_prop(c);
+	c = init_putmany_prop(c);
+	c = init_sep(c);
+	c = init_sep_prop(c);
+
+	printf("(* Initialized SEP library with %d expressions. *)\n", c->length);
+
+	Expression *example = example_4(n);
+	Context *hole_ctx = context_add(c, get_expression_context(example));
+	Expression *goal = init_hole_expression("Goal", example, hole_ctx);
+	// TODO: This is a workaround to be able to retrieve the proof term after solving.
+	Expression *temp = init_lambda_expression(init_var_expression("temp", init_type_expression()), goal);
+	
+	cancel(goal);
+	printf("(* Successfully solved the goal! *)\n");
+	// printf("%s\n\n", stringify_context2(get_expression_context(goal)));
+	// printf("Check %s : %s.\n", stringify_expression2(temp->value.lambda.body), stringify_expression2(get_expression_type(goal)));
 
 	exit(EXIT_SUCCESS);
 }

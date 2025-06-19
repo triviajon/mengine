@@ -39,6 +39,7 @@ extern Expression *sep_lift;
 extern Expression *sep_cong;
 extern Expression *sep_cancel;
 extern Expression *sep_cancel_r_leaf;
+extern Expression *sep_swap;
 
 typedef struct {
   Expression *rewritten_expr;
@@ -48,6 +49,9 @@ typedef struct {
 FlattenProof *init_flatten_proof(Expression *rewritten_expr, Expression *equality_proof);
 FlattenProof *free_flatten_proof(FlattenProof *fp);
 
-void run_sep(void);
+FlattenProof *associate_to_front(Expression *clause, Expression *v);
+
+void run_sep1(int n);
+void run_sep2(int n);
 
 #endif // SEP_H
