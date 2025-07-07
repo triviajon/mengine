@@ -46,7 +46,6 @@ void print_usage() {
         stderr,
         "  nm [<n> <m>] ... rewrite benchmark with function arity n and let "
         "depth m\n");
-    fprintf(stderr, "  nm-bench ... run full nm benchmark suite\n");
 }
 
 int main(int argc, char *argv[]) {
