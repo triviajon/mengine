@@ -835,8 +835,6 @@ Expression *make_exec_test_4(Context *ctx) {
     Expression *t_prime = init_var_expression("t'", trace);
     Expression *m_prime = init_var_expression("m'", mem);
     Expression *l_prime = init_var_expression("l'", locals);
-    Expression *post_sub0 = init_app_expression(
-        init_app_expression(init_app_expression(eq, mem), m_prime), m);
 
     Expression *v = init_var_expression("v", word);
     Expression *post_sub1 = init_app_expression(
@@ -1185,14 +1183,13 @@ Expression *_sym_solve(Expression *initial_goal) {
             case (APP_EXPRESSION): {
                 Expression *innermost = get_innermost_func(goal_type);
                 if (innermost == exec) {
-                    Expression *post = goal_type->value.app.arg;
-                    Expression *locals =
-                        goal_type->value.app.func->value.app.arg;
-                    Expression *memory = goal_type->value.app.func->value.app
-                                             .func->value.app.arg;
-                    Expression *trace =
-                        goal_type->value.app.func->value.app.func->value.app
-                            .func->value.app.arg;
+                    // Expression *post = goal_type->value.app.arg;
+                    // Expression *locals = goal_type->value.app.func->value.app.arg;
+                    // Expression *memory = goal_type->value.app.func->value.app
+                    //                          .func->value.app.arg;
+                    // Expression *trace =
+                    //     goal_type->value.app.func->value.app.func->value.app
+                    //         .func->value.app.arg;
                     Expression *cmd =
                         goal_type->value.app.func->value.app.func->value.app
                             .func->value.app.func->value.app.arg;
@@ -1243,6 +1240,13 @@ Expression *_sym_solve(Expression *initial_goal) {
                     solve_not(goal);
                 }
                 break;
+            }
+            default: {
+                printf("Unknown goal type: %s\n",
+                       stringify_expression2(goal_type));
+                dll_destroy(goals_to_solve);
+                dll_destroy(hypotheses);
+                return NULL;
             }
         }
     }

@@ -47,7 +47,6 @@ UnificationResult *init_unification_result(Expression *lemma_instantiation,
                                            DoublyLinkedList *new_goals);
 void free_unification_result(UnificationResult *unification_result);
 
-UnificationResult *eunify(Expression *lemma, Expression *goal);
 UnificationResult *eunify2(Expression *lemma, Expression *goal);
 
 #endif  // UNIFY_H

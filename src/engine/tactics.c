@@ -1,7 +1,7 @@
 #include "tactics.h"
 
 DoublyLinkedList *apply(Expression *goal, Expression *lemma) {
-    UnificationResult *unification_result = eunify(lemma, goal);
+    UnificationResult *unification_result = eunify2(lemma, goal);
     Expression *instantiated_lemma = unification_result->lemma_instantiation;
     DoublyLinkedList *new_goals = unification_result->new_goals;
     if (can_fill(goal, instantiated_lemma)) {

@@ -5,7 +5,6 @@
 #include "beta_reduction.h"
 #include "context.h"
 #include "logic.h"
-#include "proof_state.h"
 #include "rewrite_proof.h"
 #include "rewrites.h"
 #include "unify.h"

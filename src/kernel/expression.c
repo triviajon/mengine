@@ -30,6 +30,17 @@ void add_to_parents(Expression *expression, Uplink *uplink) {
             dll_insert_at_head(expression->value.hole.uplinks,
                                dll_new_node(uplink));
             break;
+        case (FIX_EXPRESSION):
+            dll_insert_at_head(expression->value.fix.uplinks,
+                               dll_new_node(uplink));
+            break;
+        case (MATCH_EXPR_EXPRESSION):
+            dll_insert_at_head(expression->value.matchExpr.uplinks, 
+                               dll_new_node(uplink));
+            break;
+        default:
+            fprintf(stderr, "Error: Unknown expression type in add_to_parents.\n");
+            exit(EXIT_FAILURE);
     }
 }
 
@@ -337,6 +348,13 @@ DoublyLinkedList *get_expression_uplinks(Expression *expression) {
             return expression->value.prop.uplinks;
         case (HOLE_EXPRESSION):
             return expression->value.hole.uplinks;
+        case (FIX_EXPRESSION):
+            return expression->value.fix.uplinks;
+        case (MATCH_EXPR_EXPRESSION):
+            return expression->value.matchExpr.uplinks;
+        default:
+            fprintf(stderr, "Error: Unknown expression type in get_expression_uplinks.\n");
+            exit(EXIT_FAILURE);
     }
 }
 
@@ -435,6 +453,8 @@ void free_expression(Expression *expr) {
             break;
         case (HOLE_EXPRESSION):
             free_hole_expression(expr);
+            break;
+        default: 
             break;
     }
 }
@@ -772,14 +792,12 @@ bool _match_under_holes(Expression *a, Expression *b, Map *alpha_equivalences,
 }
 
 bool has_holes(Expression *expr) {
-    if (expr->type == HOLE_EXPRESSION) {
-        return true;
-    }
-
     switch (expr->type) {
         case (TYPE_EXPRESSION):
         case (PROP_EXPRESSION):
             return false;
+        case (HOLE_EXPRESSION):
+            return true;
         case (APP_EXPRESSION):
             return has_holes(expr->value.app.func) ||
                    has_holes(expr->value.app.arg);
@@ -799,6 +817,9 @@ bool has_holes(Expression *expr) {
                    has_holes(expr->value.matchExpr.var_result) ||
                    has_holes(expr->value.matchExpr.op_case_item) ||
                    has_holes(expr->value.matchExpr.op_result);
+        default:
+            fprintf(stderr, "Error: Unknown expression type in has_holes.\n");
+            exit(EXIT_FAILURE);
     }
 }
 
@@ -983,6 +1004,8 @@ bool _congruence2(Expression *a, Expression *b, Map *mapping) {
             return true;
         }
     }
+
+    return false; 
 }
 
 bool congruence2(Expression *a, Expression *b) {

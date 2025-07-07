@@ -1869,7 +1869,7 @@ void cancel(Expression *goal) {
     Expression *curr = reorder(flatten(curr_goal));
     while (true) {
         // Check if we can apply iff1_refl:
-        Expression *result = eapply(curr, iff1_refl);
+        DoublyLinkedList *result = eapply(curr, iff1_refl);
         if (result && dll_len(result) == 0) {
             return;
         }
@@ -1891,10 +1891,10 @@ void run_sep1(int n) {
     Expression *example = example_0(n);
     Context *hole_ctx = context_add(c, get_expression_context(example));
     Expression *goal = init_hole_expression("Goal", example, hole_ctx);
-    // TODO: This is a workaround to be able to retrieve the proof term after
-    // solving.
-    Expression *temp = init_lambda_expression(
-        init_var_expression("temp", init_type_expression()), goal);
+    
+	// TODO: This is a workaround to be able to retrieve the proof term after solving.
+    Expression *temp = init_lambda_expression(init_var_expression("temp", init_type_expression()), goal);
+	(void)temp;
 
     cancel(goal);
     printf("(* Successfully solved the goal! *)\n");
@@ -1920,10 +1920,10 @@ void run_sep2(int n) {
     Expression *example = example_4(n);
     Context *hole_ctx = context_add(c, get_expression_context(example));
     Expression *goal = init_hole_expression("Goal", example, hole_ctx);
-    // TODO: This is a workaround to be able to retrieve the proof term after
-    // solving.
-    Expression *temp = init_lambda_expression(
-        init_var_expression("temp", init_type_expression()), goal);
+
+    // TODO: This is a workaround to be able to retrieve the proof term after solving.
+    Expression *temp = init_lambda_expression(init_var_expression("temp", init_type_expression()), goal);
+	(void)temp;
 
     cancel(goal);
     printf("(* Successfully solved the goal! *)\n");

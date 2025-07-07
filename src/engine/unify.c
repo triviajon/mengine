@@ -125,46 +125,6 @@ int num_holes(Expression *expr) {
     return num_holes;
 }
 
-Expression *_unify(Expression *exprA, Expression *exprB,
-                   Expression *hole_to_fill) {
-    switch (exprA->type) {
-        case HOLE_EXPRESSION: {
-            if (exprA != hole_to_fill) {
-                // Don't care...
-                return NULL;
-            }
-
-            Expression *exprB_ty = get_expression_type(exprB);
-            Expression *expected_ty = hole_to_fill->value.hole.return_type;
-            if (congruence(exprB_ty, expected_ty)) {
-                return exprB;
-            }
-            return NULL;
-        }
-        case APP_EXPRESSION: {
-            if (exprB->type != APP_EXPRESSION) {
-                return NULL;
-            }
-
-            Expression *new_func = _unify(exprA->value.app.func,
-                                          exprB->value.app.func, hole_to_fill);
-            if (new_func != NULL && new_func->type != HOLE_EXPRESSION) {
-                return new_func;
-            }
-
-            Expression *new_arg = _unify(exprA->value.app.arg,
-                                         exprB->value.app.arg, hole_to_fill);
-            if (new_arg != NULL) {
-                return new_arg;
-            }
-
-            return new_func;
-        }
-        default:
-            return NULL;
-    }
-}
-
 Expression *_unify2(Expression *exprA, Expression *exprB,
                     Expression *var_to_fill) {
     if (exprA == exprB) return NULL;
@@ -234,6 +194,7 @@ bool _could_apply(Expression *expr, Expression *lemma_ty_body,
 
             return is_hole;
         }
+        default:  return false;
     }
 }
 
@@ -328,58 +289,8 @@ void free_unification_result(UnificationResult *unification_result) {
  * substitutions. Returns a list of any remaining unfilled holes and the lemma
  * instantiation.
  */
-
-UnificationResult *eunify(Expression *lemma, Expression *goal) {
-    Expression *goal_ty = get_expression_type(goal);
-
-    DoublyLinkedList *holes = dll_create();
-    Expression *curr_lemma_ty = get_expression_type(lemma);
-    Context *goal_ctx = get_expression_context(goal);
-
-    while (curr_lemma_ty->type == FORALL_EXPRESSION) {
-        Expression *binding_var = curr_lemma_ty->value.forall.bound_variable;
-        Expression *binding_var_type = binding_var->value.var.type;
-
-        char *binding_var_name = binding_var->value.var.name;
-        Expression *var_hole =
-            init_hole_expression(binding_var_name, binding_var_type, goal_ctx);
-
-        dll_insert_at_tail(holes, dll_new_node(var_hole));
-        Expression *curr_lemma_ty_body = curr_lemma_ty->value.forall.body;
-        curr_lemma_ty = subst(curr_lemma_ty_body, binding_var, var_hole);
-    }
-
-    // Now for unification.
-    Expression *instantiated_lemma = lemma;
-    DoublyLinkedList *remaining_open = dll_create();
-
-    DLLNode *curr_dll = holes->head;
-    while (curr_dll != NULL) {
-        Expression *hole_to_fill = (Expression *)curr_dll->data;
-        normalize_hole_type(hole_to_fill);
-        Expression *hole_subst = _unify(curr_lemma_ty, goal_ty, hole_to_fill);
-        if (hole_subst == NULL) {
-            instantiated_lemma =
-                init_app_expression(instantiated_lemma, hole_to_fill);
-            dll_insert_at_tail(remaining_open, dll_new_node(hole_to_fill));
-        } else {
-            instantiated_lemma =
-                init_app_expression(instantiated_lemma, hole_subst);
-            fillHole(hole_to_fill, hole_subst);
-        }
-
-        curr_dll = curr_dll->next;
-    }
-
-    dll_destroy(holes);
-
-    return init_unification_result(instantiated_lemma, remaining_open);
-}
-
 UnificationResult *eunify2(Expression *lemma, Expression *goal) {
     Context *goal_context = get_expression_context(goal);
-    Expression *lemma_ty = get_expression_type(goal);
-
     Expression *expr = get_expression_type(goal);
 
     Expression *current_lemma_app = lemma;

@@ -396,6 +396,7 @@ RewriteProof *rewrites_var(Context *goal_context, Expression *expr, int n,
 }
 
 RewriteProof *rewrite_hole(Context *goal_context, Expression *expr) {
+    (void) goal_context; // Unused in this function
     return init_rewrite_proof(expr, expr, build_eq_refl(expr), dll_create());
 }
 
