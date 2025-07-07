@@ -1,9 +1,9 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include "expression.h"
-#include "dyn_array_map.h"
 #include "doubly_linked_list.h"
+#include "dyn_array_map.h"
+#include "expression.h"
 
 typedef struct Context Context;
 
@@ -19,15 +19,11 @@ char *stringify_type(Expression *expression);
 char *se(Expression *expression);
 char *sc(Context *context);
 
-typedef enum {
-	UNMARKED,
-	TEMPORARY,
-	PERMANENT
-} MarkType;
+typedef enum { UNMARKED, TEMPORARY, PERMANENT } MarkType;
 
 typedef struct {
-	void *expr;
-	int count;
+    void *expr;
+    int count;
 } ExpressionCount;
 
 // Two expressions are equal wrt this function if their pointers are equal

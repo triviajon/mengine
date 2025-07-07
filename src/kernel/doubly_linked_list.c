@@ -1,23 +1,19 @@
 #include "doubly_linked_list.h"
 
-DoublyLinkedList *dll_create(void)
-{
+DoublyLinkedList *dll_create(void) {
     DoublyLinkedList *list;
-    if (!(list = malloc(sizeof(DoublyLinkedList))))
-        return NULL;
+    if (!(list = malloc(sizeof(DoublyLinkedList)))) return NULL;
 
     list->head = NULL;
     list->tail = NULL;
     return list;
 }
 
-void dll_destroy(DoublyLinkedList *list)
-{
+void dll_destroy(DoublyLinkedList *list) {
     DLLNode *current = list->head;
     DLLNode *next;
 
-    while (current)
-    {
+    while (current) {
         next = current->next;
         // free(current);
         current = next;
@@ -26,20 +22,15 @@ void dll_destroy(DoublyLinkedList *list)
     // free(list);
 }
 
-DLLNode *dll_insert_at_tail(DoublyLinkedList *list, DLLNode *node)
-{
-    if (!node)
-        return NULL;
+DLLNode *dll_insert_at_tail(DoublyLinkedList *list, DLLNode *node) {
+    if (!node) return NULL;
 
-    if (list->tail)
-    {
+    if (list->tail) {
         node->prev = list->tail;
         node->next = NULL;
         list->tail->next = node;
         list->tail = node;
-    }
-    else
-    {
+    } else {
         list->head = list->tail = node;
         node->prev = node->next = NULL;
     }
@@ -47,60 +38,45 @@ DLLNode *dll_insert_at_tail(DoublyLinkedList *list, DLLNode *node)
     return node;
 }
 
-DLLNode *dll_remove_tail(DoublyLinkedList *list)
-{
-    if (!list->tail)
-        return NULL;
+DLLNode *dll_remove_tail(DoublyLinkedList *list) {
+    if (!list->tail) return NULL;
 
     DLLNode *node = list->tail;
 
-    if (node->prev)
-    {
+    if (node->prev) {
         list->tail = node->prev;
         list->tail->next = NULL;
-    }
-    else
-    {
+    } else {
         list->head = list->tail = NULL;
     }
 
     return node;
 }
 
-DLLNode *dll_remove_head(DoublyLinkedList *list)
-{
-    if (!list->head)
-        return NULL;
+DLLNode *dll_remove_head(DoublyLinkedList *list) {
+    if (!list->head) return NULL;
 
     DLLNode *node = list->head;
 
-    if (node->next)
-    {
+    if (node->next) {
         list->head = node->next;
         list->head->prev = NULL;
-    }
-    else
-    {
+    } else {
         list->head = list->tail = NULL;
     }
 
     return node;
 }
 
-DLLNode *dll_insert_at_head(DoublyLinkedList *list, DLLNode *node)
-{
-    if (!node)
-        return NULL;
+DLLNode *dll_insert_at_head(DoublyLinkedList *list, DLLNode *node) {
+    if (!node) return NULL;
 
-    if (list->head)
-    {
+    if (list->head) {
         node->next = list->head;
         node->prev = NULL;
         list->head->prev = node;
         list->head = node;
-    }
-    else
-    {
+    } else {
         list->head = list->tail = node;
         node->prev = node->next = NULL;
     }
@@ -108,14 +84,11 @@ DLLNode *dll_insert_at_head(DoublyLinkedList *list, DLLNode *node)
     return node;
 }
 
-DLLNode *dll_search(DoublyLinkedList *list, void *data)
-{
+DLLNode *dll_search(DoublyLinkedList *list, void *data) {
     DLLNode *node = list->head;
 
-    while (node)
-    {
-        if (data == node->data)
-        {
+    while (node) {
+        if (data == node->data) {
             return node;
         }
         node = node->next;
@@ -124,14 +97,11 @@ DLLNode *dll_search(DoublyLinkedList *list, void *data)
     return NULL;
 }
 
-int dll_search_for_idx(DoublyLinkedList *list, void *data)
-{
+int dll_search_for_idx(DoublyLinkedList *list, void *data) {
     DLLNode *node = list->head;
     int i = 0;
-    while (node)
-    {
-        if (data == node->data)
-        {
+    while (node) {
+        if (data == node->data) {
             return i;
         }
         node = node->next;
@@ -140,7 +110,6 @@ int dll_search_for_idx(DoublyLinkedList *list, void *data)
 
     return -1;
 }
-
 
 int dll_len(DoublyLinkedList *list) {
     DLLNode *node = list->head;
@@ -154,25 +123,17 @@ int dll_len(DoublyLinkedList *list) {
     return count;
 }
 
-
-
-DLLNode *dll_at(DoublyLinkedList *list, int index)
-{
+DLLNode *dll_at(DoublyLinkedList *list, int index) {
     DLLNode *node = list->head;
 
-    if (index < 0)
-    {
+    if (index < 0) {
         node = list->tail;
         index = -index - 1;
-        while (index-- && node)
-        {
+        while (index-- && node) {
             node = node->prev;
         }
-    }
-    else
-    {
-        while (index-- && node)
-        {
+    } else {
+        while (index-- && node) {
             node = node->next;
         }
     }
@@ -180,33 +141,27 @@ DLLNode *dll_at(DoublyLinkedList *list, int index)
     return node;
 }
 
-void dll_print(DoublyLinkedList *list)
-{
+void dll_print(DoublyLinkedList *list) {
     DLLNode *node = list->head;
 
-    while (node)
-    {
+    while (node) {
         printf("%p\n", node->data);
         node = node->next;
     }
 }
 
-void dll_foreach(DoublyLinkedList *list, void (*func)(void *data))
-{
+void dll_foreach(DoublyLinkedList *list, void (*func)(void *data)) {
     DLLNode *node = list->head;
 
-    while (node)
-    {
+    while (node) {
         func(node->data);
         node = node->next;
     }
 }
 
-DLLNode *dll_new_node(void *val)
-{
+DLLNode *dll_new_node(void *val) {
     DLLNode *self;
-    if (!(self = malloc(sizeof(DLLNode))))
-        return NULL;
+    if (!(self = malloc(sizeof(DLLNode)))) return NULL;
     self->prev = NULL;
     self->next = NULL;
     self->data = val;
@@ -220,19 +175,15 @@ DLLNode *dll_new_node(void *val)
  * @list2: Pointer to the second list
  * @return: Pointer to the merged list (same as list1)
  */
-DoublyLinkedList *dll_merge(DoublyLinkedList *list1, DoublyLinkedList *list2)
-{
-    if (!list1 || !list2)
-        return NULL;
+DoublyLinkedList *dll_merge(DoublyLinkedList *list1, DoublyLinkedList *list2) {
+    if (!list1 || !list2) return NULL;
 
-    if (!list1->head)
-    {
+    if (!list1->head) {
         // free(list1);
         return list2;
     }
 
-    if (!list2->head)
-    {
+    if (!list2->head) {
         // free(list2);
         return list1;
     }

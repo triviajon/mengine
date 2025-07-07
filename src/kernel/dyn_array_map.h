@@ -2,8 +2,8 @@
 #define DYN_ARRAY_MAP_H
 
 typedef struct {
-	void* key;
-	void* val;
+    void *key;
+    void *val;
 } MapItem;
 
 typedef struct {

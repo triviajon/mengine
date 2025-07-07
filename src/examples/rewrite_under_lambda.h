@@ -5,13 +5,12 @@
 #include <stdlib.h>
 
 #include "axiom.h"
-#include "tactics.h"
 #include "context.h"
 #include "expression.h"
+#include "tactics.h"
 #include "utils.h"
-
 
 RewriteProof *rewrite_lambda_f_x();
 RewriteProof *rewrite_lambda_op_f_x();
 
-#endif // REWRITE_UNDER_LAMBDA_H
+#endif  // REWRITE_UNDER_LAMBDA_H

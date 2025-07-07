@@ -5,9 +5,9 @@
 #include <stdlib.h>
 
 #include "axiom.h"
-#include "tactics.h"
 #include "context.h"
 #include "expression.h"
+#include "tactics.h"
 #include "utils.h"
 
 extern Expression *positive;
@@ -96,4 +96,4 @@ extern Expression *word_add_sub_cancel;
 
 void run_symbolic(int n);
 
-#endif // SYMBOLIC_H
+#endif  // SYMBOLIC_H

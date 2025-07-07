@@ -2,11 +2,10 @@
 #define UNIFY_H
 
 #include "axiom.h"
-
-#include "expression.h"
 #include "context.h"
-#include "dyn_array_map.h"
 #include "doubly_linked_list.h"
+#include "dyn_array_map.h"
+#include "expression.h"
 #include "subst.h"
 
 Expression *get_type_eq(Expression *eq_type);
@@ -32,15 +31,20 @@ Expression *instantiate_lemma(Context *context, Expression *lemma);
 DoublyLinkedList *list_holes(Expression *expr);
 
 typedef struct {
-	Expression *lemma_instantiation;
-	DoublyLinkedList *new_goals;
+    Expression *lemma_instantiation;
+    DoublyLinkedList *new_goals;
 } UnificationResult;
 
-UnificationResult *unify_and_instantiate(Context *goal_context, Expression *lemma, Expression *lemma_ty, Expression *expr);
+UnificationResult *unify_and_instantiate(Context *goal_context,
+                                         Expression *lemma,
+                                         Expression *lemma_ty,
+                                         Expression *expr);
 
-Expression *instantiate_lemma_with_bindings(Expression *lemma, Expression *lemma_ty, Map *binders);
+Expression *instantiate_lemma_with_bindings(Expression *lemma,
+                                            Expression *lemma_ty, Map *binders);
 
-UnificationResult *init_unification_result(Expression *lemma_instantiation, DoublyLinkedList *new_goals);
+UnificationResult *init_unification_result(Expression *lemma_instantiation,
+                                           DoublyLinkedList *new_goals);
 void free_unification_result(UnificationResult *unification_result);
 
 UnificationResult *eunify(Expression *lemma, Expression *goal);

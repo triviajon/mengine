@@ -5,12 +5,12 @@
 #include <stdlib.h>
 
 #include "axiom.h"
-#include "tactics.h"
 #include "context.h"
 #include "expression.h"
+#include "tactics.h"
 #include "utils.h"
 
-// Build a multi-argument expression of depth h_depth. 
+// Build a multi-argument expression of depth h_depth.
 // h_depth = 1 -> (h a a)
 // h_depth = 2 -> (h (h a a) (h a a))
 // h_depth = 3 -> (h (h (h a a) (h a a)) (h (h a a) (h a a)))

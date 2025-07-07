@@ -12,191 +12,213 @@
 #include "examples/rewrite_open_holes.h"
 #include "examples/rewrite_single_argument.h"
 #include "examples/rewrite_under_lambda.h"
-#include "examples/symbolic.h"
 #include "examples/sep.h"
+#include "examples/symbolic.h"
 #include "kernel/context.h"
 #include "kernel/expression.h"
 #include "kernel/utils.h"
 
 void print_usage() {
-  fprintf(stderr, "Usage: ./main [OPTIONS] <example>\n\n");
-  fprintf(stderr, "Options:\n\n");
-  fprintf(stderr, "\t--proof=[0|1] ... Include a Coq-parsable proof should in the output. Defaults to 1. \n");
-  fprintf(stderr, "\t--withlet=[0|1] ...  Print the output with let bindings. Defaults to 1. \n");
-  fprintf(stderr, "\t--debug=[0|1] ...  Include debug information in output. Defaults to 0. \n");
+    fprintf(stderr, "Usage: ./main [OPTIONS] <example>\n\n");
+    fprintf(stderr, "Options:\n\n");
+    fprintf(stderr,
+            "\t--proof=[0|1] ... Include a Coq-parsable proof should in the "
+            "output. Defaults to 1. \n");
+    fprintf(
+        stderr,
+        "\t--withlet=[0|1] ...  Print the output with let bindings. Defaults "
+        "to 1. \n");
+    fprintf(
+        stderr,
+        "\t--debug=[0|1] ...  Include debug information in output. Defaults "
+        "to 0. \n");
 
-  fprintf(stderr, "\n");
+    fprintf(stderr, "\n");
 
-  fprintf(stderr, "Available examples:\n");
-  fprintf(stderr, "  gfa <f_length> <g_wrap>\n");
-  fprintf(stderr, "  haa <h_depth>\n");
-  fprintf(stderr, "  addr0 <native|letin|tree> <n_depth>\n");
-  fprintf(stderr, "  mod <n_depth>\n");
-  fprintf(stderr, "  lambda\n");
-  fprintf(stderr, "  open\n");
-  fprintf(stderr, "  nm [<n> <m>] ... rewrite benchmark with function arity n and let depth m\n");
-  fprintf(stderr, "  nm-bench ... run full nm benchmark suite\n");
+    fprintf(stderr, "Available examples:\n");
+    fprintf(stderr, "  gfa <f_length> <g_wrap>\n");
+    fprintf(stderr, "  haa <h_depth>\n");
+    fprintf(stderr, "  addr0 <native|letin|tree> <n_depth>\n");
+    fprintf(stderr, "  mod <n_depth>\n");
+    fprintf(stderr, "  lambda\n");
+    fprintf(stderr, "  open\n");
+    fprintf(
+        stderr,
+        "  nm [<n> <m>] ... rewrite benchmark with function arity n and let "
+        "depth m\n");
+    fprintf(stderr, "  nm-bench ... run full nm benchmark suite\n");
 }
 
 int main(int argc, char *argv[]) {
-  if (argc < 2) {
-    print_usage();
-    return 1;
-  }
-
-  int proof_flag = 1;
-  int withlet_flag = 1;
-  int debug_flag = 0;
-  atexit(print_ptr_counts);
-
-  while (argc > 1 && strncmp(argv[1], "--", 2) == 0) {
-    if (strncmp(argv[1], "--proof=", 8) == 0) {
-      proof_flag = atoi(argv[1] + 8);
-      if (proof_flag != 0 && proof_flag != 1) {
-        fprintf(stderr, "Invalid value for --proof. Use --proof=0 or --proof=1.\n");
+    if (argc < 2) {
+        print_usage();
         return 1;
-      }
-    } else if (strncmp(argv[1], "--withlet=", 10) == 0) {
-      withlet_flag = atoi(argv[1] + 10);
-      if (withlet_flag != 0 && withlet_flag != 1) {
-        fprintf(stderr, "Invalid value for --withlet. Use --withlet=0 or --withlet=1.\n");
+    }
+
+    int proof_flag = 1;
+    int withlet_flag = 1;
+    int debug_flag = 0;
+    atexit(print_ptr_counts);
+
+    while (argc > 1 && strncmp(argv[1], "--", 2) == 0) {
+        if (strncmp(argv[1], "--proof=", 8) == 0) {
+            proof_flag = atoi(argv[1] + 8);
+            if (proof_flag != 0 && proof_flag != 1) {
+                fprintf(
+                    stderr,
+                    "Invalid value for --proof. Use --proof=0 or --proof=1.\n");
+                return 1;
+            }
+        } else if (strncmp(argv[1], "--withlet=", 10) == 0) {
+            withlet_flag = atoi(argv[1] + 10);
+            if (withlet_flag != 0 && withlet_flag != 1) {
+                fprintf(stderr,
+                        "Invalid value for --withlet. Use --withlet=0 or "
+                        "--withlet=1.\n");
+                return 1;
+            }
+        } else if (strncmp(argv[1], "--debug=", 8) == 0) {
+            debug_flag = atoi(argv[1] + 8);
+            if (debug_flag != 0 && debug_flag != 1) {
+                fprintf(
+                    stderr,
+                    "Invalid value for --debug. Use --debug=0 or --debug=1.\n");
+                return 1;
+            }
+        } else {
+            fprintf(stderr, "Unknown option: %s\n", argv[1]);
+            return 1;
+        }
+        argc--;
+        argv++;
+    }
+
+    if (argc < 2) {
+        print_usage();
         return 1;
-      }
-    } else if (strncmp(argv[1], "--debug=", 8) == 0) {
-      debug_flag = atoi(argv[1] + 8);
-      if (debug_flag != 0 && debug_flag != 1) {
-        fprintf(stderr, "Invalid value for --debug. Use --debug=0 or --debug=1.\n");
+    }
+
+    init_globals();
+
+    if (strcmp(argv[1], "gfa") == 0) {
+        if (argc != 4) {
+            fprintf(stderr, "Usage: %s [--proof=0|1] gfa <f_length> <g_wrap>\n",
+                    argv[0]);
+            return 1;
+        }
+        int f_length = atoi(argv[2]);
+        int g_wrap = atoi(argv[3]);
+        RewriteProof *rw_pf = rewrite_gfa(f_length, g_wrap);
+        if (proof_flag == 0) {
+            print_rwpf__no_proof(rw_pf, withlet_flag, debug_flag);
+        } else {
+            print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
+        }
+    } else if (strcmp(argv[1], "haa") == 0) {
+        if (argc != 3) {
+            fprintf(stderr, "Usage: %s [--proof=0|1] haa <h_depth>\n", argv[0]);
+            return 1;
+        }
+        int h_depth = atoi(argv[2]);
+        RewriteProof *rw_pf = rewrite_haa(h_depth);
+        if (proof_flag == 0) {
+            print_rwpf__no_proof(rw_pf, withlet_flag, debug_flag);
+        } else {
+            print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
+        }
+    } else if (strcmp(argv[1], "addr0") == 0) {
+        if (argc != 4) {
+            fprintf(
+                stderr,
+                "Usage: %s [--proof=0|1] addr0 <native|letin|tree> <n_depth>\n",
+                argv[0]);
+            return 1;
+        }
+        int n_depth = atoi(argv[3]);
+
+        RewriteProof *rw_pf;
+        if (strcmp(argv[2], "native") == 0) {
+            rw_pf = rewrite_addr0__native(n_depth);
+        } else if (strcmp(argv[2], "letin") == 0) {
+            rw_pf = rewrite_addr0__letin(n_depth);
+        } else if (strcmp(argv[2], "tree") == 0) {
+            rw_pf = rewrite_addr0__tree(n_depth);
+        } else {
+            fprintf(stderr,
+                    "Invalid addr0 type. Expected: native, letin, or tree.\n");
+            return 1;
+        }
+
+        if (proof_flag == 0) {
+            print_rwpf__no_proof(rw_pf, withlet_flag, debug_flag);
+        } else {
+            print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
+        }
+    } else if (strcmp(argv[1], "mod") == 0) {
+        if (argc != 3) {
+            fprintf(stderr, "Usage: %s [--proof=0|1] let <n_depth>\n", argv[0]);
+            return 1;
+        }
+        int n_depth = atoi(argv[2]);
+        RewriteProof *rw_pf = rewrite_chained_mod(n_depth);
+        if (proof_flag == 0) {
+            print_rwpf__no_proof(rw_pf, withlet_flag, debug_flag);
+        } else {
+            print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
+        }
+    } else if (strcmp(argv[1], "lambda") == 0) {
+        RewriteProof *rw_pf = rewrite_lambda_f_x();
+        if (proof_flag == 0) {
+            print_rwpf__no_proof(rw_pf, withlet_flag, debug_flag);
+        } else {
+            print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
+        }
+    } else if (strcmp(argv[1], "open") == 0) {
+        RewriteProof *rw_pf = rewrite_open_holes();
+        if (proof_flag == 0) {
+            print_rwpf__no_proof(rw_pf, withlet_flag, debug_flag);
+        } else {
+            print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
+        }
+    } else if (strcmp(argv[1], "sym") == 0) {
+        if (argc != 3) {
+            fprintf(stderr, "Usage: %s [--proof=0|1] sym <n>\n", argv[0]);
+            return 1;
+        }
+        int n = atoi(argv[2]);
+        run_symbolic(n);
+    } else if (strcmp(argv[1], "sep1") == 0) {
+        if (argc != 3) {
+            fprintf(stderr, "Usage: %s [--proof=0|1] sep1 <n>\n", argv[0]);
+            return 1;
+        }
+        int n = atoi(argv[2]);
+        run_sep1(n);
+    } else if (strcmp(argv[1], "sep2") == 0) {
+        if (argc != 3) {
+            fprintf(stderr, "Usage: %s [--proof=0|1] sep2 <n>\n", argv[0]);
+            return 1;
+        }
+        int n = atoi(argv[2]);
+        run_sep2(n);
+    } else if (strcmp(argv[1], "nm") == 0) {
+        if (argc == 4) {
+            int n = atoi(argv[2]);
+            int m = atoi(argv[3]);
+            RewriteProof *rw_pf = rewrite_nm(n, m);
+            if (proof_flag == 0) {
+                print_rwpf__no_proof(rw_pf, withlet_flag, debug_flag);
+            } else {
+                print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
+            }
+        } else {
+            fprintf(stderr, "Usage: %s [--proof=0|1] nm [<n> <m>]\n", argv[0]);
+            return 1;
+        }
+    } else {
+        fprintf(stderr, "Unknown example: %s\n", argv[1]);
+        print_usage();
         return 1;
-      }
-    } else {
-      fprintf(stderr, "Unknown option: %s\n", argv[1]);
-      return 1;
     }
-    argc--;
-    argv++;
-  }
-
-  if (argc < 2) {
-    print_usage();
-    return 1;
-  }
-
-  init_globals();
-
-  if (strcmp(argv[1], "gfa") == 0) {
-    if (argc != 4) {
-      fprintf(stderr, "Usage: %s [--proof=0|1] gfa <f_length> <g_wrap>\n", argv[0]);
-      return 1;
-    }
-    int f_length = atoi(argv[2]);
-    int g_wrap = atoi(argv[3]);
-    RewriteProof *rw_pf = rewrite_gfa(f_length, g_wrap);
-    if (proof_flag == 0) {
-      print_rwpf__no_proof(rw_pf, withlet_flag, debug_flag);
-    } else {
-      print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
-    }
-  } else if (strcmp(argv[1], "haa") == 0) {
-    if (argc != 3) {
-      fprintf(stderr, "Usage: %s [--proof=0|1] haa <h_depth>\n", argv[0]);
-      return 1;
-    }
-    int h_depth = atoi(argv[2]);
-    RewriteProof *rw_pf = rewrite_haa(h_depth);
-    if (proof_flag == 0) {
-      print_rwpf__no_proof(rw_pf, withlet_flag, debug_flag);
-    } else {
-      print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
-    }
-  } else if (strcmp(argv[1], "addr0") == 0) {
-    if (argc != 4) {
-      fprintf(stderr, "Usage: %s [--proof=0|1] addr0 <native|letin|tree> <n_depth>\n", argv[0]);
-      return 1;
-    }
-    int n_depth = atoi(argv[3]);
-
-    RewriteProof *rw_pf;
-    if (strcmp(argv[2], "native") == 0) {
-      rw_pf = rewrite_addr0__native(n_depth);
-    } else if (strcmp(argv[2], "letin") == 0) {
-      rw_pf = rewrite_addr0__letin(n_depth);
-    } else if (strcmp(argv[2], "tree") == 0) {
-      rw_pf = rewrite_addr0__tree(n_depth);
-    } else {
-      fprintf(stderr, "Invalid addr0 type. Expected: native, letin, or tree.\n");
-      return 1;
-    }
-
-    if (proof_flag == 0) {
-      print_rwpf__no_proof(rw_pf, withlet_flag, debug_flag);
-    } else {
-      print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
-    }
-  } else if (strcmp(argv[1], "mod") == 0) {
-    if (argc != 3) {
-      fprintf(stderr, "Usage: %s [--proof=0|1] let <n_depth>\n", argv[0]);
-      return 1;
-    }
-    int n_depth = atoi(argv[2]);
-    RewriteProof *rw_pf = rewrite_chained_mod(n_depth);
-    if (proof_flag == 0) {
-      print_rwpf__no_proof(rw_pf, withlet_flag, debug_flag);
-    } else {
-      print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
-    }
-  } else if (strcmp(argv[1], "lambda") == 0) {
-    RewriteProof *rw_pf = rewrite_lambda_f_x();
-    if (proof_flag == 0) {
-      print_rwpf__no_proof(rw_pf, withlet_flag, debug_flag);
-    } else {
-      print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
-    }
-  } else if (strcmp(argv[1], "open") == 0) {
-    RewriteProof *rw_pf = rewrite_open_holes();
-    if (proof_flag == 0) {
-      print_rwpf__no_proof(rw_pf, withlet_flag, debug_flag);
-    } else {
-      print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
-    }
-  } else if (strcmp(argv[1], "sym") == 0) {
-    if (argc != 3) {
-      fprintf(stderr, "Usage: %s [--proof=0|1] sym <n>\n", argv[0]);
-      return 1;
-    }
-    int n = atoi(argv[2]);
-    run_symbolic(n);
-  } else if (strcmp(argv[1], "sep1") == 0) {
-    if (argc != 3) {
-      fprintf(stderr, "Usage: %s [--proof=0|1] sep1 <n>\n", argv[0]);
-      return 1;
-    }
-    int n = atoi(argv[2]);
-    run_sep1(n);
-   } else if (strcmp(argv[1], "sep2") == 0) {
-    if (argc != 3) {
-      fprintf(stderr, "Usage: %s [--proof=0|1] sep2 <n>\n", argv[0]);
-      return 1;
-    }
-    int n = atoi(argv[2]);
-    run_sep2(n);
-   } else if (strcmp(argv[1], "nm") == 0) {
-    if (argc == 4) {
-      int n = atoi(argv[2]);
-      int m = atoi(argv[3]);
-      RewriteProof *rw_pf = rewrite_nm(n, m);
-      if (proof_flag == 0) {
-        print_rwpf__no_proof(rw_pf, withlet_flag, debug_flag);
-      } else {
-        print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
-      }
-    } else {
-      fprintf(stderr, "Usage: %s [--proof=0|1] nm [<n> <m>]\n", argv[0]);
-      return 1;
-    }
-   } else {
-    fprintf(stderr, "Unknown example: %s\n", argv[1]);
-    print_usage();
-    return 1;
-  }
-  return 0;
+    return 0;
 }

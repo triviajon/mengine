@@ -24,7 +24,7 @@ DoublyLinkedList *dll_create(void);
 
 /*
  * Free the list.
- * @list: Pointer to the list 
+ * @list: Pointer to the list
  */
 void dll_destroy(DoublyLinkedList *list);
 
@@ -66,29 +66,28 @@ DLLNode *dll_insert_at_head(DoublyLinkedList *list, DLLNode *node);
 /*
  * Return the node associated with data or NULL.
  * @list: Pointer to the list for finding given data
- * @data: Data to find 
+ * @data: Data to find
  */
 DLLNode *dll_search(DoublyLinkedList *list, void *data);
-
 
 int dll_search_for_idx(DoublyLinkedList *list, void *data);
 
 /*
  * Return the node at the given index or NULL.
- * @list: Pointer to the list for finding given index 
+ * @list: Pointer to the list for finding given index
  * @index: the index of node in the list
  */
 DLLNode *dll_at(DoublyLinkedList *list, int index);
 
 /*
  * Print all nodes in the list.
- * @list: Pointer to the list for printing 
+ * @list: Pointer to the list for printing
  */
 void dll_print(DoublyLinkedList *list);
 
 /*
  * Apply function to each node's data in the list.
- * @list: Pointer to the list for applying function 
+ * @list: Pointer to the list for applying function
  * @func: Function to apply to each node's data
  */
 void dll_foreach(DoublyLinkedList *list, void (*func)(void *data));
@@ -108,4 +107,4 @@ DLLNode *dll_new_node(void *val);
  */
 DoublyLinkedList *dll_merge(DoublyLinkedList *list1, DoublyLinkedList *list2);
 
-#endif // DOUBLY_LINKED_LIST_H
+#endif  // DOUBLY_LINKED_LIST_H

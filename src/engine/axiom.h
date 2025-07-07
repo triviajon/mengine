@@ -1,9 +1,9 @@
 #ifndef AXIOM_H
 #define AXIOM_H
 
-#include "expression.h"
 #include "context.h"
 #include "dyn_array_map.h"
+#include "expression.h"
 
 extern Expression *eq;
 extern Expression *eq_refl;
@@ -11,8 +11,8 @@ extern Expression *eq_sym;
 extern Expression *eq_subst;
 extern Expression *and;
 extern Expression *and_conj;
-extern Expression *or;
-extern Expression *or_introl; 
+extern Expression * or ;
+extern Expression *or_introl;
 extern Expression *or_intror;
 extern Expression *iff1;
 extern Expression *iff1_refl;
@@ -20,7 +20,7 @@ extern Expression *iff1_sym;
 extern Expression *iff1_trans;
 extern Expression *iff1_subst;
 extern Expression *iff1_cong;
-extern Expression *not;
+extern Expression * not ;
 extern Expression *app_cong;
 extern Expression *ex;
 extern Expression *ex_intro;
@@ -54,14 +54,13 @@ extern Expression *partial_map_get_put_diff;
 extern Expression *partial_map_put_put_same;
 
 Expression *iff(Expression *A, Expression *B);
-Expression *impl1 (Expression *T, Expression *P, Expression *Q);
+Expression *impl1(Expression *T, Expression *P, Expression *Q);
 Expression *and1(Expression *T, Expression *P, Expression *Q);
 Expression *or1(Expression *T, Expression *P, Expression *Q);
 Expression *ex1(Expression *A, Expression *B, Expression *P);
 
 extern Context *std_lib_ctx;
 
-
 void init_globals();
 
-#endif // AXIOM_H
+#endif  // AXIOM_H

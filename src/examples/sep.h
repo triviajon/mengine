@@ -5,9 +5,9 @@
 #include <stdlib.h>
 
 #include "axiom.h"
-#include "tactics.h"
 #include "context.h"
 #include "expression.h"
+#include "tactics.h"
 #include "utils.h"
 
 extern Expression *putmany;
@@ -42,11 +42,12 @@ extern Expression *sep_cancel_r_leaf;
 extern Expression *sep_swap;
 
 typedef struct {
-  Expression *rewritten_expr;
-  Expression *equality_proof;
+    Expression *rewritten_expr;
+    Expression *equality_proof;
 } FlattenProof;
 
-FlattenProof *init_flatten_proof(Expression *rewritten_expr, Expression *equality_proof);
+FlattenProof *init_flatten_proof(Expression *rewritten_expr,
+                                 Expression *equality_proof);
 FlattenProof *free_flatten_proof(FlattenProof *fp);
 
 FlattenProof *associate_to_front(Expression *clause, Expression *v);
@@ -54,4 +55,4 @@ FlattenProof *associate_to_front(Expression *clause, Expression *v);
 void run_sep1(int n);
 void run_sep2(int n);
 
-#endif // SEP_H
+#endif  // SEP_H

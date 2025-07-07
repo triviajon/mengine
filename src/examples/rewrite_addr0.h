@@ -5,9 +5,9 @@
 #include <stdlib.h>
 
 #include "axiom.h"
-#include "tactics.h"
 #include "context.h"
 #include "expression.h"
+#include "tactics.h"
 #include "utils.h"
 
 RewriteProof *rewrite_addr0__letin(int n_depth);

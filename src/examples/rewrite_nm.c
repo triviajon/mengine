@@ -24,11 +24,13 @@ RewriteProof *rewrite_nm(int n, int m) {
         lemma_lhs = init_app_expression(lemma_lhs, x0_nm);
     }
     Expression *lemma_rhs = x0_nm;
-    Expression *lemma_ty = init_app_expression(init_app_expression(init_app_expression(eq, nat), lemma_lhs), lemma_rhs);
+    Expression *lemma_ty = init_app_expression(
+        init_app_expression(init_app_expression(eq, nat), lemma_lhs),
+        lemma_rhs);
     f_n_x0 = init_var_expression("f_n_x0", lemma_ty);
 
     Expression *last_expr = x0_nm;  // Start with x0
-    
+
     for (int i = 0; i < m; i++) {
         Expression *f_app = f_nm;
         for (int j = 0; j < n; j++) {
@@ -36,8 +38,8 @@ RewriteProof *rewrite_nm(int n, int m) {
         }
         last_expr = f_app;
     }
-    
+
     Expression *expr = last_expr;
-    
+
     return rewrite(get_expression_context(expr), expr, f_n_x0);
 }

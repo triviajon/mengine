@@ -7,11 +7,11 @@
 #include "logic.h"
 #include "proof_state.h"
 #include "rewrite_proof.h"
-#include "unify.h"
 #include "rewrites.h"
+#include "unify.h"
 
 DoublyLinkedList *apply(Expression *goal, Expression *lemma);
-DoublyLinkedList *eapply(Expression *goal, Expression *lemma); 
+DoublyLinkedList *eapply(Expression *goal, Expression *lemma);
 Expression *eexists(Expression *goal);
 
 IntroReturn *intro(Expression *old_proof);

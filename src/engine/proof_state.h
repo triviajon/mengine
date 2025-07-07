@@ -5,7 +5,7 @@
 #include "expression.h"
 
 typedef struct {
-  DoublyLinkedList *holes;
+    DoublyLinkedList *holes;
 } ProofState;
 
 ProofState *init_proof_state();

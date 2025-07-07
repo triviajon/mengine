@@ -17,9 +17,11 @@ Expression *build_app_cong(RewriteProof *f_equality, RewriteProof *x_equality);
 // Given expressions x_y_equality (representing equality between some x and y)
 // and y_z_equality (representing equality between some y and z), returns an
 // expression representing the equality between x and z, i.e., (eq x z).
-Expression *build_eq_trans(RewriteProof *x_y_equality, RewriteProof *y_z_equality);
+Expression *build_eq_trans(RewriteProof *x_y_equality,
+                           RewriteProof *y_z_equality);
 
-
-Expression *build_lambda_extensionality(Expression *A, Expression *B, Expression *f, Expression *g, Expression *eq_paramaterized);
+Expression *build_lambda_extensionality(Expression *A, Expression *B,
+                                        Expression *f, Expression *g,
+                                        Expression *eq_paramaterized);
 
 #endif  // LOGIC_H
