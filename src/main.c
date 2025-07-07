@@ -8,6 +8,7 @@
 #include "examples/rewrite_addr0.h"
 #include "examples/rewrite_chained_mod.h"
 #include "examples/rewrite_multi_argument.h"
+#include "examples/rewrite_nm.h"
 #include "examples/rewrite_open_holes.h"
 #include "examples/rewrite_single_argument.h"
 #include "examples/rewrite_under_lambda.h"
@@ -33,6 +34,8 @@ void print_usage() {
   fprintf(stderr, "  mod <n_depth>\n");
   fprintf(stderr, "  lambda\n");
   fprintf(stderr, "  open\n");
+  fprintf(stderr, "  nm [<n> <m>] ... rewrite benchmark with function arity n and let depth m\n");
+  fprintf(stderr, "  nm-bench ... run full nm benchmark suite\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -176,6 +179,20 @@ int main(int argc, char *argv[]) {
     }
     int n = atoi(argv[2]);
     run_sep2(n);
+   } else if (strcmp(argv[1], "nm") == 0) {
+    if (argc == 4) {
+      int n = atoi(argv[2]);
+      int m = atoi(argv[3]);
+      RewriteProof *rw_pf = rewrite_nm(n, m);
+      if (proof_flag == 0) {
+        print_rwpf__no_proof(rw_pf, withlet_flag, debug_flag);
+      } else {
+        print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
+      }
+    } else {
+      fprintf(stderr, "Usage: %s [--proof=0|1] nm [<n> <m>]\n", argv[0]);
+      return 1;
+    }
    } else {
     fprintf(stderr, "Unknown example: %s\n", argv[1]);
     print_usage();
