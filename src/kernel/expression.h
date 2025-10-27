@@ -79,8 +79,8 @@ typedef struct {
 
 // An application expression: (func arg).
 typedef struct {
-    Expression *func;  // The function which is applied to the argument. Has
-                       // type Forall...
+    Expression *func;   // The function which is applied to the argument. Has
+                        // type Forall...
     Expression *arg;    // The argument being operating on.
     Expression *cache;  // A copied version of this application which is used in
                         // beta-reduction with Lambda-DAGs
@@ -233,6 +233,7 @@ bool match_until_holes(Expression *with_holes, Expression *term);
 void free_expression(Expression *expr);
 
 bool congruence(Expression *a, Expression *b);
+bool subtypes(Expression *a, Expression *b);
 Expression *match_and_subst(Expression *a, Expression *b, Expression *to_subst);
 void match_holes(Expression *a, Expression *b);
 bool congruence2(Expression *a, Expression *b);

@@ -35,11 +35,12 @@ void add_to_parents(Expression *expression, Uplink *uplink) {
                                dll_new_node(uplink));
             break;
         case (MATCH_EXPR_EXPRESSION):
-            dll_insert_at_head(expression->value.matchExpr.uplinks, 
+            dll_insert_at_head(expression->value.matchExpr.uplinks,
                                dll_new_node(uplink));
             break;
         default:
-            fprintf(stderr, "Error: Unknown expression type in add_to_parents.\n");
+            fprintf(stderr,
+                    "Error: Unknown expression type in add_to_parents.\n");
             exit(EXIT_FAILURE);
     }
 }
@@ -81,7 +82,7 @@ Expression *constr_app_type(Expression *func, Expression *arg) {
         get_expression_type(arg);  // hopefully A, but we need to check.
     Expression *return_type = func_type->value.forall.body;  // B
 
-    if (congruence(actual_arg_type, expected_arg_type)) {
+    if (subtypes(actual_arg_type, expected_arg_type)) {
         return subst(return_type, variable, arg);  // return B[x -> arg]
     }
 
@@ -353,7 +354,9 @@ DoublyLinkedList *get_expression_uplinks(Expression *expression) {
         case (MATCH_EXPR_EXPRESSION):
             return expression->value.matchExpr.uplinks;
         default:
-            fprintf(stderr, "Error: Unknown expression type in get_expression_uplinks.\n");
+            fprintf(
+                stderr,
+                "Error: Unknown expression type in get_expression_uplinks.\n");
             exit(EXIT_FAILURE);
     }
 }
@@ -454,7 +457,7 @@ void free_expression(Expression *expr) {
         case (HOLE_EXPRESSION):
             free_hole_expression(expr);
             break;
-        default: 
+        default:
             break;
     }
 }
@@ -525,12 +528,12 @@ void free_hole_expression(Expression *expr) {
 
 bool _congruence(Expression *a, Expression *b, Map *mapping) {
     // Mapping is a map from variables in a to variables in b.
-    if (a->type == PROP_EXPRESSION && b->type == TYPE_EXPRESSION) {
+    if (a == b) {
         return true;
-    } else if (a->type != b->type) {
+    }
+
+    if (a->type != b->type) {
         return false;
-    } else if (a == b) {
-        return true;
     }
 
     switch (a->type) {
@@ -592,6 +595,16 @@ bool congruence(Expression *a, Expression *b) {
     free(mapping->items);
     free(mapping);
     return result;
+}
+
+bool subtypes(Expression *a, Expression *b) {
+    // We don't implement a full subtyping relation, but it is necessary
+    // specifically for Type and Prop.
+    if (a->type == PROP_EXPRESSION && b->type == TYPE_EXPRESSION) {
+        return true;
+    }
+
+    return congruence(a, b);
 }
 
 void _match_and_subst(Expression *a, Expression *b, Map *mapping) {
@@ -1005,7 +1018,7 @@ bool _congruence2(Expression *a, Expression *b, Map *mapping) {
         }
     }
 
-    return false; 
+    return false;
 }
 
 bool congruence2(Expression *a, Expression *b) {
