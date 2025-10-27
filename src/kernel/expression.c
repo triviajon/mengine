@@ -163,7 +163,7 @@ Expression *init_forall_expression(Expression *bound_variable,
 Expression *init_prop_expression() {
     if (PROP == NULL) {
         PROP = (Expression *)malloc(sizeof(Expression));
-        PROP->type = PROP_EXPRESSION;
+        PROP->type = TYPE_EXPRESSION;
         PROP->value.type.uplinks = dll_create();
     }
     return PROP;
@@ -374,7 +374,7 @@ Expression *get_expression_type(Expression *expression) {
         case (TYPE_EXPRESSION):
             return expression;
         case (PROP_EXPRESSION):
-            return expression;
+            return init_type_expression();
         case (HOLE_EXPRESSION):
             return expression->value.hole.return_type;
         case (FIX_EXPRESSION):
