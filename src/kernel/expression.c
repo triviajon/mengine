@@ -76,6 +76,10 @@ Expression *constr_lambda_type(Expression *bound_variable, Expression *body) {
 Expression *constr_app_type(Expression *func, Expression *arg) {
     Expression *func_type =
         get_expression_type(func);  // something like Forall x: A, B
+    if (func_type->type != FORALL_EXPRESSION) {
+        fprintf(stderr, "Error: Trying to apply a non-function.\n");
+        exit(EXIT_FAILURE);
+    }
     Expression *variable = func_type->value.forall.bound_variable;  // x
     Expression *expected_arg_type = get_expression_type(variable);  // A
     Expression *actual_arg_type =
