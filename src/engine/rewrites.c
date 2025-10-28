@@ -73,37 +73,6 @@ void clear_rewrite_proofs(Expression *expr) {
     }
 }
 
-bool expr_match(Expression *expr1, Expression *expr2) {
-    if (expr1 == expr2) {
-        return true;
-    }
-
-    switch (expr1->type) {
-        case VAR_EXPRESSION:
-            if (expr2->type == VAR_EXPRESSION) {
-                return expr1 == expr2;
-            }
-            break;
-        case LAMBDA_EXPRESSION:
-            if (expr2->type == LAMBDA_EXPRESSION) {
-                return expr_match(expr1->value.lambda.body,
-                                  expr2->value.lambda.body);
-            }
-            break;
-        case APP_EXPRESSION:
-            if (expr2->type == APP_EXPRESSION) {
-                return expr_match(expr1->value.app.func,
-                                  expr2->value.app.func) &&
-                       expr_match(expr1->value.app.arg, expr2->value.app.arg);
-            }
-            break;
-        default:
-            break;
-    }
-
-    return false;
-}
-
 RewriteProof *rewrite_head(Context *goal_context, Expression *expr,
                            Expression *lemma) {
     Expression *lemma_ty = get_expression_type(lemma);
@@ -123,7 +92,7 @@ RewriteProof *rewrite_head(Context *goal_context, Expression *expr,
             Expression *rhs =
                 get_rhs_eq(get_expression_type(instantiated_lemma));
 
-            if (expr_match(lhs, expr)) {
+            if (congruence(lhs, expr)) {
                 return init_rewrite_proof(expr, rhs, instantiated_lemma,
                                           unification_result->new_goals);
             }
@@ -135,7 +104,7 @@ RewriteProof *rewrite_head(Context *goal_context, Expression *expr,
 
     Expression *lhs = get_lhs_eq(lemma_ty);
     Expression *rhs = get_rhs_eq(lemma_ty);
-    if (expr_match(lhs, expr)) {
+    if (congruence(lhs, expr)) {
         return init_rewrite_proof(expr, rhs, lemma, dll_create());
     } else {
         return init_rewrite_proof(expr, expr, build_eq_refl(expr),
@@ -168,7 +137,7 @@ RewriteProof *rewrites_head(Context *goal_context, Expression *expr, int n,
                     get_lhs_eq(get_expression_type(instantiated_lemma));
                 Expression *rhs =
                     get_rhs_eq(get_expression_type(instantiated_lemma));
-                if (expr_match(lhs, current_expr)) {
+                if (congruence(lhs, current_expr)) {
                     RewriteProof *curr_to_next = init_rewrite_proof(
                         current_expr, rhs, instantiated_lemma,
                         unification_result->new_goals);
@@ -396,7 +365,7 @@ RewriteProof *rewrites_var(Context *goal_context, Expression *expr, int n,
 }
 
 RewriteProof *rewrite_hole(Context *goal_context, Expression *expr) {
-    (void) goal_context; // Unused in this function
+    (void)goal_context;  // Unused in this function
     return init_rewrite_proof(expr, expr, build_eq_refl(expr), dll_create());
 }
 
