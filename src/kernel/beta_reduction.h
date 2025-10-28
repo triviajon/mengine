@@ -12,4 +12,6 @@ Expression *normalize(Expression *expression);
 
 void normalize_hole_type(Expression *expression);
 
+Expression *weak_head_normalize(Expression *expression);
+
 #endif  // BETA_REDUCTION_H

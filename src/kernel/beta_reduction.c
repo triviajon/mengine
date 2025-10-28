@@ -103,3 +103,21 @@ void normalize_hole_type(Expression *expression) {
     Expression *normalized_type = normalize(expr_type);
     expression->value.hole.return_type = normalized_type;
 }
+
+Expression *weak_head_normalize(Expression *expression) {
+    switch (expression->type) {
+        case (APP_EXPRESSION): {
+            Expression *new_func =
+                weak_head_normalize(expression->value.app.func);
+            if (new_func->type == LAMBDA_EXPRESSION) {
+                return reduce(new_func, expression->value.app.arg);
+            } else if (new_func->type == FIX_EXPRESSION) {
+                return eval_fix(new_func, expression->value.app.arg);
+            } else {
+                return init_app_expression(new_func, expression->value.app.arg);
+            }
+        }
+        default:
+            return expression;
+    }
+}
