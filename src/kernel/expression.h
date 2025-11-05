@@ -226,7 +226,7 @@ Expression *get_innermost_func(Expression *expression);
 bool has_holes(Expression *expr);
 bool is_hole(Expression *expr);
 bool can_fill(Expression *hole, Expression *term);
-void fillHole(Expression *hole, Expression *term);
+void fill_hole(Expression *hole, Expression *term);
 
 bool match_until_holes(Expression *with_holes, Expression *term);
 

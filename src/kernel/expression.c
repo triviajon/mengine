@@ -869,7 +869,7 @@ bool match_until_holes(Expression *with_holes, Expression *term) {
     return types_match;
 }
 
-void fillHole(Expression *hole, Expression *term) {
+void fill_hole(Expression *hole, Expression *term) {
     if (hole->type != HOLE_EXPRESSION) {
         return;
     }
@@ -890,7 +890,7 @@ void fillHole(Expression *hole, Expression *term) {
     for (int i = 0; i < n; i++) {
         Expression *hole = (required_holes->items + i)->key;
         Expression *substitute = (required_holes->items + i)->val;
-        fillHole(hole, substitute);
+        fill_hole(hole, substitute);
     }
 
     DoublyLinkedList *holepars = hole->value.hole.uplinks;

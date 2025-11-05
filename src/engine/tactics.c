@@ -5,7 +5,7 @@ DoublyLinkedList *apply(Expression *goal, Expression *lemma) {
     Expression *instantiated_lemma = unification_result->lemma_instantiation;
     DoublyLinkedList *new_goals = unification_result->new_goals;
     if (can_fill(goal, instantiated_lemma)) {
-        fillHole(goal, instantiated_lemma);
+        fill_hole(goal, instantiated_lemma);
         return new_goals;
     }
     return NULL;
@@ -16,7 +16,7 @@ DoublyLinkedList *eapply(Expression *goal, Expression *lemma) {
     Expression *instantiated_lemma = unification_result->lemma_instantiation;
     DoublyLinkedList *new_goals = unification_result->new_goals;
     if (can_fill(goal, instantiated_lemma)) {
-        fillHole(goal, instantiated_lemma);
+        fill_hole(goal, instantiated_lemma);
         return new_goals;
     }
     return NULL;
@@ -57,7 +57,7 @@ IntroReturn *intro(Expression *goal) {
         init_lambda_expression(goal_ty_bv, new_goal);
 
     if (can_fill(goal, proof_of_original)) {
-        fillHole(goal, proof_of_original);
+        fill_hole(goal, proof_of_original);
         return init_intro_return(goal, new_goal, proof_of_original);
     }
     return NULL;

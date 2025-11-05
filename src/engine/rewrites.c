@@ -505,7 +505,7 @@ RewrittenGoal *rewrite_transform(Expression *goal, Expression *rewrite_lemma) {
             rewrite_proof->equality_proof),
         new_goal);
 
-    fillHole(goal, proof);
+    fill_hole(goal, proof);
 
     return init_rewritten_goal(new_goal, rewrite_proof->remaining_goals);
 }
@@ -539,7 +539,7 @@ RewrittenGoal *rewrites_transform(Expression *goal, int n, ...) {
                 rewrite_proof->equality_proof),
             new_goal);
 
-        fillHole(curr_goal, proof);
+        fill_hole(curr_goal, proof);
         remaining_open =
             dll_merge(remaining_open, rewrite_proof->remaining_goals);
         curr_goal = new_goal;

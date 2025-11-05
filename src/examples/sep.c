@@ -1441,7 +1441,7 @@ Expression *flatten(Expression *goal) {
         hole);
 
     if (can_fill(goal, proof)) {
-        fillHole(goal, proof);
+        fill_hole(goal, proof);
         return hole;
     }
 
@@ -1636,7 +1636,7 @@ Expression *reorder(Expression *goal) {
         current_to_original_rhs_proof);
 
     if (can_fill(goal, proof_of_reorder)) {
-        fillHole(goal, proof_of_reorder);
+        fill_hole(goal, proof_of_reorder);
     } else {
         fprintf(stderr,
                 "Error: Cannot fill the goal with the proof of reorder.\n");
@@ -1817,7 +1817,7 @@ Expression *cancel_step(Expression *goal) {
             LHS_to_associated_LHS_proof),
         new_goal);
     if (can_fill(goal, old_goal_to_new_goal_proof)) {
-        fillHole(goal, old_goal_to_new_goal_proof);
+        fill_hole(goal, old_goal_to_new_goal_proof);
     } else {
         fprintf(stderr,
                 "Error: Cannot fill the goal with the proof of reordering.\n");
@@ -1891,10 +1891,12 @@ void run_sep1(int n) {
     Expression *example = example_0(n);
     Context *hole_ctx = context_add(c, get_expression_context(example));
     Expression *goal = init_hole_expression("Goal", example, hole_ctx);
-    
-	// TODO: This is a workaround to be able to retrieve the proof term after solving.
-    Expression *temp = init_lambda_expression(init_var_expression("temp", init_type_expression()), goal);
-	(void)temp;
+
+    // TODO: This is a workaround to be able to retrieve the proof term after
+    // solving.
+    Expression *temp = init_lambda_expression(
+        init_var_expression("temp", init_type_expression()), goal);
+    (void)temp;
 
     cancel(goal);
     printf("(* Successfully solved the goal! *)\n");
@@ -1921,9 +1923,11 @@ void run_sep2(int n) {
     Context *hole_ctx = context_add(c, get_expression_context(example));
     Expression *goal = init_hole_expression("Goal", example, hole_ctx);
 
-    // TODO: This is a workaround to be able to retrieve the proof term after solving.
-    Expression *temp = init_lambda_expression(init_var_expression("temp", init_type_expression()), goal);
-	(void)temp;
+    // TODO: This is a workaround to be able to retrieve the proof term after
+    // solving.
+    Expression *temp = init_lambda_expression(
+        init_var_expression("temp", init_type_expression()), goal);
+    (void)temp;
 
     cancel(goal);
     printf("(* Successfully solved the goal! *)\n");
