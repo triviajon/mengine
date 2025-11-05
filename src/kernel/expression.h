@@ -230,6 +230,9 @@ void fill_hole(Expression *hole, Expression *term);
 
 bool match_until_holes(Expression *with_holes, Expression *term);
 
+// Returns true if var_or_hole appears as a subterm in term
+bool occurs_in(Expression *var_or_hole, Expression *term);
+
 void free_expression(Expression *expr);
 
 bool congruence(Expression *a, Expression *b);

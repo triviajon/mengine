@@ -846,7 +846,8 @@ bool is_hole(Expression *expr) { return expr->type == HOLE_EXPRESSION; }
 // Returns true if you can safely substitute term into a hole.
 // This means two things:
 //    1) The type(term) == expected return type of hole.
-//    2) TODO: The defining context of hole contains the context(term).
+//    2) The defining context of hole contains the context(term).
+//    3) Term does not itself contain the hole.
 // This does no modifications/creates no new objects.
 bool can_fill(Expression *hole, Expression *term) {
     Map *alpha_equivalences = map_new();
@@ -856,7 +857,69 @@ bool can_fill(Expression *hole, Expression *term) {
                            alpha_equivalences, required_holes);
     map_clear_free(alpha_equivalences);
     map_clear_free(required_holes);
-    return types_match && valid_in_context(term, get_expression_context(hole));
+    bool occurs = occurs_in(hole, term);
+    return types_match &&
+           valid_in_context(term, get_expression_context(hole)) && !occurs;
+}
+
+bool _occurs_in(Expression *var_or_hole, Expression *term, Map *visited) {
+    if (map_get(visited, term) != NULL) {
+        return false;
+    }
+    map_set(visited, term, term);
+
+    if (var_or_hole == term) {
+        return true;
+    }
+
+    switch (term->type) {
+        case TYPE_EXPRESSION:
+        case PROP_EXPRESSION:
+            return false;
+        case VAR_EXPRESSION:
+            return var_or_hole == term;
+        case APP_EXPRESSION:
+            return _occurs_in(var_or_hole, term->value.app.func, visited) ||
+                   _occurs_in(var_or_hole, term->value.app.arg, visited);
+        case LAMBDA_EXPRESSION:
+            return _occurs_in(var_or_hole, term->value.lambda.bound_variable,
+                              visited) ||
+                   _occurs_in(var_or_hole, term->value.lambda.body, visited);
+        case FORALL_EXPRESSION:
+            return _occurs_in(var_or_hole, term->value.forall.bound_variable,
+                              visited) ||
+                   _occurs_in(var_or_hole, term->value.forall.body, visited);
+        case HOLE_EXPRESSION:
+            return var_or_hole == term;
+        case FIX_EXPRESSION:
+            return _occurs_in(var_or_hole, term->value.fix.ident, visited) ||
+                   _occurs_in(var_or_hole, term->value.fix.bound_variable,
+                              visited) ||
+                   _occurs_in(var_or_hole, term->value.fix.body, visited);
+        case MATCH_EXPR_EXPRESSION:
+            return _occurs_in(var_or_hole,
+                              term->value.matchExpr.match_scrutinee, visited) ||
+                   _occurs_in(var_or_hole,
+                              term->value.matchExpr.literal_case_item,
+                              visited) ||
+                   _occurs_in(var_or_hole, term->value.matchExpr.literal_result,
+                              visited) ||
+                   _occurs_in(var_or_hole, term->value.matchExpr.var_case_item,
+                              visited) ||
+                   _occurs_in(var_or_hole, term->value.matchExpr.var_result,
+                              visited) ||
+                   _occurs_in(var_or_hole, term->value.matchExpr.op_case_item,
+                              visited) ||
+                   _occurs_in(var_or_hole, term->value.matchExpr.op_result,
+                              visited);
+        default:
+            fprintf(stderr, "Error: Unknown expression type in occurs_in.\n");
+            exit(EXIT_FAILURE);
+    }
+}
+
+bool occurs_in(Expression *var_or_hole, Expression *term) {
+    return _occurs_in(var_or_hole, term, map_new());
 }
 
 bool match_until_holes(Expression *with_holes, Expression *term) {
@@ -871,6 +934,10 @@ bool match_until_holes(Expression *with_holes, Expression *term) {
 
 void fill_hole(Expression *hole, Expression *term) {
     if (hole->type != HOLE_EXPRESSION) {
+        return;
+    }
+
+    if (occurs_in(hole, term)) {
         return;
     }
 

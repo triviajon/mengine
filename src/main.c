@@ -4,6 +4,7 @@
 
 #include "engine/axiom.h"
 #include "engine/tactics.h"
+#include "examples/fill_hole.h"
 #include "examples/main_utils.h"
 #include "examples/rewrite_addr0.h"
 #include "examples/rewrite_chained_mod.h"
@@ -42,6 +43,7 @@ void print_usage() {
     fprintf(stderr, "  mod <n_depth>\n");
     fprintf(stderr, "  lambda\n");
     fprintf(stderr, "  open\n");
+    fprintf(stderr, "  fillhole\n");
     fprintf(
         stderr,
         "  nm [<n> <m>] ... rewrite benchmark with function arity n and let "
@@ -179,6 +181,8 @@ int main(int argc, char *argv[]) {
         } else {
             print_rwpf__coq_ready(rw_pf, withlet_flag, debug_flag);
         }
+    } else if (strcmp(argv[1], "fillhole") == 0) {
+        run_fill_hole();
     } else if (strcmp(argv[1], "sym") == 0) {
         if (argc != 3) {
             fprintf(stderr, "Usage: %s [--proof=0|1] sym <n>\n", argv[0]);
