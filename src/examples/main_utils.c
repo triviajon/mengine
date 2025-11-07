@@ -11,18 +11,18 @@ void print_rwpf__coq_ready(RewriteProof *rw_pf, int withlet_flag,
 
     fprintf(stdout, "Section Test.\n");
     fprintf(stdout, "Require Import Setoid Morphisms.\n");
-    fprintf(stdout, "%s\n", stringify_context2(proof_ctx));
+    fprintf(stdout, "%s\n", stringify_context(proof_ctx));
     if (withlet_flag > 0) {
         fprintf(stdout, "\nCheck %s : eq (%s) (%s) (%s).\n",
-                stringify_expression_with_let2(proof),
-                stringify_expression2(expr_ty),
-                stringify_expression_with_let2(original),
-                stringify_expression_with_let2(rewritten));
+                stringify_expression_with_let(proof),
+                stringify_expression(expr_ty),
+                stringify_expression_with_let(original),
+                stringify_expression_with_let(rewritten));
     } else {
         fprintf(stdout, "\nCheck %s : eq (%s) (%s) (%s).\n",
-                stringify_expression2(proof), stringify_expression2(expr_ty),
-                stringify_expression2(original),
-                stringify_expression2(rewritten));
+                stringify_expression(proof), stringify_expression(expr_ty),
+                stringify_expression(original),
+                stringify_expression(rewritten));
     }
 
     fprintf(stdout, "End Test.\n");
@@ -37,11 +37,11 @@ void print_rwpf__no_proof(RewriteProof *rw_pf, int withlet_flag,
 
     Context *expr_ctx = get_expression_context(original);
 
-    fprintf(stdout, "%s\n", stringify_context2(expr_ctx));
+    fprintf(stdout, "%s\n", stringify_context(expr_ctx));
     if (withlet_flag > 0) {
-        fprintf(stdout, "%s\n", stringify_expression_with_let2(rewritten));
+        fprintf(stdout, "%s\n", stringify_expression_with_let(rewritten));
     } else {
-        fprintf(stdout, "%s\n", stringify_expression2(rewritten));
+        fprintf(stdout, "%s\n", stringify_expression(rewritten));
     }
 
     if (debug_flag) {

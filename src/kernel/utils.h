@@ -7,26 +7,20 @@
 
 typedef struct Context Context;
 
+// Stringify an expression to a Coq-ready string.
 char *stringify_expression(Expression *expression);
-char *stringify_context(Context *context);
+
+// Stringify an expression to a Coq-ready string using let-bindings to represent
+// the implicit sharing in the DAG representation of the expression.
 char *stringify_expression_with_let(Expression *expression);
-char *stringify_expression_with_let2(Expression *expression);
 
-char *stringify_expression2(Expression *expression);
-char *stringify_context2(Context *context);
-char *stringify_type(Expression *expression);
+// Stringify a context to a Coq-ready string.
+char *stringify_context(Context *context);
 
+// Shorthand for stringify_expression.
 char *se(Expression *expression);
+
+// Shorthand for stringify_context.
 char *sc(Context *context);
-
-typedef enum { UNMARKED, TEMPORARY, PERMANENT } MarkType;
-
-typedef struct {
-    void *expr;
-    int count;
-} ExpressionCount;
-
-// Two expressions are equal wrt this function if their pointers are equal
-bool expression_equal(Expression *a, Expression *b);
 
 #endif  // UTILS_H

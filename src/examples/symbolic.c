@@ -1243,7 +1243,7 @@ Expression *_sym_solve(Expression *initial_goal) {
             }
             default: {
                 printf("Unknown goal type: %s\n",
-                       stringify_expression2(goal_type));
+                       stringify_expression(goal_type));
                 dll_destroy(goals_to_solve);
                 dll_destroy(hypotheses);
                 return NULL;
@@ -1280,7 +1280,7 @@ void run_symbolic(int n) {
 
     Expression *cmd_ok_theorem = make_exec_test_6(c, n);
     Expression *proof = straightline_solve(cmd_ok_theorem);
-    // printf("%s\n\n%s\n", stringify_expression2(cmd_ok_theorem),
-    // stringify_expression2(proof));
-    printf("%s\n", stringify_expression2(get_expression_type(proof)));
+    // printf("%s\n\n%s\n", stringify_expression(cmd_ok_theorem),
+    // stringify_expression(proof));
+    printf("%s\n", stringify_expression(get_expression_type(proof)));
 }
