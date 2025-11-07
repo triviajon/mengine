@@ -1900,10 +1900,10 @@ void run_sep1(int n) {
 
     cancel(goal);
     printf("(* Successfully solved the goal! *)\n");
-    // printf("%s\n\n", stringify_context2(get_expression_context(goal)));
+    // printf("%s\n\n", stringify_context(get_expression_context(goal)));
     // printf("Check %s : %s.\n",
-    // stringify_expression2(temp->value.lambda.body),
-    // stringify_expression2(get_expression_type(goal)));
+    // stringify_expression(temp->value.lambda.body),
+    // stringify_expression(get_expression_type(goal)));
 
     exit(EXIT_SUCCESS);
 }
@@ -1931,10 +1931,10 @@ void run_sep2(int n) {
 
     cancel(goal);
     printf("(* Successfully solved the goal! *)\n");
-    // printf("%s\n\n", stringify_context2(get_expression_context(goal)));
+    // printf("%s\n\n", stringify_context(get_expression_context(goal)));
     // printf("Check %s : %s.\n",
-    // stringify_expression2(temp->value.lambda.body),
-    // stringify_expression2(get_expression_type(goal)));
+    // stringify_expression(temp->value.lambda.body),
+    // stringify_expression(get_expression_type(goal)));
 
     exit(EXIT_SUCCESS);
 }
