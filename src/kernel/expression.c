@@ -299,39 +299,6 @@ Expression *init_forall_expression_wc(Expression *bound_variable,
     return expr;
 }
 
-Expression *extend_expression_context(Expression *expression,
-                                      Expression *variable) {
-    Context *original_context = get_expression_context(expression);
-    if (!valid_to_add_to_context(variable, original_context)) return NULL;
-
-    switch (expression->type) {
-        case (VAR_EXPRESSION): {
-            return init_var_expression_wc(
-                expression->value.var.name, expression->value.var.type,
-                context_insert(original_context, variable));
-        }
-        case (LAMBDA_EXPRESSION): {
-            return init_lambda_expression_wc(
-                expression->value.lambda.bound_variable,
-                expression->value.lambda.body,
-                context_insert(original_context, variable));
-        }
-        case (APP_EXPRESSION): {
-            return init_app_expression_wc(
-                expression->value.app.func, expression->value.app.arg,
-                context_insert(original_context, variable));
-        }
-        case (FORALL_EXPRESSION): {
-            return init_forall_expression_wc(
-                expression->value.forall.bound_variable,
-                expression->value.forall.body,
-                context_insert(original_context, variable));
-        }
-        default:
-            return NULL;
-    }
-}
-
 Expression *init_arrow_expression(Expression *lhs, Expression *rhs) {
     // lhs -> rhs <-> Forall _: lhs, rhs
     Expression *unnamed_variable = init_var_expression("_", lhs);
@@ -844,7 +811,7 @@ bool has_holes(Expression *expr) {
 bool is_hole(Expression *expr) { return expr->type == HOLE_EXPRESSION; }
 
 // Returns true if you can safely substitute term into a hole.
-// This means two things:
+// This means three things:
 //    1) The type(term) == expected return type of hole.
 //    2) The defining context of hole contains the context(term).
 //    3) Term does not itself contain the hole.
@@ -920,16 +887,6 @@ bool _occurs_in(Expression *var_or_hole, Expression *term, Map *visited) {
 
 bool occurs_in(Expression *var_or_hole, Expression *term) {
     return _occurs_in(var_or_hole, term, map_new());
-}
-
-bool match_until_holes(Expression *with_holes, Expression *term) {
-    Map *alpha_equivalences = map_new();
-    Map *required_holes = map_new();
-    bool types_match = _match_under_holes(with_holes, term, alpha_equivalences,
-                                          required_holes);
-    map_clear_free(alpha_equivalences);
-    map_clear_free(required_holes);
-    return types_match;
 }
 
 void fill_hole(Expression *hole, Expression *term) {
