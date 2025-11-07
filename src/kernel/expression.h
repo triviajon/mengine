@@ -133,7 +133,7 @@ typedef struct {
     DoublyLinkedList *uplinks;
 } FixExpression;
 
-// Special case.
+// Special case; we don't implement matching in general for this POC. 
 typedef struct {
     Expression *match_scrutinee;
     Expression *literal_case_item;
@@ -163,9 +163,22 @@ struct Expression {
     } value;
 };
 
+// Helper function to add an uplink to the uplinks list of an expression.
 void add_to_parents(Expression *expression, Uplink *uplink);
+
+// Helper function to create a new uplink to an expression.
 Uplink *new_uplink(Expression *parent, Relation relation);
+
+// Helper function to create a new uplink to a context.
 Uplink *new_uplink2(Context *parent, Relation relation);
+
+// The following functions are helper functions to initialize new expressions, 
+// without providing explicit contexts. The function will take care of computing the 
+// context needed to type the expression. For example:
+//  init_app_expression(func, arg) will take the contexts of func and arg, and "merge" them
+//  into a single context, and then use that context to type the expression, which necessarily 
+//   types the expression given that the inputs are valid in their respective contexts.
+// These are useful convenience functions, but are not always the best choice.
 
 Expression *init_var_expression(const char *name, Expression *type);
 Expression *init_lambda_expression(Expression *bound_variable,
@@ -175,8 +188,6 @@ Expression *init_forall_expression(Expression *bound_variable,
                                    Expression *body);
 Expression *init_type_expression();
 Expression *init_prop_expression();
-Expression *init_hole_expression(char *name, Expression *return_type,
-                                 Context *defining_context);
 Expression *init_fix_expression(Expression *ident, Expression *bound_variable,
                                 Expression *body);
 Expression *init_match_expr_expression(Expression *match_scrutinee,
@@ -186,6 +197,16 @@ Expression *init_match_expr_expression(Expression *match_scrutinee,
                                        Expression *var_result,
                                        Expression *op_scrutinee,
                                        Expression *op_result, Expression *type);
+
+// Initialize a new hole expression with a given name, return type, and defining context.
+// To fill the hole using `fill_hole(hole, term)`, the term used to fill the hole must be 
+// valid in the hole's defining context.
+Expression *init_hole_expression(char *name, Expression *return_type, Context *defining_context);
+
+
+// The following functions are helper functions to initialize new expressions, 
+// with explicit contexts. These are useful when you have a specific context in mind
+// for the expression, and you want to use that context to type the expression.
 
 // Initialize a new variable expression with a given name, type, and defining
 // context. The variable's type must be valid in the defining context.
@@ -207,38 +228,63 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg,
 Expression *init_forall_expression_wc(Expression *bound_variable,
                                       Expression *body, Context *context);
 
-// Extends the context of a given expression by adding another variable binding,
-// and then returning a fresh expression object of the same type as the
-// original. The given variable must be valid in the context associated with
-// expression, otherwise this function returns NULL.
-// TODO: Handle hole, fix, and match_expr appropriately.
-Expression *extend_expression_context(Expression *expression,
-                                      Expression *variable);
-
+// Initializes a new "arrow" expression. 
+// The "arrow" expression is a shorthand for a forall expression with a bound variable.
+// init_arrow_expression(A, B) is equivalent to init_forall_expression(init_var_expression("_", A), B).
 Expression *init_arrow_expression(Expression *lhs, Expression *rhs);
 
+// Returns the uplinks of an expression. 
 DoublyLinkedList *get_expression_uplinks(Expression *expression);
+
+// Returns the type of an expression.
 Expression *get_expression_type(Expression *expression);
+
+// Returns the context of an expression.
 Context *get_expression_context(Expression *expression);
+
+// Returns the innermost body of an expression. For example, if the expression is
+//     fun x: A => fun y: B => C
+// then get_innermost_body(expression) will return C.
 Expression *get_innermost_body(Expression *expression);
+
+// Returns the innermost function of an expression. For example, if the expression is
+//     (((f x3) x1) x0)
+// then get_innermost_func(expression) will return f.
 Expression *get_innermost_func(Expression *expression);
 
+// Returns true if the expression has any holes. 
 bool has_holes(Expression *expr);
-bool is_hole(Expression *expr);
-bool can_fill(Expression *hole, Expression *term);
-void fill_hole(Expression *hole, Expression *term);
 
-bool match_until_holes(Expression *with_holes, Expression *term);
+// Returns true if the expression is a hole.
+bool is_hole(Expression *expr);
+
+// Returns true if the term can fill the hole.
+bool can_fill(Expression *hole, Expression *term);
+
+// Fills a hole with a term. The term must satisfy the following conditions:
+//    1) The type of term  expected return type of hole.
+//    2) The defining context of hole contains the context(term).
+//    3) Term does not itself contain the hole.
+// This does no modifications/creates no new objects. Instead, it modifies the uplinks of the hole to point to the term.
+void fill_hole(Expression *hole, Expression *term);
 
 // Returns true if var_or_hole appears as a subterm in term
 bool occurs_in(Expression *var_or_hole, Expression *term);
 
+// Frees an expression and all its children.
 void free_expression(Expression *expr);
 
+// Returns true if the expressions are alpha-congruent. 
 bool congruence(Expression *a, Expression *b);
+
+// Returns true if a is a subtype of b. We don't implement a full subtyping relation, but it is necessary
+// specifically for Type and Prop.
 bool subtypes(Expression *a, Expression *b);
+
+// This function compares a and b, creating a mapping of variables in a to variables in b. 
+// Specifically, assuming a and b are alpha-congruent, it creates a mapping of the bound variables in a to the bound variables in b.
+// It then substitutes the variables in to_subst with the mapping creating [a -> b].
 Expression *match_and_subst(Expression *a, Expression *b, Expression *to_subst);
-void match_holes(Expression *a, Expression *b);
 bool congruence2(Expression *a, Expression *b);
 
 extern char c_counter;
