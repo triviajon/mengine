@@ -142,7 +142,8 @@ Expression *init_app_expression(Expression *func, Expression *arg) {
     expr->value.app.type = constr_app_type(func, arg);
     expr->value.app.cache = NULL;
     expr->value.app.uplinks = dll_create();
-    expr->value.app.maybe_hole_free = get_maybe_hole_free(func) && get_maybe_hole_free(arg);
+    expr->value.app.maybe_hole_free =
+        get_maybe_hole_free(func) && get_maybe_hole_free(arg);
     return expr;
 }
 
@@ -239,7 +240,12 @@ Expression *init_match_expr_expression(
         context_add(get_expression_context(op_case_item),
                     get_expression_context(op_result)));
     expr->value.matchExpr.uplinks = dll_create();
-    expr->value.matchExpr.maybe_hole_free = get_maybe_hole_free(match_scrutinee) && get_maybe_hole_free(literal_case_item) && get_maybe_hole_free(literal_result) && get_maybe_hole_free(var_case_item) && get_maybe_hole_free(var_result) && get_maybe_hole_free(op_case_item) && get_maybe_hole_free(op_result);
+    expr->value.matchExpr.maybe_hole_free =
+        get_maybe_hole_free(match_scrutinee) &&
+        get_maybe_hole_free(literal_case_item) &&
+        get_maybe_hole_free(literal_result) &&
+        get_maybe_hole_free(var_case_item) && get_maybe_hole_free(var_result) &&
+        get_maybe_hole_free(op_case_item) && get_maybe_hole_free(op_result);
     return expr;
 }
 
@@ -289,7 +295,8 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg,
     expr->value.app.type = constr_app_type(func, arg);
     expr->value.app.cache = NULL;
     expr->value.app.uplinks = dll_create();
-    expr->value.app.maybe_hole_free = get_maybe_hole_free(func) && get_maybe_hole_free(arg);
+    expr->value.app.maybe_hole_free =
+        get_maybe_hole_free(func) && get_maybe_hole_free(arg);
     return expr;
 }
 
@@ -861,6 +868,10 @@ bool can_fill(Expression *hole, Expression *term) {
                            alpha_equivalences, required_holes);
     map_clear_free(alpha_equivalences);
     map_clear_free(required_holes);
+    if (get_maybe_hole_free(term)) {
+        return types_match &&
+               valid_in_context(term, get_expression_context(hole));
+    }
     bool occurs = occurs_in(hole, term);
     return types_match &&
            valid_in_context(term, get_expression_context(hole)) && !occurs;
