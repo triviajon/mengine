@@ -27,3 +27,4 @@ tests/__pycache__/
 
 .vscode/*
 perf.data*
+.dump.aux
