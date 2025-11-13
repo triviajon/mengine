@@ -61,6 +61,7 @@ typedef struct {
     DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced.
     RewriteProof *rresult;  // When rewriting, cache of the result. NULL while
                             // not rewriting.
+    bool maybe_hole_free; // A value of true means that the term is hole-free, false means that it may contain holes.
 } VarExpression;
 
 // A lambda expression: fun (bound_variable) => body.
@@ -75,6 +76,7 @@ typedef struct {
     DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced.
     RewriteProof *rresult;  // When rewriting, cache of the result. NULL while
                             // not rewriting.
+    bool maybe_hole_free; // A value of true means that the term is hole-free, false means that it may contain holes.
 } LambdaExpression;
 
 // An application expression: (func arg).
@@ -91,6 +93,7 @@ typedef struct {
     DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced.
     RewriteProof *rresult;  // When rewriting, cache of the result. NULL while
                             // not rewriting.
+    bool maybe_hole_free; // A value of true means that the term is hole-free, false means that it may contain holes.
 } AppExpression;
 
 // Similar to LambdaExpression.
@@ -100,6 +103,7 @@ typedef struct {
     Expression *type;  // Always a "Type" expression
     Expression *body;
     DoublyLinkedList *uplinks;
+    bool maybe_hole_free; // A value of true means that the term is hole-free, false means that it may contain holes.
 } ForallExpression;
 
 typedef struct {
@@ -121,6 +125,7 @@ typedef struct {
     Expression *return_type;    // The required type for the hole.
     Context *defining_context;  // The context which this hole was defined in.
     DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced.
+    bool maybe_hole_free; // A value of true means that the term is hole-free, false means that it may contain holes.
 } HoleExpression;
 
 // A fix expression: fix ident (bound_variable) => body.
@@ -131,6 +136,7 @@ typedef struct {
     Context *context;
     Expression *type;
     DoublyLinkedList *uplinks;
+    bool maybe_hole_free; // A value of true means that the term is hole-free, false means that it may contain holes.
 } FixExpression;
 
 // Special case; we don't implement matching in general for this POC. 
@@ -145,6 +151,7 @@ typedef struct {
     Context *context;
     Expression *type;
     DoublyLinkedList *uplinks;
+    bool maybe_hole_free; // A value of true means that the term is hole-free, false means that it may contain holes.
 } MatchExprExpression;
 
 // Represents a generic expression.
@@ -251,6 +258,13 @@ Expression *get_innermost_body(Expression *expression);
 //     (((f x3) x1) x0)
 // then get_innermost_func(expression) will return f.
 Expression *get_innermost_func(Expression *expression);
+
+// Returns the value of the maybe_hole_free field of an expression.
+// This is a heuristic to determine if the expression may contain holes.
+// The reason this exists is because an expression containing a hole may be modified to remove the hole,
+// via a call to `fill_hole(hole, term)`. This heuristic can be removed in the future if we implement
+// proper upwards traversal of the expression tree to update the maybe_hole_free field.
+bool get_maybe_hole_free(Expression *expr);
 
 // Returns true if the expression has any holes. 
 bool has_holes(Expression *expr);

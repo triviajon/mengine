@@ -110,6 +110,7 @@ Expression *init_var_expression(const char *name, Expression *type) {
     expr->value.var.uplinks = dll_create();
     expr->value.var.context =
         context_insert(get_expression_context(type), expr);
+    expr->value.var.maybe_hole_free = true;
     return expr;
 }
 
@@ -124,6 +125,7 @@ Expression *init_lambda_expression(Expression *bound_variable,
     expr->value.lambda.body = body;
     add_to_parents(body, new_uplink(expr, LAMBDA_BODY));
     expr->value.lambda.uplinks = dll_create();
+    expr->value.lambda.maybe_hole_free = get_maybe_hole_free(body);
     return expr;
 }
 
@@ -140,6 +142,7 @@ Expression *init_app_expression(Expression *func, Expression *arg) {
     expr->value.app.type = constr_app_type(func, arg);
     expr->value.app.cache = NULL;
     expr->value.app.uplinks = dll_create();
+    expr->value.app.maybe_hole_free = get_maybe_hole_free(func) && get_maybe_hole_free(arg);
     return expr;
 }
 
@@ -162,6 +165,7 @@ Expression *init_forall_expression(Expression *bound_variable,
     expr->value.forall.body = body;
     add_to_parents(body, new_uplink(expr, FORALL_BODY));
     expr->value.forall.uplinks = dll_create();
+    expr->value.forall.maybe_hole_free = get_maybe_hole_free(body);
     return expr;
 }
 
@@ -192,6 +196,7 @@ Expression *init_hole_expression(char *name, Expression *type,
     expr->value.hole.return_type = type;
     add_to_parents(type, new_uplink(expr, HOLE_TYPE));
     expr->value.hole.uplinks = dll_create();
+    expr->value.hole.maybe_hole_free = false;
     return expr;
 }
 
@@ -206,6 +211,7 @@ Expression *init_fix_expression(Expression *ident, Expression *bound_variable,
     expr->value.fix.context = get_expression_context(body);
     expr->value.fix.type = constr_lambda_type(bound_variable, body);
     expr->value.fix.uplinks = dll_create();
+    expr->value.fix.maybe_hole_free = get_maybe_hole_free(body);
     return expr;
 }
 
@@ -232,8 +238,8 @@ Expression *init_match_expr_expression(
                                 get_expression_context(var_result))),
         context_add(get_expression_context(op_case_item),
                     get_expression_context(op_result)));
-
     expr->value.matchExpr.uplinks = dll_create();
+    expr->value.matchExpr.maybe_hole_free = get_maybe_hole_free(match_scrutinee) && get_maybe_hole_free(literal_case_item) && get_maybe_hole_free(literal_result) && get_maybe_hole_free(var_case_item) && get_maybe_hole_free(var_result) && get_maybe_hole_free(op_case_item) && get_maybe_hole_free(op_result);
     return expr;
 }
 
@@ -247,6 +253,7 @@ Expression *init_var_expression_wc(const char *name, Expression *type,
     expr->value.var.type = type;
     expr->value.var.uplinks = dll_create();
     expr->value.var.context = defining_context;
+    expr->value.var.maybe_hole_free = true;
     return expr;
 }
 
@@ -262,6 +269,7 @@ Expression *init_lambda_expression_wc(Expression *bound_variable,
     expr->value.lambda.body = body;
     add_to_parents(body, new_uplink(expr, LAMBDA_BODY));
     expr->value.lambda.uplinks = dll_create();
+    expr->value.lambda.maybe_hole_free = get_maybe_hole_free(body);
     return expr;
 }
 
@@ -281,6 +289,7 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg,
     expr->value.app.type = constr_app_type(func, arg);
     expr->value.app.cache = NULL;
     expr->value.app.uplinks = dll_create();
+    expr->value.app.maybe_hole_free = get_maybe_hole_free(func) && get_maybe_hole_free(arg);
     return expr;
 }
 
@@ -296,6 +305,7 @@ Expression *init_forall_expression_wc(Expression *bound_variable,
     expr->value.forall.body = body;
     add_to_parents(body, new_uplink(expr, FORALL_BODY));
     expr->value.forall.uplinks = dll_create();
+    expr->value.forall.maybe_hole_free = get_maybe_hole_free(body);
     return expr;
 }
 
@@ -776,7 +786,34 @@ bool _match_under_holes(Expression *a, Expression *b, Map *alpha_equivalences,
     }
 }
 
+bool get_maybe_hole_free(Expression *expr) {
+    switch (expr->type) {
+        case (TYPE_EXPRESSION):
+            return true;
+        case (PROP_EXPRESSION):
+            return true;
+        case (APP_EXPRESSION):
+            return expr->value.app.maybe_hole_free;
+        case (FORALL_EXPRESSION):
+            return expr->value.forall.maybe_hole_free;
+        case (LAMBDA_EXPRESSION):
+            return expr->value.lambda.maybe_hole_free;
+        case (VAR_EXPRESSION):
+            return expr->value.var.maybe_hole_free;
+        case (FIX_EXPRESSION):
+            return expr->value.fix.maybe_hole_free;
+        case (MATCH_EXPR_EXPRESSION):
+            return expr->value.matchExpr.maybe_hole_free;
+        default:
+            return false;
+    }
+}
+
 bool has_holes(Expression *expr) {
+    if (get_maybe_hole_free(expr)) {
+        return false;
+    }
+
     switch (expr->type) {
         case (TYPE_EXPRESSION):
         case (PROP_EXPRESSION):
