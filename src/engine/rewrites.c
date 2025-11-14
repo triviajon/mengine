@@ -188,13 +188,15 @@ RewriteProof *rewrite_lambda(Context *goal_context, Expression *expr,
 
     RewriteProof *result;
     if (nothing_rewritten(rewritten_mid)) {
-        result = init_rewrite_proof(expr, mid, f_mid, dll_create());
+        result =
+            init_rewrite_proof(expr, mid, f_mid, inner_rw->remaining_goals);
     } else {
         result = init_rewrite_proof(
             expr, rewritten_mid->rewritten_expr,
             build_eq_trans(init_rewrite_proof(expr, mid, f_mid, dll_create()),
                            rewritten_mid),
-            dll_create());
+            dll_merge(inner_rw->remaining_goals,
+                      rewritten_mid->remaining_goals));
     }
 
     free_rewrite_proof(rewritten_mid);
