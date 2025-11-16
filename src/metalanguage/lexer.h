@@ -11,9 +11,8 @@ typedef enum {
     TOK_COLON,   // :
     TOK_COMMA,   // ,
     TOK_DOT,     // .
-    TOK_ARROW,   // -> (function type / logical implication)
     TOK_DARROW,  // => (pattern match branch)
-    TOK_LAMBDA,  // fun
+    TOK_FUN,     // fun
     TOK_FORALL,  // forall
     TOK_TYPE,    // Type
     TOK_PROP,    // Prop
@@ -22,7 +21,7 @@ typedef enum {
     TOK_PIPE,    // | (pattern separator)
     TOK_END,     // end (end of match)
     TOK_EOF,
-    TOK_ERROR
+    TOK_ERROR,
 } TokenType;
 
 typedef struct {
@@ -49,28 +48,17 @@ typedef struct {
  */
 void lexer_init(Lexer *lx, const char *input);
 
-/**
- * Get the next token from the lexer.
- *
- * @param lx Pointer to the Lexer.
- * @return The next Token. Modifies the lexer's `pos` to point to the beginning
- * of the next token.
- */
-Token lexer_next(Lexer *lx);
+// Get the next token from the lexer
+// The returned Token* is malloc'ed. The caller is responsible for
+// freeing it with `lexer_free_token`.
+Token *lexer_next_token(Lexer *lx);
 
-/**
- * Peek at the next token from the lexer without consuming it.
- *
- * @param lx Pointer to the Lexer.
- * @return The next Token.
- */
-Token lexer_peek(Lexer *lx);
+// Peek at the next token without consuming it
+// The returned Token* is malloc'ed. The caller is responsible for
+// freeing it with `lexer_free_token`.
+Token *lexer_peek_token(Lexer *lx);
 
-/**
- * Free the memory allocated for a token.
- *
- * @param t Pointer to the Token to free.
- */
+// Utility: free a token (frees both lexeme and the Token struct)
 void lexer_free_token(Token *t);
 
 #endif  // LEXER_H

@@ -22,11 +22,12 @@ bool is_alphanumeric(char c) { return is_alpha(c) || is_digit(c); }
 
 bool is_ident_start(char c) { return is_alpha(c) || c == '_'; }
 
-Token make_token(TokenType type, int pos, char *lexeme) {
-    Token token;
-    token.type = type;
-    token.pos = pos;
-    token.lexeme = lexeme;
+Token *make_token(TokenType type, int pos, char *lexeme) {
+    Token *token = (Token *)malloc(sizeof(Token));
+    if (!token) return NULL;
+    token->type = type;
+    token->pos = pos;
+    token->lexeme = lexeme;
     return token;
 }
 
@@ -35,7 +36,7 @@ void lexer_init(Lexer *lx, const char *input) {
     lx->pos = 0;
 }
 
-Token lexer_next(Lexer *lx) {
+Token *lexer_next_token(Lexer *lx) {
     skip_whitespace(lx);
 
     char c = next_char(lx);
@@ -63,14 +64,6 @@ Token lexer_next(Lexer *lx) {
                 return make_token(TOK_ERROR, lx->pos - 1, NULL);
             }
         }
-        case '-': {
-            if (lx->src[lx->pos] == '>') {
-                lx->pos++;
-                return make_token(TOK_ARROW, lx->pos - 2, NULL);
-            } else {
-                return make_token(TOK_ERROR, lx->pos - 1, NULL);
-            }
-        }
         case '|': {
             return make_token(TOK_PIPE, lx->pos - 1, NULL);
         }
@@ -92,7 +85,7 @@ Token lexer_next(Lexer *lx) {
                 // Check for keywords
                 if (strcmp(lexeme, "fun") == 0) {
                     free(lexeme);
-                    return make_token(TOK_LAMBDA, start_pos, NULL);
+                    return make_token(TOK_FUN, start_pos, NULL);
                 } else if (strcmp(lexeme, "forall") == 0) {
                     free(lexeme);
                     return make_token(TOK_FORALL, start_pos, NULL);
@@ -121,15 +114,15 @@ Token lexer_next(Lexer *lx) {
     }
 }
 
-Token lexer_peek(Lexer *lx) {
+Token *lexer_peek_token(Lexer *lx) {
     int saved_pos = lx->pos;
-    Token t = lexer_next(lx);
+    Token *t = lexer_next_token(lx);
     lx->pos = saved_pos;
     return t;
 }
 
 void lexer_free_token(Token *t) {
-    if (t->type == TOK_IDENT && t->lexeme != NULL) {
-        free(t->lexeme);
-    }
+    if (t == NULL) return;
+    if (t->lexeme != NULL) free(t->lexeme);
+    free(t);
 }

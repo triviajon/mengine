@@ -3,13 +3,14 @@
 This file documents the core grammar for the metalanguage's term language.
 
 ```bnf
-<term>         ::= <prefix_term>
+<term>         ::=  <prefix_term>
 
-<prefix_term>  ::= <lambda_expr>
-								 | <forall_expr>
-								 | <application>
+<prefix_term>  ::=  <lambda_expr>
+                  | <forall_expr>
+				  | <match_expr>
+                  | <application>
 
-<lambda_expr>  ::= ("lambda" | "fun" | "\\") <binder> "=>" <term>
+<lambda_expr>  ::= ("fun") <binder> "=>" <term>
 
 <forall_expr>  ::= ("forall") <binder> "," <term>
 
@@ -18,36 +19,38 @@ This file documents the core grammar for the metalanguage's term language.
 <application>  ::= <atomic> { <atomic> }
 
 <atomic>       ::= <ident>
-				 | <hole>
 				 | "Type"
 				 | "Prop"
 				 | "(" <term> ")"
 
 // Arrow notation
-// `->` is used for function types and implication
+// Arrow types like `A -> B` are represented as `forall (_: A), B`
 // `=>` is used as the lambda/branch separator
-// Incorporate them explicitly in the grammar:
-
-<arrow_type>   ::= <term> "->" <term>
 
 // Pattern matching
-<match_expr>   ::= "match" <term> "with" { "|" <pattern> "=>" <term> } "end"
-
-<pattern>      ::= <ident>  // simple identifier pattern (extendable)
+<match_expr>   ::= "match" <term> "with" { <match_branch> } "end"
+<match_branch> ::= "|" <pattern> "=>" <term>
+<pattern>      ::= <ident>
 ```
 
 Examples:
 
-- Lambda with function-type parameter:
+- Lambda expression:
 
 ```text
-fun x : Type -> Type => x
+fun x : Type => x
 ```
 
 - Universal quantification:
 
 ```text
 forall x : Type, x
+```
+
+- Arrow type as forall (syntactic sugar):
+
+```text
+forall _: Type, Type    // represents Type -> Type
 ```
 
 - Application (left-associative):
