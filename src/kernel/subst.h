@@ -2,9 +2,9 @@
 #define SUBST_H
 
 #include "beta_reduction.h"
-#include "context.h"
 #include "doubly_linked_list.h"
-#include "expression.h"
+#include "src/kernel/context.h"
+#include "src/kernel/expression.h"
 
 // Kicks off a substitution in expression. Replaces all instances of old_e with
 // new_e.

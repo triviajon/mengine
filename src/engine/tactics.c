@@ -1,4 +1,4 @@
-#include "tactics.h"
+#include "src/engine/tactics.h"
 
 DoublyLinkedList *apply(Expression *goal, Expression *lemma) {
     UnificationResult *unification_result = eunify2(lemma, goal);

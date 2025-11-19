@@ -12,3 +12,11 @@ RewriteProof *rewrite_gfa(int f_length, int g_wrap) {
 
     return rewrite(get_expression_context(current_expr), current_expr, eq_fa_a);
 }
+
+int main() {
+    int f_length = 5;
+    int g_wrap = 1;
+    RewriteProof *proof = rewrite_gfa(f_length, g_wrap);
+    free_rewrite_proof(proof);
+    return 0;
+}

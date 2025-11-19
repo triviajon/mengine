@@ -1,9 +1,9 @@
-#include "expression.h"
+#include "src/kernel/expression.h"
 
-#include "axiom.h"
-#include "beta_reduction.h"
-#include "context.h"
-#include "subst.h"
+#include "src/engine/axiom.h"
+#include "src/kernel/beta_reduction.h"
+#include "src/kernel/context.h"
+#include "src/kernel/subst.h"
 
 void add_to_parents(Expression *expression, Uplink *uplink) {
     switch (expression->type) {

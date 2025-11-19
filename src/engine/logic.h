@@ -1,10 +1,10 @@
 #ifndef LOGIC_H
 #define LOGIC_H
 
-#include "axiom.h"
-#include "doubly_linked_list.h"
-#include "expression.h"
-#include "rewrite_proof.h"
+#include "src/engine/axiom.h"
+#include "src/engine/rewrite_proof.h"
+#include "src/kernel/doubly_linked_list.h"
+#include "src/kernel/expression.h"
 
 // Given an expression e, builds the new expression of type (eq e e) using the
 // eq_refl constructor of the inductive type "eq"

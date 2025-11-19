@@ -3,7 +3,7 @@
 
 #include "doubly_linked_list.h"
 #include "dyn_array_map.h"
-#include "expression.h"
+#include "src/kernel/expression.h"
 
 typedef struct Context Context;
 

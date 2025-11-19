@@ -7,8 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "doubly_linked_list.h"
-#include "rewrite_proof.h"
+#include "src/engine/rewrite_proof.h"
+#include "src/kernel/doubly_linked_list.h"
 
 // Forward declarations
 typedef struct Expression Expression;
@@ -61,7 +61,8 @@ typedef struct {
     DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced.
     RewriteProof *rresult;  // When rewriting, cache of the result. NULL while
                             // not rewriting.
-    bool maybe_hole_free; // A value of true means that the term is hole-free, false means that it may contain holes.
+    bool maybe_hole_free;   // A value of true means that the term is hole-free,
+                            // false means that it may contain holes.
 } VarExpression;
 
 // A lambda expression: fun (bound_variable) => body.
@@ -76,7 +77,8 @@ typedef struct {
     DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced.
     RewriteProof *rresult;  // When rewriting, cache of the result. NULL while
                             // not rewriting.
-    bool maybe_hole_free; // A value of true means that the term is hole-free, false means that it may contain holes.
+    bool maybe_hole_free;   // A value of true means that the term is hole-free,
+                            // false means that it may contain holes.
 } LambdaExpression;
 
 // An application expression: (func arg).
@@ -93,7 +95,8 @@ typedef struct {
     DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced.
     RewriteProof *rresult;  // When rewriting, cache of the result. NULL while
                             // not rewriting.
-    bool maybe_hole_free; // A value of true means that the term is hole-free, false means that it may contain holes.
+    bool maybe_hole_free;   // A value of true means that the term is hole-free,
+                            // false means that it may contain holes.
 } AppExpression;
 
 // Similar to LambdaExpression.
@@ -103,7 +106,8 @@ typedef struct {
     Expression *type;  // Always a "Type" expression
     Expression *body;
     DoublyLinkedList *uplinks;
-    bool maybe_hole_free; // A value of true means that the term is hole-free, false means that it may contain holes.
+    bool maybe_hole_free;  // A value of true means that the term is hole-free,
+                           // false means that it may contain holes.
 } ForallExpression;
 
 typedef struct {
@@ -125,7 +129,8 @@ typedef struct {
     Expression *return_type;    // The required type for the hole.
     Context *defining_context;  // The context which this hole was defined in.
     DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced.
-    bool maybe_hole_free; // A value of true means that the term is hole-free, false means that it may contain holes.
+    bool maybe_hole_free;  // A value of true means that the term is hole-free,
+                           // false means that it may contain holes.
 } HoleExpression;
 
 // A fix expression: fix ident (bound_variable) => body.
@@ -136,10 +141,11 @@ typedef struct {
     Context *context;
     Expression *type;
     DoublyLinkedList *uplinks;
-    bool maybe_hole_free; // A value of true means that the term is hole-free, false means that it may contain holes.
+    bool maybe_hole_free;  // A value of true means that the term is hole-free,
+                           // false means that it may contain holes.
 } FixExpression;
 
-// Special case; we don't implement matching in general for this POC. 
+// Special case; we don't implement matching in general for this POC.
 typedef struct {
     Expression *match_scrutinee;
     Expression *literal_case_item;
@@ -151,7 +157,8 @@ typedef struct {
     Context *context;
     Expression *type;
     DoublyLinkedList *uplinks;
-    bool maybe_hole_free; // A value of true means that the term is hole-free, false means that it may contain holes.
+    bool maybe_hole_free;  // A value of true means that the term is hole-free,
+                           // false means that it may contain holes.
 } MatchExprExpression;
 
 // Represents a generic expression.
@@ -179,12 +186,14 @@ Uplink *new_uplink(Expression *parent, Relation relation);
 // Helper function to create a new uplink to a context.
 Uplink *new_uplink2(Context *parent, Relation relation);
 
-// The following functions are helper functions to initialize new expressions, 
-// without providing explicit contexts. The function will take care of computing the 
-// context needed to type the expression. For example:
-//  init_app_expression(func, arg) will take the contexts of func and arg, and "merge" them
-//  into a single context, and then use that context to type the expression, which necessarily 
-//   types the expression given that the inputs are valid in their respective contexts.
+// The following functions are helper functions to initialize new expressions,
+// without providing explicit contexts. The function will take care of computing
+// the context needed to type the expression. For example:
+//  init_app_expression(func, arg) will take the contexts of func and arg, and
+//  "merge" them into a single context, and then use that context to type the
+//  expression, which necessarily
+//   types the expression given that the inputs are valid in their respective
+//   contexts.
 // These are useful convenience functions, but are not always the best choice.
 
 Expression *init_var_expression(const char *name, Expression *type);
@@ -205,15 +214,16 @@ Expression *init_match_expr_expression(Expression *match_scrutinee,
                                        Expression *op_scrutinee,
                                        Expression *op_result, Expression *type);
 
-// Initialize a new hole expression with a given name, return type, and defining context.
-// To fill the hole using `fill_hole(hole, term)`, the term used to fill the hole must be 
-// valid in the hole's defining context.
-Expression *init_hole_expression(char *name, Expression *return_type, Context *defining_context);
+// Initialize a new hole expression with a given name, return type, and defining
+// context. To fill the hole using `fill_hole(hole, term)`, the term used to
+// fill the hole must be valid in the hole's defining context.
+Expression *init_hole_expression(char *name, Expression *return_type,
+                                 Context *defining_context);
 
-
-// The following functions are helper functions to initialize new expressions, 
-// with explicit contexts. These are useful when you have a specific context in mind
-// for the expression, and you want to use that context to type the expression.
+// The following functions are helper functions to initialize new expressions,
+// with explicit contexts. These are useful when you have a specific context in
+// mind for the expression, and you want to use that context to type the
+// expression.
 
 // Initialize a new variable expression with a given name, type, and defining
 // context. The variable's type must be valid in the defining context.
@@ -235,12 +245,13 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg,
 Expression *init_forall_expression_wc(Expression *bound_variable,
                                       Expression *body, Context *context);
 
-// Initializes a new "arrow" expression. 
-// The "arrow" expression is a shorthand for a forall expression with a bound variable.
-// init_arrow_expression(A, B) is equivalent to init_forall_expression(init_var_expression("_", A), B).
+// Initializes a new "arrow" expression.
+// The "arrow" expression is a shorthand for a forall expression with a bound
+// variable. init_arrow_expression(A, B) is equivalent to
+// init_forall_expression(init_var_expression("_", A), B).
 Expression *init_arrow_expression(Expression *lhs, Expression *rhs);
 
-// Returns the uplinks of an expression. 
+// Returns the uplinks of an expression.
 DoublyLinkedList *get_expression_uplinks(Expression *expression);
 
 // Returns the type of an expression.
@@ -249,24 +260,27 @@ Expression *get_expression_type(Expression *expression);
 // Returns the context of an expression.
 Context *get_expression_context(Expression *expression);
 
-// Returns the innermost body of an expression. For example, if the expression is
+// Returns the innermost body of an expression. For example, if the expression
+// is
 //     fun x: A => fun y: B => C
 // then get_innermost_body(expression) will return C.
 Expression *get_innermost_body(Expression *expression);
 
-// Returns the innermost function of an expression. For example, if the expression is
+// Returns the innermost function of an expression. For example, if the
+// expression is
 //     (((f x3) x1) x0)
 // then get_innermost_func(expression) will return f.
 Expression *get_innermost_func(Expression *expression);
 
 // Returns the value of the maybe_hole_free field of an expression.
 // This is a heuristic to determine if the expression may contain holes.
-// The reason this exists is because an expression containing a hole may be modified to remove the hole,
-// via a call to `fill_hole(hole, term)`. This heuristic can be removed in the future if we implement
-// proper upwards traversal of the expression tree to update the maybe_hole_free field.
+// The reason this exists is because an expression containing a hole may be
+// modified to remove the hole, via a call to `fill_hole(hole, term)`. This
+// heuristic can be removed in the future if we implement proper upwards
+// traversal of the expression tree to update the maybe_hole_free field.
 bool get_maybe_hole_free(Expression *expr);
 
-// Returns true if the expression has any holes. 
+// Returns true if the expression has any holes.
 bool has_holes(Expression *expr);
 
 // Returns true if the expression is a hole.
@@ -279,7 +293,8 @@ bool can_fill(Expression *hole, Expression *term);
 //    1) The type of term  expected return type of hole.
 //    2) The defining context of hole contains the context(term).
 //    3) Term does not itself contain the hole.
-// This does no modifications/creates no new objects. Instead, it modifies the uplinks of the hole to point to the term.
+// This does no modifications/creates no new objects. Instead, it modifies the
+// uplinks of the hole to point to the term.
 void fill_hole(Expression *hole, Expression *term);
 
 // Returns true if var_or_hole appears as a subterm in term
@@ -288,16 +303,18 @@ bool occurs_in(Expression *var_or_hole, Expression *term);
 // Frees an expression and all its children.
 void free_expression(Expression *expr);
 
-// Returns true if the expressions are alpha-congruent. 
+// Returns true if the expressions are alpha-congruent.
 bool congruence(Expression *a, Expression *b);
 
-// Returns true if a is a subtype of b. We don't implement a full subtyping relation, but it is necessary
-// specifically for Type and Prop.
+// Returns true if a is a subtype of b. We don't implement a full subtyping
+// relation, but it is necessary specifically for Type and Prop.
 bool subtypes(Expression *a, Expression *b);
 
-// This function compares a and b, creating a mapping of variables in a to variables in b. 
-// Specifically, assuming a and b are alpha-congruent, it creates a mapping of the bound variables in a to the bound variables in b.
-// It then substitutes the variables in to_subst with the mapping creating [a -> b].
+// This function compares a and b, creating a mapping of variables in a to
+// variables in b. Specifically, assuming a and b are alpha-congruent, it
+// creates a mapping of the bound variables in a to the bound variables in b. It
+// then substitutes the variables in to_subst with the mapping creating [a ->
+// b].
 Expression *match_and_subst(Expression *a, Expression *b, Expression *to_subst);
 bool congruence2(Expression *a, Expression *b);
 

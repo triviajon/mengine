@@ -1,4 +1,4 @@
-#include "subst.h"
+#include "src/kernel/subst.h"
 
 Expression *subst(Expression *expression, Expression *old_e,
                   Expression *new_e) {

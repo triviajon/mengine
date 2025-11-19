@@ -1,14 +1,14 @@
 #ifndef REWRITES_H
 #define REWRITES_H
 
-#include "axiom.h"
-#include "beta_reduction.h"
-#include "context.h"
-#include "logic.h"
-#include "rewrite_proof.h"
-#include "rewrites.h"
-#include "unify.h"
-#include "utils.h"
+#include "src/engine/axiom.h"
+#include "src/engine/logic.h"
+#include "src/engine/rewrite_proof.h"
+#include "src/engine/rewrites.h"
+#include "src/engine/unify.h"
+#include "src/kernel/beta_reduction.h"
+#include "src/kernel/context.h"
+#include "src/kernel/utils.h"
 
 RewriteProof *_rewrite(Context *goal_context, Expression *expr,
                        Expression *lemma);

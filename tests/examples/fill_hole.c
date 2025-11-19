@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "context.h"
-#include "expression.h"
-#include "subst.h"
+#include "src/kernel/context.h"
+#include "src/kernel/expression.h"
+#include "src/kernel/subst.h"
 
 // This demonstrates that ?x + 1 cannot fill hole ?x.
 
@@ -30,4 +30,9 @@ void run_fill_hole(void) {
     } else {
         printf("Filling unexpectedly succeeded: expression has no holes.\n");
     }
+}
+
+int main() {
+    run_fill_hole();
+    return 0;
 }

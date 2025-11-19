@@ -43,3 +43,11 @@ RewriteProof *rewrite_nm(int n, int m) {
 
     return rewrite(get_expression_context(expr), expr, f_n_x0);
 }
+
+int main() {
+    int n = 3;
+    int m = 4;
+    RewriteProof *proof = rewrite_nm(n, m);
+    free_rewrite_proof(proof);
+    return 0;
+}

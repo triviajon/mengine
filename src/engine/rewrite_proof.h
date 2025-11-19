@@ -3,11 +3,11 @@
 
 #include <stdlib.h>
 
-#include "doubly_linked_list.h"
+#include "src/kernel/doubly_linked_list.h"
 
 typedef struct Expression Expression;
 
-typedef struct {
+typedef struct RewriteProof {
     Expression *expr;
     Expression *rewritten_expr;
     Expression *equality_proof;

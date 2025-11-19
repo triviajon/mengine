@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "metalanguage/lexer.h"
+#include "src/metalanguage/lexer.h"
 
 // Helper to convert token type to string
 static const char *token_type_name(TokenType type) {

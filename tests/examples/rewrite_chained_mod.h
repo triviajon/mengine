@@ -4,11 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "axiom.h"
-#include "context.h"
-#include "expression.h"
-#include "tactics.h"
-#include "utils.h"
+#include "src/engine/axiom.h"
+#include "src/engine/tactics.h"
+#include "src/kernel/context.h"
+#include "src/kernel/expression.h"
+#include "src/kernel/utils.h"
 
 // Build the expression let x1 = a mod m in (let x2 = x1 mod m in ... in xn)
 // by making use of our system's sharing. I.e., build (x1 mod m) mod m ...

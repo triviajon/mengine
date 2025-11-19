@@ -4,11 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "axiom.h"
-#include "context.h"
-#include "expression.h"
-#include "tactics.h"
-#include "utils.h"
+#include "src/engine/axiom.h"
+#include "src/engine/tactics.h"
+#include "src/kernel/context.h"
+#include "src/kernel/expression.h"
+#include "src/kernel/utils.h"
 
 // Build (f ... (f a)) with `f_length` number of f's. If `g_wrap` is non-zero,
 // wrap the resulting expression with `g` to form g(f(...(f(a)))). Attempts to

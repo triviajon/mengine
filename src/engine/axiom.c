@@ -1,4 +1,4 @@
-#include "axiom.h"
+#include "src/engine/axiom.h"
 
 Expression *eq = NULL;
 Expression *eq_refl = NULL;
@@ -17,7 +17,7 @@ Expression *iff1_sym = NULL;
 Expression *iff1_trans = NULL;
 Expression *iff1_subst = NULL;
 Expression *iff1_cong = NULL;
-Expression *not = NULL;
+Expression *not= NULL;
 Expression *ex = NULL;
 Expression *ex_intro = NULL;
 Expression *True = NULL;
@@ -50,7 +50,7 @@ Expression *partial_map_put_put_same = NULL;
 Context *std_lib_ctx = NULL;
 
 Context *init_and(Context *c) {
-    and = init_var_expression(
+    and= init_var_expression(
         "and",
         init_arrow_expression(init_prop_expression(),
                               init_arrow_expression(init_prop_expression(),
@@ -99,10 +99,10 @@ Context *init_or(Context *c) {
 }
 
 Context *init_not(Context *c) {
-    not = init_var_expression(
+    not= init_var_expression(
         "not",
         init_arrow_expression(init_prop_expression(), init_prop_expression()));
-    return context_insert_n(c, 1, not );
+    return context_insert_n(c, 1, not);
 }
 
 Context *init_ex(Context *c) {

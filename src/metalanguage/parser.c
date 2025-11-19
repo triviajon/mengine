@@ -127,14 +127,14 @@ AST *parse_match(Parser *p) {
     }
 
     AST **branches = NULL;
-    size_t branch_count = 0;
+    size_t *branch_count = calloc(1, sizeof(size_t));
     while (parser_expect_no_consume(p, TOK_PIPE)) {
         AST *branch = parse_match_branch(p);
-        branches = realloc(branches, sizeof(AST *) * (branch_count + 1));
+        branches = realloc(branches, sizeof(AST *) * (*branch_count + 1));
         if (!branches) {
             parser_error(p, "Memory allocation failed for match branches");
         }
-        branches[branch_count++] = branch;
+        branches[*branch_count++] = branch;
     }
 
     if (!parser_expect_consume(p, TOK_END)) {
@@ -145,6 +145,7 @@ AST *parse_match(Parser *p) {
     match_ast->tag = AST_MATCH;
     match_ast->value.match.scrutinee = match_expr;
     match_ast->value.match.branches = branches;
+    match_ast->value.match.branch_count = branch_count;
     return match_ast;
 }
 
