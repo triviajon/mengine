@@ -1938,3 +1938,9 @@ void run_sep2(int n) {
 
     exit(EXIT_SUCCESS);
 }
+
+int main() {
+    int n = 3;
+    run_sep1(n);
+    return 0;
+}

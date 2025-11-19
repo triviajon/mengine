@@ -76,3 +76,27 @@ RewriteProof *rewrite_addr0__native(int n_depth) {
         O);
     return rewrite(get_expression_context(expr), expr, add_r_O);
 }
+
+int main() {
+    int depth = 4;
+
+    printf("Rewrite addr0 with let-in, depth %d\n", depth);
+    RewriteProof *proof_letin = rewrite_addr0__letin(depth);
+    printf("Resulting expression:\n");
+    stringify_expression(proof_letin->rewritten_expr);
+    printf("\n\n");
+
+    printf("Rewrite addr0 with tree, depth %d\n", depth);
+    RewriteProof *proof_tree = rewrite_addr0__tree(depth);
+    printf("Resulting expression:\n");
+    stringify_expression(proof_tree->rewritten_expr);
+    printf("\n\n");
+
+    printf("Rewrite addr0 with native sharing, depth %d\n", depth);
+    RewriteProof *proof_native = rewrite_addr0__native(depth);
+    printf("Resulting expression:\n");
+    stringify_expression(proof_native->rewritten_expr);
+    printf("\n\n");
+
+    return 0;
+}

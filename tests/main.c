@@ -5,6 +5,6 @@
 #include "src/kernel/expression.h"
 
 int main(void) {
-    printf("MEngine tests built successful.\n");
+    printf("MEngine core build successful.\n");
     return 0;
 }

@@ -27,6 +27,10 @@ Context *context_create_empty();
 
 bool context_contains_name(Context *context, char *name);
 
+// Returns the outermost Expression in the context with the given name, or NULL
+// if not found.
+Expression *context_lookup_by_name(Context *context, char *name);
+
 // Returns true if context is the empty context.
 bool context_is_empty(Context *context);
 

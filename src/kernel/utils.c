@@ -1,6 +1,6 @@
-#include "utils.h"
+#include "src/kernel/utils.h"
 
-#include "context.h"
+#include "src/kernel/context.h"
 
 // Helper function to concatenate two strings
 char *str_concat(const char *s1, const char *s2) {
@@ -92,8 +92,7 @@ char *stringify_expression(Expression *expression) {
             break;
 
         case FIX_EXPRESSION: {
-            char *ident_str =
-                stringify_expression(expression->value.fix.ident);
+            char *ident_str = stringify_expression(expression->value.fix.ident);
             char *var_str =
                 stringify_expression(expression->value.fix.bound_variable);
             char *type_str = stringify_expression(
@@ -121,8 +120,8 @@ char *stringify_expression(Expression *expression) {
                 expression->value.matchExpr.literal_case_item);
             char *literal_result_str = stringify_expression(
                 expression->value.matchExpr.literal_result);
-            char *var_case_item_str = stringify_expression(
-                expression->value.matchExpr.var_case_item);
+            char *var_case_item_str =
+                stringify_expression(expression->value.matchExpr.var_case_item);
             char *var_result_str =
                 stringify_expression(expression->value.matchExpr.var_result);
             char *op_case_item_str =
@@ -181,7 +180,6 @@ char *stringify_context(Context *context) {
         return result;
     }
 }
-
 
 char *_get_str_addr(Expression *expression) {
     char buf[2 * sizeof(void *) + 1];

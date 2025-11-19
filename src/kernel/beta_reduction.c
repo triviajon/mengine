@@ -1,6 +1,6 @@
 #include "beta_reduction.h"
 
-#include "context.h"
+#include "src/kernel/context.h"
 
 bool forms_redex(Expression *app_func, Expression *app_arg) {
     return app_func != NULL && (app_func->type == LAMBDA_EXPRESSION) &&

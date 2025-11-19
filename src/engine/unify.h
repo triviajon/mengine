@@ -1,12 +1,12 @@
 #ifndef UNIFY_H
 #define UNIFY_H
 
-#include "axiom.h"
-#include "context.h"
-#include "doubly_linked_list.h"
-#include "dyn_array_map.h"
-#include "expression.h"
-#include "subst.h"
+#include "src/engine/axiom.h"
+#include "src/kernel/context.h"
+#include "src/kernel/doubly_linked_list.h"
+#include "src/kernel/dyn_array_map.h"
+#include "src/kernel/expression.h"
+#include "src/kernel/subst.h"
 
 Expression *get_type_eq(Expression *eq_type);
 

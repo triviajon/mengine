@@ -1,6 +1,6 @@
-#include "context.h"
+#include "src/kernel/context.h"
 
-#include "expression.h"
+#include "src/kernel/expression.h"
 
 Context *context_create_empty() {
     if (EMPTY_CONTEXT == NULL) {
@@ -23,6 +23,17 @@ bool context_contains_name(Context *context, char *name) {
         curr = curr->parent;
     }
     return false;
+}
+
+Expression *context_lookup_by_name(Context *context, char *name) {
+    Context *curr = context;
+    while (!context_is_empty(curr)) {
+        if (strcmp(curr->var_type->value.var.name, name) == 0) {
+            return curr->var_type;
+        }
+        curr = curr->parent;
+    }
+    return NULL;
 }
 
 Context *context_insert(Context *context, Expression *var_type) {

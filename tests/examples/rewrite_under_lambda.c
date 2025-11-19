@@ -8,3 +8,9 @@ RewriteProof *rewrite_lambda_f_x() {
 
     return rewrite(get_expression_context(expr), expr, eq_fa_a);
 }
+
+int main() {
+    RewriteProof *proof = rewrite_lambda_f_x();
+    free_rewrite_proof(proof);
+    return 0;
+}

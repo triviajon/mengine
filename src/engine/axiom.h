@@ -1,9 +1,9 @@
 #ifndef AXIOM_H
 #define AXIOM_H
 
-#include "context.h"
-#include "dyn_array_map.h"
-#include "expression.h"
+#include "src/kernel/context.h"
+#include "src/kernel/dyn_array_map.h"
+#include "src/kernel/expression.h"
 
 extern Expression *eq;
 extern Expression *eq_refl;
@@ -20,7 +20,7 @@ extern Expression *iff1_sym;
 extern Expression *iff1_trans;
 extern Expression *iff1_subst;
 extern Expression *iff1_cong;
-extern Expression * not ;
+extern Expression * not;
 extern Expression *app_cong;
 extern Expression *ex;
 extern Expression *ex_intro;

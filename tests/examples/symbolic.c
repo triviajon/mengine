@@ -983,7 +983,8 @@ Expression *make_exec_test_6(Context *ctx, int n) {
     //		 (ex word (fun v : word =>
     //		 	and (eq (list IOEvent) t' (list_cons IOEvent (IOEvent_IN
     // v) (list_nil IOEvent))) 		 		(eq (option word)
-    // (partial_map_get string word l' a) 		 						(option_some word v))))).
+    // (partial_map_get string word l' a)
+    // (option_some word v))))).
     Expression *m = init_var_expression("m", mem);
     Expression *l = init_var_expression("l", locals);
     Expression *t = init_app_expression(list_nil, IOEvent);
@@ -1184,8 +1185,9 @@ Expression *_sym_solve(Expression *initial_goal) {
                 Expression *innermost = get_innermost_func(goal_type);
                 if (innermost == exec) {
                     // Expression *post = goal_type->value.app.arg;
-                    // Expression *locals = goal_type->value.app.func->value.app.arg;
-                    // Expression *memory = goal_type->value.app.func->value.app
+                    // Expression *locals =
+                    // goal_type->value.app.func->value.app.arg; Expression
+                    // *memory = goal_type->value.app.func->value.app
                     //                          .func->value.app.arg;
                     // Expression *trace =
                     //     goal_type->value.app.func->value.app.func->value.app
@@ -1236,7 +1238,7 @@ Expression *_sym_solve(Expression *initial_goal) {
                     // This is what we're interested in, so return immediately.
                     dll_insert_at_tail(goals_to_solve,
                                        dll_new_node(solve_ex(goal)));
-                } else if (innermost == not ) {
+                } else if (innermost == not) {
                     solve_not(goal);
                 }
                 break;
@@ -1283,4 +1285,10 @@ void run_symbolic(int n) {
     // printf("%s\n\n%s\n", stringify_expression(cmd_ok_theorem),
     // stringify_expression(proof));
     printf("%s\n", stringify_expression(get_expression_type(proof)));
+}
+
+int main() {
+    int n = 3;
+    run_symbolic(n);
+    return 0;
 }

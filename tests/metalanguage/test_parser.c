@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "metalanguage/lexer.h"
-#include "metalanguage/parser.h"
+#include "src/metalanguage/lexer.h"
+#include "src/metalanguage/parser.h"
 
 // Helper to print AST nodes
 void print_ast(AST *ast) {

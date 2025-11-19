@@ -18,3 +18,9 @@ RewriteProof *rewrite_open_holes() {
 
     return rewrite(get_expression_context(expr), expr, mult_n_O);
 }
+
+int main() {
+    RewriteProof *proof = rewrite_open_holes();
+    free_rewrite_proof(proof);
+    return 0;
+}

@@ -1,13 +1,13 @@
 #ifndef TACTICS_H
 #define TACTICS_H
 
-#include "axiom.h"
-#include "beta_reduction.h"
-#include "context.h"
-#include "logic.h"
-#include "rewrite_proof.h"
-#include "rewrites.h"
-#include "unify.h"
+#include "src/engine/axiom.h"
+#include "src/engine/logic.h"
+#include "src/engine/rewrite_proof.h"
+#include "src/engine/rewrites.h"
+#include "src/engine/unify.h"
+#include "src/kernel/beta_reduction.h"
+#include "src/kernel/context.h"
 
 DoublyLinkedList *apply(Expression *goal, Expression *lemma);
 DoublyLinkedList *eapply(Expression *goal, Expression *lemma);

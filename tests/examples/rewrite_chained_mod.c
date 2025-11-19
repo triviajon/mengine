@@ -34,3 +34,10 @@ RewriteProof *rewrite_chained_mod(int n_depth) {
 
     return rewrite(get_expression_context(curr_expr), curr_expr, mod_mod);
 }
+
+int main() {
+    int depth = 5;
+    RewriteProof *proof = rewrite_chained_mod(depth);
+    free_rewrite_proof(proof);
+    return 0;
+}

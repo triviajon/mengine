@@ -12,3 +12,10 @@ RewriteProof *rewrite_haa(int h_depth) {
     return rewrite(get_expression_context(current_expr), current_expr,
                    eq_hxx_x);
 }
+
+int main() {
+    int depth = 5;
+    RewriteProof *proof = rewrite_haa(depth);
+    free_rewrite_proof(proof);
+    return 0;
+}
