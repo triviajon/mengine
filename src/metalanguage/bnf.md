@@ -8,11 +8,14 @@ This file documents the core grammar for the metalanguage's term language.
 <prefix_term>  ::=  <lambda_expr>
                   | <forall_expr>
 				  | <match_expr>
+                  | <let_expr>
                   | <application>
 
 <lambda_expr>  ::= ("fun") <binder> "=>" <term>
 
 <forall_expr>  ::= ("forall") <binder> "," <term>
+
+<let_expr>     ::= "let" <ident> ":=" <term> "in" <term>
 
 <binder>       ::= <ident> ":" <term>
 
@@ -22,6 +25,8 @@ This file documents the core grammar for the metalanguage's term language.
 				 | "Type"
 				 | "Prop"
 				 | "(" <term> ")"
+
+<ident> 	   ::= [_A-Za-z][_A-Za-z0-9]*
 
 // Arrow notation
 // Arrow types like `A -> B` are represented as `forall (_: A), B`
@@ -66,4 +71,12 @@ match b with
 	| true  => false
 	| false => true
 end
+```
+
+- Let-binding
+
+```text
+let x := n + 1 in
+let y := x * x in
+y + x
 ```

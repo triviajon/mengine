@@ -41,8 +41,7 @@ typedef struct {
 /**
  * Initialize the lexer with the input string.
  *
- * @param lx Pointer to the Lexer to initialize. Lexer does not assume ownership
- * of this pointer.
+ * @param lx Pointer to the Lexer to initialize.
  * @param input The input string to lex. Lexer does not assume ownership of this
  * string.
  */
