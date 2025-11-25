@@ -111,23 +111,22 @@ static void test_command_parsing(const char *input, const char *description) {
     printf("\n\n");
 }
 
-/* ------------------------------------------------------------------ */
 int main() {
     printf("=== Command Parser Test Suite ===\n\n");
 
-    test_command_parsing("Axiom x : Type.", "Simple axiom declaration");
-    test_command_parsing("Variable y : Prop.",
+    test_command_parsing("Axiom x : Type.\n", "Simple axiom declaration");
+    test_command_parsing("Variable y : Prop.\n",
                          "Variable declaration with Prop");
-    test_command_parsing("Definition id (x : Type) : Type := x.",
+    test_command_parsing("Definition id (x : Type) : Type := x.\n",
                          "Simple identity definition");
     test_command_parsing(
-        "Definition const (A : Type) (x : A) : A := fun y : A => x.",
+        "Definition const (A : Type) (x : A) : A := fun (y : A) => x.\n",
         "Definition with multiple parameters and lambda body");
-    test_command_parsing("Theorem t : forall x : Type , x.",
+    test_command_parsing("Theorem t : forall (x : Type), x.\n",
                          "Simple theorem with a forall");
-    test_command_parsing("Lemma add_comm (n : nat) (m : nat) : eq nat n m.",
+    test_command_parsing("Lemma add_comm (n : nat) (m : nat) : eq nat n m.\n",
                          "Lemma with parameters");
-    test_command_parsing("Axiom   z   :   Type   .",
+    test_command_parsing("Axiom   z   :   Type   .\n",
                          "Declaration with extra whitespace");
 
     printf("All command parser tests completed!\n");
