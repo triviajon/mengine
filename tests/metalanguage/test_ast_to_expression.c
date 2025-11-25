@@ -9,7 +9,6 @@
 #include "src/metalanguage/ast_to_expression.h"
 #include "src/metalanguage/parser.h"
 
-// Helper to print Expression nodes
 void print_expression(Expression *expr) {
     printf("%s", stringify_expression(expr));
 }
@@ -19,14 +18,12 @@ void test_parse_and_convert(const char *input, const char *description) {
     printf("Input: \"%s\"\n", input);
     printf("Expression: ");
 
-    // Create an empty context for testing
     Context *context = context_create_empty();
     if (!context) {
         printf("Failed to create context\n\n");
         return;
     }
 
-    // Parse and convert in one step
     Expression *expr = parse_string_to_expression(input, context);
     if (expr) {
         print_expression(expr);
@@ -43,7 +40,6 @@ void test_with_context(const char *input, const char *description,
     printf("Input: \"%s\"\n", input);
     printf("Expression: ");
 
-    // Parse and convert
     Expression *expr = parse_string_to_expression(input, context);
     if (expr) {
         print_expression(expr);
@@ -57,7 +53,6 @@ void test_with_context(const char *input, const char *description,
 int main() {
     printf("=== AST to Expression Test Suite ===\n\n");
 
-    // Test 1: Simple types
     test_parse_and_convert("Type", "Simple Type");
     test_parse_and_convert("Prop", "Simple Prop");
     test_parse_and_convert("fun x : Type => x", "Simple lambda");

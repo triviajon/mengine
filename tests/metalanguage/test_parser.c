@@ -5,7 +5,6 @@
 #include "src/common/lexer.h"
 #include "src/metalanguage/parser.h"
 
-// Helper to print AST nodes
 void print_ast(AST *ast) {
     if (!ast) {
         printf("(null)");

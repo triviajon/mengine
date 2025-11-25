@@ -4,7 +4,6 @@
 
 #include "src/common/lexer.h"
 
-// Helper to convert token type to string
 static const char *token_type_name(TokenType type) {
     switch (type) {
         case TOK_IDENT:
@@ -64,7 +63,6 @@ void test_tokenization(const char *input, const char *description) {
         }
         printf("]");
 
-        // Save type for loop condition before freeing
         TokenType ttype = tok->type;
         lexer_free_token(tok);
 
