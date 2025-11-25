@@ -1,10 +1,16 @@
 #include <stdio.h>
 
-#include "src/engine/axiom.h"
-#include "src/engine/rewrite_proof.h"
-#include "src/kernel/expression.h"
+#include "src/runtime/runtime.h"
 
 int main(void) {
-    printf("MEngine core build successful.\n");
+    MEngineRuntime *rt = mengine_runtime_new();
+    if (!rt) {
+        fprintf(stderr, "Failed to initialize MEngine runtime.\n");
+        return 1;
+    }
+
+    mengine_repl(rt);
+
+    mengine_runtime_free(rt);
     return 0;
 }

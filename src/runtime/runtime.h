@@ -3,6 +3,10 @@
 
 #include "src/commandlanguage/command_parser.h"
 #include "src/kernel/context.h"
+#include "src/kernel/utils.h"
+#include "src/metalanguage/ast_to_expression.h"
+
+#define REPL_LINE_CAP 1024
 
 typedef struct {
     Context *ctx;
