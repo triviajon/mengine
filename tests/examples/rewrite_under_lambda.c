@@ -10,6 +10,7 @@ RewriteProof *rewrite_lambda_f_x() {
 }
 
 int main() {
+    init_globals();
     RewriteProof *proof = rewrite_lambda_f_x();
     free_rewrite_proof(proof);
     return 0;

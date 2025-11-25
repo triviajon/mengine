@@ -20,6 +20,7 @@ RewriteProof *rewrite_open_holes() {
 }
 
 int main() {
+    init_globals();
     RewriteProof *proof = rewrite_open_holes();
     free_rewrite_proof(proof);
     return 0;

@@ -2,11 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "src/common/lexer.h"
 #include "src/kernel/context.h"
 #include "src/kernel/expression.h"
 #include "src/kernel/utils.h"
 #include "src/metalanguage/ast_to_expression.h"
-#include "src/metalanguage/lexer.h"
 #include "src/metalanguage/parser.h"
 
 // Helper to print Expression nodes

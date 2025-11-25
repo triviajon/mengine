@@ -45,6 +45,7 @@ RewriteProof *rewrite_nm(int n, int m) {
 }
 
 int main() {
+    init_globals();
     int n = 3;
     int m = 4;
     RewriteProof *proof = rewrite_nm(n, m);

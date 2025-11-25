@@ -14,6 +14,7 @@ RewriteProof *rewrite_gfa(int f_length, int g_wrap) {
 }
 
 int main() {
+    init_globals();
     int f_length = 5;
     int g_wrap = 1;
     RewriteProof *proof = rewrite_gfa(f_length, g_wrap);

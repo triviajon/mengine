@@ -78,6 +78,7 @@ RewriteProof *rewrite_addr0__native(int n_depth) {
 }
 
 int main() {
+    init_globals();
     int depth = 4;
 
     printf("Rewrite addr0 with let-in, depth %d\n", depth);
