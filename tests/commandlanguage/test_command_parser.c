@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include "src/commandlanguage/parser.h"
-#include "src/metalanguage/lexer.h"
+#include "src/common/lexer.h"
 #include "src/metalanguage/parser.h"
 
 void print_binder(const Binder *b) {

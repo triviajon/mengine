@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "src/metalanguage/lexer.h"
+#include "src/common/lexer.h"
 #include "src/metalanguage/parser.h"
 
 // Helper to print AST nodes

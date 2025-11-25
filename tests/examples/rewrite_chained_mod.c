@@ -36,6 +36,7 @@ RewriteProof *rewrite_chained_mod(int n_depth) {
 }
 
 int main() {
+    init_globals();
     int depth = 5;
     RewriteProof *proof = rewrite_chained_mod(depth);
     free_rewrite_proof(proof);

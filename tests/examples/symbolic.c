@@ -1288,6 +1288,7 @@ void run_symbolic(int n) {
 }
 
 int main() {
+    init_globals();
     int n = 3;
     run_symbolic(n);
     return 0;

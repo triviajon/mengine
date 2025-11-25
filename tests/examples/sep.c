@@ -1940,6 +1940,7 @@ void run_sep2(int n) {
 }
 
 int main() {
+    init_globals();
     int n = 3;
     run_sep1(n);
     return 0;

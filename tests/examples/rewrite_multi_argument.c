@@ -14,6 +14,7 @@ RewriteProof *rewrite_haa(int h_depth) {
 }
 
 int main() {
+    init_globals();
     int depth = 5;
     RewriteProof *proof = rewrite_haa(depth);
     free_rewrite_proof(proof);
