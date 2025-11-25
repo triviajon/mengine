@@ -6,6 +6,7 @@
 void parser_init(Parser *p, Lexer *lx) {
     p->lx = lx;
     p->current = lexer_next_token(lx);
+    p->source = lx->src;
 }
 
 Token *parser_next(Parser *p) {
@@ -29,8 +30,25 @@ bool parser_expect_no_consume(Parser *p, TokenType type) {
     return p->current && p->current->type == type;
 }
 
+static void print_error_pointer(const char *source, int pos) {
+    fprintf(stderr, RED "%s" CRESET, source);
+
+    for (int i = 0; i < pos; i++) {
+        char c = source[i];
+        if (c == '\t')
+            fputc('\t', stderr);
+        else
+            fputc(' ', stderr);
+    }
+    fprintf(stderr, "^\n");
+}
+
 void parser_error(Parser *p, const char *msg) {
     int pos = p->current ? p->current->pos : -1;
-    fprintf(stderr, "Parse error at position %d: %s\n", pos, msg);
+
+    if (p->source && pos >= 0) {
+        print_error_pointer(p->source, pos);
+    }
+    fprintf(stderr, BOLD RED "Parse Error: " CRESET "%s\n", msg);
     exit(EXIT_FAILURE);
 }

@@ -1,11 +1,13 @@
 #ifndef PARSER_BASE_H
 #define PARSER_BASE_H
 
+#include "src/common/color.h"
 #include "src/common/lexer.h"
 
 typedef struct {
-    Lexer *lx;       // Underlying lexer
-    Token *current;  // Current lookahead token (owned by parser)
+    Lexer *lx;           // Underlying lexer
+    Token *current;      // Current lookahead token (owned by parser)
+    const char *source;  // Source string being parsed
 } Parser;
 
 /**
