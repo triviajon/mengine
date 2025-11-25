@@ -1,4 +1,4 @@
-#include "src/commandlanguage/parser.h"
+#include "src/commandlanguage/command_parser.h"
 
 #include <stdio.h>
 #include <stdlib.h>
