@@ -30,6 +30,7 @@ tests/__pycache__/
 perf.data*
 .dump.aux
 
+mengine
 libmengine.a
 
 tests/**/*
