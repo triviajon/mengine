@@ -26,3 +26,5 @@ Similar to Rocq's Vernacular:
 <term> ::= ...
 
 ```
+
+It is also a requirement that all commands end in newlines.

@@ -41,7 +41,13 @@ Command *parse_command(Parser *p) {
         parser_error(p, "Internal error: null parse function");
     }
 
-    return fn(p);
+    Command *cmd = fn(p);
+
+    if (!parser_expect_consume(p, TOK_EOF)) {
+        parser_error(p, "Expected end of command (newline)");
+    }
+
+    return cmd;
 }
 
 Command *parse_declaration(Parser *p) {
