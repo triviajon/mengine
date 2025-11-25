@@ -5,21 +5,33 @@
 #include <stddef.h>
 
 typedef enum {
+    // identifiers, punctuation
     TOK_IDENT,
-    TOK_LPAREN,  // (
-    TOK_RPAREN,  // )
-    TOK_COLON,   // :
-    TOK_COMMA,   // ,
-    TOK_DOT,     // .
-    TOK_DARROW,  // => (pattern match branch)
+    TOK_LPAREN,    // (
+    TOK_RPAREN,    // )
+    TOK_COLON,     // :
+    TOK_COLON_EQ,  // :=
+    TOK_COMMA,     // ,
+    TOK_DOT,       // .
+
+    // term keywords
+    TOK_DARROW,  // =>
     TOK_FUN,     // fun
     TOK_FORALL,  // forall
     TOK_TYPE,    // Type
     TOK_PROP,    // Prop
     TOK_MATCH,   // match
     TOK_WITH,    // with
-    TOK_PIPE,    // | (pattern separator)
-    TOK_END,     // end (end of match)
+    TOK_PIPE,    // |
+    TOK_END,     // end
+
+    // command keywords
+    TOK_AXIOM,       // Axiom
+    TOK_VARIABLE,    // Variable
+    TOK_DEFINITION,  // Definition
+    TOK_THEOREM,     // Theorem
+    TOK_LEMMA,       // Lemma
+
     TOK_EOF,
     TOK_ERROR,
 } TokenType;
