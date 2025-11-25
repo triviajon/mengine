@@ -23,7 +23,15 @@ AST *parse_lambda(Parser *p) {
         parser_error(p, "Expected 'fun' at start of lambda expression");
     }
 
+    if (!parser_expect_consume(p, TOK_LPAREN)) {
+        parser_error(p, "Expected '(' after 'fun'");
+    }
+
     Binder binder = parse_binder(p);
+
+    if (!parser_expect_consume(p, TOK_RPAREN)) {
+        parser_error(p, "Expected ')' after lambda binder");
+    }
 
     if (!parser_expect_consume(p, TOK_DARROW)) {
         parser_error(p, "Expected '=>' after lambda binder");
@@ -44,7 +52,15 @@ AST *parse_forall(Parser *p) {
         parser_error(p, "Expected 'forall' at start of forall expression");
     }
 
+    if (!parser_expect_consume(p, TOK_LPAREN)) {
+        parser_error(p, "Expected '(' after 'forall'");
+    }
+
     Binder binder = parse_binder(p);
+
+    if (!parser_expect_consume(p, TOK_RPAREN)) {
+        parser_error(p, "Expected ')' after forall binder");
+    }
 
     if (!parser_expect_consume(p, TOK_COMMA)) {
         parser_error(p, "Expected ',' after forall binder");

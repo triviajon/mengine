@@ -98,7 +98,7 @@ AST *parse_term(Parser *p);
 AST *parse_prefix_term(Parser *p);
 
 /**
- * <lambda_expr> ::= ("fun") <binder> "=>" <term>
+ * <lambda_expr>  ::= "fun" "(" <binder> ")" "=>" <term>
  *
  * @param p Pointer to the Parser.
  * @return AST node representing the parsed lambda expression.
@@ -106,7 +106,7 @@ AST *parse_prefix_term(Parser *p);
 AST *parse_lambda(Parser *p);
 
 /**
- * <forall_expr> ::= ("forall") <binder> "," <term>
+ * <forall_expr>  ::= "forall" "(" <binder> ")" "," <term>
  *
  * @param p Pointer to the Parser.
  * @return AST node representing the parsed forall expression.

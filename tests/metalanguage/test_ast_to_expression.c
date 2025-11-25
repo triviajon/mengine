@@ -55,18 +55,18 @@ int main() {
 
     test_parse_and_convert("Type", "Simple Type");
     test_parse_and_convert("Prop", "Simple Prop");
-    test_parse_and_convert("fun x : Type => x", "Simple lambda");
-    test_parse_and_convert("fun f : Type => fun x : Type => f",
+    test_parse_and_convert("fun (x : Type) => x", "Simple lambda");
+    test_parse_and_convert("fun (f : Type) => fun (x : Type) => f",
                            "Nested lambdas");
-    test_parse_and_convert("forall x : Type , x", "Simple forall");
-    test_parse_and_convert("forall x : Type , forall y : Type , x",
+    test_parse_and_convert("forall (x : Type) , x", "Simple forall");
+    test_parse_and_convert("forall (x : Type) , forall (y : Type) , x",
                            "Nested foralls");
-    test_parse_and_convert("fun x : Type => forall y : Type , x",
+    test_parse_and_convert("fun (x : Type) => forall (y : Type) , x",
                            "Lambda with forall body");
-    test_parse_and_convert("forall x : Type , fun y : Type => x",
+    test_parse_and_convert("forall (x : Type) , fun (y : Type) => x",
                            "Forall with lambda body");
     test_parse_and_convert(
-        "fun x : Type => fun y : Type => forall z : Type , x",
+        "fun (x : Type) => fun (y : Type) => forall (z : Type) , x",
         "Nested lambdas with forall");
 
     printf("All tests completed!\n");

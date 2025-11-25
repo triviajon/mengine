@@ -78,8 +78,8 @@ int main() {
     printf("=== Lexer Test Suite ===\n\n");
 
     test_tokenization("x", "Simple identifier");
-    test_tokenization("fun x : Type => x", "Lambda expression");
-    test_tokenization("forall x : Type , x", "Forall expression");
+    test_tokenization("fun (x : Type) => x", "Lambda expression");
+    test_tokenization("forall (x : Type) , x", "Forall expression");
     test_tokenization("f x y z", "Function application");
     test_tokenization("(f x) (g y)", "Nested applications");
     test_tokenization("Type Prop", "Type and Prop keywords");
@@ -88,7 +88,7 @@ int main() {
                       "Match expression with pipes and double arrow");
     test_tokenization("match x with | a => b | c => d end",
                       "Pattern match with identifiers");
-    test_tokenization("fun n : Type => forall x : Type , f x",
+    test_tokenization("fun (n : Type) => forall (x : Type) , f x",
                       "Complex nested expression");
     test_tokenization("_var var1 _123",
                       "Identifiers with underscores and digits");
