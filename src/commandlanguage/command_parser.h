@@ -28,6 +28,9 @@ typedef struct {
     Binder binder;
 } DeclarationCmd;
 
+char *decl_keyword_to_string(DeclKeyword kw);
+char *stmt_keyword_to_string(StmtKeyword kw);
+
 typedef struct {
     char *name;
     Binder **params;
