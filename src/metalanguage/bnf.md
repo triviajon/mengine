@@ -11,9 +11,9 @@ This file documents the core grammar for the metalanguage's term language.
                   | <let_expr>
                   | <application>
 
-<lambda_expr>  ::= ("fun") <binder> "=>" <term>
+<lambda_expr>  ::= "fun" "(" <binder> ")" "=>" <term>
 
-<forall_expr>  ::= ("forall") <binder> "," <term>
+<forall_expr>  ::= "forall" "(" <binder> ")" "," <term>
 
 <let_expr>     ::= "let" <ident> ":=" <term> "in" <term>
 
@@ -43,19 +43,19 @@ Examples:
 - Lambda expression:
 
 ```text
-fun x : Type => x
+fun (x : Type) => x
 ```
 
 - Universal quantification:
 
 ```text
-forall x : Type, x
+forall (x : Type), x
 ```
 
 - Arrow type as forall (syntactic sugar):
 
 ```text
-forall _: Type, Type    // represents Type -> Type
+forall (_: Type), Type    // represents Type -> Type
 ```
 
 - Application (left-associative):

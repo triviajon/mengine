@@ -67,8 +67,8 @@ int main() {
     printf("=== Parser Test Suite ===\n\n");
 
     test_parsing("x", "Simple identifier");
-    test_parsing("fun x : Type => x", "Lambda expression");
-    test_parsing("forall x : Type , x", "Forall expression");
+    test_parsing("fun (x : Type) => x", "Lambda expression");
+    test_parsing("forall (x : Type) , x", "Forall expression");
     test_parsing("f x y z", "Function application");
     test_parsing("(f x) (g y)", "Nested applications");
     test_parsing("Type Prop", "Type and Prop keywords");
@@ -77,7 +77,7 @@ int main() {
                  "Match expression with pipes and double arrow");
     test_parsing("match x with | a => b | c => d end",
                  "Pattern match with identifiers");
-    test_parsing("fun n : Type => forall x : Type , f x",
+    test_parsing("fun (n : Type) => forall (x : Type) , f x",
                  "Complex nested expression");
 
     printf("All tests completed!\n");
