@@ -18,6 +18,15 @@ $(ENGINE_LIB): $(ENGINE_OBJ)
 
 tests: $(TEST_BINARIES)
 
+check: tests
+	@echo "=== Running test suite ==="
+	@set -e; \
+	for t in $(TEST_BINARIES); do \
+		echo "-- Running $$t"; \
+		./$$t || exit 1; \
+	done
+	@echo "=== All tests passed ==="
+
 $(TEST_BINARIES): %: %.c $(HELPERS_OBJ) $(ENGINE_LIB)
 	$(CC) $(CFLAGS) -o $@ $< $(HELPERS_OBJ) $(ENGINE_LIB)
 
@@ -27,4 +36,4 @@ $(TEST_BINARIES): %: %.c $(HELPERS_OBJ) $(ENGINE_LIB)
 clean:
 	rm -f $(ENGINE_OBJ) $(HELPERS_OBJ) $(ENGINE_LIB) $(TEST_BINARIES)
 
-.PHONY: all clean
+.PHONY: all clean test
