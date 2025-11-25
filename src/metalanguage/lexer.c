@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+static inline char peek_char(Lexer *lx) { return lx->src[lx->pos]; }
+
 void skip_whitespace(Lexer *lx) {
     while (lx->src[lx->pos] == ' ' || lx->src[lx->pos] == '\t' ||
            lx->src[lx->pos] == '\n' || lx->src[lx->pos] == '\r') {
@@ -18,9 +20,9 @@ bool is_alpha(char c) {
 
 bool is_digit(char c) { return (c >= '0' && c <= '9'); }
 
-bool is_alphanumeric(char c) { return is_alpha(c) || is_digit(c); }
-
 bool is_ident_start(char c) { return is_alpha(c) || c == '_'; }
+
+bool is_ident_continue(char c) { return is_ident_start(c) || is_digit(c); }
 
 Token *make_token(TokenType type, int pos, char *lexeme) {
     Token *token = (Token *)malloc(sizeof(Token));
@@ -48,6 +50,11 @@ Token *lexer_next_token(Lexer *lx) {
             return make_token(TOK_RPAREN, lx->pos - 1, NULL);
         }
         case ':': {
+            char next = peek_char(lx);
+            if (next == '=') {
+                next_char(lx);
+                return make_token(TOK_COLON_EQ, lx->pos - 2, NULL);
+            }
             return make_token(TOK_COLON, lx->pos - 1, NULL);
         }
         case ',': {
@@ -57,12 +64,12 @@ Token *lexer_next_token(Lexer *lx) {
             return make_token(TOK_DOT, lx->pos - 1, NULL);
         }
         case '=': {
-            if (lx->src[lx->pos] == '>') {
-                lx->pos++;
+            char next = peek_char(lx);
+            if (next == '>') {
+                next_char(lx);
                 return make_token(TOK_DARROW, lx->pos - 2, NULL);
-            } else {
-                return make_token(TOK_ERROR, lx->pos - 1, NULL);
             }
+            return make_token(TOK_ERROR, lx->pos - 1, NULL);
         }
         case '|': {
             return make_token(TOK_PIPE, lx->pos - 1, NULL);
@@ -74,7 +81,7 @@ Token *lexer_next_token(Lexer *lx) {
             // Handle identifiers and keywords
             if (is_ident_start(c)) {
                 int start_pos = lx->pos - 1;
-                while (is_alphanumeric(lx->src[lx->pos])) {
+                while (is_ident_continue(lx->src[lx->pos])) {
                     lx->pos++;
                 }
                 int length = lx->pos - start_pos;
@@ -104,6 +111,21 @@ Token *lexer_next_token(Lexer *lx) {
                 } else if (strcmp(lexeme, "end") == 0) {
                     free(lexeme);
                     return make_token(TOK_END, start_pos, NULL);
+                } else if (strcmp(lexeme, "Axiom") == 0) {
+                    free(lexeme);
+                    return make_token(TOK_AXIOM, start_pos, NULL);
+                } else if (strcmp(lexeme, "Variable") == 0) {
+                    free(lexeme);
+                    return make_token(TOK_VARIABLE, start_pos, NULL);
+                } else if (strcmp(lexeme, "Definition") == 0) {
+                    free(lexeme);
+                    return make_token(TOK_DEFINITION, start_pos, NULL);
+                } else if (strcmp(lexeme, "Theorem") == 0) {
+                    free(lexeme);
+                    return make_token(TOK_THEOREM, start_pos, NULL);
+                } else if (strcmp(lexeme, "Lemma") == 0) {
+                    free(lexeme);
+                    return make_token(TOK_LEMMA, start_pos, NULL);
                 } else {
                     return make_token(TOK_IDENT, start_pos, lexeme);
                 }

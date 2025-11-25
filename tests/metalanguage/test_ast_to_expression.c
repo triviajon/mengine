@@ -10,7 +10,9 @@
 #include "src/metalanguage/parser.h"
 
 // Helper to print Expression nodes
-void print_expression(Expression *expr) { stringify_expression(expr); }
+void print_expression(Expression *expr) {
+    printf("%s", stringify_expression(expr));
+}
 
 void test_parse_and_convert(const char *input, const char *description) {
     printf("Test: %s\n", description);
