@@ -4,6 +4,28 @@
 #include <stdlib.h>
 #include <string.h>
 
+char *decl_keyword_to_string(DeclKeyword kw) {
+    switch (kw) {
+        case DECL_KW_AXIOM:
+            return "Axiom";
+        case DECL_KW_VARIABLE:
+            return "Variable";
+        default:
+            return "UnknownDeclKeyword";
+    }
+}
+
+char *stmt_keyword_to_string(StmtKeyword kw) {
+    switch (kw) {
+        case STMT_KW_THEOREM:
+            return "Theorem";
+        case STMT_KW_LEMMA:
+            return "Lemma";
+        default:
+            return "UnknownStmtKeyword";
+    }
+}
+
 Command *parse_command(Parser *p) {
     TokenType tok_type = p->current->type;
 

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "src/commandlanguage/parser.h"
+#include "src/commandlanguage/command_parser.h"
 #include "src/common/lexer.h"
 #include "src/metalanguage/parser.h"
 
