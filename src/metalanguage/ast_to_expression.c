@@ -36,10 +36,22 @@ static Expression *_ast_to_expression(AST *ast, Context *context) {
                 return NULL;
             }
 
-            Expression *bound_var = init_var_expression_wc(
-                ast->value.lambda.binder.name, binder_type, context);
+            char *name = ast->value.lambda.binder.name;
+
+            Expression *bound_var =
+                init_var_expression_wc(name, binder_type, context);
             if (!bound_var) {
                 return NULL;
+            }
+
+            // Handle "_" as anonymous binder
+            if (name && strcmp(name, "_") == 0) {
+                Expression *body =
+                    _ast_to_expression(ast->value.lambda.body, context);
+                if (!body) {
+                    return NULL;
+                }
+                return init_lambda_expression_wc(bound_var, body, context);
             }
 
             Context *extended_context = context_insert(context, bound_var);
@@ -63,10 +75,22 @@ static Expression *_ast_to_expression(AST *ast, Context *context) {
                 return NULL;
             }
 
-            Expression *bound_var = init_var_expression_wc(
-                ast->value.forall.binder.name, binder_type, context);
+            char *name = ast->value.forall.binder.name;
+
+            Expression *bound_var =
+                init_var_expression_wc(name, binder_type, context);
             if (!bound_var) {
                 return NULL;
+            }
+
+            // Handle "_" as anonymous binder
+            if (name && strcmp(name, "_") == 0) {
+                Expression *body =
+                    _ast_to_expression(ast->value.forall.body, context);
+                if (!body) {
+                    return NULL;
+                }
+                return init_forall_expression_wc(bound_var, body, context);
             }
 
             Context *extended_context = context_insert(context, bound_var);
