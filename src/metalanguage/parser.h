@@ -53,7 +53,7 @@ typedef struct {
 typedef struct {
     AST *scrutinee;
     AST **branches;  // linked list of "| pattern => body"
-    size_t *branch_count;
+    size_t branch_count;
 } MatchAST;
 
 typedef struct {
