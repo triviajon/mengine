@@ -83,6 +83,9 @@ void mengine_repl(MEngineRuntime *rt) {
 
     char buffer[REPL_LINE_CAP];
 
+    MEngineOptions options = {
+        .debug = true, .debug__print_tokens = true, .debug__print_ast = true};
+
     printf("MEngine REPL. Type 'quit.' to exit.\n");
     printf("> ");
     fflush(stdout);
@@ -102,10 +105,10 @@ void mengine_repl(MEngineRuntime *rt) {
         }
 
         Lexer lx;
-        lexer_init(&lx, input);
+        lexer_init(&lx, input, &options);
 
         Parser parser;
-        parser_init(&parser, &lx);
+        parser_init(&parser, &lx, &options);
 
         Command *cmd = NULL;
 

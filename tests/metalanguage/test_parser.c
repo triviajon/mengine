@@ -52,11 +52,13 @@ void test_parsing(const char *input, const char *description) {
     printf("Input: \"%s\"\n", input);
     printf("AST: ");
 
+    MEngineOptions options = {.debug = false};
+
     Lexer lexer;
-    lexer_init(&lexer, input);
+    lexer_init(&lexer, input, &options);
 
     Parser parser;
-    parser_init(&parser, &lexer);
+    parser_init(&parser, &lexer, &options);
 
     AST *ast = parse_term(&parser);
     print_ast(ast);

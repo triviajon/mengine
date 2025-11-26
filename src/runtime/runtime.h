@@ -2,6 +2,7 @@
 #define RUNTIME_H
 
 #include "src/commandlanguage/command_parser.h"
+#include "src/common/options.h"
 #include "src/kernel/context.h"
 #include "src/kernel/utils.h"
 #include "src/metalanguage/ast_to_expression.h"

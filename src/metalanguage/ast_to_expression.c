@@ -149,11 +149,13 @@ Expression *parse_string_to_expression(const char *input, Context *context) {
         return NULL;
     }
 
+    MEngineOptions options = {.debug = false};
+
     Lexer lexer;
-    lexer_init(&lexer, input);
+    lexer_init(&lexer, input, &options);
 
     Parser parser;
-    parser_init(&parser, &lexer);
+    parser_init(&parser, &lexer, &options);
 
     AST *ast = parse_term(&parser);
     if (!ast) {

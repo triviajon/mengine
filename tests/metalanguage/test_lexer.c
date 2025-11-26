@@ -50,8 +50,10 @@ void test_tokenization(const char *input, const char *description) {
     printf("Input: \"%s\"\n", input);
     printf("Tokens: ");
 
+    MEngineOptions options = {.debug = false};
+
     Lexer lexer;
-    lexer_init(&lexer, input);
+    lexer_init(&lexer, input, &options);
 
     Token *tok;
     while (true) {

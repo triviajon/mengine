@@ -4,6 +4,7 @@
 
 #include "src/commandlanguage/command_parser.h"
 #include "src/common/lexer.h"
+#include "src/common/options.h"
 #include "src/metalanguage/parser.h"
 
 void print_binder(const Binder *b) {
@@ -100,11 +101,13 @@ static void test_command_parsing(const char *input, const char *description) {
     printf("Input: \"%s\"\n", input);
     printf("Command: ");
 
+    MEngineOptions options = {.debug = false};
+
     Lexer lx;
-    lexer_init(&lx, input);
+    lexer_init(&lx, input, &options);
 
     Parser parser;
-    parser_init(&parser, &lx);
+    parser_init(&parser, &lx, &options);
 
     Command *cmd = parse_command(&parser);
     print_command(cmd);
