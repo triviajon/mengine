@@ -116,6 +116,28 @@ static void _handle_statement_command(MEngineRuntime *rt,
     return;
 }
 
+static void _handle_check_command(MEngineRuntime *rt, CheckCmd *check_cmd) {
+    if (!rt || !check_cmd) return;
+
+    Expression *expr = ast_to_expression(check_cmd->term, rt->ctx);
+    if (!expr) {
+        fprintf(stderr,
+                "Runtime Error: Failed to convert term in Check command.\n");
+        return;
+    }
+
+    Expression *expr_type = get_expression_type(expr);
+    if (!expr_type) {
+        fprintf(stderr,
+                "Runtime Error: Failed to get type of expression in Check "
+                "command.\n");
+        return;
+    }
+
+    printf(GRAY "%s\n\t: %s\n" CRESET, stringify_expression(expr),
+           stringify_expression(expr_type));
+}
+
 void mengine_execute_command(MEngineRuntime *rt, Command *cmd) {
     if (!rt || !cmd) {
         return;
@@ -130,6 +152,9 @@ void mengine_execute_command(MEngineRuntime *rt, Command *cmd) {
         }
         case CMD_STATEMENT: {
             return _handle_statement_command(rt, &cmd->as.stmt);
+        }
+        case CMD_CHECK: {
+            return _handle_check_command(rt, &cmd->as.check);
         }
         case CMD_DECL_KEYWORD:
         case CMD_STMT_KEYWORD:

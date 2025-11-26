@@ -6,6 +6,7 @@ Similar to Rocq's Vernacular:
             | <statement>
        <!-- | <fixpoint> -->
        <!-- | <inductive> -->
+            | <check>
 
 <declaration> ::= <declaration_keyword> <assumption> "."
 <declaration_keyword> ::= "Axiom" | "Variable"
@@ -19,6 +20,8 @@ Similar to Rocq's Vernacular:
                 { "(" <binder> ")" }
                 ":" <term> "."
 <statement_keyword> ::= "Theorem" | "Lemma"
+
+<check> ::= "Check" <term> "."
 
 <!-- The following are defined in src/metalanguage/bnf.md -->
 <binder> ::= ...

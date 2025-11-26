@@ -76,6 +76,9 @@ static void debug_print_token(Lexer *lx, Token *t) {
         case TOK_LEMMA:
             name = "LEMMA";
             break;
+        case TOK_CHECK:
+            name = "CHECK";
+            break;
         case TOK_EOF:
             name = "EOF";
             break;
@@ -86,8 +89,8 @@ static void debug_print_token(Lexer *lx, Token *t) {
             name = "UNKNOWN";
     }
 
-    fprintf(stderr, "\x1b[90m[LEX] %-12s at %d%s\x1b[0m\n", name, t->pos,
-            t->lexeme ? t->lexeme : "");
+    fprintf(stderr, YEL "[LEX]" DIM " %-12s at %-4d  %s" CRESET "\n", name,
+            t->pos, t->lexeme ? t->lexeme : "");
 }
 
 void skip_whitespace(Lexer *lx) {
@@ -223,6 +226,9 @@ Token *lexer_next_token(Lexer *lx) {
                 } else if (strcmp(lexeme, "Lemma") == 0) {
                     free(lexeme);
                     token = make_token(TOK_LEMMA, start_pos, NULL);
+                } else if (strcmp(lexeme, "Check") == 0) {
+                    free(lexeme);
+                    token = make_token(TOK_CHECK, start_pos, NULL);
                 } else {
                     token = make_token(TOK_IDENT, start_pos, lexeme);
                 }
