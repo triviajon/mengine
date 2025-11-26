@@ -114,11 +114,13 @@ Command *parse_definition(Parser *p) {
         parser_error(p, "expected ':' before type");
 
     AST *type = parse_term(p);
+    debug_print_ast(p, type);
 
     if (!parser_expect_consume(p, TOK_COLON_EQ))
         parser_error(p, "expected ':=' in definition");
 
     AST *body = parse_term(p);
+    debug_print_ast(p, body);
 
     if (!parser_expect_consume(p, TOK_DOT))
         parser_error(p, "expected '.' after definition");
@@ -163,6 +165,7 @@ Command *parse_statement(Parser *p) {
         parser_error(p, "expected ':' before theorem type");
 
     AST *ty = parse_term(p);
+    debug_print_ast(p, ty);
 
     if (!parser_expect_consume(p, TOK_DOT))
         parser_error(p, "expected '.' after theorem statement");
@@ -198,6 +201,7 @@ Command *parse_check(Parser *p) {
     }
 
     AST *term = parse_term(p);
+    debug_print_ast(p, term);
 
     if (!parser_expect_consume(p, TOK_DOT)) {
         parser_error(p, "Expected '.' at end of check command");

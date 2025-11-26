@@ -1,7 +1,11 @@
 #include "ast_to_expression.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "src/common/color.h"
+#include "src/common/lexer.h"
 
 /**
  * Internal helper for recursive conversion.
@@ -160,6 +164,13 @@ Expression *parse_string_to_expression(const char *input, Context *context) {
     AST *ast = parse_term(&parser);
     if (!ast) {
         return NULL;
+    }
+
+    // Debug print the complete AST (similar to lexer token printing)
+    if (options.debug && options.debug__print_ast) {
+        fprintf(stderr, MAG "[PARSE]" DIM " ");
+        fprint_ast(stderr, ast);
+        fprintf(stderr, CRESET "\n");
     }
 
     Expression *expr = ast_to_expression(ast, context);
