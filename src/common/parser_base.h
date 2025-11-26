@@ -3,11 +3,13 @@
 
 #include "src/common/color.h"
 #include "src/common/lexer.h"
+#include "src/common/options.h"
 
 typedef struct {
-    Lexer *lx;           // Underlying lexer
-    Token *current;      // Current lookahead token (owned by parser)
-    const char *source;  // Source string being parsed
+    Lexer *lx;                // Underlying lexer
+    Token *current;           // Current lookahead token (owned by parser)
+    const char *source;       // Source string being parsed
+    MEngineOptions *options;  // Parser options
 } Parser;
 
 /**
@@ -15,8 +17,9 @@ typedef struct {
  *
  * @param p Pointer to the Parser to initialize.
  * @param lx Pointer to the Lexer to use as input.
+ * @param options Pointer to MEngineOptions for parser configuration.
  */
-void parser_init(Parser *p, Lexer *lx);
+void parser_init(Parser *p, Lexer *lx, MEngineOptions *options);
 
 /**
  * Return the next token and advance the parser.

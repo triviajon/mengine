@@ -1,6 +1,7 @@
 #ifndef AST_TO_EXPRESSION_H
 #define AST_TO_EXPRESSION_H
 
+#include "src/common/options.h"
 #include "src/kernel/context.h"
 #include "src/kernel/expression.h"
 #include "src/metalanguage/parser.h"

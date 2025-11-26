@@ -3,10 +3,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void parser_init(Parser *p, Lexer *lx) {
+void parser_init(Parser *p, Lexer *lx, MEngineOptions *options) {
     p->lx = lx;
     p->current = lexer_next_token(lx);
     p->source = lx->src;
+    p->options = options;
 }
 
 Token *parser_next(Parser *p) {

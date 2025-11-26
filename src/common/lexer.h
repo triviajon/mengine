@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include "src/common/options.h"
+
 typedef enum {
     // identifiers, punctuation
     TOK_IDENT,
@@ -44,8 +46,9 @@ typedef struct {
 } Token;
 
 typedef struct {
-    const char *src;  // entire input buffer
-    int pos;          // current char index
+    const char *src;          // entire input buffer
+    int pos;                  // current char index
+    MEngineOptions *options;  // Parser options
 } Lexer;
 
 /* Lexer API */
@@ -56,8 +59,9 @@ typedef struct {
  * @param lx Pointer to the Lexer to initialize.
  * @param input The input string to lex. Lexer does not assume ownership of this
  * string.
+ * @param options Pointer to MEngineOptions for lexer configuration.
  */
-void lexer_init(Lexer *lx, const char *input);
+void lexer_init(Lexer *lx, const char *input, MEngineOptions *options);
 
 // Get the next token from the lexer
 // The returned Token* is malloc'ed. The caller is responsible for

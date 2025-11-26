@@ -4,7 +4,87 @@
 #include <stdlib.h>
 #include <string.h>
 
-AST *parse_term(Parser *p) { return parse_prefix_term(p); }
+static void print_ast(AST *ast);
+
+static void print_ast(AST *ast) {
+    if (!ast) {
+        printf("NULL");
+        return;
+    }
+
+    switch (ast->tag) {
+        case AST_VAR:
+            printf("VAR");
+            return;
+
+        case AST_TYPE:
+            printf("TYPE");
+            return;
+
+        case AST_PROP:
+            printf("PROP");
+            return;
+
+        case AST_LAMBDA:
+            printf("LAMBDA(");
+            print_ast(ast->value.lambda.binder.type);
+            printf(", ");
+            print_ast(ast->value.lambda.body);
+            printf(")");
+            return;
+
+        case AST_FORALL:
+            printf("FORALL(");
+            print_ast(ast->value.forall.binder.type);
+            printf(", ");
+            print_ast(ast->value.forall.body);
+            printf(")");
+            return;
+
+        case AST_APP:
+            printf("APP(");
+            print_ast(ast->value.app.func);
+            printf(", ");
+            print_ast(ast->value.app.arg);
+            printf(")");
+            return;
+
+        case AST_MATCH:
+            printf("MATCH(");
+            print_ast(ast->value.match.scrutinee);
+            printf(", branches=%zu)", ast->value.match.branch_count);
+            return;
+
+        case AST_MATCHBRANCH:
+            printf("BRANCH(");
+            // pattern often not an AST but a pattern struct:
+            printf("pattern=%s, ", ast->value.matchbranch.pattern
+                                       ? ast->value.matchbranch.pattern->name
+                                       : "_");
+            print_ast(ast->value.matchbranch.body);
+            printf(")");
+            return;
+
+        default:
+            printf("UNKNOWN");
+            return;
+    }
+}
+
+static void debug_print_ast(Parser *p, AST *ast) {
+    if (!p->options || !p->options->debug || !p->options->debug__print_ast)
+        return;
+
+    printf("AST: ");
+    print_ast(ast);
+    printf("\n");
+}
+
+AST *parse_term(Parser *p) {
+    AST *term = parse_prefix_term(p);
+    debug_print_ast(p, term);
+    return term;
+}
 
 AST *parse_prefix_term(Parser *p) {
     if (parser_expect_no_consume(p, TOK_FUN)) {
