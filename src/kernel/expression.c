@@ -173,7 +173,7 @@ Expression *init_forall_expression(Expression *bound_variable,
 Expression *init_prop_expression() {
     if (PROP == NULL) {
         PROP = (Expression *)malloc(sizeof(Expression));
-        PROP->type = TYPE_EXPRESSION;
+        PROP->type = PROP_EXPRESSION;
         PROP->value.type.uplinks = dll_create();
     }
     return PROP;
