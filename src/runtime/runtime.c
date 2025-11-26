@@ -12,6 +12,13 @@ MEngineRuntime *mengine_runtime_new(void) {
         return NULL;
     }
 
+    rt->def_table = malloc(sizeof(DefinitionTable));
+    if (!rt->def_table) {
+        free(rt);
+        return NULL;
+    }
+    definition_table_init(rt->def_table);
+
     return rt;
 }
 
@@ -21,7 +28,8 @@ void mengine_runtime_free(MEngineRuntime *rt) {
     }
 
     // TODO: A memory management strategy forcontexts and expressions is needed.
-    // For now, we just free the runtime struct itself.
+    // free_context(rt->ctx);
+    definition_table_free(rt->def_table);
     free(rt);
 }
 
@@ -46,8 +54,60 @@ static void _handle_declaration_command(MEngineRuntime *rt,
 
 static void _handle_definition_command(MEngineRuntime *rt,
                                        DefinitionCmd *defn_cmd) {
-    printf("not implemented yet\n");
-    return;
+    if (!rt || !defn_cmd) return;
+
+    const char *name = defn_cmd->name;
+
+    Context *ctx = rt->ctx;
+
+    // Lefthand side parameters
+    Binder **params = defn_cmd->params;
+    size_t param_count = defn_cmd->param_count;
+
+    for (size_t i = 0; i < param_count; i++) {
+        Binder *b = params[i];
+
+        Expression *param_type = ast_to_expression(b->type, ctx);
+        if (!param_type) {
+            fprintf(stderr, "Failed to convert parameter %s type.\n", b->name);
+            return;
+        }
+
+        Expression *param_var =
+            init_var_expression_wc(b->name, param_type, ctx);
+
+        ctx = context_insert(ctx, param_var);
+    }
+
+    Expression *expr_type = ast_to_expression(defn_cmd->type, ctx);
+    if (!expr_type) {
+        fprintf(stderr, "Failed to convert type for Definition %s\n", name);
+        return;
+    }
+
+    Expression *expr_body = ast_to_expression(defn_cmd->body, ctx);
+    if (!expr_body) {
+        fprintf(stderr, "Failed to convert body for Definition %s\n", name);
+        return;
+    }
+
+    Expression *body_ty = get_expression_type(expr_body);
+
+    if (!congruence(body_ty, expr_type)) {
+        fprintf(stderr,
+                RED "Type error:" CRESET
+                    " body of definition '%s' has wrong type.\n",
+                name);
+        fprintf(stderr, "Declared type: %s\n", stringify_expression(expr_type));
+        fprintf(stderr, "Body type:     %s\n", stringify_expression(body_ty));
+        return;
+    }
+
+    // Store the definition in the definition table
+    definition_table_insert(rt->def_table, name, expr_type, expr_body);
+
+    printf("%s %s : %s defined.\n", "Definition", name,
+           stringify_expression(expr_type));
 }
 
 static void _handle_statement_command(MEngineRuntime *rt,

@@ -6,11 +6,13 @@
 #include "src/kernel/context.h"
 #include "src/kernel/utils.h"
 #include "src/metalanguage/ast_to_expression.h"
+#include "src/runtime/definition_table.h"
 
 #define REPL_LINE_CAP 1024
 
 typedef struct {
     Context *ctx;
+    DefinitionTable *def_table;
 } MEngineRuntime;
 
 /**
