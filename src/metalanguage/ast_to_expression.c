@@ -200,9 +200,6 @@ void free_ast(AST *ast) {
             if (ast->value.match.branches) {
                 free(ast->value.match.branches);
             }
-            if (ast->value.match.branch_count) {
-                free(ast->value.match.branch_count);
-            }
             break;
 
         case AST_MATCHBRANCH:
