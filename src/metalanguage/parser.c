@@ -77,7 +77,7 @@ AST *parse_forall(Parser *p) {
 }
 
 Binder parse_binder(Parser *p) {
-    if (!p->current || p->current->type != TOK_IDENT) {
+    if (!parser_expect_no_consume(p, TOK_IDENT)) {
         parser_error(p, "Expected identifier in binder");
     }
     Token *ident_token = parser_next(p);
