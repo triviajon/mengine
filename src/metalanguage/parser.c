@@ -4,84 +4,87 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void print_ast(AST *ast);
+#include "src/common/color.h"
 
-static void print_ast(AST *ast) {
+void fprint_ast(FILE *stream, AST *ast) {
     if (!ast) {
-        printf("NULL");
+        fprintf(stream, "(null)");
         return;
     }
 
     switch (ast->tag) {
         case AST_VAR:
-            printf("VAR");
+            fprintf(stream, "VAR(%s)", ast->value.var.name);
             return;
 
         case AST_TYPE:
-            printf("TYPE");
+            fprintf(stream, "TYPE");
             return;
 
         case AST_PROP:
-            printf("PROP");
+            fprintf(stream, "PROP");
             return;
 
         case AST_LAMBDA:
-            printf("LAMBDA(");
-            print_ast(ast->value.lambda.binder.type);
-            printf(", ");
-            print_ast(ast->value.lambda.body);
-            printf(")");
+            fprintf(stream, "LAMBDA(");
+            fprint_ast(stream, ast->value.lambda.binder.type);
+            fprintf(stream, ", ");
+            fprint_ast(stream, ast->value.lambda.body);
+            fprintf(stream, ")");
             return;
 
         case AST_FORALL:
-            printf("FORALL(");
-            print_ast(ast->value.forall.binder.type);
-            printf(", ");
-            print_ast(ast->value.forall.body);
-            printf(")");
+            fprintf(stream, "FORALL(");
+            fprint_ast(stream, ast->value.forall.binder.type);
+            fprintf(stream, ", ");
+            fprint_ast(stream, ast->value.forall.body);
+            fprintf(stream, ")");
             return;
 
         case AST_APP:
-            printf("APP(");
-            print_ast(ast->value.app.func);
-            printf(", ");
-            print_ast(ast->value.app.arg);
-            printf(")");
+            fprintf(stream, "APP(");
+            fprint_ast(stream, ast->value.app.func);
+            fprintf(stream, ", ");
+            fprint_ast(stream, ast->value.app.arg);
+            fprintf(stream, ")");
             return;
 
         case AST_MATCH:
-            printf("MATCH(");
-            print_ast(ast->value.match.scrutinee);
-            printf(", branches=%zu)", ast->value.match.branch_count);
+            fprintf(stream, "MATCH(");
+            fprint_ast(stream, ast->value.match.scrutinee);
+            fprintf(stream, ", branches=%zu)", ast->value.match.branch_count);
             return;
 
         case AST_MATCHBRANCH:
-            printf("BRANCH(");
-            printf("pattern=%s, ", ast->value.matchbranch.pattern
+            fprintf(stream, "BRANCH(");
+            fprintf(stream, "pattern=%s, ", ast->value.matchbranch.pattern
                                        ? ast->value.matchbranch.pattern->name
                                        : "_");
-            print_ast(ast->value.matchbranch.body);
-            printf(")");
+            fprint_ast(stream, ast->value.matchbranch.body);
+            fprintf(stream, ")");
             return;
 
         default:
-            printf("UNKNOWN");
+            fprintf(stream, "UNKNOWN");
             return;
     }
 }
 
-static void debug_print_ast(Parser *p, AST *ast) {
+void print_ast(AST *ast) {
+    fprint_ast(stdout, ast);
+}
+
+void debug_print_ast(Parser *p, AST *ast) {
     if (!p->options || !p->options->debug || !p->options->debug__print_ast)
         return;
 
-    printf("AST: ");
-    print_ast(ast);
-    printf("\n");
+    fprintf(stderr, MAG "[PARSE]" DIM " ");
+    fprint_ast(stderr, ast);
+    fprintf(stderr, CRESET "\n");
 }
 
 AST *parse_term(Parser *p) {
     AST *term = parse_prefix_term(p);
-    debug_print_ast(p, term);
     return term;
 }
 
@@ -166,6 +169,7 @@ Binder parse_binder(Parser *p) {
     }
 
     AST *type = parse_term(p);
+    debug_print_ast(p, type);
 
     Binder binder;
     binder.name = strdup(ident_token->lexeme);

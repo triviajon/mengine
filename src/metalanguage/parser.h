@@ -1,6 +1,8 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include <stdio.h>
+
 #include "src/common/lexer.h"
 #include "src/common/parser_base.h"
 
@@ -164,5 +166,30 @@ AST *parse_application(Parser *p);
  * @return AST node representing the parsed atomic term.
  */
 AST *parse_atomic(Parser *p);
+
+/**
+ * Print an AST node to a file stream (for debugging).
+ *
+ * @param stream The file stream to print to (stdout, stderr, etc).
+ * @param ast The AST node to print.
+ */
+void fprint_ast(FILE *stream, AST *ast);
+
+/**
+ * Print an AST node to stdout (for debugging).
+ * Convenience wrapper around fprint_ast.
+ *
+ * @param ast The AST node to print.
+ */
+void print_ast(AST *ast);
+
+/**
+ * Debug print an AST node with formatting similar to lexer token printing.
+ * Only prints if debug flags are enabled in the parser's options.
+ *
+ * @param p Pointer to the Parser (for accessing debug options).
+ * @param ast The AST node to print.
+ */
+void debug_print_ast(Parser *p, AST *ast);
 
 #endif  // PARSER_H

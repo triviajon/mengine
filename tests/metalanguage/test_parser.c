@@ -5,48 +5,6 @@
 #include "src/common/lexer.h"
 #include "src/metalanguage/parser.h"
 
-void print_ast(AST *ast) {
-    if (!ast) {
-        printf("(null)");
-        return;
-    }
-
-    switch (ast->tag) {
-        case AST_VAR:
-            printf("VAR(%s)", ast->value.var.name);
-            break;
-        case AST_TYPE:
-            printf("TYPE");
-            break;
-        case AST_PROP:
-            printf("PROP");
-            break;
-        case AST_LAMBDA:
-            printf("LAMBDA(");
-            print_ast(ast->value.lambda.binder.type);
-            printf(", ");
-            print_ast(ast->value.lambda.body);
-            printf(")");
-            break;
-        case AST_FORALL:
-            printf("FORALL(");
-            print_ast(ast->value.forall.binder.type);
-            printf(", ");
-            print_ast(ast->value.forall.body);
-            printf(")");
-            break;
-        case AST_APP:
-            printf("APP(");
-            print_ast(ast->value.app.func);
-            printf(", ");
-            print_ast(ast->value.app.arg);
-            printf(")");
-            break;
-        default:
-            printf("UNKNOWN");
-    }
-}
-
 void test_parsing(const char *input, const char *description) {
     printf("Test: %s\n", description);
     printf("Input: \"%s\"\n", input);
