@@ -191,3 +191,20 @@ StmtKeyword parse_statement_keyword(Parser *p) {
     // TODO: refactor error handling
     return STMT_KW_LEMMA;
 }
+
+Command *parse_check(Parser *p) {
+    if (!parser_expect_consume(p, TOK_CHECK)) {
+        parser_error(p, "expected 'Check'");
+    }
+
+    AST *term = parse_term(p);
+
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "Expected '.' at end of check command");
+    }
+
+    Command *cmd = malloc(sizeof(Command));
+    cmd->tag = CMD_CHECK;
+    cmd->as.check.term = term;
+    return cmd;
+}

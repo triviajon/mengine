@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include "src/common/color.h"
 #include "src/common/options.h"
 
 typedef enum {
@@ -33,6 +34,7 @@ typedef enum {
     TOK_DEFINITION,  // Definition
     TOK_THEOREM,     // Theorem
     TOK_LEMMA,       // Lemma
+    TOK_CHECK,       // Check
 
     TOK_EOF,
     TOK_ERROR,

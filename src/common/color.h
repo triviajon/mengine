@@ -10,6 +10,8 @@
 #define MAG "\e[0;35m"
 #define CYN "\e[0;36m"
 #define WHT "\e[0;37m"
+#define DIM "\e[2m"
+#define GRAY "\e[90m"
 
 // Regular background
 #define BLKB "\e[40m"

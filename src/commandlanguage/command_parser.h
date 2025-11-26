@@ -7,6 +7,7 @@ typedef enum {
     CMD_DECLARATION,
     CMD_DEFINITION,
     CMD_STATEMENT,
+    CMD_CHECK,
     CMD_DECL_KEYWORD,
     CMD_STMT_KEYWORD
 } CommandTag;
@@ -32,6 +33,10 @@ char *decl_keyword_to_string(DeclKeyword kw);
 char *stmt_keyword_to_string(StmtKeyword kw);
 
 typedef struct {
+    AST *term;
+} CheckCmd;
+
+typedef struct {
     char *name;
     Binder **params;
     size_t param_count;
@@ -52,6 +57,7 @@ typedef struct Command {
     union {
         DeclKeywordCmd decl_kw;
         StmtKeywordCmd stmt_kw;
+        CheckCmd check;
         DeclarationCmd decl;
         DefinitionCmd defn;
         StatementCmd stmt;
@@ -59,7 +65,7 @@ typedef struct Command {
 } Command;
 
 /**
- * <command> ::= <declaration> | <definition> | <statement>
+ * <command> ::= <declaration> | <definition> | <statement> | <check>
  *
  * @param p Pointer to the Parser.
  * @return Command structure representing the parsed command.
@@ -118,6 +124,14 @@ Command *parse_statement(Parser *p);
  */
 StmtKeyword parse_statement_keyword(Parser *p);
 
+/**
+ * <check> ::= "Check" <term> "."
+ *
+ * @param p Pointer to the Parser.
+ * @return Command structure representing the parsed check command.
+ */
+Command *parse_check(Parser *p);
+
 typedef Command *(*CommandParseFunc)(Parser *p);
 
 typedef struct {
@@ -128,7 +142,7 @@ typedef struct {
 static CommandDispatchEntry command_dispatch_table[] = {
     {TOK_AXIOM, parse_declaration},     {TOK_VARIABLE, parse_declaration},
     {TOK_DEFINITION, parse_definition}, {TOK_THEOREM, parse_statement},
-    {TOK_LEMMA, parse_statement},
+    {TOK_LEMMA, parse_statement},       {TOK_CHECK, parse_check},
 };
 
 #define CMD_DISPATCH_TABLE (command_dispatch_table)
