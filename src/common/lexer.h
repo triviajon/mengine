@@ -36,6 +36,24 @@ typedef enum {
     TOK_LEMMA,       // Lemma
     TOK_CHECK,       // Check
 
+    // tactic keywords
+    TOK_PROOF,        // Proof
+    TOK_QED,          // Qed
+    TOK_ADMITTED,     // Admitted
+    TOK_INTRO,        // intro
+    TOK_INTROS,       // intros
+    TOK_APPLY,        // apply
+    TOK_EAPPLY,       // eapply
+    TOK_EXACT,        // exact
+    TOK_REWRITE,      // rewrite
+    TOK_LEFT_ARROW,   // <-
+    TOK_REFLEXIVITY,  // reflexivity
+    TOK_ASSUMPTION,   // assumption
+    TOK_SPLIT,        // split
+    TOK_LEFT,         // left
+    TOK_RIGHT,        // right
+    TOK_EXISTS,       // exists
+
     TOK_EOF,
     TOK_ERROR,
 } TokenType;
