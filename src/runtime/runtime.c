@@ -1,6 +1,6 @@
 #include "src/runtime/runtime.h"
 
-void debug_print_mode_update(MEngineRuntime *rt) {
+void debug_print_mode(MEngineRuntime *rt) {
     if (!rt || !rt->options) return;
     if (!rt->options->debug || !rt->options->debug__print_mode) return;
 
@@ -17,6 +17,7 @@ void debug_print_mode_update(MEngineRuntime *rt) {
                 fprintf(stderr, " (goal: %s)",
                         stringify_expression(rt->pending_theorem));
             }
+            // todo: I also should print proof_state
             break;
 
         default:
@@ -76,7 +77,8 @@ void mengine_runtime_proof_mode(MEngineRuntime *rt, Expression *theorem) {
 
     rt->mode = MENGINE_RUNTIME_PROOF_MODE;
     rt->pending_theorem = theorem;
-    debug_print_mode_update(rt);
+    rt->proof_state = proof_state_new_from_theorem(theorem, rt->ctx);
+    debug_print_mode(rt);
 }
 
 void mengine_runtime_command_mode(MEngineRuntime *rt) {
@@ -86,5 +88,11 @@ void mengine_runtime_command_mode(MEngineRuntime *rt) {
 
     rt->mode = MENGINE_RUNTIME_COMMAND_MODE;
     rt->pending_theorem = NULL;
-    debug_print_mode_update(rt);
+
+    if (rt->proof_state) {
+        proof_state_free(rt->proof_state);
+        rt->proof_state = NULL;
+    }
+
+    debug_print_mode(rt);
 }

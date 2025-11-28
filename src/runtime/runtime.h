@@ -7,6 +7,7 @@
 #include "src/kernel/utils.h"
 #include "src/metalanguage/ast_to_expression.h"
 #include "src/runtime/definition_table.h"
+#include "src/runtime/proof_state.h"
 #include "src/tacticlanguage/tactic_parser.h"
 
 typedef enum {
@@ -31,11 +32,14 @@ typedef struct {
                            // transitions back to command mode, we will add this
                            // expression to the runtime context and clear this
                            // field.
+    ProofState *proof_state;  // when in proof mode, this holds a reference to
+                              // the current state of the proof being created
+                              // for pending_theorem.
     MEngineRuntimeMode
         mode;  // current mode of operation, see MEngineRuntimeMode
 } MEngineRuntime;
 
-void debug_print_mode_update(MEngineRuntime *rt);
+void debug_print_mode(MEngineRuntime *rt);
 
 /**
  * Allocate and initialize a new MEngine runtime.

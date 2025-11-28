@@ -5,13 +5,24 @@
 
 #include "src/engine/logic.h"
 #include "src/kernel/expression.h"
-#
 
 typedef struct {
     DoublyLinkedList
         *goals;         // list of Expression* representing proof obligations
     size_t goal_index;  // current goal index
 } ProofState;
+
+/**
+ * Create a new proof state with a single initial theorem, and adds a TOP_LEVEL
+ * uplink for the goal.
+ *
+ * @param initial_goal The initial theorem expression (should be a
+ * VAR_EXPRESSION representing "theorem_name : type").
+ * @param initial_context The initial context of the theorem.
+ * @return Pointer to the newly allocated ProofState.
+ */
+ProofState *proof_state_new_from_theorem(Expression *initial_theorem,
+                                         Context *initial_context);
 
 /**
  * Create a new proof state with a single initial goal, and adds a TOP_LEVEL
