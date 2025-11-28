@@ -9,14 +9,12 @@
 #include "src/runtime/definition_table.h"
 #include "src/tacticlanguage/tactic_parser.h"
 
-#define REPL_LINE_CAP 1024
-
 typedef enum {
     MENGINE_RUNTIME_COMMAND_MODE,  // Normal mode of the Mengine Runtime, where
                                    // we are expecting commands such as
                                    // definitions, statements (theorem
                                    // statements), and checks.
-    MENGINE_RUNTIME_PROOF_MODE,  // Proof mode of the Mengine Runtime, where we
+    MENGINE_RUNTIME_PROOF_MODE,  // Proof mode of the Mengine Runtime, where wem
                                  // are exclusively expecting tactic language
                                  // commands.
 } MEngineRuntimeMode;
@@ -62,18 +60,6 @@ void mengine_runtime_free(MEngineRuntime *rt);
 Context *mengine_runtime_context(MEngineRuntime *rt);
 
 /**
- * Execute a single top-level command in the given runtime.
- *
- * This function takes a parsed Command*, elaborates it into kernel expressions
- * as needed, updates the global context, and may print/use side effects via the
- * engine/kernel.
- *
- * @param rt Pointer to the runtime. Must not be NULL.
- * @param cmd Pointer to the Command to execute. Must not be NULL.
- */
-void mengine_execute_command(MEngineRuntime *rt, Command *cmd);
-
-/**
  * Switch runtime to proof mode.
  *
  * @param rt Pointer to the runtime. Must not be NULL.
@@ -87,14 +73,5 @@ void mengine_runtime_proof_mode(MEngineRuntime *rt, Expression *theorem);
  * @param rt Pointer to the runtime. Must not be NULL.
  */
 void mengine_runtime_command_mode(MEngineRuntime *rt);
-
-/**
- * Run an interactive read–eval–print loop (REPL) on stdin/stdout.
- *
- * The loop terminates on EOF or on an explicit quit command (if supported).
- *
- * @param rt Pointer to the runtime. Must not be NULL.
- */
-void mengine_repl(MEngineRuntime *rt);
 
 #endif  // RUNTIME_H

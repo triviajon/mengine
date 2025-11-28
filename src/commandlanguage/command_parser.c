@@ -26,7 +26,7 @@ char *stmt_keyword_to_string(StmtKeyword kw) {
     }
 }
 
-Command *parse_command(Parser *p) {
+Command *command_parse_command(Parser *p) {
     TokenType tok_type = p->current->type;
 
     CommandDispatchEntry *entry = NULL;
@@ -50,9 +50,9 @@ Command *parse_command(Parser *p) {
     return cmd;
 }
 
-Command *parse_declaration(Parser *p) {
-    DeclKeyword kw = parse_declaration_keyword(p);
-    Binder assumption = parse_assumption(p);
+Command *command_parse_declaration(Parser *p) {
+    DeclKeyword kw = command_parse_declaration_keyword(p);
+    Binder assumption = command_parse_assumption(p);
 
     if (!parser_expect_consume(p, TOK_DOT)) {
         parser_error(p, "Expected '.' at end of declaration");
@@ -66,7 +66,7 @@ Command *parse_declaration(Parser *p) {
     return cmd;
 }
 
-DeclKeyword parse_declaration_keyword(Parser *p) {
+DeclKeyword command_parse_declaration_keyword(Parser *p) {
     if (parser_expect_consume(p, TOK_AXIOM)) {
         return DECL_KW_AXIOM;
     } else if (parser_expect_consume(p, TOK_VARIABLE)) {
@@ -80,9 +80,9 @@ DeclKeyword parse_declaration_keyword(Parser *p) {
     return DECL_KW_VARIABLE;
 }
 
-Binder parse_assumption(Parser *p) { return parse_binder(p); }
+Binder command_parse_assumption(Parser *p) { return parse_binder(p); }
 
-Command *parse_definition(Parser *p) {
+Command *command_parse_definition(Parser *p) {
     if (!parser_expect_consume(p, TOK_DEFINITION)) {
         parser_error(p, "expected 'Definition'");
     }
@@ -99,7 +99,7 @@ Command *parse_definition(Parser *p) {
     size_t param_count = 0;
 
     while (parser_expect_consume(p, TOK_LPAREN)) {
-        Binder b = parse_assumption(p);
+        Binder b = command_parse_assumption(p);
 
         if (!parser_expect_consume(p, TOK_RPAREN))
             parser_error(p, "expected ')' after parameter");
@@ -136,8 +136,8 @@ Command *parse_definition(Parser *p) {
     return cmd;
 }
 
-Command *parse_statement(Parser *p) {
-    StmtKeyword kw = parse_statement_keyword(p);
+Command *command_parse_statement(Parser *p) {
+    StmtKeyword kw = command_parse_statement_keyword(p);
 
     if (!parser_expect_no_consume(p, TOK_IDENT))
         parser_error(p, "expected identifier after theorem keyword");
@@ -164,7 +164,7 @@ Command *parse_statement(Parser *p) {
     return cmd;
 }
 
-StmtKeyword parse_statement_keyword(Parser *p) {
+StmtKeyword command_parse_statement_keyword(Parser *p) {
     if (parser_expect_consume(p, TOK_THEOREM)) {
         return STMT_KW_THEOREM;
     } else if (parser_expect_consume(p, TOK_LEMMA)) {
@@ -178,7 +178,7 @@ StmtKeyword parse_statement_keyword(Parser *p) {
     return STMT_KW_LEMMA;
 }
 
-Command *parse_check(Parser *p) {
+Command *command_parse_check(Parser *p) {
     if (!parser_expect_consume(p, TOK_CHECK)) {
         parser_error(p, "expected 'Check'");
     }

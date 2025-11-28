@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "src/runtime/runtime.h"
+#include "src/runtime/repl.h"
 
 int main(void) {
     MEngineRuntime *rt = mengine_runtime_new();

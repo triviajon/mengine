@@ -104,7 +104,7 @@ static void test_command_parsing(const char *input, const char *description) {
     Parser parser;
     parser_init(&parser, &lx, &options);
 
-    Command *cmd = parse_command(&parser);
+    Command *cmd = command_parse_command(&parser);
     print_command(cmd);
     printf("\n\n");
 }
