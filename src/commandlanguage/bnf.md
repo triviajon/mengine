@@ -17,7 +17,6 @@ Similar to Rocq's Vernacular:
                  ":=" <term> "."
 
 <statement> ::= <statement_keyword> <identifier>
-                { "(" <binder> ")" }
                 ":" <term> "."
 <statement_keyword> ::= "Theorem" | "Lemma"
 

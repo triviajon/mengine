@@ -34,7 +34,8 @@ typedef enum {
     APP_ARG,
     FORALL_BODY,
     CTX_VAR,
-    HOLE_TYPE
+    HOLE_TYPE,
+    TOP_LEVEL_HOLE,
 } Relation;
 
 /*
@@ -180,11 +181,18 @@ struct Expression {
 // Helper function to add an uplink to the uplinks list of an expression.
 void add_to_parents(Expression *expression, Uplink *uplink);
 
+// Helper function to remove the first top_level_hole uplink from an
+// expression's uplinks.
+void remove_tl_uplink(Expression *expression);
+
 // Helper function to create a new uplink to an expression.
 Uplink *new_uplink(Expression *parent, Relation relation);
 
 // Helper function to create a new uplink to a context.
 Uplink *new_uplink2(Context *parent, Relation relation);
+
+// Helper function to create a new uplink to a top level hole.
+Uplink *new_uplink_tl();
 
 // The following functions are helper functions to initialize new expressions,
 // without providing explicit contexts. The function will take care of computing

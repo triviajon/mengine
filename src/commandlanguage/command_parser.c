@@ -146,21 +146,6 @@ Command *parse_statement(Parser *p) {
     char *name = strdup(ident_token->lexeme);
     lexer_free_token(ident_token);
 
-    Binder **params = NULL;
-    size_t param_count = 0;
-
-    while (parser_expect_consume(p, TOK_LPAREN)) {
-        Binder b = parse_assumption(p);
-
-        if (!parser_expect_consume(p, TOK_RPAREN))
-            parser_error(p, "expected ')' after parameter");
-
-        params = realloc(params, sizeof(Binder *) * (param_count + 1));
-        params[param_count] = malloc(sizeof(Binder));
-        *(params[param_count]) = b;
-        param_count++;
-    }
-
     if (!parser_expect_consume(p, TOK_COLON))
         parser_error(p, "expected ':' before theorem type");
 
@@ -174,8 +159,6 @@ Command *parse_statement(Parser *p) {
     cmd->tag = CMD_STATEMENT;
     cmd->as.stmt.kw = kw;
     cmd->as.stmt.name = name;
-    cmd->as.stmt.params = params;
-    cmd->as.stmt.param_count = param_count;
     cmd->as.stmt.type = ty;
 
     return cmd;

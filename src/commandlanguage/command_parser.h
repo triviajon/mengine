@@ -47,8 +47,6 @@ typedef struct {
 typedef struct {
     StmtKeyword kw;
     char *name;
-    Binder **params;
-    size_t param_count;
     AST *type;
 } StatementCmd;
 
@@ -108,7 +106,6 @@ Command *parse_definition(Parser *p);
 
 /**
  * <statement> ::= <statement_keyword> <identifier>
- *                  { "(" <binder> ")" }
  *                  ":" <term> "."
  *
  * @param p Pointer to the Parser.
