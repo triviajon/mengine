@@ -5,6 +5,14 @@ static void proof_state_register_top_level_uplink(Expression *goal) {
     add_to_parents(goal, ul);
 }
 
+ProofState *proof_state_new_from_theorem(Expression *initial_theorem,
+                                         Context *initial_context) {
+    Expression *proof = init_hole_expression(
+        "Goal", get_expression_type(initial_theorem), initial_context);
+
+    return proof_state_new(proof);
+}
+
 ProofState *proof_state_new(Expression *initial_goal) {
     ProofState *ps = malloc(sizeof(ProofState));
     if (!ps) return NULL;
