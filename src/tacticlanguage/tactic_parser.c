@@ -43,14 +43,15 @@ char *tactic_tag_to_string(TacticTag tag) {
     }
 }
 
-Tactic *parse_proof_command(Parser *p) {
+Tactic *tactic_parse_proof_command(Parser *p) {
     TokenType tok_type = p->current->type;
 
     TacticDispatchEntry *entry = NULL;
     TACTIC_LOOKUP_ENTRY(&entry, tok_type);
 
     if (entry == NULL) {
-        parser_error(p, "Unknown or unsupported proof command or tactic keyword");
+        parser_error(p,
+                     "Unknown or unsupported proof command or tactic keyword");
     }
 
     TacticParseFunc fn = TACTIC_ENTRY_PARSER(entry);
@@ -67,7 +68,7 @@ Tactic *parse_proof_command(Parser *p) {
     return tactic;
 }
 
-Tactic *parse_tactic(Parser *p) {
+Tactic *tactic_parse_tactic(Parser *p) {
     TokenType tok_type = p->current->type;
 
     TacticDispatchEntry *entry = NULL;
@@ -85,7 +86,7 @@ Tactic *parse_tactic(Parser *p) {
     return fn(p);
 }
 
-Tactic *parse_proof(Parser *p) {
+Tactic *tactic_parse_proof(Parser *p) {
     if (!parser_expect_consume(p, TOK_PROOF)) {
         parser_error(p, "expected 'Proof'");
     }
@@ -100,7 +101,7 @@ Tactic *parse_proof(Parser *p) {
     return tactic;
 }
 
-Tactic *parse_qed(Parser *p) {
+Tactic *tactic_parse_qed(Parser *p) {
     if (!parser_expect_consume(p, TOK_QED)) {
         parser_error(p, "expected 'Qed'");
     }
@@ -115,7 +116,7 @@ Tactic *parse_qed(Parser *p) {
     return tactic;
 }
 
-Tactic *parse_admitted(Parser *p) {
+Tactic *tactic_parse_admitted(Parser *p) {
     if (!parser_expect_consume(p, TOK_ADMITTED)) {
         parser_error(p, "expected 'Admitted'");
     }
@@ -130,7 +131,7 @@ Tactic *parse_admitted(Parser *p) {
     return tactic;
 }
 
-Tactic *parse_intro(Parser *p) {
+Tactic *tactic_parse_intro(Parser *p) {
     if (!parser_expect_consume(p, TOK_INTRO)) {
         parser_error(p, "expected 'intro'");
     }
@@ -155,7 +156,7 @@ Tactic *parse_intro(Parser *p) {
     return tactic;
 }
 
-Tactic *parse_intros(Parser *p) {
+Tactic *tactic_parse_intros(Parser *p) {
     if (!parser_expect_consume(p, TOK_INTROS)) {
         parser_error(p, "expected 'intros'");
     }
@@ -185,7 +186,7 @@ Tactic *parse_intros(Parser *p) {
     return tactic;
 }
 
-Tactic *parse_apply(Parser *p) {
+Tactic *tactic_parse_apply(Parser *p) {
     if (!parser_expect_consume(p, TOK_APPLY)) {
         parser_error(p, "expected 'apply'");
     }
@@ -204,7 +205,7 @@ Tactic *parse_apply(Parser *p) {
     return tactic;
 }
 
-Tactic *parse_eapply(Parser *p) {
+Tactic *tactic_parse_eapply(Parser *p) {
     if (!parser_expect_consume(p, TOK_EAPPLY)) {
         parser_error(p, "expected 'eapply'");
     }
@@ -223,7 +224,7 @@ Tactic *parse_eapply(Parser *p) {
     return tactic;
 }
 
-Tactic *parse_exact(Parser *p) {
+Tactic *tactic_parse_exact(Parser *p) {
     if (!parser_expect_consume(p, TOK_EXACT)) {
         parser_error(p, "expected 'exact'");
     }
@@ -242,7 +243,7 @@ Tactic *parse_exact(Parser *p) {
     return tactic;
 }
 
-Tactic *parse_rewrite(Parser *p) {
+Tactic *tactic_parse_rewrite(Parser *p) {
     if (!parser_expect_consume(p, TOK_REWRITE)) {
         parser_error(p, "expected 'rewrite'");
     }
@@ -269,7 +270,7 @@ Tactic *parse_rewrite(Parser *p) {
     return tactic;
 }
 
-Tactic *parse_reflexivity(Parser *p) {
+Tactic *tactic_parse_reflexivity(Parser *p) {
     if (!parser_expect_consume(p, TOK_REFLEXIVITY)) {
         parser_error(p, "expected 'reflexivity'");
     }
@@ -284,7 +285,7 @@ Tactic *parse_reflexivity(Parser *p) {
     return tactic;
 }
 
-Tactic *parse_assumption(Parser *p) {
+Tactic *tactic_parse_assumption(Parser *p) {
     if (!parser_expect_consume(p, TOK_ASSUMPTION)) {
         parser_error(p, "expected 'assumption'");
     }
@@ -299,7 +300,7 @@ Tactic *parse_assumption(Parser *p) {
     return tactic;
 }
 
-Tactic *parse_split(Parser *p) {
+Tactic *tactic_parse_split(Parser *p) {
     if (!parser_expect_consume(p, TOK_SPLIT)) {
         parser_error(p, "expected 'split'");
     }
@@ -314,7 +315,7 @@ Tactic *parse_split(Parser *p) {
     return tactic;
 }
 
-Tactic *parse_left(Parser *p) {
+Tactic *tactic_parse_left(Parser *p) {
     if (!parser_expect_consume(p, TOK_LEFT)) {
         parser_error(p, "expected 'left'");
     }
@@ -329,7 +330,7 @@ Tactic *parse_left(Parser *p) {
     return tactic;
 }
 
-Tactic *parse_right(Parser *p) {
+Tactic *tactic_parse_right(Parser *p) {
     if (!parser_expect_consume(p, TOK_RIGHT)) {
         parser_error(p, "expected 'right'");
     }
@@ -344,7 +345,7 @@ Tactic *parse_right(Parser *p) {
     return tactic;
 }
 
-Tactic *parse_exists(Parser *p) {
+Tactic *tactic_parse_exists(Parser *p) {
     if (!parser_expect_consume(p, TOK_EXISTS)) {
         parser_error(p, "expected 'exists'");
     }
@@ -362,4 +363,3 @@ Tactic *parse_exists(Parser *p) {
 
     return tactic;
 }
-

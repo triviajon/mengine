@@ -68,7 +68,7 @@ typedef struct Command {
  * @param p Pointer to the Parser.
  * @return Command structure representing the parsed command.
  */
-Command *parse_command(Parser *p);
+Command *command_parse_command(Parser *p);
 
 /**
  * <declaration> ::= <declaration_keyword> <assumption> "."
@@ -76,7 +76,7 @@ Command *parse_command(Parser *p);
  * @param p Pointer to the Parser.
  * @return Command structure representing the parsed declaration.
  */
-Command *parse_declaration(Parser *p);
+Command *command_parse_declaration(Parser *p);
 
 /**
  * <declaration_keyword> ::= "Axiom" | "Variable"
@@ -84,7 +84,7 @@ Command *parse_declaration(Parser *p);
  * @param p Pointer to the Parser.
  * @return DeclKeyword representing the parsed declaration keyword.
  */
-DeclKeyword parse_declaration_keyword(Parser *p);
+DeclKeyword command_parse_declaration_keyword(Parser *p);
 
 /**
  * <assumption> ::= <binder>
@@ -92,7 +92,7 @@ DeclKeyword parse_declaration_keyword(Parser *p);
  * @param p Pointer to the Parser.
  * @return Binder structure representing the parsed assumption.
  */
-Binder parse_assumption(Parser *p);
+Binder command_parse_assumption(Parser *p);
 
 /**
  * <definition> ::= "Definition" <identifier> { "(" <binder> ")" }
@@ -102,7 +102,7 @@ Binder parse_assumption(Parser *p);
  * @param p Pointer to the Parser.
  * @return Command structure representing the parsed definition.
  */
-Command *parse_definition(Parser *p);
+Command *command_parse_definition(Parser *p);
 
 /**
  * <statement> ::= <statement_keyword> <identifier>
@@ -111,7 +111,7 @@ Command *parse_definition(Parser *p);
  * @param p Pointer to the Parser.
  * @return Command structure representing the parsed statement.
  */
-Command *parse_statement(Parser *p);
+Command *command_parse_statement(Parser *p);
 
 /**
  * <statement_keyword> ::= "Theorem" | "Lemma"
@@ -119,7 +119,7 @@ Command *parse_statement(Parser *p);
  * @param p Pointer to the Parser.
  * @return StmtKeyword representing the parsed statement keyword.
  */
-StmtKeyword parse_statement_keyword(Parser *p);
+StmtKeyword command_parse_statement_keyword(Parser *p);
 
 /**
  * <check> ::= "Check" <term> "."
@@ -127,7 +127,7 @@ StmtKeyword parse_statement_keyword(Parser *p);
  * @param p Pointer to the Parser.
  * @return Command structure representing the parsed check command.
  */
-Command *parse_check(Parser *p);
+Command *command_parse_check(Parser *p);
 
 typedef Command *(*CommandParseFunc)(Parser *p);
 
@@ -137,9 +137,12 @@ typedef struct {
 } CommandDispatchEntry;
 
 static CommandDispatchEntry command_dispatch_table[] = {
-    {TOK_AXIOM, parse_declaration},     {TOK_VARIABLE, parse_declaration},
-    {TOK_DEFINITION, parse_definition}, {TOK_THEOREM, parse_statement},
-    {TOK_LEMMA, parse_statement},       {TOK_CHECK, parse_check},
+    {TOK_AXIOM, command_parse_declaration},
+    {TOK_VARIABLE, command_parse_declaration},
+    {TOK_DEFINITION, command_parse_definition},
+    {TOK_THEOREM, command_parse_statement},
+    {TOK_LEMMA, command_parse_statement},
+    {TOK_CHECK, command_parse_check},
 };
 
 #define CMD_DISPATCH_TABLE (command_dispatch_table)

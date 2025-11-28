@@ -73,7 +73,13 @@ char *tactic_tag_to_string(TacticTag tag);
  * @param p Pointer to the Parser.
  * @return Tactic structure representing the parsed proof command.
  */
-Tactic *parse_proof_command(Parser *p);
+Tactic *tactic_parse_proof_command(Parser *p);
+
+/**
+ * @param p Pointer to the Parser.
+ * @return Tactic structure representing the Proof command.
+ */
+Tactic *tactic_parse_proof(Parser *p);
 
 /**
  * <tactic> ::= "intro" [ <ident> ]
@@ -93,121 +99,115 @@ Tactic *parse_proof_command(Parser *p);
  * @param p Pointer to the Parser.
  * @return Tactic structure representing the parsed tactic.
  */
-Tactic *parse_tactic(Parser *p);
-
-/**
- * @param p Pointer to the Parser.
- * @return Tactic structure representing the Proof command.
- */
-Tactic *parse_proof(Parser *p);
+Tactic *tactic_parse_tactic(Parser *p);
 
 /**
  * @param p Pointer to the Parser.
  * @return Tactic structure representing the Qed command.
  */
-Tactic *parse_qed(Parser *p);
+Tactic *tactic_parse_qed(Parser *p);
 
 /**
  * @param p Pointer to the Parser.
  * @return Tactic structure representing the Admitted command.
  */
-Tactic *parse_admitted(Parser *p);
+Tactic *tactic_parse_admitted(Parser *p);
 
 /**
  * @param p Pointer to the Parser.
  * @return Tactic structure representing the intro tactic.
  */
-Tactic *parse_intro(Parser *p);
+Tactic *tactic_parse_intro(Parser *p);
 
 /**
  * @param p Pointer to the Parser.
  * @return Tactic structure representing the intros tactic.
  */
-Tactic *parse_intros(Parser *p);
+Tactic *tactic_parse_intros(Parser *p);
 
 /**
  * @param p Pointer to the Parser.
  * @return Tactic structure representing the apply tactic.
  */
-Tactic *parse_apply(Parser *p);
+Tactic *tactic_parse_apply(Parser *p);
 
 /**
  * @param p Pointer to the Parser.
  * @return Tactic structure representing the eapply tactic.
  */
-Tactic *parse_eapply(Parser *p);
+Tactic *tactic_parse_eapply(Parser *p);
 
 /**
  * @param p Pointer to the Parser.
  * @return Tactic structure representing the exact tactic.
  */
-Tactic *parse_exact(Parser *p);
+Tactic *tactic_parse_exact(Parser *p);
 
 /**
  * @param p Pointer to the Parser.
  * @return Tactic structure representing the rewrite tactic.
  */
-Tactic *parse_rewrite(Parser *p);
+Tactic *tactic_parse_rewrite(Parser *p);
 
 /**
  * @param p Pointer to the Parser.
  * @return Tactic structure representing the reflexivity tactic.
  */
-Tactic *parse_reflexivity(Parser *p);
+Tactic *tactic_parse_reflexivity(Parser *p);
 
 /**
  * @param p Pointer to the Parser.
  * @return Tactic structure representing the assumption tactic.
  */
-Tactic *parse_assumption(Parser *p);
+Tactic *tactic_parse_assumption(Parser *p);
 
 /**
  * @param p Pointer to the Parser.
  * @return Tactic structure representing the split tactic.
  */
-Tactic *parse_split(Parser *p);
+Tactic *tactic_parse_split(Parser *p);
 
 /**
  * @param p Pointer to the Parser.
  * @return Tactic structure representing the left tactic.
  */
-Tactic *parse_left(Parser *p);
+Tactic *tactic_parse_left(Parser *p);
 
 /**
  * @param p Pointer to the Parser.
  * @return Tactic structure representing the right tactic.
  */
-Tactic *parse_right(Parser *p);
+Tactic *tactic_parse_right(Parser *p);
 
 /**
  * @param p Pointer to the Parser.
  * @return Tactic structure representing the exists tactic.
  */
-Tactic *parse_exists(Parser *p);
+Tactic *tactic_parse_exists(Parser *p);
 
 typedef Tactic *(*TacticParseFunc)(Parser *p);
 
 typedef struct {
     TokenType type;
-    TacticParseFunc parse_func;
+    TacticParseFunc tactic_parse_func;
 } TacticDispatchEntry;
 
 static TacticDispatchEntry tactic_dispatch_table[] = {
-    {TOK_PROOF, parse_proof},
-    {TOK_QED, parse_qed},
-    {TOK_ADMITTED, parse_admitted},
-    {TOK_INTRO, parse_intro},
-    {TOK_INTROS, parse_intros},
-    {TOK_APPLY, parse_apply},
-    {TOK_EAPPLY, parse_eapply},
-    {TOK_EXACT, parse_exact},
-    {TOK_REWRITE, parse_rewrite},
-    {TOK_REFLEXIVITY, parse_reflexivity},
-    {TOK_ASSUMPTION, parse_assumption},
-    {TOK_SPLIT, parse_split},
-    {TOK_LEFT, parse_left},
-    {TOK_RIGHT, parse_right},
-    {TOK_EXISTS, parse_exists},
+    {TOK_PROOF, tactic_parse_proof},
+    {TOK_QED, tactic_parse_qed},
+    {TOK_ADMITTED, tactic_parse_admitted},
+    {TOK_INTRO, tactic_parse_intro},
+    {TOK_INTROS, tactic_parse_intros},
+    {TOK_APPLY, tactic_parse_apply},
+    {TOK_EAPPLY, tactic_parse_eapply},
+    {TOK_EXACT, tactic_parse_exact},
+    {TOK_REWRITE, tactic_parse_rewrite},
+    {TOK_REFLEXIVITY, tactic_parse_reflexivity},
+    {TOK_ASSUMPTION, tactic_parse_assumption},
+    {TOK_SPLIT, tactic_parse_split},
+    {TOK_LEFT, tactic_parse_left},
+    {TOK_RIGHT, tactic_parse_right},
+    {TOK_EXISTS, tactic_parse_exists},
 };
 
 #define TACTIC_DISPATCH_TABLE (tactic_dispatch_table)
@@ -219,9 +219,10 @@ static TacticDispatchEntry tactic_dispatch_table[] = {
  *
  * @param entry Loop variable of type TacticDispatchEntry*.
  */
-#define TACTIC_FOREACH_ENTRY(entry)                                 \
-    for (TacticDispatchEntry * (entry) = TACTIC_DISPATCH_TABLE;    \
-         (entry) < TACTIC_DISPATCH_TABLE + TACTIC_DISPATCH_TABLE_SIZE; ++(entry))
+#define TACTIC_FOREACH_ENTRY(entry)                                    \
+    for (TacticDispatchEntry * (entry) = TACTIC_DISPATCH_TABLE;        \
+         (entry) < TACTIC_DISPATCH_TABLE + TACTIC_DISPATCH_TABLE_SIZE; \
+         ++(entry))
 
 /**
  * Macro to get the key (token type) from a tactic dispatch entry.
@@ -235,7 +236,7 @@ static TacticDispatchEntry tactic_dispatch_table[] = {
  *
  * @param entry Pointer to the TacticDispatchEntry.
  */
-#define TACTIC_ENTRY_PARSER(entry) ((entry)->parse_func)
+#define TACTIC_ENTRY_PARSER(entry) ((entry)->tactic_parse_func)
 
 /**
  * Macro to look up a tactic dispatch entry by token type.
@@ -256,4 +257,3 @@ static TacticDispatchEntry tactic_dispatch_table[] = {
     }
 
 #endif  // TACTIC_PARSER_H
-
