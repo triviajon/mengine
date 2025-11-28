@@ -1,5 +1,32 @@
 #include "src/runtime/runtime.h"
 
+void debug_print_mode_update(MEngineRuntime *rt) {
+    if (!rt || !rt->options) return;
+    if (!rt->options->debug || !rt->options->debug__print_mode) return;
+
+    fprintf(stderr, MAG "[MODE]" DIM " Runtime mode changed to ");
+
+    switch (rt->mode) {
+        case MENGINE_RUNTIME_COMMAND_MODE:
+            fprintf(stderr, "COMMAND_MODE");
+            break;
+
+        case MENGINE_RUNTIME_PROOF_MODE:
+            fprintf(stderr, "PROOF_MODE");
+            if (rt->pending_theorem) {
+                fprintf(stderr, " (goal: %s)",
+                        stringify_expression(rt->pending_theorem));
+            }
+            break;
+
+        default:
+            fprintf(stderr, "UNKNOWN_MODE");
+            break;
+    }
+
+    fprintf(stderr, CRESET "\n");
+}
+
 MEngineRuntime *mengine_runtime_new(void) {
     MEngineRuntime *rt = malloc(sizeof(MEngineRuntime));
     if (!rt) {
@@ -18,6 +45,8 @@ MEngineRuntime *mengine_runtime_new(void) {
         return NULL;
     }
     definition_table_init(rt->def_table);
+
+    mengine_runtime_command_mode(rt);
 
     return rt;
 }
@@ -52,68 +81,94 @@ static void _handle_declaration_command(MEngineRuntime *rt,
     return;
 }
 
+Expression *_create_definition_body(MEngineRuntime *rt, Binder **params,
+                                    size_t param_count, AST *body,
+                                    Expression **rendered_def_body) {
+    // Given params = {(p0: P0) (p1: P1) ... (pn: Pn)}, param_count = n, and a
+    // body, convert it to the term fun (p0: P0) => ... => fun (pn: Pn) => body
+    Context *c = rt->ctx;
+    Expression **params_rendered = malloc(param_count * sizeof(Expression *));
+    Context **contexts = malloc((param_count + 1) * sizeof(Context *));
+
+    // The entire body must be valid in the runtime context
+    contexts[0] = c;
+
+    for (size_t i = 0; i < param_count; i++) {
+        Binder *b = params[i];
+
+        Expression *param_type = ast_to_expression(b->type, c);
+        Expression *param_var = init_var_expression_wc(b->name, param_type, c);
+        c = context_insert(c, param_var);
+
+        params_rendered[i] = param_var;
+        contexts[i + 1] = c;
+    }
+
+    Expression *result = ast_to_expression(body, c);
+    *rendered_def_body = result;
+    for (size_t i = param_count - 1; i >= 0; i--) {
+        result =
+            init_lambda_expression_wc(params_rendered[i], result, contexts[i]);
+    }
+
+    free(params_rendered);
+    free(contexts);
+    return result;
+}
+
 static void _handle_definition_command(MEngineRuntime *rt,
                                        DefinitionCmd *defn_cmd) {
     if (!rt || !defn_cmd) return;
 
     const char *name = defn_cmd->name;
-
-    Context *ctx = rt->ctx;
-
-    // Lefthand side parameters
     Binder **params = defn_cmd->params;
     size_t param_count = defn_cmd->param_count;
 
-    for (size_t i = 0; i < param_count; i++) {
-        Binder *b = params[i];
+    Expression *rendered_def_body = NULL;
+    Expression *body = _create_definition_body(
+        rt, params, param_count, defn_cmd->type, &rendered_def_body);
 
-        Expression *param_type = ast_to_expression(b->type, ctx);
-        if (!param_type) {
-            fprintf(stderr, "Failed to convert parameter %s type.\n", b->name);
-            return;
-        }
-
-        Expression *param_var =
-            init_var_expression_wc(b->name, param_type, ctx);
-
-        ctx = context_insert(ctx, param_var);
-    }
-
-    Expression *expr_type = ast_to_expression(defn_cmd->type, ctx);
-    if (!expr_type) {
-        fprintf(stderr, "Failed to convert type for Definition %s\n", name);
-        return;
-    }
-
-    Expression *expr_body = ast_to_expression(defn_cmd->body, ctx);
-    if (!expr_body) {
-        fprintf(stderr, "Failed to convert body for Definition %s\n", name);
-        return;
-    }
-
-    Expression *body_ty = get_expression_type(expr_body);
-
-    if (!congruence(body_ty, expr_type)) {
+    Expression *inferred_type_def_body = get_expression_type(rendered_def_body);
+    Expression *expected_type_def_body =
+        ast_to_expression(defn_cmd->type, rt->ctx);
+    if (!congruence(inferred_type_def_body, expected_type_def_body)) {
         fprintf(stderr,
                 RED "Type error:" CRESET
-                    " body of definition '%s' has wrong type.\n",
+                    " definition '%s' has a mismatched type.\n",
                 name);
-        fprintf(stderr, "Declared type: %s\n", stringify_expression(expr_type));
-        fprintf(stderr, "Body type:     %s\n", stringify_expression(body_ty));
+        fprintf(stderr, "Declared type: %s\n",
+                stringify_expression(expected_type_def_body));
+        fprintf(stderr, "Inferred type: %s\n",
+                stringify_expression(inferred_type_def_body));
         return;
     }
 
-    // Store the definition in the definition table
-    definition_table_insert(rt->def_table, name, expr_type, expr_body);
+    definition_table_insert(rt->def_table, name, inferred_type_def_body, body);
+    Expression *defn_var =
+        init_var_expression_wc(defn_cmd->name, inferred_type_def_body, rt->ctx);
+    rt->ctx = context_insert(rt->ctx, defn_var);
 
-    printf("%s %s : %s defined.\n", "Definition", name,
-           stringify_expression(expr_type));
+    printf("Definition %s : %s defined.\n", name,
+           stringify_expression(inferred_type_def_body));
 }
 
 static void _handle_statement_command(MEngineRuntime *rt,
                                       StatementCmd *stmt_cmd) {
-    printf("not implemented yet\n");
-    return;
+    if (!rt || !stmt_cmd) return;
+
+    Expression *statement_type = ast_to_expression(stmt_cmd->type, rt->ctx);
+    if (!statement_type) {
+        fprintf(stderr, "Failed to convert type for Statement %s\n",
+                stmt_cmd->name);
+        return;
+    }
+
+    Expression *theorem =
+        init_var_expression_wc(stmt_cmd->name, statement_type, rt->ctx);
+    mengine_runtime_proof_mode(rt, theorem);
+
+    printf("%s %s : %s stated.\n", stmt_keyword_to_string(stmt_cmd->kw),
+           stmt_cmd->name, stringify_expression(statement_type));
 }
 
 static void _handle_check_command(MEngineRuntime *rt, CheckCmd *check_cmd) {
@@ -163,13 +218,35 @@ void mengine_execute_command(MEngineRuntime *rt, Command *cmd) {
     }
 }
 
+void mengine_runtime_proof_mode(MEngineRuntime *rt, Expression *theorem) {
+    if (!rt || !theorem) {
+        return;
+    }
+
+    rt->mode = MENGINE_RUNTIME_PROOF_MODE;
+    rt->pending_theorem = theorem;
+    debug_print_mode_update(rt);
+}
+
+void mengine_runtime_command_mode(MEngineRuntime *rt) {
+    if (!rt) {
+        return;
+    }
+
+    rt->mode = MENGINE_RUNTIME_COMMAND_MODE;
+    rt->pending_theorem = NULL;
+    debug_print_mode_update(rt);
+}
+
 void mengine_repl(MEngineRuntime *rt) {
     if (!rt) return;
 
     char buffer[REPL_LINE_CAP];
 
-    MEngineOptions options = {
-        .debug = true, .debug__print_tokens = true, .debug__print_ast = true};
+    MEngineOptions options = {.debug = true,
+                              .debug__print_tokens = true,
+                              .debug__print_ast = true,
+                              .debug__print_mode = true};
 
     printf("MEngine REPL. Type 'quit.' to exit.\n");
     printf("> ");
@@ -197,18 +274,24 @@ void mengine_repl(MEngineRuntime *rt) {
 
         Command *cmd = NULL;
 
-        cmd = parse_command(&parser);
+        switch (rt->mode) {
+            case (MENGINE_RUNTIME_COMMAND_MODE): {
+                cmd = parse_command(&parser);
+                if (!cmd) {
+                    printf("Parse error.\n");
+                    printf("> ");
+                    fflush(stdout);
+                    continue;
+                }
 
-        if (!cmd) {
-            printf("Parse error.\n");
-            printf("> ");
-            fflush(stdout);
-            continue;
+                mengine_execute_command(rt, cmd);
+                // todo: command freeing
+                break;
+            }
+            case (MENGINE_RUNTIME_PROOF_MODE): {
+                // ?
+            }
         }
-
-        mengine_execute_command(rt, cmd);
-
-        // todo: command freeing
 
         printf("> ");
         fflush(stdout);

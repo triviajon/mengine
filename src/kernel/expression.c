@@ -45,6 +45,11 @@ void add_to_parents(Expression *expression, Uplink *uplink) {
     }
 }
 
+void remove_tl_uplink(Expression *expression) {
+    DoublyLinkedList *parents = get_expression_uplinks(expression);
+    printf("implement me");
+}
+
 Uplink *new_uplink(Expression *parent, Relation relation) {
     Uplink *new_uplink = malloc(sizeof(Uplink));
     if (new_uplink == NULL) {
@@ -62,6 +67,15 @@ Uplink *new_uplink2(Context *parent, Relation relation) {
     }
     new_uplink->context = parent;
     new_uplink->relation = relation;
+    return new_uplink;
+}
+
+Uplink *new_uplink_tl() {
+    Uplink *new_uplink = malloc(sizeof(Uplink));
+    if (!new_uplink) return NULL;
+
+    new_uplink->relation = TOP_LEVEL_HOLE;
+
     return new_uplink;
 }
 

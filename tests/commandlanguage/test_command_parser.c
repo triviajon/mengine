@@ -80,12 +80,7 @@ void print_command(const Command *cmd) {
             printf("STATEMENT(");
             printf(cmd->as.stmt.kw == STMT_KW_THEOREM ? "Theorem, "
                                                       : "Lemma, ");
-            printf("%s, params=[", cmd->as.stmt.name);
-            for (size_t i = 0; i < cmd->as.stmt.param_count; i++) {
-                print_binder(cmd->as.stmt.params[i]);
-                if (i + 1 < cmd->as.stmt.param_count) printf("; ");
-            }
-            printf("], type=");
+            printf("%s, type=", cmd->as.stmt.name);
             print_ast_brief(cmd->as.stmt.type);
             printf(")");
             break;
@@ -127,8 +122,9 @@ int main() {
         "Definition with multiple parameters and lambda body");
     test_command_parsing("Theorem t : forall (x : Type), x.\n",
                          "Simple theorem with a forall");
-    test_command_parsing("Lemma add_comm (n : nat) (m : nat) : eq nat n m.\n",
-                         "Lemma with parameters");
+    test_command_parsing(
+        "Lemma add_comm : forall (n : nat), forall (m : nat), eq nat n m.\n",
+        "Simple lemma");
     test_command_parsing("Axiom   z   :   Type   .\n",
                          "Declaration with extra whitespace");
 
