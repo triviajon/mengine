@@ -4,21 +4,20 @@ static Expression *_current_goal(MEngineRuntime *rt) {
     return proof_state_current(rt->proof_state);
 }
 
-static void _handle_proof_tactic(MEngineRuntime *rt) { (void)rt; }
+static void _handle_proof_tactic(MEngineRuntime *rt) {
+    // nothing to do for now!
+    (void)rt;
+}
 
 static void _handle_qed_tactic(MEngineRuntime *rt) {
     Expression *thm = rt->pending_theorem;
     rt->ctx = context_insert(rt->ctx, thm);
-    proof_state_free(rt->proof_state);
-    rt->proof_state = NULL;
     mengine_runtime_command_mode(rt);
 }
 
 static void _handle_admitted_tactic(MEngineRuntime *rt) {
     Expression *thm = rt->pending_theorem;
     rt->ctx = context_insert(rt->ctx, thm);
-    proof_state_free(rt->proof_state);
-    rt->proof_state = NULL;
     mengine_runtime_command_mode(rt);
 }
 
