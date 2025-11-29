@@ -1,7 +1,6 @@
 #ifndef TACTIC_EXEC_H
 #define TACTIC_EXEC_H
 
-#include "src/engine/tactics.h"
 #include "src/runtime/runtime.h"
 
 /**

@@ -1,4 +1,5 @@
 #include "src/runtime/runtime.h"
+#include "src/common/options.h"
 
 void debug_print_mode(MEngineRuntime *rt) {
     if (!rt || !rt->options) return;
@@ -28,11 +29,13 @@ void debug_print_mode(MEngineRuntime *rt) {
     fprintf(stderr, CRESET "\n");
 }
 
-MEngineRuntime *mengine_runtime_new(void) {
+MEngineRuntime *mengine_runtime_new(MEngineOptions *options) {
     MEngineRuntime *rt = malloc(sizeof(MEngineRuntime));
     if (!rt) {
         return NULL;
     }
+
+    rt->options = options;
 
     rt->ctx = context_create_empty();
     if (!rt->ctx) {
@@ -46,7 +49,6 @@ MEngineRuntime *mengine_runtime_new(void) {
         return NULL;
     }
     definition_table_init(rt->def_table);
-
     mengine_runtime_command_mode(rt);
 
     return rt;

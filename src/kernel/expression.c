@@ -272,7 +272,11 @@ Expression *init_var_expression_wc(const char *name, Expression *type,
     expr->value.var.name = strdup(name);
     expr->value.var.type = type;
     expr->value.var.uplinks = dll_create();
-    expr->value.var.context = defining_context;
+    // TODO: I won't lie, this feels a bit dirty, but I also don't know how to make this make sense.
+    // From the user perspective of init_var_expression_wc, they'd need to somehow possess a context 
+    // with this variable in with BEFORE creating the variable itself. Obviously, we can't do that, so instead
+    // we'll assume that the user will provide a context without the variable in it, and we'll add it to the context after creating the variable.
+    expr->value.var.context = context_insert(defining_context, expr);
     expr->value.var.maybe_hole_free = true;
     return expr;
 }

@@ -100,6 +100,8 @@ static void _handle_statement_command(MEngineRuntime *rt,
 
     printf("%s %s : %s stated.\n", stmt_keyword_to_string(stmt_cmd->kw),
            stmt_cmd->name, stringify_expression(statement_type));
+
+    debug_print_mode(rt);
 }
 
 static void _handle_check_command(MEngineRuntime *rt, CheckCmd *check_cmd) {
