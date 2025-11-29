@@ -1,4 +1,6 @@
 #include "src/runtime/tactic_exec.h"
+#include "src/engine/new_tactics.h"
+#include "src/runtime/proof_state.h"
 
 static Expression *_current_goal(MEngineRuntime *rt) {
     return proof_state_current(rt->proof_state);
@@ -22,7 +24,14 @@ static void _handle_admitted_tactic(MEngineRuntime *rt) {
 }
 
 static void _handle_intro_tactic(MEngineRuntime *rt, IntroTactic *t) {
-    (void)rt;
+    Expression *g = _current_goal(rt);
+    TacticResult *result = intro_tactic(g, t->name);
+    if (result->success) {
+        proof_state_add_goals(rt->proof_state, result->new_goals);
+    } else {
+        fprintf(stderr, "Error: %s\n", result->error_message);
+    }
+    free_tactic_result(result);
     (void)t;
 }
 
@@ -68,9 +77,7 @@ static void _handle_exists_tactic(MEngineRuntime *rt, ExistsTactic *t) {
     (void)t;
 }
 
-void mengine_execute_tactic(MEngineRuntime *rt, Tactic *tac) {
-    if (!rt || !rt->proof_state || !tac) return;
-
+void _mengine_dispatch_tactic(MEngineRuntime *rt, Tactic *tac) {
     switch (tac->tag) {
         case TACTIC_PROOF:
             return _handle_proof_tactic(rt);
@@ -117,4 +124,18 @@ void mengine_execute_tactic(MEngineRuntime *rt, Tactic *tac) {
         case TACTIC_EXISTS:
             return _handle_exists_tactic(rt, &tac->as.exists);
     }
+}
+
+void mengine_execute_tactic(MEngineRuntime *rt, Tactic *tac) {
+    if (!rt || !rt->proof_state || !tac) return;
+
+    _mengine_dispatch_tactic(rt, tac);
+
+    // Each tactic handler will take care of adding new goals. We just need to
+    // advance to the next goal if there is one.
+    if (!proof_state_next(rt->proof_state)) {
+        mengine_runtime_command_mode(rt);
+    }
+
+    proof_state_next(rt->proof_state);
 }

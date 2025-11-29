@@ -43,10 +43,10 @@ void debug_print_mode(MEngineRuntime *rt);
 
 /**
  * Allocate and initialize a new MEngine runtime.
- *
+ * @param options Pointer to MEngine Options.
  * @return Pointer to a newly allocated MEngineRuntime, or NULL on error.
  */
-MEngineRuntime *mengine_runtime_new(void);
+MEngineRuntime *mengine_runtime_new(MEngineOptions *options);
 
 /**
  * Free all resources associated with the runtime.

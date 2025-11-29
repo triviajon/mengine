@@ -3,7 +3,13 @@
 #include "src/runtime/repl.h"
 
 int main(void) {
-    MEngineRuntime *rt = mengine_runtime_new();
+    MEngineOptions options = {.debug = true,
+        .debug__print_tokens = true,
+        .debug__print_ast = true,
+        .debug__print_mode = true};
+
+
+    MEngineRuntime *rt = mengine_runtime_new(&options);
     if (!rt) {
         fprintf(stderr, "Failed to initialize MEngine runtime.\n");
         return 1;
