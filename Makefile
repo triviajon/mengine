@@ -15,6 +15,8 @@ TEST_BINARIES := $(TEST_SRC:.c=)
 HELPERS_SRC := $(shell find tests/helpers -name '*.c')
 HELPERS_OBJ := $(HELPERS_SRC:.c=.o)
 
+UNAME := $(shell uname)
+
 all: $(ENGINE_LIB) $(MENGINE_BIN) tests
 
 $(ENGINE_LIB): $(ENGINE_OBJ)
@@ -42,5 +44,8 @@ $(TEST_BINARIES): %: %.c $(HELPERS_OBJ) $(ENGINE_LIB)
 
 clean:
 	rm -f $(ENGINE_OBJ) $(MENGINE_OBJ) $(HELPERS_OBJ) $(ENGINE_LIB) $(MENGINE_BIN) $(TEST_BINARIES)
+	if [ "$(UNAME)" = "Darwin" ]; then \
+		find . -name "*.dSYM" -type d -exec rm -rf {} +; \
+	fi
 
 .PHONY: all clean tests check
