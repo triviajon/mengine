@@ -1,4 +1,10 @@
 #include "src/runtime/repl.h"
+#include "src/kernel/expression.h"
+#include "src/runtime/command_exec.h"
+#include "src/runtime/runtime.h"
+#include "src/runtime/tactic_exec.h"
+#include "src/runtime/proof_state.h"
+#include "src/kernel/utils.h"
 
 void mengine_repl(MEngineRuntime *rt) {
     if (!rt) return;
@@ -50,6 +56,26 @@ void mengine_repl(MEngineRuntime *rt) {
                     printf("> ");
                     fflush(stdout);
                     continue;
+                }
+                
+                mengine_execute_tactic(rt, tactic);
+                // todo: tactic freeing
+                break;
+            }
+        }
+
+        // Getting ready for next prompt
+
+
+        if (rt->mode == MENGINE_RUNTIME_PROOF_MODE) {
+            if (rt->proof_state) {
+                Expression *current_goal = proof_state_current(rt->proof_state);
+                if (current_goal) {
+                    Context *goal_ctx = get_expression_context(current_goal);
+                    printf("\n" CYN "Context:" CRESET "\n%s\n", 
+                            stringify_context(goal_ctx));
+                    printf(CYN "Goal:" CRESET "\n%s\n", 
+                            stringify_expression(get_expression_type(current_goal)));
                 }
             }
         }
