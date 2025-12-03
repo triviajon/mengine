@@ -1,7 +1,26 @@
 #include "src/engine/new_tactics.h"
 #include "src/kernel/doubly_linked_list.h"
 #include "src/kernel/expression.h"
-#include "src/kernel/subst.h"
+#include "src/kernel/new_subst.h"
+
+TacticResult *init_tactic_result(bool success, DoublyLinkedList *new_goals, char *error_message) {
+    TacticResult *result = malloc(sizeof(TacticResult));
+    if (!result) {
+        return NULL;
+    }
+    
+    result->success = success;
+    result->new_goals = new_goals;
+    result->error_message = error_message;
+    
+    return result;
+}
+
+
+void free_tactic_result(TacticResult *result) {
+    if (!result) return;
+    free(result);
+}
 
 TacticResult *intro_tactic(Expression *goal, char *name) {
     TacticResult *result = init_tactic_result(false, NULL, NULL);
@@ -25,13 +44,12 @@ TacticResult *intro_tactic(Expression *goal, char *name) {
     // Then, assuming the goal expected type is "forall (x : A), B", we'll need to create a new body B[x -> x']
     // Then, we'll need to create a new goal type with the new body and the new bound variable in the context. 
     Expression *x_prime = init_var_expression_wc(name, A, get_expression_context(goal));
-    Expression *new_body = subst(B, x, x_prime);
+    Expression *B_prime = new_subst(B, x, x_prime);
     Context *new_context = context_insert(get_expression_context(goal), x_prime);
-    Expression *new_goal_type = init_lambda_expression_wc(x_prime, new_body, new_context);
-    Expression *new_goal = init_hole_expression("Goal", new_goal_type, new_context);
+    Expression *new_goal = init_hole_expression("Goal", B_prime, new_context);
 
     // Finally, we'll need to create a new proof of the original goal.
-    Expression *proof_of_original = init_lambda_expression_wc(x, new_goal, get_expression_context(goal));
+    Expression *proof_of_original = init_lambda_expression_wc(x_prime, new_goal, new_context);
     if (can_fill(goal, proof_of_original)) {
         fill_hole(goal, proof_of_original);
 
