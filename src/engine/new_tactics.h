@@ -21,4 +21,8 @@ void free_tactic_result(TacticResult *result);
 // fill the hole with the term "λ x : A, ?B" and the result of the tactic is returned.
 TacticResult *intro_tactic(Expression *goal, char *name);
 
+// Given a hole with expected type "forall (x : A), B" and a list of names,
+// fill the hole with the term "λ x : A, ?B" and the result of the tactic is returned.
+TacticResult *intros_tactic(Expression *goal, char **names, size_t name_count);
+
 #endif  // NEW_TACTICS
