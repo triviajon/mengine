@@ -19,14 +19,21 @@ Expression *new_subst(Expression *expression, Expression *old_e,
         case (LAMBDA_EXPRESSION): {
             // Assume the expression has form fun (x: A) => B
             Expression *x = expression->value.lambda.bound_variable;
-            Context *x_defn_ctx = get_expression_context(x)->parent;
             Expression *A = get_expression_type(x);
             Expression *B = expression->value.lambda.body;
 
             // We need to first create a new binding variable for the lambda.
             // If we had (x: A), we create (x': A') where A' := A[old_e -> new_e]
             Expression *A_prime = new_subst(A, old_e, new_e);
-            Expression *x_prime = init_var_expression_wc(x->value.var.name, A_prime, x_defn_ctx);
+
+            // Compute the minimal context for x_prime: context(A_prime) minus old_e
+            DoublyLinkedList *old_list = dll_create();
+            dll_insert_at_tail(old_list, dll_new_node(old_e));
+            Context *x_prime_ctx = context_for_binding(A_prime, old_list);
+            dll_remove_tail(old_list);
+            dll_destroy(old_list);
+
+            Expression *x_prime = init_var_expression_wc(x->value.var.name, A_prime, x_prime_ctx);
 
             // Next, we need to create the new body B', where B' := B[x -> x', old_e -> new_e]
             DoublyLinkedList *old_exprs = dll_create();
@@ -38,7 +45,7 @@ Expression *new_subst(Expression *expression, Expression *old_e,
             dll_insert_at_tail(new_exprs, dll_new_node(x_prime));
 
             Expression *B_prime = new_p_subst(B, old_exprs, new_exprs);
-            Context *B_prime_parent_ctx = get_expression_context(B_prime)->parent;
+            Context *B_prime_ctx = get_expression_context(B_prime);
 
             dll_remove_tail(old_exprs);
             dll_remove_tail(old_exprs);
@@ -48,7 +55,7 @@ Expression *new_subst(Expression *expression, Expression *old_e,
             dll_remove_tail(new_exprs);
             dll_destroy(new_exprs);
 
-            return init_lambda_expression_wc(x_prime, B, B_prime_parent_ctx);
+            return init_lambda_expression_wc(x_prime, B_prime, B_prime_ctx);
         }
         case (APP_EXPRESSION): {
             Expression *app_func = expression->value.app.func;
@@ -59,21 +66,29 @@ Expression *new_subst(Expression *expression, Expression *old_e,
             if (forms_redex(new_app_func, new_app_arg)) {
                 return reduce(new_app_func, new_app_arg);
             } else {
-                // todo: investigate this further
-                return init_app_expression(new_app_func, new_app_arg);
+                Context *app_ctx = context_add(get_expression_context(new_app_func),
+                                               get_expression_context(new_app_arg));
+                return init_app_expression_wc(new_app_func, new_app_arg, app_ctx);
             }
         }
         case (FORALL_EXPRESSION): {
             // Assume the expression has form forall (x: A), B
             Expression *x = expression->value.forall.bound_variable;
-            Context *x_defn_ctx = get_expression_context(x)->parent;
             Expression *A = get_expression_type(x);
             Expression *B = expression->value.forall.body;
 
             // We need to first create a new binding variable for the forall.
             // If we had (x: A), we create (x': A') where A' := A[old_e -> new_e]
             Expression *A_prime = new_subst(A, old_e, new_e);
-            Expression *x_prime = init_var_expression_wc(x->value.var.name, A_prime, x_defn_ctx);
+
+            // Compute the minimal context for x_prime: context(A_prime) minus old_e
+            DoublyLinkedList *old_list = dll_create();
+            dll_insert_at_tail(old_list, dll_new_node(old_e));
+            Context *x_prime_ctx = context_for_binding(A_prime, old_list);
+            dll_remove_tail(old_list);
+            dll_destroy(old_list);
+
+            Expression *x_prime = init_var_expression_wc(x->value.var.name, A_prime, x_prime_ctx);
 
             // Next, we need to create the new body B', where B' := B[x -> x', old_e -> new_e]
             DoublyLinkedList *old_exprs = dll_create();
@@ -85,7 +100,7 @@ Expression *new_subst(Expression *expression, Expression *old_e,
             dll_insert_at_tail(new_exprs, dll_new_node(x_prime));
 
             Expression *B_prime = new_p_subst(B, old_exprs, new_exprs);
-            Context *B_prime_parent_ctx = get_expression_context(B_prime)->parent;
+            Context *B_prime_ctx = get_expression_context(B_prime);
 
             dll_remove_tail(old_exprs);
             dll_remove_tail(old_exprs);
@@ -95,7 +110,7 @@ Expression *new_subst(Expression *expression, Expression *old_e,
             dll_remove_tail(new_exprs);
             dll_destroy(new_exprs);
 
-            return init_forall_expression_wc(x_prime, B, B_prime_parent_ctx);
+            return init_forall_expression_wc(x_prime, B_prime, B_prime_ctx);
         }
         default:
             return expression;
@@ -144,24 +159,27 @@ Expression *new_p_subst(Expression *expression, DoublyLinkedList *old_exprs, Dou
         case (LAMBDA_EXPRESSION): {
             // Assume expression has form fun (x: A) => B
             Expression *x = expression->value.lambda.bound_variable;
-            Context *x_defn_ctx = get_expression_context(x)->parent;
             Expression *B = expression->value.lambda.body;
 
             Expression *A_prime =
-                new_p_subst(x, old_exprs, new_exprs);
+                new_p_subst(get_expression_type(x), old_exprs, new_exprs);
+
+            // Compute the minimal context for x_prime: context(A_prime) minus all old variables
+            Context *x_prime_ctx = context_for_binding(A_prime, old_exprs);
+
             Expression *x_prime =
-                init_var_expression_wc(x->value.var.name, A_prime, x_defn_ctx);
+                init_var_expression_wc(x->value.var.name, A_prime, x_prime_ctx);
 
             dll_insert_at_tail(old_exprs, dll_new_node(x));
             dll_insert_at_tail(new_exprs, dll_new_node(x_prime));
 
             Expression *B_prime = new_p_subst(B, old_exprs, new_exprs);
-            Context *B_prime_parent_ctx = get_expression_context(B_prime)->parent;
+            Context *B_prime_ctx = get_expression_context(B_prime);
 
             dll_remove_tail(old_exprs);
             dll_remove_tail(new_exprs);
 
-            return init_lambda_expression_wc(x_prime, B_prime, B_prime_parent_ctx);
+            return init_lambda_expression_wc(x_prime, B_prime, B_prime_ctx);
         }
         case (APP_EXPRESSION): {
             Expression *app_func = expression->value.app.func;
@@ -173,31 +191,35 @@ Expression *new_p_subst(Expression *expression, DoublyLinkedList *old_exprs, Dou
                 Expression *reduced = reduce(new_app_func, new_app_arg);
                 return reduced;
             } else {
-                // todo: investigate this further
-                return init_app_expression(new_app_func, new_app_arg);
+                Context *app_ctx = context_add(get_expression_context(new_app_func),
+                                               get_expression_context(new_app_arg));
+                return init_app_expression_wc(new_app_func, new_app_arg, app_ctx);
             }
         }
         case (FORALL_EXPRESSION): {
             // Assume expression has form forall (x: A), B
             Expression *x = expression->value.forall.bound_variable;
-            Context *x_defn_ctx = get_expression_context(x)->parent;
             Expression *B = expression->value.forall.body;
 
             Expression *A_prime =
-                new_p_subst(x, old_exprs, new_exprs);
+                new_p_subst(get_expression_type(x), old_exprs, new_exprs);
+
+            // Compute the minimal context for x_prime: context(A_prime) minus all old variables
+            Context *x_prime_ctx = context_for_binding(A_prime, old_exprs);
+
             Expression *x_prime =
-                init_var_expression_wc(x->value.var.name, A_prime, x_defn_ctx);
+                init_var_expression_wc(x->value.var.name, A_prime, x_prime_ctx);
 
             dll_insert_at_tail(old_exprs, dll_new_node(x));
             dll_insert_at_tail(new_exprs, dll_new_node(x_prime));
 
             Expression *B_prime = new_p_subst(B, old_exprs, new_exprs);
-            Context *B_prime_parent_ctx = get_expression_context(B_prime)->parent;
+            Context *B_prime_ctx = get_expression_context(B_prime);
 
             dll_remove_tail(old_exprs);
             dll_remove_tail(new_exprs);
 
-            return init_forall_expression_wc(x_prime, B_prime, B_prime_parent_ctx);
+            return init_forall_expression_wc(x_prime, B_prime, B_prime_ctx);
         }
         default:
             return expression;
