@@ -1,8 +1,8 @@
 #include "src/runtime/repl.h"
 #include "src/kernel/expression.h"
-#include "src/runtime/command_exec.h"
+#include "src/commandlanguage/command_exec.h"
 #include "src/runtime/runtime.h"
-#include "src/runtime/tactic_exec.h"
+#include "src/tacticlanguage/tactic_exec.h"
 #include "src/runtime/proof_state.h"
 #include "src/kernel/utils.h"
 
