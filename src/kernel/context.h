@@ -71,6 +71,11 @@ Context *context_add(Context *context_A, Context *context_B);
 // minimal set of nodes is removed, preserving the context tree's integrity.
 Context *context_minus(Context *context, Expression *subtrahend);
 
+// Given a type expression and a list of old variables being substituted away,
+// returns the minimal context needed to define a binding with that type.
+// This is: context(type) with all old substituted variables removed.
+Context *context_for_binding(Expression *type, DoublyLinkedList *old_exprs);
+
 void context_free(Context *context);
 
 // Returns true iff expr is well defined under the given context. This happpens

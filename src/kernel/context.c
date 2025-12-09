@@ -180,6 +180,20 @@ Context *context_minus(Context *context, Expression *subtrahend) {
     return result;
 }
 
+Context *context_for_binding(Expression *type, DoublyLinkedList *old_exprs) {
+    Context *result = get_expression_context(type);
+
+    // Remove all old expressions being substituted away
+    DLLNode *curr_node = old_exprs->head;
+    while (curr_node != NULL) {
+        Expression *old_expr = curr_node->data;
+        result = context_minus(result, old_expr);
+        curr_node = curr_node->next;
+    }
+
+    return result;
+}
+
 bool valid_in_context(Expression *expr, Context *context) {
     Context *curr_expr_ctx = get_expression_context(expr);
     if (context_is_ancestor(curr_expr_ctx, context)) {
