@@ -22,46 +22,75 @@ void free_tactic_result(TacticResult *result) {
     free(result);
 }
 
-TacticResult *intro_tactic(Expression *goal, char *name) {
-    TacticResult *result = init_tactic_result(false, NULL, NULL);
-
+// Helper that performs a single intro step, returning the new goal on success or NULL on failure.
+static Expression *intro_step(Expression *goal, char *name, char **error_out) {
     if (goal->type != HOLE_EXPRESSION) {
-        result->error_message = "Goal is not a hole";
-        return result;
+        if (error_out) {
+            *error_out = "Goal is not a hole";
+        }
+        return NULL;
     }
 
     Expression *goal_ty = get_expression_type(goal);
     if (goal_ty->type != FORALL_EXPRESSION) {
-        result->error_message = "Goal is not a forall expression";
-        return result;
+        if (error_out) {
+            *error_out = "Goal is not a forall expression";
+        }
+        return NULL;
     }
 
     Expression *x = goal_ty->value.forall.bound_variable;
     Expression *A = get_expression_type(x);
     Expression *B = goal_ty->value.forall.body;
 
-    // We'll need to create a new bound variable x' with the given name and type of the original bound variable
-    // Then, assuming the goal expected type is "forall (x : A), B", we'll need to create a new body B[x -> x']
-    // Then, we'll need to create a new goal type with the new body and the new bound variable in the context. 
     Expression *x_prime = init_var_expression_wc(name, A, get_expression_context(goal));
     Expression *B_prime = new_subst(B, x, x_prime);
     Context *new_context = context_insert(get_expression_context(goal), x_prime);
     Expression *new_goal = init_hole_expression("Goal", B_prime, new_context);
 
-    // Finally, we'll need to create a new proof of the original goal.
     Expression *proof_of_original = init_lambda_expression_wc(x_prime, new_goal, new_context);
     if (can_fill(goal, proof_of_original)) {
         fill_hole(goal, proof_of_original);
-
-        result->success = true;
-        result->new_goals = dll_create();
-
-        DLLNode *new_goal_node = dll_new_node(new_goal);
-        dll_insert_at_tail(result->new_goals, new_goal_node);
-        
-        return result;
+        return new_goal;
     }
 
-    result->error_message = "Failed to fill the hole";
-    return result;
+    if (error_out) {
+        *error_out = "Failed to fill the hole";
+    }
+    return NULL;
+}
+
+TacticResult *intro_tactic(Expression *goal, char *name) {
+    char *error = NULL;
+    Expression *new_goal = intro_step(goal, name, &error);
+    
+    if (!new_goal) {
+        return init_tactic_result(false, NULL, error);
+    }
+
+    DoublyLinkedList *new_goals = dll_create();
+    dll_insert_at_tail(new_goals, dll_new_node(new_goal));
+    return init_tactic_result(true, new_goals, NULL);
+}
+
+TacticResult *intros_tactic(Expression *goal, char **names, size_t name_count) {
+    if (name_count == 0) {
+        return init_tactic_result(false, NULL, "intros requires at least one name");
+    }
+
+    Expression *current_goal = goal;
+    char *error = NULL;
+
+    for (size_t i = 0; i < name_count; i++) {
+        Expression *next_goal = intro_step(current_goal, names[i], &error);
+        if (!next_goal) {
+            return init_tactic_result(false, NULL, error);
+        }
+        current_goal = next_goal;
+    }
+
+    // Return only the final goal
+    DoublyLinkedList *new_goals = dll_create();
+    dll_insert_at_tail(new_goals, dll_new_node(current_goal));
+    return init_tactic_result(true, new_goals, NULL);
 }

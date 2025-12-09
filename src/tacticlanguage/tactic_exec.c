@@ -37,8 +37,13 @@ static void _handle_intro_tactic(MEngineRuntime *rt, IntroTactic *t) {
 
 static void _handle_intros_tactic(MEngineRuntime *rt, IntrosTactic *t) {
     Expression *g = _current_goal(rt);
-    (void)t;
-    (void)g;
+    TacticResult *result = intros_tactic(g, t->names, t->name_count);
+    if (result->success) {
+        proof_state_add_goals(rt->proof_state, result->new_goals);
+    } else {
+        fprintf(stderr, "Error: %s\n", result->error_message);
+    }
+    free_tactic_result(result);
 }
 
 static void _handle_apply_tactic(MEngineRuntime *rt, ApplyTactic *t) {
