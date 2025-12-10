@@ -112,8 +112,8 @@ TacticResult *apply_tactic(Expression *goal, Expression *lemma) {
     Expression *lemma_inst_ty = get_expression_type(lemma_inst);
     Expression *goal_ty = get_expression_type(goal);
 
-    // Todo: I'm pretty sure can_fill should be checking for congruence, but I currently use 
-    // match_under_holes in can_fill, which I'm not sure is exactly the same as congruence.
+    // TODO: I'm pretty sure we don't actually need an explicit congruence check here,
+    // since we're using can_fill, but I need to double check congruence vs match_under_holes. 
     if (!congruence(lemma_inst_ty, goal_ty)) {
         free_unification_result(unif_result);
         return init_tactic_result(false, NULL, "Lemma type does not match goal type");
@@ -132,4 +132,55 @@ TacticResult *apply_tactic(Expression *goal, Expression *lemma) {
     free(unif_result);
 
     return result;
+}
+
+TacticResult *assumption_tactic(Expression *goal) {
+    if (goal->type != HOLE_EXPRESSION) {
+        return init_tactic_result(false, NULL, "Goal is not a hole");
+    }
+
+    Expression *goal_ty = get_expression_type(goal);
+    Context *ctx = get_expression_context(goal);
+
+    // Iterate through the context to find a variable whose type matches the goal
+    while (ctx && !context_is_empty(ctx)) {
+        Expression *var = ctx->var_type;
+        Expression *var_ty = get_expression_type(var);
+
+        // TODO: Same note as above about congruence vs match_under_holes.
+        if (congruence(var_ty, goal_ty)) {
+            // Found a matching variable
+            if (can_fill(goal, var)) {
+                fill_hole(goal, var);
+                return init_tactic_result(true, dll_create(), NULL);
+            } else {
+                return init_tactic_result(false, NULL, "Found matching variable but cannot fill goal");
+            }
+        }
+
+        ctx = ctx->parent;
+    }
+
+    return init_tactic_result(false, NULL, "No assumption matches the goal");
+}
+
+TacticResult *exact_tactic(Expression *goal, Expression *proof_term) {
+    if (goal->type != HOLE_EXPRESSION) {
+        return init_tactic_result(false, NULL, "Goal is not a hole");
+    }
+
+    Expression *proof_ty = get_expression_type(proof_term);
+    Expression *goal_ty = get_expression_type(goal);
+
+    // TODO: Same note as above about congruence vs match_under_holes.
+    if (!congruence(proof_ty, goal_ty)) {
+        return init_tactic_result(false, NULL, "Proof term type does not match goal type");
+    }
+
+    if (!can_fill(goal, proof_term)) {
+        return init_tactic_result(false, NULL, "Cannot fill goal with proof term");
+    }
+
+    fill_hole(goal, proof_term);
+    return init_tactic_result(true, dll_create(), NULL);
 }

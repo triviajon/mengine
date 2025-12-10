@@ -29,5 +29,11 @@ TacticResult *intros_tactic(Expression *goal, char **names, size_t name_count);
 // and instantiate the lemma with the variables in the hole.
 TacticResult *apply_tactic(Expression *goal, Expression *lemma);
 
+// Search the context for a variable whose type matches the goal, and fill the hole with it.
+TacticResult *assumption_tactic(Expression *goal);
+
+// Given a hole and a proof term, check if the term's type matches the goal, and fill the hole with it.
+TacticResult *exact_tactic(Expression *goal, Expression *proof_term);
+
 
 #endif  // NEW_TACTICS

@@ -74,8 +74,22 @@ static void _handle_eapply_tactic(MEngineRuntime *rt, EapplyTactic *t) {
 }
 
 static void _handle_exact_tactic(MEngineRuntime *rt, ExactTactic *t) {
-    (void)rt;
-    (void)t;
+    Expression *goal = _current_goal(rt);
+    Context *ctx = get_expression_context(goal);
+
+    Expression *proof_term = ast_to_expression(t->proof_term, ctx);
+    if (!proof_term) {
+        fprintf(stderr, "Error: could not resolve proof term\n");
+        return;
+    }
+
+    TacticResult *result = exact_tactic(goal, proof_term);
+    if (result->success) {
+        proof_state_add_goals(rt->proof_state, result->new_goals);
+    } else {
+        fprintf(stderr, "Error: %s\n", result->error_message);
+    }
+    free_tactic_result(result);
 }
 
 static void _handle_rewrite_tactic(MEngineRuntime *rt, RewriteTactic *t) {
@@ -86,7 +100,16 @@ static void _handle_rewrite_tactic(MEngineRuntime *rt, RewriteTactic *t) {
 
 static void _handle_reflexivity_tactic(MEngineRuntime *rt) { (void)rt; }
 
-static void _handle_assumption_tactic(MEngineRuntime *rt) { (void)rt; }
+static void _handle_assumption_tactic(MEngineRuntime *rt) {
+    Expression *goal = _current_goal(rt);
+    TacticResult *result = assumption_tactic(goal);
+    if (result->success) {
+        proof_state_add_goals(rt->proof_state, result->new_goals);
+    } else {
+        fprintf(stderr, "Error: %s\n", result->error_message);
+    }
+    free_tactic_result(result);
+}
 
 static void _handle_split_tactic(MEngineRuntime *rt) { (void)rt; }
 
