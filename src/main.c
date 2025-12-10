@@ -1,9 +1,10 @@
 #include <stdio.h>
 
+#include "src/engine/axiom.h"
 #include "src/runtime/repl.h"
 
 int main(void) {
-    MEngineOptions options = {.debug = true,
+    MEngineOptions options = {.debug = false,
         .debug__print_tokens = true,
         .debug__print_ast = true,
         .debug__print_mode = true};
