@@ -46,8 +46,8 @@ void add_to_parents(Expression *expression, Uplink *uplink) {
 }
 
 void remove_tl_uplink(Expression *expression) {
-    DoublyLinkedList *parents = get_expression_uplinks(expression);
-    printf("implement me");
+    (void)expression;
+    // todo: implement me
 }
 
 Uplink *new_uplink(Expression *parent, Relation relation) {

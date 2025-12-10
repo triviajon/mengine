@@ -1,6 +1,9 @@
 #include "src/tacticlanguage/tactic_exec.h"
 #include "src/engine/new_tactics.h"
+#include "src/metalanguage/ast_to_expression.h"
 #include "src/runtime/proof_state.h"
+#include "src/common/color.h"
+#include "src/kernel/utils.h"
 
 static Expression *_current_goal(MEngineRuntime *rt) {
     return proof_state_current(rt->proof_state);
@@ -47,8 +50,22 @@ static void _handle_intros_tactic(MEngineRuntime *rt, IntrosTactic *t) {
 }
 
 static void _handle_apply_tactic(MEngineRuntime *rt, ApplyTactic *t) {
-    (void)rt;
-    (void)t;
+    Expression *goal = _current_goal(rt);
+    Context *ctx = get_expression_context(goal);
+
+    Expression *lemma = ast_to_expression(t->lemma, ctx);
+    if (!lemma) {
+        fprintf(stderr, "Error: could not resolve lemma\n");
+        return;
+    }
+
+    TacticResult *result = apply_tactic(goal, lemma);
+    if (result->success) {
+        proof_state_add_goals(rt->proof_state, result->new_goals);
+    } else {
+        fprintf(stderr, "Error: %s\n", result->error_message);
+    }
+    free_tactic_result(result);
 }
 
 static void _handle_eapply_tactic(MEngineRuntime *rt, EapplyTactic *t) {
@@ -139,8 +156,13 @@ void mengine_execute_tactic(MEngineRuntime *rt, Tactic *tac) {
     // Each tactic handler will take care of adding new goals. We just need to
     // advance to the next goal if there is one.
     if (!proof_state_next(rt->proof_state)) {
+        // No more goals - proof is complete!
+        Expression *thm = rt->pending_theorem;
+        rt->ctx = context_insert(rt->ctx, thm);
+
+        printf(GRN "Proof complete." CRESET " %s declared.\n",
+               thm->value.var.name);
+
         mengine_runtime_command_mode(rt);
     }
-
-    proof_state_next(rt->proof_state);
 }

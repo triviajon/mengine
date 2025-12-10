@@ -25,4 +25,9 @@ TacticResult *intro_tactic(Expression *goal, char *name);
 // fill the hole with the term "λ x : A, ?B" and the result of the tactic is returned.
 TacticResult *intros_tactic(Expression *goal, char **names, size_t name_count);
 
+// Given a hole and a lemma, use unification to match the expected type of the hole with the type of the lemma,
+// and instantiate the lemma with the variables in the hole.
+TacticResult *apply_tactic(Expression *goal, Expression *lemma);
+
+
 #endif  // NEW_TACTICS

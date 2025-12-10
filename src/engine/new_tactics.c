@@ -1,4 +1,5 @@
 #include "src/engine/new_tactics.h"
+#include "src/engine/unify.h"
 #include "src/kernel/doubly_linked_list.h"
 #include "src/kernel/expression.h"
 #include "src/kernel/new_subst.h"
@@ -93,4 +94,42 @@ TacticResult *intros_tactic(Expression *goal, char **names, size_t name_count) {
     DoublyLinkedList *new_goals = dll_create();
     dll_insert_at_tail(new_goals, dll_new_node(current_goal));
     return init_tactic_result(true, new_goals, NULL);
+}
+
+TacticResult *apply_tactic(Expression *goal, Expression *lemma) {
+    if (goal->type != HOLE_EXPRESSION) {
+        return init_tactic_result(false, NULL, "Goal is not a hole");
+    }
+
+    // Attempt to unify the lemma with the goal
+    UnificationResult *unif_result = eunify2(lemma, goal);
+    if (!unif_result) {
+        return init_tactic_result(false, NULL, "Could not unify lemma with goal");
+    }
+
+    // Check if the unification succeeded by verifying types match
+    Expression *lemma_inst = unif_result->lemma_instantiation;
+    Expression *lemma_inst_ty = get_expression_type(lemma_inst);
+    Expression *goal_ty = get_expression_type(goal);
+
+    // Todo: I'm pretty sure can_fill should be checking for congruence, but I currently use 
+    // match_under_holes in can_fill, which I'm not sure is exactly the same as congruence.
+    if (!congruence(lemma_inst_ty, goal_ty)) {
+        free_unification_result(unif_result);
+        return init_tactic_result(false, NULL, "Lemma type does not match goal type");
+    }
+
+    if (!can_fill(goal, lemma_inst)) {
+        free_unification_result(unif_result);
+        return init_tactic_result(false, NULL, "Cannot fill goal with lemma instantiation");
+    }
+
+    fill_hole(goal, lemma_inst);
+
+    DoublyLinkedList *new_goals = unif_result->new_goals;
+    TacticResult *result = init_tactic_result(true, new_goals, NULL);
+
+    free(unif_result);
+
+    return result;
 }
