@@ -107,17 +107,42 @@ TacticResult *apply_tactic(Expression *goal, Expression *lemma) {
         return init_tactic_result(false, NULL, "Could not unify lemma with goal");
     }
 
+    // For apply, we do not allow the unification result to have any remaining open holes.
+    if (dll_len(unif_result->new_goals) != 0) {
+        free_unification_result(unif_result);
+        return init_tactic_result(false, NULL, "Apply tactic does not allow remaining open holes");
+    }
+
     // Check if the unification succeeded by verifying types match
     Expression *lemma_inst = unif_result->lemma_instantiation;
-    Expression *lemma_inst_ty = get_expression_type(lemma_inst);
-    Expression *goal_ty = get_expression_type(goal);
 
-    // TODO: I'm pretty sure we don't actually need an explicit congruence check here,
-    // since we're using can_fill, but I need to double check congruence vs match_under_holes. 
-    if (!congruence(lemma_inst_ty, goal_ty)) {
+    if (!can_fill(goal, lemma_inst)) {
         free_unification_result(unif_result);
-        return init_tactic_result(false, NULL, "Lemma type does not match goal type");
+        return init_tactic_result(false, NULL, "Cannot fill goal with lemma instantiation");
     }
+
+    fill_hole(goal, lemma_inst);
+
+    DoublyLinkedList *new_goals = unif_result->new_goals;
+    TacticResult *result = init_tactic_result(true, new_goals, NULL);
+
+    free_unification_result(unif_result);
+    return result;
+}
+
+TacticResult *eapply_tactic(Expression *goal, Expression *lemma) {
+    if (goal->type != HOLE_EXPRESSION) {
+        return init_tactic_result(false, NULL, "Goal is not a hole");
+    }
+
+    // Attempt to unify the lemma with the goal
+    UnificationResult *unif_result = eunify2(lemma, goal);
+    if (!unif_result) {
+        return init_tactic_result(false, NULL, "Could not unify lemma with goal");
+    }
+
+    // Check if the unification succeeded by verifying types match
+    Expression *lemma_inst = unif_result->lemma_instantiation;
 
     if (!can_fill(goal, lemma_inst)) {
         free_unification_result(unif_result);
@@ -139,23 +164,15 @@ TacticResult *assumption_tactic(Expression *goal) {
         return init_tactic_result(false, NULL, "Goal is not a hole");
     }
 
-    Expression *goal_ty = get_expression_type(goal);
     Context *ctx = get_expression_context(goal);
 
     // Iterate through the context to find a variable whose type matches the goal
     while (ctx && !context_is_empty(ctx)) {
         Expression *var = ctx->var_type;
-        Expression *var_ty = get_expression_type(var);
 
-        // TODO: Same note as above about congruence vs match_under_holes.
-        if (congruence(var_ty, goal_ty)) {
-            // Found a matching variable
-            if (can_fill(goal, var)) {
-                fill_hole(goal, var);
-                return init_tactic_result(true, dll_create(), NULL);
-            } else {
-                return init_tactic_result(false, NULL, "Found matching variable but cannot fill goal");
-            }
+        if (can_fill(goal, var)) {
+            fill_hole(goal, var);
+            return init_tactic_result(true, dll_create(), NULL);
         }
 
         ctx = ctx->parent;
@@ -167,14 +184,6 @@ TacticResult *assumption_tactic(Expression *goal) {
 TacticResult *exact_tactic(Expression *goal, Expression *proof_term) {
     if (goal->type != HOLE_EXPRESSION) {
         return init_tactic_result(false, NULL, "Goal is not a hole");
-    }
-
-    Expression *proof_ty = get_expression_type(proof_term);
-    Expression *goal_ty = get_expression_type(goal);
-
-    // TODO: Same note as above about congruence vs match_under_holes.
-    if (!congruence(proof_ty, goal_ty)) {
-        return init_tactic_result(false, NULL, "Proof term type does not match goal type");
     }
 
     if (!can_fill(goal, proof_term)) {

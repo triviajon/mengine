@@ -314,6 +314,11 @@ void free_expression(Expression *expr);
 // Returns true if the expressions are alpha-congruent.
 bool congruence(Expression *a, Expression *b);
 
+// Returns true if the expressions are alpha-congruent while allowing holes.
+// When a hole is encountered, it checks if the other expression can fill it.
+// This is useful for type checking when holes are present in the expressions.
+bool congruent_with_holes(Expression *a, Expression *b);
+
 // Returns true if a is a subtype of b. We don't implement a full subtyping
 // relation, but it is necessary specifically for Type and Prop.
 bool subtypes(Expression *a, Expression *b);

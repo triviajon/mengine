@@ -9,24 +9,27 @@ static Expression *_current_goal(MEngineRuntime *rt) {
     return proof_state_current(rt->proof_state);
 }
 
-static void _handle_proof_tactic(MEngineRuntime *rt) {
+static bool _handle_proof_tactic(MEngineRuntime *rt) {
     // nothing to do for now!
     (void)rt;
+    return true;
 }
 
-static void _handle_qed_tactic(MEngineRuntime *rt) {
+static bool _handle_qed_tactic(MEngineRuntime *rt) {
     Expression *thm = rt->pending_theorem;
     rt->ctx = context_insert(rt->ctx, thm);
     mengine_runtime_command_mode(rt);
+    return true;
 }
 
-static void _handle_admitted_tactic(MEngineRuntime *rt) {
+static bool _handle_admitted_tactic(MEngineRuntime *rt) {
     Expression *thm = rt->pending_theorem;
     rt->ctx = context_insert(rt->ctx, thm);
     mengine_runtime_command_mode(rt);
+    return true;
 }
 
-static void _handle_intro_tactic(MEngineRuntime *rt, IntroTactic *t) {
+static bool _handle_intro_tactic(MEngineRuntime *rt, IntroTactic *t) {
     Expression *g = _current_goal(rt);
     TacticResult *result = intro_tactic(g, t->name);
     if (result->success) {
@@ -34,11 +37,13 @@ static void _handle_intro_tactic(MEngineRuntime *rt, IntroTactic *t) {
     } else {
         fprintf(stderr, "Error: %s\n", result->error_message);
     }
+    bool success = result->success;
     free_tactic_result(result);
     (void)t;
+    return success;
 }
 
-static void _handle_intros_tactic(MEngineRuntime *rt, IntrosTactic *t) {
+static bool _handle_intros_tactic(MEngineRuntime *rt, IntrosTactic *t) {
     Expression *g = _current_goal(rt);
     TacticResult *result = intros_tactic(g, t->names, t->name_count);
     if (result->success) {
@@ -46,17 +51,19 @@ static void _handle_intros_tactic(MEngineRuntime *rt, IntrosTactic *t) {
     } else {
         fprintf(stderr, "Error: %s\n", result->error_message);
     }
+    bool success = result->success;
     free_tactic_result(result);
+    return success;
 }
 
-static void _handle_apply_tactic(MEngineRuntime *rt, ApplyTactic *t) {
+static bool _handle_apply_tactic(MEngineRuntime *rt, ApplyTactic *t) {
     Expression *goal = _current_goal(rt);
     Context *ctx = get_expression_context(goal);
 
     Expression *lemma = ast_to_expression(t->lemma, ctx);
     if (!lemma) {
         fprintf(stderr, "Error: could not resolve lemma\n");
-        return;
+        return false;
     }
 
     TacticResult *result = apply_tactic(goal, lemma);
@@ -65,22 +72,40 @@ static void _handle_apply_tactic(MEngineRuntime *rt, ApplyTactic *t) {
     } else {
         fprintf(stderr, "Error: %s\n", result->error_message);
     }
+    bool success = result->success;
     free_tactic_result(result);
+    return success;
 }
 
-static void _handle_eapply_tactic(MEngineRuntime *rt, EapplyTactic *t) {
-    (void)rt;
-    (void)t;
+static bool _handle_eapply_tactic(MEngineRuntime *rt, EapplyTactic *t) {
+    Expression *goal = _current_goal(rt);
+    Context *ctx = get_expression_context(goal);
+
+    Expression *lemma = ast_to_expression(t->lemma, ctx);
+    if (!lemma) {
+        fprintf(stderr, "Error: could not resolve lemma\n");
+        return false;
+    }
+
+    TacticResult *result = eapply_tactic(goal, lemma);
+    if (result->success) {
+        proof_state_add_goals(rt->proof_state, result->new_goals);
+    } else {
+        fprintf(stderr, "Error: %s\n", result->error_message);
+    }
+    bool success = result->success;
+    free_tactic_result(result);
+    return success;
 }
 
-static void _handle_exact_tactic(MEngineRuntime *rt, ExactTactic *t) {
+static bool _handle_exact_tactic(MEngineRuntime *rt, ExactTactic *t) {
     Expression *goal = _current_goal(rt);
     Context *ctx = get_expression_context(goal);
 
     Expression *proof_term = ast_to_expression(t->proof_term, ctx);
     if (!proof_term) {
         fprintf(stderr, "Error: could not resolve proof term\n");
-        return;
+        return false;
     }
 
     TacticResult *result = exact_tactic(goal, proof_term);
@@ -89,18 +114,24 @@ static void _handle_exact_tactic(MEngineRuntime *rt, ExactTactic *t) {
     } else {
         fprintf(stderr, "Error: %s\n", result->error_message);
     }
+    bool success = result->success;
     free_tactic_result(result);
+    return success;
 }
 
-static void _handle_rewrite_tactic(MEngineRuntime *rt, RewriteTactic *t) {
+static bool _handle_rewrite_tactic(MEngineRuntime *rt, RewriteTactic *t) {
     Expression *g = _current_goal(rt);
     (void)t;
     (void)g;
+    return true;
 }
 
-static void _handle_reflexivity_tactic(MEngineRuntime *rt) { (void)rt; }
+static bool _handle_reflexivity_tactic(MEngineRuntime *rt) {
+    (void)rt;
+    return true;
+}
 
-static void _handle_assumption_tactic(MEngineRuntime *rt) {
+static bool _handle_assumption_tactic(MEngineRuntime *rt) {
     Expression *goal = _current_goal(rt);
     TacticResult *result = assumption_tactic(goal);
     if (result->success) {
@@ -108,21 +139,33 @@ static void _handle_assumption_tactic(MEngineRuntime *rt) {
     } else {
         fprintf(stderr, "Error: %s\n", result->error_message);
     }
+    bool success = result->success;
     free_tactic_result(result);
+    return success;
 }
 
-static void _handle_split_tactic(MEngineRuntime *rt) { (void)rt; }
+static bool _handle_split_tactic(MEngineRuntime *rt) {
+    (void)rt;
+    return true;
+}
 
-static void _handle_left_tactic(MEngineRuntime *rt) { (void)rt; }
+static bool _handle_left_tactic(MEngineRuntime *rt) {
+    (void)rt;
+    return true;
+}
 
-static void _handle_right_tactic(MEngineRuntime *rt) { (void)rt; }
+static bool _handle_right_tactic(MEngineRuntime *rt) {
+    (void)rt;
+    return true;
+}
 
-static void _handle_exists_tactic(MEngineRuntime *rt, ExistsTactic *t) {
+static bool _handle_exists_tactic(MEngineRuntime *rt, ExistsTactic *t) {
     (void)rt;
     (void)t;
+    return true;
 }
 
-void _mengine_dispatch_tactic(MEngineRuntime *rt, Tactic *tac) {
+bool _mengine_dispatch_tactic(MEngineRuntime *rt, Tactic *tac) {
     switch (tac->tag) {
         case TACTIC_PROOF:
             return _handle_proof_tactic(rt);
@@ -169,12 +212,18 @@ void _mengine_dispatch_tactic(MEngineRuntime *rt, Tactic *tac) {
         case TACTIC_EXISTS:
             return _handle_exists_tactic(rt, &tac->as.exists);
     }
+    return false;
 }
 
 void mengine_execute_tactic(MEngineRuntime *rt, Tactic *tac) {
     if (!rt || !rt->proof_state || !tac) return;
 
-    _mengine_dispatch_tactic(rt, tac);
+    bool success = _mengine_dispatch_tactic(rt, tac);
+
+    // Only proceed if the tactic succeeded
+    if (!success) {
+        return;
+    }
 
     // Each tactic handler will take care of adding new goals. We just need to
     // advance to the next goal if there is one.

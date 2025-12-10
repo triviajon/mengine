@@ -29,6 +29,11 @@ TacticResult *intros_tactic(Expression *goal, char **names, size_t name_count);
 // and instantiate the lemma with the variables in the hole.
 TacticResult *apply_tactic(Expression *goal, Expression *lemma);
 
+// Given a hole and a lemma, use unification to match the expected type of the hole with the type of the lemma,
+// and instantiate the lemma with the variables in the hole. For any binders in the lemma, 
+// this will create existential variables if necessary to match the goal.
+TacticResult *eapply_tactic(Expression *goal, Expression *lemma);
+
 // Search the context for a variable whose type matches the goal, and fill the hole with it.
 TacticResult *assumption_tactic(Expression *goal);
 
