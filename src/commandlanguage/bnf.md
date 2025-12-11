@@ -4,8 +4,8 @@ Similar to Rocq's Vernacular:
 <command> ::= <declaration>
             | <definition>
             | <statement>
+            | <inductive>
        <!-- | <fixpoint> -->
-       <!-- | <inductive> -->
             | <check>
 
 <declaration> ::= <declaration_keyword> <assumption> "."
@@ -19,6 +19,12 @@ Similar to Rocq's Vernacular:
 <statement> ::= <statement_keyword> <identifier>
                 ":" <term> "."
 <statement_keyword> ::= "Theorem" | "Lemma"
+
+<inductive> ::= "Inductive" <identifier> { "(" <binder> ")" }
+                ":" <term>
+                ":=" { <constructor> } "."
+
+<constructor> ::= "|" <identifier> ":" <term>
 
 <check> ::= "Check" <term> "."
 

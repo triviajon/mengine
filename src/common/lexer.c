@@ -287,6 +287,9 @@ Token *lexer_next_token(Lexer *lx) {
                 } else if (strcmp(lexeme, "Check") == 0) {
                     free(lexeme);
                     token = make_token(TOK_CHECK, start_pos, NULL);
+                } else if (strcmp(lexeme, "Inductive") == 0) {
+                    free(lexeme);
+                    token = make_token(TOK_INDUCTIVE, start_pos, NULL);
                 } else if (strcmp(lexeme, "Proof") == 0) {
                     free(lexeme);
                     token = make_token(TOK_PROOF, start_pos, NULL);

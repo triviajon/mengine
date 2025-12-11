@@ -82,6 +82,36 @@ DeclKeyword command_parse_declaration_keyword(Parser *p) {
 
 Binder command_parse_assumption(Parser *p) { return parse_binder(p); }
 
+/**
+ * <constructor> ::= "|" <identifier> ":" <term>
+ *
+ * @param p Pointer to the Parser.
+ * @return InductiveConstructor structure representing the parsed constructor.
+ */
+InductiveConstructor *command_parse_constructor(Parser *p) {
+    if (!parser_expect_consume(p, TOK_PIPE))
+        parser_error(p, "expected '|' before constructor");
+
+    if (!parser_expect_no_consume(p, TOK_IDENT))
+        parser_error(p, "expected constructor name after '|'");
+
+    Token *ctor_token = parser_next(p);
+    char *ctor_name = strdup(ctor_token->lexeme);
+    lexer_free_token(ctor_token);
+
+    if (!parser_expect_consume(p, TOK_COLON))
+        parser_error(p, "expected ':' after constructor name");
+
+    AST *ctor_type = parse_term(p);
+    debug_print_ast(p, ctor_type);
+
+    InductiveConstructor *ctor = malloc(sizeof(InductiveConstructor));
+    ctor->name = ctor_name;
+    ctor->type = ctor_type;
+
+    return ctor;
+}
+
 Command *command_parse_definition(Parser *p) {
     if (!parser_expect_consume(p, TOK_DEFINITION)) {
         parser_error(p, "expected 'Definition'");
@@ -193,5 +223,75 @@ Command *command_parse_check(Parser *p) {
     Command *cmd = malloc(sizeof(Command));
     cmd->tag = CMD_CHECK;
     cmd->as.check.term = term;
+    return cmd;
+}
+
+Command *command_parse_inductive(Parser *p) {
+    if (!parser_expect_consume(p, TOK_INDUCTIVE)) {
+        parser_error(p, "expected 'Inductive'");
+    }
+
+    if (!parser_expect_no_consume(p, TOK_IDENT)) {
+        parser_error(p, "expected identifier after 'Inductive'");
+    }
+
+    Token *ident_token = parser_next(p);
+    char *name = strdup(ident_token->lexeme);
+    lexer_free_token(ident_token);
+
+    // Binders
+    Binder **params = NULL;
+    size_t param_count = 0;
+
+    while (parser_expect_consume(p, TOK_LPAREN)) {
+        Binder b = parse_binder(p);
+
+        if (!parser_expect_consume(p, TOK_RPAREN)) {
+            parser_error(p, "expected ')' after parameter");
+        }
+
+        params = realloc(params, sizeof(Binder *) * (param_count + 1));
+        params[param_count] = malloc(sizeof(Binder));
+        *(params[param_count]) = b;
+        param_count++;
+    }
+
+    if (!parser_expect_consume(p, TOK_COLON)) {
+        parser_error(p, "expected ':' before inductive type");
+    }
+
+    // Type
+    AST *type = parse_term(p);
+    debug_print_ast(p, type);
+
+    if (!parser_expect_consume(p, TOK_COLON_EQ)) {
+        parser_error(p, "expected ':=' after inductive type");
+    }
+
+    // Constructors
+    InductiveConstructor **constructors = NULL;
+    size_t constructor_count = 0;
+
+    while (parser_expect_no_consume(p, TOK_PIPE)) {
+        InductiveConstructor *ctor = command_parse_constructor(p);
+
+        constructors = realloc(constructors, sizeof(InductiveConstructor *) * (constructor_count + 1));
+        constructors[constructor_count] = ctor;
+        constructor_count++;
+    }
+
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "expected '.' after inductive definition");
+    }
+    
+    Command *cmd = malloc(sizeof(Command));
+    cmd->tag = CMD_INDUCTIVE;
+    cmd->as.inductive.name = name;
+    cmd->as.inductive.params = params;
+    cmd->as.inductive.param_count = param_count;
+    cmd->as.inductive.type = type;
+    cmd->as.inductive.constructors = constructors;
+    cmd->as.inductive.constructor_count = constructor_count;
+
     return cmd;
 }
