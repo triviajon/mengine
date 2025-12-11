@@ -8,6 +8,7 @@ typedef enum {
     CMD_DEFINITION,
     CMD_STATEMENT,
     CMD_CHECK,
+    CMD_INDUCTIVE,
     CMD_DECL_KEYWORD,
     CMD_STMT_KEYWORD
 } CommandTag;
@@ -50,6 +51,20 @@ typedef struct {
     AST *type;
 } StatementCmd;
 
+typedef struct {
+    char *name;     // Constructor name
+    AST *type;      // Constructor type
+} InductiveConstructor;
+
+typedef struct {
+    char *name;                       // Inductive type name
+    Binder **params;                  // Parameters (e.g., A : Type, R : A -> A -> Prop)
+    size_t param_count;
+    AST *type;                        // Return type (e.g., Prop, Set, Type)
+    InductiveConstructor **constructors;  // List of constructors
+    size_t constructor_count;
+} InductiveCmd;
+
 typedef struct Command {
     CommandTag tag;
     union {
@@ -59,6 +74,7 @@ typedef struct Command {
         DeclarationCmd decl;
         DefinitionCmd defn;
         StatementCmd stmt;
+        InductiveCmd inductive;
     } as;
 } Command;
 
@@ -129,6 +145,24 @@ StmtKeyword command_parse_statement_keyword(Parser *p);
  */
 Command *command_parse_check(Parser *p);
 
+/**
+ * <constructor> ::= "|" <identifier> ":" <term>
+ *
+ * @param p Pointer to the Parser.
+ * @return InductiveConstructor structure representing the parsed constructor.
+ */
+InductiveConstructor *command_parse_constructor(Parser *p);
+
+/**
+ * <inductive> ::= "Inductive" <identifier> { "(" <binder> ")" }
+ *                  ":" <term>
+ *                  ":=" { <constructor> } "."
+ *
+ * @param p Pointer to the Parser.
+ * @return Command structure representing the parsed inductive command.
+ */
+Command *command_parse_inductive(Parser *p);
+
 typedef Command *(*CommandParseFunc)(Parser *p);
 
 typedef struct {
@@ -143,6 +177,7 @@ static CommandDispatchEntry command_dispatch_table[] = {
     {TOK_THEOREM, command_parse_statement},
     {TOK_LEMMA, command_parse_statement},
     {TOK_CHECK, command_parse_check},
+    {TOK_INDUCTIVE, command_parse_inductive},
 };
 
 #define CMD_DISPATCH_TABLE (command_dispatch_table)

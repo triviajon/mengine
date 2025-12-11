@@ -126,6 +126,70 @@ static void _handle_check_command(MEngineRuntime *rt, CheckCmd *check_cmd) {
            stringify_expression(expr_type));
 }
 
+static void _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) {
+    if (!rt || !ind_cmd) return;
+
+    const char *name = ind_cmd->name;
+    Binder **params = ind_cmd->params;
+    size_t param_count = ind_cmd->param_count;
+
+    Context *c = rt->ctx;
+    Expression **param_vars = malloc(param_count * sizeof(Expression *));
+    Context **contexts = malloc((param_count + 1) * sizeof(Context *));
+
+    contexts[0] = c;
+
+    for (size_t i = 0; i < param_count; i++) {
+        Expression *param_type = ast_to_expression(params[i]->type, c);
+        Expression *param_var = init_var_expression_wc(params[i]->name, param_type, c);
+        c = context_insert(c, param_var);
+
+        param_vars[i] = param_var;
+        contexts[i + 1] = c;
+    }
+
+    Expression *ind_return_type = ast_to_expression(ind_cmd->type, c);
+    Expression *ind_type = ind_return_type;
+    for (size_t i = param_count; i > 0; i--) {
+        ind_type = init_forall_expression_wc(param_vars[i-1], ind_type, contexts[i-1]);
+    }
+
+    Expression *ind_var = init_var_expression_wc(name, ind_type, rt->ctx);
+    rt->ctx = context_insert(rt->ctx, ind_var);
+    c = context_insert(c, ind_var); // Add to context for constructor types
+
+    // Update all contexts to include the inductive type for constructor wrapping
+    for (size_t i = 0; i <= param_count; i++) {
+        contexts[i] = context_insert(contexts[i], ind_var);
+    }
+
+    printf("Inductive %s : %s defined.\n", name, stringify_expression(ind_type));
+
+    // Add each constructor to the context
+    for (size_t i = 0; i < ind_cmd->constructor_count; i++) {
+        InductiveConstructor *ctor = ind_cmd->constructors[i];
+
+        Expression *ctor_type = ast_to_expression(ctor->type, c);
+
+        Expression *full_ctor_type = ctor_type;
+        for (size_t j = param_count; j > 0; j--) {
+            full_ctor_type = init_forall_expression_wc(param_vars[j-1], full_ctor_type, contexts[j]);
+        }
+
+        Expression *ctor_var = init_var_expression_wc(ctor->name, full_ctor_type, rt->ctx);
+        rt->ctx = context_insert(rt->ctx, ctor_var);
+    }
+
+    // Generate eliminators (_ind for Prop, _rect for Type)
+
+    printf("  %s_ind : <eliminator for Prop>\n", name);
+    printf("  %s_rect : <eliminator for Type>\n", name);
+    printf("Warning: Eliminator generation not yet implemented.\n");
+
+    free(param_vars);
+    free(contexts);
+}
+
 void mengine_execute_command(MEngineRuntime *rt, Command *cmd) {
     if (!rt || !cmd) {
         return;
@@ -143,6 +207,9 @@ void mengine_execute_command(MEngineRuntime *rt, Command *cmd) {
         }
         case CMD_CHECK: {
             return _handle_check_command(rt, &cmd->as.check);
+        }
+        case CMD_INDUCTIVE: {
+            return _handle_inductive_command(rt, &cmd->as.inductive);
         }
         case CMD_DECL_KEYWORD:
         case CMD_STMT_KEYWORD:

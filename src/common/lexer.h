@@ -35,6 +35,7 @@ typedef enum {
     TOK_THEOREM,     // Theorem
     TOK_LEMMA,       // Lemma
     TOK_CHECK,       // Check
+    TOK_INDUCTIVE,   // Inductive
 
     // tactic keywords
     TOK_PROOF,        // Proof
