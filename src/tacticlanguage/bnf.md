@@ -11,8 +11,8 @@ Tactic language
           | "apply" <term>
           | "eapply" <term>
           | "exact" <term>
-          | "rewrite" <term>
-          | "rewrite" "<-" <term>
+          | "rewrite" <term> "with" <term>
+          | "rewrite" "<-" <term> "with" <term>
           | "reflexivity"
           | "assumption"
           | "split"

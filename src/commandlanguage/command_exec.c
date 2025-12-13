@@ -38,9 +38,9 @@ Expression *_create_definition_body(MEngineRuntime *rt, Binder **params,
 
     Expression *result = ast_to_expression(body, c);
     *rendered_def_body = result;
-    for (size_t i = param_count - 1; i >= 0; i--) {
+    for (size_t i = param_count; i > 0; i--) {
         result =
-            init_lambda_expression_wc(params_rendered[i], result, contexts[i]);
+            init_lambda_expression_wc(params_rendered[i - 1], result, contexts[i - 1]);
     }
 
     free(params_rendered);
@@ -58,7 +58,7 @@ static void _handle_definition_command(MEngineRuntime *rt,
 
     Expression *rendered_def_body = NULL;
     Expression *body = _create_definition_body(
-        rt, params, param_count, defn_cmd->type, &rendered_def_body);
+        rt, params, param_count, defn_cmd->body, &rendered_def_body);
 
     Expression *inferred_type_def_body = get_expression_type(rendered_def_body);
     Expression *expected_type_def_body =
@@ -132,17 +132,74 @@ static Expression *_build_constructor_case_type(Expression *ctor_expr,
                                                  Expression *motive_var,
                                                  Expression **param_vars,
                                                  size_t param_count,
+                                                 size_t index_count,
                                                  Context *elim_ctx);
 
 static Expression *_build_motive_type(Expression *ind_var,
                                        Expression **param_vars,
                                        size_t param_count,
-                                       Context *ctx) {
+                                       Context *ctx,
+                                       Expression ***index_vars_out,
+                                       size_t *index_count_out) {
     Expression *ind_applied = ind_var;
     for (size_t i = 0; i < param_count; i++) {
         ind_applied = init_app_expression_wc(ind_applied, param_vars[i], ctx);
+        if (!ind_applied) {
+            fprintf(stderr, "Error: Failed to apply parameter %zu in motive type\n", i);
+            return NULL;
+        }
     }
-    return init_arrow_expression(ind_applied, init_prop_expression());
+
+    // Check if the TYPE of ind_applied is a forall - if so, we have indices
+    Expression *ind_applied_type = get_expression_type(ind_applied);
+    Expression *current = ind_applied_type;
+    size_t index_count = 0;
+    while (current->type == FORALL_EXPRESSION) {
+        index_count++;
+        current = current->value.forall.body;
+    }
+
+    if (index_count == 0) {
+        // No indices: motive is (ind params) -> Prop
+        *index_vars_out = NULL;
+        *index_count_out = 0;
+        return init_arrow_expression(ind_applied, init_prop_expression());
+    }
+
+    // With indices: motive is forall (indices), (ind params indices) -> Prop
+    Expression **index_vars = malloc(index_count * sizeof(Expression *));
+    Context *motive_ctx = ctx;
+    current = ind_applied_type;
+
+    for (size_t i = 0; i < index_count; i++) {
+        Expression *index_type = get_expression_type(current->value.forall.bound_variable);
+        char index_name[32];
+        sprintf(index_name, "i%zu", i);
+
+        index_vars[i] = init_var_expression_wc(index_name, index_type, motive_ctx);
+        motive_ctx = context_insert(motive_ctx, index_vars[i]);
+        current = current->value.forall.body;
+    }
+
+    // Build (ind params index_0 ... index_n)
+    Expression *ind_with_indices = ind_var;
+    for (size_t i = 0; i < param_count; i++) {
+        ind_with_indices = init_app_expression_wc(ind_with_indices, param_vars[i], motive_ctx);
+    }
+    for (size_t i = 0; i < index_count; i++) {
+        ind_with_indices = init_app_expression_wc(ind_with_indices, index_vars[i], motive_ctx);
+    }
+
+    // Build forall (i0 : T0) ... (in : Tn), (ind params i0 ... in) -> Prop
+    Expression *motive_type = init_arrow_expression(ind_with_indices, init_prop_expression());
+    for (size_t i = index_count; i > 0; i--) {
+        motive_type = init_forall_expression_wc(index_vars[i-1], motive_type, motive_ctx);
+        motive_ctx = context_minus(motive_ctx, index_vars[i-1]);
+    }
+
+    *index_vars_out = index_vars;
+    *index_count_out = index_count;
+    return motive_type;
 }
 
 static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd,
@@ -151,7 +208,11 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd,
                                                     size_t param_count,
                                                     Context **contexts) {
     Context *elim_ctx = contexts[param_count];
-    Expression *motive_type = _build_motive_type(ind_var, param_vars, param_count, elim_ctx);
+
+    Expression **index_vars = NULL;
+    size_t index_count = 0;
+    Expression *motive_type = _build_motive_type(ind_var, param_vars, param_count, elim_ctx,
+                                                   &index_vars, &index_count);
     Expression *motive_var = init_var_expression_wc("P", motive_type, elim_ctx);
     elim_ctx = context_insert(elim_ctx, motive_var);
 
@@ -172,7 +233,7 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd,
 
         Expression *ctor_type = get_expression_type(ctor_expr);
         Expression *case_type = _build_constructor_case_type(
-            ctor_expr, ctor_type, motive_var, param_vars, param_count, case_contexts[i]);
+            ctor_expr, ctor_type, motive_var, param_vars, param_count, index_count, case_contexts[i]);
 
         if (!case_type) {
             fprintf(stderr, "Error: Failed to build case type for %s\n", ctor->name);
@@ -193,16 +254,66 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd,
         case_contexts[i + 1] = context_insert(case_contexts[i], case_vars[i]);
     }
 
-    Expression *ind_applied = ind_var;
+    // Build conclusion: forall (indices) (target : ind params indices), P indices target
     Context *final_ctx = case_contexts[ctor_count];
-    for (size_t i = 0; i < param_count; i++) {
-        ind_applied = init_app_expression_wc(ind_applied, param_vars[i], final_ctx);
+
+    // Create fresh index variables for the conclusion
+    Expression **concl_index_vars = NULL;
+    if (index_count > 0) {
+        concl_index_vars = malloc(index_count * sizeof(Expression *));
+        for (size_t i = 0; i < index_count; i++) {
+            Expression *index_type = get_expression_type(index_vars[i]);
+            char index_name[32];
+            sprintf(index_name, "y%zu", i);
+            concl_index_vars[i] = init_var_expression_wc(index_name, index_type, final_ctx);
+            final_ctx = context_insert(final_ctx, concl_index_vars[i]);
+        }
     }
 
-    Expression *target_var = init_var_expression_wc("i", ind_applied, final_ctx);
+    // Build (ind params concl_index_0 ... concl_index_n)
+    Expression *ind_applied = ind_var;
+    for (size_t i = 0; i < param_count; i++) {
+        ind_applied = init_app_expression_wc(ind_applied, param_vars[i], final_ctx);
+        if (!ind_applied) {
+            fprintf(stderr, "Error: Failed to apply parameter %zu to inductive in conclusion\n", i);
+            free(case_vars);
+            free(case_contexts);
+            if (index_vars) free(index_vars);
+            if (concl_index_vars) free(concl_index_vars);
+            return NULL;
+        }
+    }
+    for (size_t i = 0; i < index_count; i++) {
+        ind_applied = init_app_expression_wc(ind_applied, concl_index_vars[i], final_ctx);
+    }
+
+    Expression *target_var = init_var_expression_wc("e", ind_applied, final_ctx);
     Context *target_ctx = context_insert(final_ctx, target_var);
-    Expression *target_applied = init_app_expression_wc(motive_var, target_var, target_ctx);
+
+    // Apply motive to indices and target: P concl_index_0 ... concl_index_n target
+    Expression *target_applied = motive_var;
+    for (size_t i = 0; i < index_count; i++) {
+        target_applied = init_app_expression_wc(target_applied, concl_index_vars[i], target_ctx);
+    }
+    target_applied = init_app_expression_wc(target_applied, target_var, target_ctx);
+    if (!target_applied) {
+        fprintf(stderr, "Error: Failed to apply motive to target\n");
+        free(case_vars);
+        free(case_contexts);
+        if (index_vars) free(index_vars);
+        if (concl_index_vars) free(concl_index_vars);
+        return NULL;
+    }
+
     Expression *result = init_forall_expression_wc(target_var, target_applied, target_ctx);
+
+    // Wrap with foralls for conclusion indices
+    for (size_t i = index_count; i > 0; i--) {
+        result = init_forall_expression_wc(concl_index_vars[i-1], result, final_ctx);
+        final_ctx = context_minus(final_ctx, concl_index_vars[i-1]);
+    }
+
+    if (concl_index_vars) free(concl_index_vars);
 
     for (size_t i = ctor_count; i > 0; i--) {
         result = init_forall_expression_wc(case_vars[i-1], result, case_contexts[i]);
@@ -234,6 +345,7 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd,
 
     free(case_vars);
     free(case_contexts);
+    if (index_vars) free(index_vars);
     return result;
 }
 
@@ -242,6 +354,7 @@ static Expression *_build_constructor_case_type(Expression *ctor_expr,
                                                  Expression *motive_var,
                                                  Expression **param_vars,
                                                  size_t param_count,
+                                                 size_t index_count,
                                                  Context *elim_ctx) {
     Expression *core_type = ctor_type;
     for (size_t i = 0; i < param_count; i++) {
@@ -260,7 +373,12 @@ static Expression *_build_constructor_case_type(Expression *ctor_expr,
 
     Expression *ctor_app = ctor_expr;
     for (size_t i = 0; i < param_count; i++) {
-        ctor_app = init_app_expression(ctor_app, param_vars[i]);
+        ctor_app = init_app_expression_wc(ctor_app, param_vars[i], elim_ctx);
+        if (!ctor_app) {
+            fprintf(stderr, "Error: Failed to apply parameter %zu to constructor\n", i);
+            dll_destroy(arg_types);
+            return NULL;
+        }
     }
 
     size_t arg_count = dll_len(arg_types);
@@ -274,10 +392,72 @@ static Expression *_build_constructor_case_type(Expression *ctor_expr,
 
         arg_vars[i] = init_var_expression_wc(arg_name, arg_type, case_ctx);
         case_ctx = context_insert(case_ctx, arg_vars[i]);
-        ctor_app = init_app_expression(ctor_app, arg_vars[i]);
+        ctor_app = init_app_expression_wc(ctor_app, arg_vars[i], case_ctx);
+        if (!ctor_app) {
+            fprintf(stderr, "Error: Failed to apply constructor arg %zu\n", i);
+            dll_destroy(arg_types);
+            free(arg_vars);
+            return NULL;
+        }
     }
 
-    Expression *case_result = init_app_expression(motive_var, ctor_app);
+    // Extract indices from constructor return type
+    // current holds the return type after stripping foralls
+    Expression **ctor_indices = NULL;
+    if (index_count > 0) {
+        ctor_indices = malloc(index_count * sizeof(Expression *));
+
+        // Parse the return type as a spine of applications
+        // For eq_refl: (((eq A) x) x) - we want to extract the indices (the trailing applications)
+        DoublyLinkedList *spine = dll_create();
+        Expression *head = current;
+        while (head->type == APP_EXPRESSION) {
+            dll_insert_at_head(spine, dll_new_node(head->value.app.arg));
+            head = head->value.app.func;
+        }
+
+        // The spine now has all the arguments. Skip param_count, take index_count
+        size_t total_args = dll_len(spine);
+        if (total_args < param_count + index_count) {
+            fprintf(stderr, "Error: Constructor return type has too few arguments\n");
+            dll_destroy(spine);
+            dll_destroy(arg_types);
+            free(arg_vars);
+            free(ctor_indices);
+            return NULL;
+        }
+
+        // Extract the indices (skip parameters)
+        for (size_t i = 0; i < index_count; i++) {
+            ctor_indices[i] = (Expression *)dll_at(spine, param_count + i)->data;
+        }
+
+        dll_destroy(spine);
+    }
+
+    // Apply motive to indices first, then to constructor application
+    Expression *case_result = motive_var;
+    for (size_t i = 0; i < index_count; i++) {
+        case_result = init_app_expression_wc(case_result, ctor_indices[i], case_ctx);
+        if (!case_result) {
+            fprintf(stderr, "Error: Failed to apply motive to index %zu\n", i);
+            dll_destroy(arg_types);
+            free(arg_vars);
+            if (ctor_indices) free(ctor_indices);
+            return NULL;
+        }
+    }
+
+    case_result = init_app_expression_wc(case_result, ctor_app, case_ctx);
+    if (!case_result) {
+        fprintf(stderr, "Error: Failed to apply motive to constructor application\n");
+        dll_destroy(arg_types);
+        free(arg_vars);
+        if (ctor_indices) free(ctor_indices);
+        return NULL;
+    }
+
+    if (ctor_indices) free(ctor_indices);
     Expression *case_type = case_result;
     Context *wrap_ctx = case_ctx;
     for (size_t i = arg_count; i > 0; i--) {
@@ -315,7 +495,7 @@ static void _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd)
     Expression *ind_return_type = ast_to_expression(ind_cmd->type, c);
     Expression *ind_type = ind_return_type;
     for (size_t i = param_count; i > 0; i--) {
-        ind_type = init_forall_expression_wc(param_vars[i-1], ind_type, contexts[i-1]);
+        ind_type = init_forall_expression_wc(param_vars[i-1], ind_type, contexts[i]);
     }
 
     Expression *ind_var = init_var_expression_wc(name, ind_type, rt->ctx);
