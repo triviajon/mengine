@@ -258,6 +258,14 @@ Tactic *tactic_parse_rewrite(Parser *p) {
     AST *lemma = parse_term(p);
     debug_print_ast(p, lemma);
 
+    // Expect "with"
+    if (!parser_expect_consume(p, TOK_WITH)) {
+        parser_error(p, "Expected 'with' after rewrite lemma");
+    }
+
+    AST *equiv_proof = parse_term(p);
+    debug_print_ast(p, equiv_proof);
+
     if (!parser_expect_consume(p, TOK_DOT)) {
         parser_error(p, "Expected '.' at end of rewrite");
     }
@@ -265,6 +273,7 @@ Tactic *tactic_parse_rewrite(Parser *p) {
     Tactic *tactic = malloc(sizeof(Tactic));
     tactic->tag = backward ? TACTIC_REWRITE_BACKWARD : TACTIC_REWRITE;
     tactic->as.rewrite.lemma = lemma;
+    tactic->as.rewrite.equiv_proof = equiv_proof;
     tactic->as.rewrite.backward = backward;
 
     return tactic;

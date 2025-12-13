@@ -45,7 +45,8 @@ typedef struct {
 
 typedef struct {
     AST *lemma;
-    bool backward;  // true if "rewrite <-"
+    AST *equiv_proof;  // Proof of Equivalence A R
+    bool backward;     // true if "rewrite <-"
 } RewriteTactic;
 
 typedef struct {
@@ -87,8 +88,8 @@ Tactic *tactic_parse_proof(Parser *p);
  *            | "apply" <term>
  *            | "eapply" <term>
  *            | "exact" <term>
- *            | "rewrite" <term>
- *            | "rewrite" "<-" <term>
+ *            | "rewrite" <term> "with" <term>
+ *            | "rewrite" "<-" <term> "with" <term>
  *            | "reflexivity"
  *            | "assumption"
  *            | "split"

@@ -2,6 +2,8 @@
 #include "src/engine/new_tactics.h"
 #include "src/metalanguage/ast_to_expression.h"
 #include "src/runtime/proof_state.h"
+#include "src/runtime/core.h"
+#include "src/runtime/definition_table.h"
 #include "src/common/color.h"
 #include "src/kernel/utils.h"
 
@@ -120,10 +122,38 @@ static bool _handle_exact_tactic(MEngineRuntime *rt, ExactTactic *t) {
 }
 
 static bool _handle_rewrite_tactic(MEngineRuntime *rt, RewriteTactic *t) {
-    Expression *g = _current_goal(rt);
-    (void)t;
-    (void)g;
-    return true;
+    Expression *goal = _current_goal(rt);
+    Context *ctx = get_expression_context(goal);
+
+    Expression *lemma = ast_to_expression(t->lemma, ctx);
+    if (!lemma) {
+        fprintf(stderr, "Error: could not resolve rewrite lemma\n");
+        return false;
+    }
+
+    Expression *equiv_proof = ast_to_expression(t->equiv_proof, ctx);
+    if (!equiv_proof) {
+        fprintf(stderr, "Error: could not resolve equivalence proof\n");
+        return false;
+    }
+
+    // If equiv_proof is a definition, unfold it to get its body
+    if (equiv_proof->type == VAR_EXPRESSION) {
+        DefinitionEntry *defn = definition_table_lookup(rt->def_table, equiv_proof->value.var.name);
+        if (defn) {
+            equiv_proof = defn->body;
+        }
+    }
+
+    TacticResult *result = rewrite_equiv_tactic(goal, lemma, equiv_proof);
+    if (result->success) {
+        proof_state_add_goals(rt->proof_state, result->new_goals);
+    } else {
+        fprintf(stderr, "Error: %s\n", result->error_message);
+    }
+    bool success = result->success;
+    free_tactic_result(result);
+    return success;
 }
 
 static bool _handle_reflexivity_tactic(MEngineRuntime *rt) {
@@ -192,6 +222,7 @@ bool _mengine_dispatch_tactic(MEngineRuntime *rt, Tactic *tac) {
             return _handle_exact_tactic(rt, &tac->as.exact);
 
         case TACTIC_REWRITE:
+        case TACTIC_REWRITE_BACKWARD:
             return _handle_rewrite_tactic(rt, &tac->as.rewrite);
 
         case TACTIC_REFLEXIVITY:
@@ -222,6 +253,13 @@ void mengine_execute_tactic(MEngineRuntime *rt, Tactic *tac) {
 
     // Only proceed if the tactic succeeded
     if (!success) {
+        return;
+    }
+
+    // TACTIC_PROOF is a no-op marker that doesn't consume goals
+    // QED and ADMITTED handle mode switching themselves
+    // Don't advance to next goal for these special tactics
+    if (tac->tag == TACTIC_PROOF || tac->tag == TACTIC_QED || tac->tag == TACTIC_ADMITTED) {
         return;
     }
 

@@ -1,4 +1,5 @@
 #include "src/runtime/runtime.h"
+#include "src/runtime/core.h"
 #include "src/common/options.h"
 
 void debug_print_mode(MEngineRuntime *rt) {
@@ -42,6 +43,8 @@ MEngineRuntime *mengine_runtime_new(MEngineOptions *options) {
         free(rt);
         return NULL;
     }
+
+    init_core(&rt->ctx);
 
     rt->def_table = malloc(sizeof(DefinitionTable));
     if (!rt->def_table) {
