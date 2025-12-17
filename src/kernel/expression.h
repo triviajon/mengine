@@ -280,6 +280,24 @@ Expression *get_innermost_body(Expression *expression);
 // then get_innermost_func(expression) will return f.
 Expression *get_innermost_func(Expression *expression);
 
+// Returns the function of an application.
+Expression *get_app_func(Expression *expr);
+
+// Returns the argument of an application.
+Expression *get_app_arg(Expression *expr);
+
+Expression *get_forall_bound_variable(Expression *expr);
+
+Expression *get_lambda_bound_variable(Expression *expr);
+
+Expression *get_forall_body(Expression *expr);
+
+Expression *get_lambda_body(Expression *expr);
+
+Expression *get_arrow_lhs(Expression *expr);
+
+Expression *get_arrow_rhs(Expression *expr);
+
 // Returns the value of the maybe_hole_free field of an expression.
 // This is a heuristic to determine if the expression may contain holes.
 // The reason this exists is because an expression containing a hole may be

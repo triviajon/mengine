@@ -5,11 +5,31 @@
 #include "src/kernel/context.h"
 #include "src/kernel/expression.h"
 
-// Core types and constructors hardcoded in C (not parsed from .me files).
+// Core types and constructors hardcoded in C. All of this won't be necessary once we implement a tactic rewriting language
+
+extern Expression *Reflexive;
+extern Expression *Reflexive_Definition;
+
+extern Expression *Symmetric;
+extern Expression *Symmetric_Definition;
+
+extern Expression *Transitive;
+extern Expression *Transitive_Definition;
 
 extern Expression *Equivalence;
 extern Expression *Build_Equivalence;
-extern Expression *Equiv_App_Cong;
+
+extern Expression *Equivalence_Reflexive;
+extern Expression *Equivalence_Symmetric;
+extern Expression *Equivalence_Transitive;
+
+extern Expression *Bad_App_Congruence;
+
+extern Expression *Eq;
+extern Expression *Eq_refl;
+extern Expression *Eq_sym;
+extern Expression *Eq_trans;
+extern Expression *Eq_subst;
 
 /**
  * Initialize the core library.
