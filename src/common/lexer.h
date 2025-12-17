@@ -23,6 +23,8 @@ typedef enum {
     TOK_FORALL,  // forall
     TOK_TYPE,    // Type
     TOK_PROP,    // Prop
+    TOK_LET,     // let
+    TOK_IN,      // in
     TOK_MATCH,   // match
     TOK_WITH,    // with
     TOK_PIPE,    // |

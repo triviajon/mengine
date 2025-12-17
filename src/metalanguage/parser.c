@@ -5,6 +5,8 @@
 #include <string.h>
 
 #include "src/common/color.h"
+#include "src/common/lexer.h"
+#include "src/common/parser_base.h"
 
 void fprint_ast(FILE *stream, AST *ast) {
     if (!ast) {
@@ -95,6 +97,8 @@ AST *parse_prefix_term(Parser *p) {
         return parse_forall(p);
     } else if (parser_expect_no_consume(p, TOK_MATCH)) {
         return parse_match(p);
+    } else if (parser_expect_no_consume(p, TOK_LET)) {
+        return parse_let(p);
     } else {
         return parse_application(p);
     }
@@ -180,6 +184,50 @@ Binder parse_binder(Parser *p) {
     binder.type = type;
 
     return binder;
+}
+
+AST *parse_let(Parser *p) {
+    if (!parser_expect_consume(p, TOK_LET)) {
+        parser_error(p, "Expected 'let' at start of let expression");
+    }
+
+    if (!parser_expect_no_consume(p, TOK_IDENT)) {
+        parser_error(p, "Expected identifier in let expression");
+    }
+    Token *ident_token = parser_next(p);
+
+    if (!parser_expect_consume(p, TOK_COLON)) {
+        parser_error(p, "Expected ':' after let identifier");
+    }
+
+    AST *type = parse_term(p);
+    debug_print_ast(p, type);
+
+    if (!parser_expect_consume(p, TOK_COLON_EQ)) {
+        parser_error(p, "Expected ':=' after let type");
+    }
+
+    AST *value = parse_term(p);
+    debug_print_ast(p, value);
+
+    if (!parser_expect_consume(p, TOK_IN)) {
+        parser_error(p, "Expected 'in' after let binding");
+    }
+
+    AST *body = parse_term(p);
+    debug_print_ast(p, body);
+
+    AST *let_ast = malloc(sizeof(AST));
+    let_ast->tag = AST_LET;
+    let_ast->value.let.name = strdup(ident_token->lexeme);
+    if (!let_ast->value.let.name) {
+        parser_error(p, "Memory allocation failed for let name");
+    }
+    let_ast->value.let.type = type;
+    let_ast->value.let.value = value;
+    let_ast->value.let.body = body;
+    lexer_free_token(ident_token);
+    return let_ast;
 }
 
 AST *parse_match(Parser *p) {

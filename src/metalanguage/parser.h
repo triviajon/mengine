@@ -24,6 +24,7 @@ typedef enum {
     AST_PROP,
     AST_LAMBDA,
     AST_FORALL,
+    AST_LET,
     AST_MATCHBRANCH,
     AST_MATCH,
     AST_APP
@@ -48,6 +49,13 @@ typedef struct {
 } ForallAST;
 
 typedef struct {
+    char *name;
+    AST *type;
+    AST *value;
+    AST *body;
+} LetAST;
+
+typedef struct {
     Pattern *pattern;
     AST *body;
 } MatchBranchAST;
@@ -70,6 +78,7 @@ struct AST {
         HoleAST hole;
         LambdaAST lambda;
         ForallAST forall;
+        LetAST let;
         AppAST app;
         MatchBranchAST matchbranch;
         MatchAST match;
@@ -93,6 +102,7 @@ AST *parse_term(Parser *p);
  *                 | <forall_expr>
  *                 | <match_expr>
  *                 | <application>
+ *                 | <let_expr>
  *
  * @param p Pointer to the Parser.
  * @return AST node representing the parsed prefix term.
@@ -122,6 +132,14 @@ AST *parse_forall(Parser *p);
  * @return Binder structure containing identifier and type.
  */
 Binder parse_binder(Parser *p);
+
+/**
+ * <let_expr>     ::= "let" <ident> ":" <term> ":=" <term> "in" <term>
+ *
+ * @param p Pointer to the Parser.
+ * @return AST node representing the parsed let expression.
+ */
+AST *parse_let(Parser *p);
 
 /**
  * <match_expr>   ::= "match" <term> "with" { <match_branch> } "end"
