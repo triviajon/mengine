@@ -40,5 +40,15 @@ TacticResult *assumption_tactic(Expression *goal);
 // Given a hole and a proof term, check if the term's type matches the goal, and fill the hole with it.
 TacticResult *exact_tactic(Expression *goal, Expression *proof_term);
 
+typedef struct {
+    Expression *original;
+    Expression *rewritten;
+    DoublyLinkedList *new_goals;
+    Expression *original_to_rewritten_proof;
+} RewriteResult;
+
+// Given a hole and a lemma, where the hole's expected type has the form eq A x y. The eventual goal is to
+// generalize this to any equivalence relation. See: https://sozeau.gitlabpages.inria.fr/www/research/publications/A_New_Look_at_Generalized_Rewriting_in_Type_Theory.pdf
+TacticResult *rewrite_tactic(Expression *goal, Expression *lemma);
 
 #endif  // NEW_TACTICS

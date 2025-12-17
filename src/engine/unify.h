@@ -49,4 +49,6 @@ void free_unification_result(UnificationResult *unification_result);
 
 UnificationResult *eunify2(Expression *lemma, Expression *goal);
 
+UnificationResult *bad_unify_for_eq(Context *goal_context, Expression *lemma, Expression *expr);
+
 #endif  // UNIFY_H

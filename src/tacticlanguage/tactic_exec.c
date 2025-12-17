@@ -1,11 +1,12 @@
 #include "src/tacticlanguage/tactic_exec.h"
+
+#include "src/common/color.h"
 #include "src/engine/new_tactics.h"
+#include "src/kernel/utils.h"
 #include "src/metalanguage/ast_to_expression.h"
-#include "src/runtime/proof_state.h"
 #include "src/runtime/core.h"
 #include "src/runtime/definition_table.h"
-#include "src/common/color.h"
-#include "src/kernel/utils.h"
+#include "src/runtime/proof_state.h"
 
 static Expression *_current_goal(MEngineRuntime *rt) {
     return proof_state_current(rt->proof_state);
@@ -137,15 +138,7 @@ static bool _handle_rewrite_tactic(MEngineRuntime *rt, RewriteTactic *t) {
         return false;
     }
 
-    // If equiv_proof is a definition, unfold it to get its body
-    if (equiv_proof->type == VAR_EXPRESSION) {
-        DefinitionEntry *defn = definition_table_lookup(rt->def_table, equiv_proof->value.var.name);
-        if (defn) {
-            equiv_proof = defn->body;
-        }
-    }
-
-    TacticResult *result = rewrite_equiv_tactic(goal, lemma, equiv_proof);
+    TacticResult *result = rewrite_tactic(goal, lemma);
     if (result->success) {
         proof_state_add_goals(rt->proof_state, result->new_goals);
     } else {
@@ -259,7 +252,8 @@ void mengine_execute_tactic(MEngineRuntime *rt, Tactic *tac) {
     // TACTIC_PROOF is a no-op marker that doesn't consume goals
     // QED and ADMITTED handle mode switching themselves
     // Don't advance to next goal for these special tactics
-    if (tac->tag == TACTIC_PROOF || tac->tag == TACTIC_QED || tac->tag == TACTIC_ADMITTED) {
+    if (tac->tag == TACTIC_PROOF || tac->tag == TACTIC_QED ||
+        tac->tag == TACTIC_ADMITTED) {
         return;
     }
 

@@ -317,3 +317,32 @@ UnificationResult *eunify2(Expression *lemma, Expression *goal) {
     }
     return init_unification_result(current_lemma_app, remaining_open);
 }
+
+
+UnificationResult *bad_unify_for_eq(Context *goal_context, Expression *lemma, Expression *expr) {
+    Expression *current_lemma_app = lemma;
+    Expression *current_lemma_app_ty = get_expression_type(current_lemma_app);
+    DoublyLinkedList *remaining_open = dll_create();
+    while (current_lemma_app_ty->type == FORALL_EXPRESSION) {
+        Expression *current_lemma_ty_lhs =
+            get_lhs_eq(get_innermost_body(current_lemma_app_ty));
+        Expression *bound_variable =
+            current_lemma_app_ty->value.forall.bound_variable;
+        Expression *hole_subst =
+            _unify2(current_lemma_ty_lhs, expr, bound_variable);
+
+        if (hole_subst == NULL) {
+            Expression *hole_to_fill = init_hole_expression(
+                bound_variable->value.var.name,
+                get_expression_type(bound_variable), goal_context);
+            current_lemma_app =
+                init_app_expression(current_lemma_app, hole_to_fill);
+            dll_insert_at_tail(remaining_open, dll_new_node(hole_to_fill));
+        } else {
+            current_lemma_app =
+                init_app_expression(current_lemma_app, hole_subst);
+        }
+        current_lemma_app_ty = get_expression_type(current_lemma_app);
+    }
+    return init_unification_result(current_lemma_app, remaining_open);
+}

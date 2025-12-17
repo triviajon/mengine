@@ -432,6 +432,73 @@ Expression *get_innermost_func(Expression *e) {
     }
 }
 
+Expression *get_app_func(Expression *expr) {
+    if (expr->type != APP_EXPRESSION) {
+        return NULL;
+    }
+
+    return expr->value.app.func;
+}
+
+Expression *get_app_arg(Expression *expr) {
+    if (expr->type != APP_EXPRESSION) {
+        return NULL;
+    }
+
+    return expr->value.app.arg;
+}
+
+Expression *get_forall_bound_variable(Expression *expr) {
+    if (expr->type != FORALL_EXPRESSION) {
+        return NULL;
+    }
+
+    return expr->value.forall.bound_variable;
+}
+
+Expression *get_lambda_bound_variable(Expression *expr) {
+    if (expr->type != LAMBDA_EXPRESSION) {
+        return NULL;
+    }
+
+    return expr->value.lambda.bound_variable;
+}
+
+Expression *get_forall_body(Expression *expr) {
+    if (expr->type != FORALL_EXPRESSION) {
+        return NULL;
+    }
+
+    return expr->value.forall.body;
+}
+
+Expression *get_lambda_body(Expression *expr) {
+    if (expr->type != LAMBDA_EXPRESSION) {
+        return NULL;
+    }
+
+    return expr->value.lambda.body;
+}
+
+Expression *get_arrow_lhs(Expression *expr) {
+    if (expr->type != FORALL_EXPRESSION) {
+        return NULL;
+    }
+    
+
+    return get_expression_type(get_forall_bound_variable(expr));
+}
+
+Expression *get_arrow_rhs(Expression *expr) {
+    if (expr->type != FORALL_EXPRESSION) {
+        return NULL;
+    }
+    
+
+    return get_forall_body(expr);
+}
+
+
 // Forward declarations. No need to expose them in expression.h.
 void free_var_expression(Expression *expr);
 void free_lambda_expression(Expression *expr);
