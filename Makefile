@@ -17,7 +17,7 @@ HELPERS_OBJ := $(HELPERS_SRC:.c=.o)
 
 UNAME := $(shell uname)
 
-all: $(ENGINE_LIB) $(MENGINE_BIN) tests
+all: $(ENGINE_LIB) $(MENGINE_BIN)
 
 $(ENGINE_LIB): $(ENGINE_OBJ)
 	ar rcs $@ $^
