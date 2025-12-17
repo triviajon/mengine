@@ -6,6 +6,8 @@
 
 #include "src/common/color.h"
 #include "src/common/lexer.h"
+#include "src/kernel/expression.h"
+#include "src/metalanguage/parser.h"
 
 /**
  * Internal helper for recursive conversion.
@@ -13,6 +15,7 @@
  *
  * @param ast The AST node to convert.
  * @param context The current context including any bound variables.
+ * @param letbindings @jon: todo, we'll need to separately maintain bindings from identifiers -> expressions for let bindings 
  * @return The converted Expression, or NULL on failure.
  */
 static Expression *_ast_to_expression(AST *ast, Context *context);
@@ -123,6 +126,25 @@ static Expression *_ast_to_expression(AST *ast, Context *context) {
             }
 
             return init_app_expression_wc(func, arg, context);
+        }
+
+        case AST_LET: {
+            Expression *type = _ast_to_expression(ast->value.let.type, context);
+            if (!type) {
+                return NULL;
+            }
+
+            Expression *value = _ast_to_expression(ast->value.let.value, context);
+            if (!value) {
+                return NULL;
+            }
+
+            Expression *bound_var =
+                init_var_expression_wc(ast->value.let.name, type, context);
+            if (!bound_var) {
+                return NULL;
+            }
+
         }
 
         case AST_MATCH: {

@@ -260,6 +260,12 @@ Token *lexer_next_token(Lexer *lx) {
                 } else if (strcmp(lexeme, "Prop") == 0) {
                     free(lexeme);
                     token = make_token(TOK_PROP, start_pos, NULL);
+                } else if (strcmp(lexeme, "let") == 0) {
+                    free(lexeme);
+                    token = make_token(TOK_LET, start_pos, NULL);
+                } else if (strcmp(lexeme, "in") == 0) {
+                    free(lexeme);
+                    token = make_token(TOK_IN, start_pos, NULL);
                 } else if (strcmp(lexeme, "match") == 0) {
                     free(lexeme);
                     token = make_token(TOK_MATCH, start_pos, NULL);
