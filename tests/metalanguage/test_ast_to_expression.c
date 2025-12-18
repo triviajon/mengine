@@ -69,6 +69,13 @@ int main() {
         "fun (x : Type) => fun (y : Type) => forall (z : Type) , x",
         "Nested lambdas with forall");
 
+    // Let expression tests
+    test_parse_and_convert("let x : Type := Type in x", "Simple let expression");
+    test_parse_and_convert("let x : Type := Prop in x",
+                           "Let binding Prop to variable");
+    test_parse_and_convert("let f : Type := fun (x : Type) => x in f",
+                           "Let binding a lambda");
+
     printf("All tests completed!\n");
     return 0;
 }

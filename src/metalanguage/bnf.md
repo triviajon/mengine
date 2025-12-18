@@ -15,7 +15,7 @@ This file documents the core grammar for the metalanguage's term language.
 
 <forall_expr>  ::= "forall" "(" <binder> ")" "," <term>
 
-<let_expr>     ::= "let" <ident> ":=" <term> "in" <term>
+<let_expr>     ::= "let" <ident> ":" <term> ":=" <term> "in" <term>
 
 <binder>       ::= <ident> ":" <term>
 
