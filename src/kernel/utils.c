@@ -1,6 +1,9 @@
 #include "src/kernel/utils.h"
 
+#include <stdio.h>
+
 #include "src/kernel/context.h"
+#include "src/kernel/dyn_array_map.h"
 
 // Helper function to concatenate two strings
 char *str_concat(const char *s1, const char *s2) {
@@ -169,7 +172,6 @@ char *stringify_context(Context *context) {
 
     char *parent_str = stringify_context(context->parent);
 
-
     char *result = str_concat(parent_str, "\n");
 
     result = str_concat(result, "Variable ");
@@ -182,20 +184,17 @@ char *stringify_context(Context *context) {
 
     result = str_concat(result, ".");
 
-
     free(var_str);
 
     free(type_str);
 
     free(parent_str);
 
-
     return result;
-
 }
 
 char *_get_str_addr(Expression *expression) {
-    char buf[2 * sizeof(void *) + 1];
+    char buf[(2 * sizeof(void *)) + 1];
     snprintf(buf, sizeof(buf), "%p", (void *)expression);
     return strdup(str_concat("var", buf));
 }
@@ -205,19 +204,19 @@ char *_top_level_stringify_to_address(Expression *expression) {
 
     switch (expression->type) {
         case VAR_EXPRESSION: {
-            char buf[2 * sizeof(void *) + 1];
+            char buf[(2 * sizeof(void *)) + 1];
             snprintf(buf, sizeof(buf), "%p", (void *)expression);
             result = strdup(str_concat("var", buf));
             break;
         }
 
         case APP_EXPRESSION: {
-            char buf1[2 * sizeof(void *) + 1];
+            char buf1[(2 * sizeof(void *)) + 1];
             snprintf(buf1, sizeof(buf1), "%p",
                      (void *)expression->value.app.func);
             result = strdup(str_concat("var", buf1));
 
-            char buf2[2 * sizeof(void *) + 1];
+            char buf2[(2 * sizeof(void *)) + 1];
             snprintf(buf2, sizeof(buf2), "%p",
                      (void *)expression->value.app.arg);
             result = strdup(
@@ -242,10 +241,9 @@ void _count_subexpression(Expression *expression, Map *visited, Map *counts) {
 
     *have_visited = true;  // truly, this can be any non-zero junk. TODO:
 
-                           // make this a set
+    // make this a set
 
     map_set(visited, expression, have_visited);
-
 
     switch (expression->type) {
         case VAR_EXPRESSION:
@@ -355,7 +353,7 @@ char *_stringify_expression_with_let(Expression *expression) {
 
         case LAMBDA_EXPRESSION: {
             if (dll_len(get_expression_uplinks(expression)) > 1) {
-                char buf[2 * sizeof(void *) + 1];
+                char buf[(2 * sizeof(void *)) + 1];
                 snprintf(buf, sizeof(buf), "%p", (void *)expression);
                 result = strdup(str_concat("var", buf));
                 break;
@@ -391,11 +389,10 @@ char *_stringify_expression_with_let(Expression *expression) {
             free(body_str);
 
             break;
-
         }
         case APP_EXPRESSION: {
             if (dll_len(get_expression_uplinks(expression)) > 1) {
-                char buf[2 * sizeof(void *) + 1];
+                char buf[(2 * sizeof(void *)) + 1];
                 snprintf(buf, sizeof(buf), "%p", (void *)expression);
                 result = strdup(str_concat("var", buf));
                 break;
@@ -408,11 +405,9 @@ char *_stringify_expression_with_let(Expression *expression) {
 
                 _stringify_expression_with_let(expression->value.app.arg);
 
-
             char *app_str = str_concat(func_str, " ");
 
             app_str = str_concat(app_str, arg_str);
-
 
             result = parenthesize_and_free(app_str);
 
@@ -421,12 +416,11 @@ char *_stringify_expression_with_let(Expression *expression) {
             free(arg_str);
 
             break;
-
         }
 
         case FORALL_EXPRESSION: {
             if (dll_len(get_expression_uplinks(expression)) > 1) {
-                char buf[2 * sizeof(void *) + 1];
+                char buf[(2 * sizeof(void *)) + 1];
                 snprintf(buf, sizeof(buf), "%p", (void *)expression);
                 result = strdup(str_concat("var", buf));
                 break;
@@ -462,7 +456,6 @@ char *_stringify_expression_with_let(Expression *expression) {
             free(body_str);
 
             break;
-
         }
 
         case TYPE_EXPRESSION:

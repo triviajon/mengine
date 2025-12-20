@@ -130,8 +130,6 @@ DoublyLinkedList *context_ancestors_until(Context *context_A,
     return list;
 }
 
-Context *context_LCA(Context *context_A, Context *context_B);
-
 void context_free(Context *context) { free(context); }
 
 Context *context_add(Context *context_A, Context *context_B) {

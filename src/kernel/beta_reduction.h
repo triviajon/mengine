@@ -2,7 +2,6 @@
 #define BETA_REDUCTION_H
 
 #include "src/kernel/expression.h"
-#include "src/kernel/subst.h"
 
 // Returns true if app_func and app_arg form a reducible expression.
 bool forms_redex(Expression *app_func, Expression *app_arg);

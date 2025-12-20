@@ -1,11 +1,6 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "src/common/lexer.h"
 #include "src/metalanguage/parser.h"
 #include "tests/helpers/test_framework.h"
-
 
 void test_parse_variable(void) {
     test_start("covers simple variable parsing");
@@ -200,7 +195,8 @@ void test_parse_application_single(void) {
     assert_equal_str("f", ast->value.app.func->value.var.name,
                      "function should be 'f'");
     assert_not_null(ast->value.app.arg, "argument should exist");
-    assert_equal_int(AST_VAR, ast->value.app.arg->tag, "argument should be VAR");
+    assert_equal_int(AST_VAR, ast->value.app.arg->tag,
+                     "argument should be VAR");
     assert_equal_str("x", ast->value.app.arg->value.var.name,
                      "argument should be 'x'");
 }
@@ -301,8 +297,7 @@ void test_parse_match_single_branch(void) {
                      "scrutinee should be VAR");
     assert_equal_str("x", ast->value.match.scrutinee->value.var.name,
                      "scrutinee should be 'x'");
-    assert_equal_int(1, ast->value.match.branch_count,
-                     "should have 1 branch");
+    assert_equal_int(1, ast->value.match.branch_count, "should have 1 branch");
     assert_not_null(ast->value.match.branches, "branches should exist");
 }
 

@@ -1,6 +1,11 @@
 #include "src/runtime/runtime.h"
-#include "src/runtime/core.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "src/common/color.h"
 #include "src/common/options.h"
+#include "src/runtime/core.h"
 
 void debug_print_mode(MEngineRuntime *rt) {
     if (!rt || !rt->options) {

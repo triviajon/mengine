@@ -1,5 +1,7 @@
 #include "src/runtime/definition_table.h"
 
+#include <stdlib.h>
+
 void definition_table_init(DefinitionTable *tbl) {
     tbl->size = 0;
     tbl->capacity = 1;

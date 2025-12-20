@@ -1,13 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-#include "src/common/lexer.h"
 #include "src/kernel/context.h"
 #include "src/kernel/expression.h"
 #include "src/kernel/utils.h"
 #include "src/metalanguage/ast_to_expression.h"
-#include "src/metalanguage/parser.h"
 #include "tests/helpers/test_framework.h"
 
 void test_convert_type(void) {
@@ -61,8 +57,8 @@ void test_convert_lambda_nested(void) {
     Context *ctx = context_create_empty();
     assert_not_null(ctx, "context should be created");
 
-    Expression *expr =
-        parse_string_to_expression("fun (f : Type) => fun (x : Type) => f", ctx);
+    Expression *expr = parse_string_to_expression(
+        "fun (f : Type) => fun (x : Type) => f", ctx);
     assert_not_null(expr, "expression should not be null");
 
     char *str = stringify_expression(expr);
@@ -257,9 +253,8 @@ void test_convert_application(void) {
     Context *ctx = context_create_empty();
     assert_not_null(ctx, "context should be created");
 
-    Expression *expr =
-        parse_string_to_expression("fun (x : Type) => fun (y : Type) => x",
-                                   ctx);
+    Expression *expr = parse_string_to_expression(
+        "fun (x : Type) => fun (y : Type) => x", ctx);
     assert_not_null(expr, "expression should not be null");
 
     char *str = stringify_expression(expr);

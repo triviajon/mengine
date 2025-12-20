@@ -2,8 +2,6 @@
 #define TEST_FRAMEWORK_H
 
 #include <stdbool.h>
-#include <stdio.h>
-#include <string.h>
 
 // Test statistics
 typedef struct {

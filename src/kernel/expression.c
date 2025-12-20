@@ -1,8 +1,10 @@
 #include "src/kernel/expression.h"
 
-#include "src/engine/axiom.h"
+#include <stdio.h>
+
 #include "src/kernel/beta_reduction.h"
 #include "src/kernel/context.h"
+#include "src/kernel/dyn_array_map.h"
 #include "src/kernel/subst.h"
 
 void add_to_parents(Expression *expression, Uplink *uplink) {
@@ -276,10 +278,13 @@ Expression *init_var_expression_wc(const char *name, Expression *type,
     expr->value.var.name = strdup(name);
     expr->value.var.type = type;
     expr->value.var.uplinks = dll_create();
-    // TODO: I won't lie, this feels a bit dirty, but I also don't know how to make this make sense.
-    // From the user perspective of init_var_expression_wc, they'd need to somehow possess a context 
-    // with this variable in with BEFORE creating the variable itself. Obviously, we can't do that, so instead
-    // we'll assume that the user will provide a context without the variable in it, and we'll add it to the context after creating the variable.
+    // TODO: I won't lie, this feels a bit dirty, but I also don't know how to
+    // make this make sense. From the user perspective of
+    // init_var_expression_wc, they'd need to somehow possess a context with
+    // this variable in with BEFORE creating the variable itself. Obviously, we
+    // can't do that, so instead we'll assume that the user will provide a
+    // context without the variable in it, and we'll add it to the context after
+    // creating the variable.
     expr->value.var.context = context_insert(defining_context, expr);
     expr->value.var.maybe_hole_free = true;
     return expr;
@@ -495,7 +500,6 @@ Expression *get_arrow_lhs(Expression *expr) {
     if (expr->type != FORALL_EXPRESSION) {
         return NULL;
     }
-    
 
     return get_expression_type(get_forall_bound_variable(expr));
 }
@@ -504,11 +508,9 @@ Expression *get_arrow_rhs(Expression *expr) {
     if (expr->type != FORALL_EXPRESSION) {
         return NULL;
     }
-    
 
     return get_forall_body(expr);
 }
-
 
 // Forward declarations. No need to expose them in expression.h.
 void free_var_expression(Expression *expr);
@@ -785,8 +787,8 @@ Expression *match_and_subst(Expression *a, Expression *b,
     return result;
 }
 
-bool _congruent_with_holes(Expression *a, Expression *b, Map *alpha_equivalences,
-                           Map *required_holes) {
+bool _congruent_with_holes(Expression *a, Expression *b,
+                           Map *alpha_equivalences, Map *required_holes) {
     if (a == b) {
         return true;
     }
@@ -832,17 +834,17 @@ bool _congruent_with_holes(Expression *a, Expression *b, Map *alpha_equivalences
         case (FORALL_EXPRESSION): {
             map_set(alpha_equivalences, a->value.forall.bound_variable,
                     b->value.forall.bound_variable);
-            bool result =
-                _congruent_with_holes(a->value.forall.body, b->value.forall.body,
-                                      alpha_equivalences, required_holes);
+            bool result = _congruent_with_holes(
+                a->value.forall.body, b->value.forall.body, alpha_equivalences,
+                required_holes);
             return result;
         }
         case (LAMBDA_EXPRESSION): {
             map_set(alpha_equivalences, a->value.lambda.bound_variable,
                     b->value.lambda.bound_variable);
-            bool result =
-                _congruent_with_holes(a->value.lambda.body, b->value.lambda.body,
-                                      alpha_equivalences, required_holes);
+            bool result = _congruent_with_holes(
+                a->value.lambda.body, b->value.lambda.body, alpha_equivalences,
+                required_holes);
             return result;
         }
         case (VAR_EXPRESSION): {
@@ -896,7 +898,8 @@ bool _congruent_with_holes(Expression *a, Expression *b, Map *alpha_equivalences
 bool congruent_with_holes(Expression *a, Expression *b) {
     Map *alpha_equivalences = map_new();
     Map *required_holes = map_new();
-    bool result = _congruent_with_holes(a, b, alpha_equivalences, required_holes);
+    bool result =
+        _congruent_with_holes(a, b, alpha_equivalences, required_holes);
     map_clear_free(alpha_equivalences);
     map_clear_free(required_holes);
     return result;
@@ -970,8 +973,8 @@ bool is_hole(Expression *expr) { return expr->type == HOLE_EXPRESSION; }
 //    3) Term does not itself contain the hole.
 // This does no modifications/creates no new objects.
 bool can_fill(Expression *hole, Expression *term) {
-    bool types_match =
-        congruent_with_holes(get_expression_type(hole), get_expression_type(term));
+    bool types_match = congruent_with_holes(get_expression_type(hole),
+                                            get_expression_type(term));
     if (get_maybe_hole_free(term)) {
         return types_match &&
                valid_in_context(term, get_expression_context(hole));
@@ -1053,9 +1056,9 @@ void fill_hole(Expression *hole, Expression *term) {
     // check if term satisfies hole type...
     Map *alpha_equivalences = map_new();
     Map *required_holes = map_new();
-    bool types_match =
-        _congruent_with_holes(get_expression_type(hole), get_expression_type(term),
-                              alpha_equivalences, required_holes);
+    bool types_match = _congruent_with_holes(
+        get_expression_type(hole), get_expression_type(term),
+        alpha_equivalences, required_holes);
     if (!types_match) {
         map_clear_free(alpha_equivalences);
         map_clear_free(required_holes);

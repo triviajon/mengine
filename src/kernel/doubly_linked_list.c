@@ -1,5 +1,8 @@
 #include "doubly_linked_list.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+
 DoublyLinkedList *dll_create(void) {
     DoublyLinkedList *list;
     if (!(list = malloc(sizeof(DoublyLinkedList)))) {

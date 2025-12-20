@@ -3,8 +3,6 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "src/engine/rewrite_proof.h"
@@ -215,11 +213,11 @@ Expression *init_prop_expression();
 Expression *init_fix_expression(Expression *ident, Expression *bound_variable,
                                 Expression *body);
 Expression *init_match_expr_expression(Expression *match_scrutinee,
-                                       Expression *literal_scrutinee,
+                                       Expression *literal_case_item,
                                        Expression *literal_result,
-                                       Expression *var_scrutinee,
+                                       Expression *var_case_item,
                                        Expression *var_result,
-                                       Expression *op_scrutinee,
+                                       Expression *op_case_item,
                                        Expression *op_result, Expression *type);
 
 // Initialize a new hole expression with a given name, return type, and defining

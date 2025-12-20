@@ -4,8 +4,6 @@
 #include "src/engine/tactics.h"
 #include "src/kernel/utils.h"
 #include "src/metalanguage/ast_to_expression.h"
-#include "src/runtime/core.h"
-#include "src/runtime/definition_table.h"
 #include "src/runtime/proof_state.h"
 
 static Expression *_current_goal(MEngineRuntime *rt) {

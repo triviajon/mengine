@@ -1,25 +1,26 @@
 #include "src/engine/tactics.h"
 
 #include <stdlib.h>
+
 #include "src/engine/unify.h"
 #include "src/kernel/doubly_linked_list.h"
 #include "src/kernel/expression.h"
 #include "src/kernel/new_subst.h"
 #include "src/runtime/core.h"
 
-TacticResult *init_tactic_result(bool success, DoublyLinkedList *new_goals, char *error_message) {
+TacticResult *init_tactic_result(bool success, DoublyLinkedList *new_goals,
+                                 char *error_message) {
     TacticResult *result = malloc(sizeof(TacticResult));
     if (!result) {
         return NULL;
     }
-    
+
     result->success = success;
     result->new_goals = new_goals;
     result->error_message = error_message;
-    
+
     return result;
 }
-
 
 void free_tactic_result(TacticResult *result) {
     if (!result) {
@@ -28,7 +29,8 @@ void free_tactic_result(TacticResult *result) {
     free(result);
 }
 
-// Helper that performs a single intro step, returning the new goal on success or NULL on failure.
+// Helper that performs a single intro step, returning the new goal on success
+// or NULL on failure.
 static Expression *intro_step(Expression *goal, char *name, char **error_out) {
     if (goal->type != HOLE_EXPRESSION) {
         if (error_out) {
@@ -49,12 +51,15 @@ static Expression *intro_step(Expression *goal, char *name, char **error_out) {
     Expression *A = get_expression_type(x);
     Expression *B = goal_ty->value.forall.body;
 
-    Expression *x_prime = init_var_expression_wc(name, A, get_expression_context(goal));
+    Expression *x_prime =
+        init_var_expression_wc(name, A, get_expression_context(goal));
     Expression *B_prime = new_subst(B, x, x_prime);
-    Context *new_context = context_insert(get_expression_context(goal), x_prime);
+    Context *new_context =
+        context_insert(get_expression_context(goal), x_prime);
     Expression *new_goal = init_hole_expression("Goal", B_prime, new_context);
 
-    Expression *proof_of_original = init_lambda_expression_wc(x_prime, new_goal, new_context);
+    Expression *proof_of_original =
+        init_lambda_expression_wc(x_prime, new_goal, new_context);
     if (can_fill(goal, proof_of_original)) {
         fill_hole(goal, proof_of_original);
         return new_goal;
@@ -69,7 +74,7 @@ static Expression *intro_step(Expression *goal, char *name, char **error_out) {
 TacticResult *intro_tactic(Expression *goal, char *name) {
     char *error = NULL;
     Expression *new_goal = intro_step(goal, name, &error);
-    
+
     if (!new_goal) {
         return init_tactic_result(false, NULL, error);
     }
@@ -81,7 +86,8 @@ TacticResult *intro_tactic(Expression *goal, char *name) {
 
 TacticResult *intros_tactic(Expression *goal, char **names, size_t name_count) {
     if (name_count == 0) {
-        return init_tactic_result(false, NULL, "intros rEquires at least one name");
+        return init_tactic_result(false, NULL,
+                                  "intros rEquires at least one name");
     }
 
     Expression *current_goal = goal;
@@ -109,13 +115,16 @@ TacticResult *apply_tactic(Expression *goal, Expression *lemma) {
     // Attempt to unify the lemma with the goal
     UnificationResult *unif_result = eunify2(lemma, goal);
     if (!unif_result) {
-        return init_tactic_result(false, NULL, "Could not unify lemma with goal");
+        return init_tactic_result(false, NULL,
+                                  "Could not unify lemma with goal");
     }
 
-    // For apply, we do not allow the unification result to have any remaining open holes.
+    // For apply, we do not allow the unification result to have any remaining
+    // open holes.
     if (dll_len(unif_result->new_goals) != 0) {
         free_unification_result(unif_result);
-        return init_tactic_result(false, NULL, "Apply tactic does not allow remaining open holes");
+        return init_tactic_result(
+            false, NULL, "Apply tactic does not allow remaining open holes");
     }
 
     // Check if the unification succeeded by verifying types match
@@ -123,7 +132,8 @@ TacticResult *apply_tactic(Expression *goal, Expression *lemma) {
 
     if (!can_fill(goal, lemma_inst)) {
         free_unification_result(unif_result);
-        return init_tactic_result(false, NULL, "Cannot fill goal with lemma instantiation");
+        return init_tactic_result(false, NULL,
+                                  "Cannot fill goal with lemma instantiation");
     }
 
     fill_hole(goal, lemma_inst);
@@ -143,7 +153,8 @@ TacticResult *eapply_tactic(Expression *goal, Expression *lemma) {
     // Attempt to unify the lemma with the goal
     UnificationResult *unif_result = eunify2(lemma, goal);
     if (!unif_result) {
-        return init_tactic_result(false, NULL, "Could not unify lemma with goal");
+        return init_tactic_result(false, NULL,
+                                  "Could not unify lemma with goal");
     }
 
     // Check if the unification succeeded by verifying types match
@@ -151,7 +162,8 @@ TacticResult *eapply_tactic(Expression *goal, Expression *lemma) {
 
     if (!can_fill(goal, lemma_inst)) {
         free_unification_result(unif_result);
-        return init_tactic_result(false, NULL, "Cannot fill goal with lemma instantiation");
+        return init_tactic_result(false, NULL,
+                                  "Cannot fill goal with lemma instantiation");
     }
 
     fill_hole(goal, lemma_inst);
@@ -171,7 +183,8 @@ TacticResult *assumption_tactic(Expression *goal) {
 
     Context *ctx = get_expression_context(goal);
 
-    // Iterate through the context to find a variable whose type matches the goal
+    // Iterate through the context to find a variable whose type matches the
+    // goal
     while (ctx && !context_is_empty(ctx)) {
         Expression *var = ctx->var_type;
 
@@ -192,7 +205,8 @@ TacticResult *exact_tactic(Expression *goal, Expression *proof_term) {
     }
 
     if (!can_fill(goal, proof_term)) {
-        return init_tactic_result(false, NULL, "Cannot fill goal with proof term");
+        return init_tactic_result(false, NULL,
+                                  "Cannot fill goal with proof term");
     }
 
     fill_hole(goal, proof_term);
@@ -203,25 +217,26 @@ TacticResult *exact_tactic(Expression *goal, Expression *proof_term) {
 // Forward declaration
 RewriteResult *n_rewrite(Expression *expr, Expression *lemma, Context *context);
 
-
 bool n_rewrite_is_noop(RewriteResult *rwr) {
     return rwr->original == rwr->rewritten;
 }
 
 Expression *_build_reflexivity_proof(Expression *expr, Context *ctx) {
-    // The goal is to build a proof of Eq type(expr) expr expr. 
+    // The goal is to build a proof of Eq type(expr) expr expr.
 
     Expression *relation_over = get_expression_type(expr);
-    Expression *proof = init_app_expression_wc(init_app_expression_wc(Eq_refl, relation_over, ctx), expr, ctx);
+    Expression *proof = init_app_expression_wc(
+        init_app_expression_wc(Eq_refl, relation_over, ctx), expr, ctx);
 
     return proof;
 }
 
-Expression *_build_transitivity_proof(RewriteResult *first_rwr, RewriteResult *second_rwr, Context *ctx) {
+Expression *_build_transitivity_proof(RewriteResult *first_rwr,
+                                      RewriteResult *second_rwr, Context *ctx) {
     // Given first_rwr : original -> mid with proof pf
     // and second_rwr : mid -> rewritten with proof pg
-    // Eq_trans : forall (A : Type) (x y z : A), Eq A x y -> Eq A y z -> Eq A x z.
-    // build the term "Eq_trans relation_over original mid rewritten H1 H2"
+    // Eq_trans : forall (A : Type) (x y z : A), Eq A x y -> Eq A y z -> Eq A x
+    // z. build the term "Eq_trans relation_over original mid rewritten H1 H2"
     Expression *relation_over = get_expression_type(first_rwr->original);
     Expression *original = first_rwr->original;
     Expression *mid = first_rwr->rewritten;
@@ -233,9 +248,8 @@ Expression *_build_transitivity_proof(RewriteResult *first_rwr, RewriteResult *s
         init_app_expression_wc(
             init_app_expression_wc(
                 init_app_expression_wc(
-                    init_app_expression_wc( 
-                        init_app_expression_wc(
-                            Eq_trans, relation_over, ctx),
+                    init_app_expression_wc(
+                        init_app_expression_wc(Eq_trans, relation_over, ctx),
                         original, ctx),
                     mid, ctx),
                 rewritten, ctx),
@@ -245,12 +259,15 @@ Expression *_build_transitivity_proof(RewriteResult *first_rwr, RewriteResult *s
     return proof;
 }
 
-Expression *_build_app_congruence_proof(RewriteResult *func_rwr, RewriteResult *arg_rwr, Context *ctx) {
-    // Bad_App_Congruence : forall (A B : Type) (f g : A -> B) (x y: A), Eq (A -> B) f g -> Eq (A) x y -> Eq (B) (f x) (g y).
-    // if func_rw provides pf : Eq (A -> B) f g and arg_rwr provided pg : Eq A x y,
-    // build the term "Bad_App_Congruence A B f g x y pf pg"
+Expression *_build_app_congruence_proof(RewriteResult *func_rwr,
+                                        RewriteResult *arg_rwr, Context *ctx) {
+    // Bad_App_Congruence : forall (A B : Type) (f g : A -> B) (x y: A), Eq (A
+    // -> B) f g -> Eq (A) x y -> Eq (B) (f x) (g y). if func_rw provides pf :
+    // Eq (A -> B) f g and arg_rwr provided pg : Eq A x y, build the term
+    // "Bad_App_Congruence A B f g x y pf pg"
 
-    Expression *A_implies_B = get_app_arg(get_app_func(get_app_func(get_expression_type(func_rwr->original_to_rewritten_proof))));
+    Expression *A_implies_B = get_app_arg(get_app_func(get_app_func(
+        get_expression_type(func_rwr->original_to_rewritten_proof))));
 
     Expression *A = get_arrow_lhs(A_implies_B);
     Expression *B = get_arrow_rhs(A_implies_B);
@@ -264,23 +281,29 @@ Expression *_build_app_congruence_proof(RewriteResult *func_rwr, RewriteResult *
     Expression *H1 = func_rwr->original_to_rewritten_proof;
     Expression *H2 = arg_rwr->original_to_rewritten_proof;
 
-    Expression *proof = init_app_expression_wc(init_app_expression_wc(init_app_expression_wc(
+    Expression *proof = init_app_expression_wc(
         init_app_expression_wc(
             init_app_expression_wc(
                 init_app_expression_wc(
                     init_app_expression_wc(
                         init_app_expression_wc(
-                            Bad_App_Congruence, A, ctx),
-                        B, ctx),
-                    f, ctx),
-                g, ctx),
-            x, ctx),
-        y, ctx), H1, ctx), H2, ctx);
+                            init_app_expression_wc(
+                                init_app_expression_wc(Bad_App_Congruence, A,
+                                                       ctx),
+                                B, ctx),
+                            f, ctx),
+                        g, ctx),
+                    x, ctx),
+                y, ctx),
+            H1, ctx),
+        H2, ctx);
 
     return proof;
 }
 
-RewriteResult *init_rewrite_result(Expression *original, Expression *rewritten, DoublyLinkedList *new_goals, Expression *original_to_rewritten_proof) {
+RewriteResult *init_rewrite_result(Expression *original, Expression *rewritten,
+                                   DoublyLinkedList *new_goals,
+                                   Expression *original_to_rewritten_proof) {
     RewriteResult *rwr = malloc(sizeof(RewriteResult));
     if (!rwr) {
         return NULL;
@@ -301,82 +324,79 @@ void free_rewrite_result(RewriteResult *rwr) {
     free(rwr);
 }
 
-Expression *_get_lhs_Eq(Expression *eq_expression) {
-    // eq_expression is of the form Eq A x y
-    return get_app_arg(get_app_func(eq_expression));
-}
-
-Expression *_get_rhs_Eq(Expression *eq_expression) {
-    // eq_expression is of the form Eq A x y
-    return get_app_arg(eq_expression);
-}
-
-RewriteResult *n_rewrite_head(Expression *mid, Expression *lemma, Context *context) {
-    // This part of rewriting is literally just a call to the apply tactic. 
-    // We're creating a hole with expected return type `mid` and defining context `context`,
-    // and attempting to apply the lemma to it.
-    // Expression *hole = init_hole_expression("Rewrite_Hole", mid, context);
+RewriteResult *n_rewrite_head(Expression *mid, Expression *lemma,
+                              Context *context) {
+    // This part of rewriting is literally just a call to the apply tactic.
+    // We're creating a hole with expected return type `mid` and defining
+    // context `context`, and attempting to apply the lemma to it. Expression
+    // *hole = init_hole_expression("Rewrite_Hole", mid, context);
 
     // // TODO: Temporary, until the hole fill bug is fixed.
-    // Expression *holder = init_lambda_expression_wc(init_var_expression_wc("t", init_type_expression(), context),
+    // Expression *holder =
+    // init_lambda_expression_wc(init_var_expression_wc("t",
+    // init_type_expression(), context),
     //      hole, context);
 
     // TODO: We shouldn't need to use this function
     UnificationResult *unif_result = bad_unify_for_eq(context, lemma, mid);
 
     if (!unif_result) {
-        return init_rewrite_result(mid, mid, dll_create(), _build_reflexivity_proof(mid, context));
+        return init_rewrite_result(mid, mid, dll_create(),
+                                   _build_reflexivity_proof(mid, context));
     }
 
-    // For rewriting, we do not allow the unification result to have any remaining open holes.
+    // For rewriting, we do not allow the unification result to have any
+    // remaining open holes.
     if (dll_len(unif_result->new_goals) > 0) {
         free_unification_result(unif_result);
-        return init_rewrite_result(mid, mid, dll_create(), _build_reflexivity_proof(mid, context));
+        return init_rewrite_result(mid, mid, dll_create(),
+                                   _build_reflexivity_proof(mid, context));
     }
 
     Expression *proof = unif_result->lemma_instantiation;
     Expression *proof_type = get_expression_type(proof);
     if (!congruence(_get_lhs_Eq(proof_type), mid)) {
         free_unification_result(unif_result);
-        return init_rewrite_result(mid, mid, dll_create(), _build_reflexivity_proof(mid, context));
+        return init_rewrite_result(mid, mid, dll_create(),
+                                   _build_reflexivity_proof(mid, context));
     }
 
     free_unification_result(unif_result);
 
-    return init_rewrite_result(mid, _get_rhs_Eq(proof_type), dll_create(), proof);
+    return init_rewrite_result(mid, _get_rhs_Eq(proof_type), dll_create(),
+                               proof);
 }
 
-RewriteResult *n_rewrite_app(Expression *expr, Expression *lemma, Context *context) {
+RewriteResult *n_rewrite_app(Expression *expr, Expression *lemma,
+                             Context *context) {
     Expression *func = get_app_func(expr);
-    Expression *arg  = get_app_arg(expr);
+    Expression *arg = get_app_arg(expr);
 
     RewriteResult *rwr_func = n_rewrite(func, lemma, context);
-    RewriteResult *rwr_arg  = n_rewrite(arg, lemma, context);
+    RewriteResult *rwr_arg = n_rewrite(arg, lemma, context);
 
     RewriteResult *mid_rwr = NULL;
     if (n_rewrite_is_noop(rwr_func) && n_rewrite_is_noop(rwr_arg)) {
-        mid_rwr = init_rewrite_result(expr, expr, dll_create(), _build_reflexivity_proof(expr, context));
+        mid_rwr = init_rewrite_result(expr, expr, dll_create(),
+                                      _build_reflexivity_proof(expr, context));
     } else {
         mid_rwr = init_rewrite_result(
-            expr,
-            init_app_expression(rwr_func->rewritten, rwr_arg->rewritten),
+            expr, init_app_expression(rwr_func->rewritten, rwr_arg->rewritten),
             dll_merge(rwr_func->new_goals, rwr_arg->new_goals),
             _build_app_congruence_proof(rwr_func, rwr_arg, context));
     }
 
-    RewriteResult *mid_result = n_rewrite_head(mid_rwr->rewritten, lemma, context);
+    RewriteResult *mid_result =
+        n_rewrite_head(mid_rwr->rewritten, lemma, context);
 
     RewriteResult *final_rwr;
     if (n_rewrite_is_noop(mid_result)) {
-        final_rwr = init_rewrite_result(
-            expr,
-            mid_rwr->rewritten,
-            mid_rwr->new_goals,
-            mid_rwr->original_to_rewritten_proof);
+        final_rwr =
+            init_rewrite_result(expr, mid_rwr->rewritten, mid_rwr->new_goals,
+                                mid_rwr->original_to_rewritten_proof);
     } else {
         final_rwr = init_rewrite_result(
-            expr,
-            mid_result->rewritten,
+            expr, mid_result->rewritten,
             dll_merge(mid_rwr->new_goals, mid_result->new_goals),
             _build_transitivity_proof(mid_rwr, mid_result, context));
     }
@@ -389,30 +409,33 @@ RewriteResult *n_rewrite_app(Expression *expr, Expression *lemma, Context *conte
     return final_rwr;
 }
 
-RewriteResult *n_rewrite_var(Expression *expr, Expression *lemma, Context *context) {
+RewriteResult *n_rewrite_var(Expression *expr, Expression *lemma,
+                             Context *context) {
     RewriteResult *head_rwr = n_rewrite_head(expr, lemma, context);
     return head_rwr;
 }
 
-RewriteResult *n_rewrite(Expression *expr, Expression *lemma, Context *context) {
+RewriteResult *n_rewrite(Expression *expr, Expression *lemma,
+                         Context *context) {
     RewriteResult *result = NULL;
     switch (expr->type) {
-        case (APP_EXPRESSION): { 
+        case (APP_EXPRESSION): {
             result = n_rewrite_app(expr, lemma, context);
             break;
         }
         case (VAR_EXPRESSION): {
             result = n_rewrite_var(expr, lemma, context);
             break;
-        }   
+        }
         default:
-            return NULL; 
+            return NULL;
     }
     return result;
 }
 
 TacticResult *rewrite_tactic(Expression *goal, Expression *lemma) {
-    // Assume return_type has form R lhs rhs, so that R is the relation and the type of lhs/rhs are what the relation are over. 
+    // Assume return_type has form R lhs rhs, so that R is the relation and the
+    // type of lhs/rhs are what the relation are over.
     Expression *return_type = get_expression_type(goal);
     Context *operating_ctx = get_expression_context(goal);
     Expression *relation_left_hand = get_app_arg(get_app_func(return_type));
@@ -423,41 +446,52 @@ TacticResult *rewrite_tactic(Expression *goal, Expression *lemma) {
     // Require that Equivalence proof applies to relation
     // TODO: Since we are hardcoding rewriting only for Leibniz Equality....
     if (get_app_func(relation) != Eq) {
-        return init_tactic_result(false, NULL, "Currently only rewriting for Leibniz Equality is supported");
+        return init_tactic_result(
+            false, NULL,
+            "Currently only rewriting for Leibniz Equality is supported");
     }
 
-    // Once that's confirmed, we can begin attempting to rewrite. Start with the lhs and try to apply the lemma. 
+    // Once that's confirmed, we can begin attempting to rewrite. Start with the
+    // lhs and try to apply the lemma.
     RewriteResult *rwr = n_rewrite(relation_left_hand, lemma, operating_ctx);
     if (!rwr) {
         return init_tactic_result(false, NULL, "Rewriting failed");
     }
 
-    // rwr gives us Eq A lhs lhs' with proof pf. We now need to build the proof of Eq relation_over lhs rhs.
-    // We'll just use Eq_trans : (forall (A: Type), (forall (x: A), (forall (y: A), (forall (z: A), (forall (_: (((Eq A) x) y)), (forall (_: (((Eq A) y) z)), (((Eq A) x) z)))))))
+    // rwr gives us Eq A lhs lhs' with proof pf. We now need to build the proof
+    // of Eq relation_over lhs rhs. We'll just use Eq_trans : (forall (A: Type),
+    // (forall (x: A), (forall (y: A), (forall (z: A), (forall (_: (((Eq A) x)
+    // y)), (forall (_: (((Eq A) y) z)), (((Eq A) x) z)))))))
     Expression *new_goal_type = init_app_expression_wc(
         init_app_expression_wc(
-            init_app_expression_wc(
-                Eq, relation_over, operating_ctx),
+            init_app_expression_wc(Eq, relation_over, operating_ctx),
             rwr->rewritten, operating_ctx),
         relation_right_hand, operating_ctx);
-    Expression *new_goal = init_hole_expression("Goal", new_goal_type, operating_ctx);
-    Expression *proof_of_goal = init_app_expression_wc(init_app_expression_wc(init_app_expression_wc(init_app_expression_wc(init_app_expression_wc(init_app_expression_wc(
-        Eq_trans, relation_over, operating_ctx), 
-        rwr->original, operating_ctx),
-        rwr->rewritten, operating_ctx),
-        relation_right_hand, operating_ctx),
-        rwr->original_to_rewritten_proof, operating_ctx),
+    Expression *new_goal =
+        init_hole_expression("Goal", new_goal_type, operating_ctx);
+    Expression *proof_of_goal = init_app_expression_wc(
+        init_app_expression_wc(
+            init_app_expression_wc(
+                init_app_expression_wc(
+                    init_app_expression_wc(
+                        init_app_expression_wc(Eq_trans, relation_over,
+                                               operating_ctx),
+                        rwr->original, operating_ctx),
+                    rwr->rewritten, operating_ctx),
+                relation_right_hand, operating_ctx),
+            rwr->original_to_rewritten_proof, operating_ctx),
         new_goal, operating_ctx);
 
     DoublyLinkedList *new_goals = dll_create();
     dll_insert_at_tail(new_goals, dll_new_node(new_goal));
     new_goals = dll_merge(new_goals, rwr->new_goals);
-    
+
     if (!can_fill(goal, proof_of_goal)) {
         free_rewrite_result(rwr);
-        return init_tactic_result(false, NULL, "Failed to fill the goal after rewriting");
+        return init_tactic_result(false, NULL,
+                                  "Failed to fill the goal after rewriting");
     }
-    
+
     fill_hole(goal, proof_of_goal);
 
     TacticResult *tac_result = init_tactic_result(true, new_goals, NULL);

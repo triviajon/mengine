@@ -1,61 +1,7 @@
 #include "unify.h"
 
-Expression *get_type_eq(Expression *eq_type) {
-    if (eq_type == NULL) {
-        return NULL;
-    }
-    if (eq_type->type != APP_EXPRESSION) {
-        return NULL;
-    }
-    if (eq_type->value.app.func->type != APP_EXPRESSION) {
-        return NULL;
-    }
-    Expression *expected_eq =
-        eq_type->value.app.func->value.app.func->value.app.func;
-    if (expected_eq != eq) {
-        return NULL;
-    }
-
-    Expression *eq_type_expr =
-        eq_type->value.app.func->value.app.func->value.app.arg;
-    return get_expression_type(eq_type_expr);
-}
-
-Expression *get_lhs_eq(Expression *eq_type) {
-    if (eq_type == NULL) {
-        return NULL;
-    }
-    if (eq_type->type != APP_EXPRESSION) {
-        return NULL;
-    }
-    if (eq_type->value.app.func->type != APP_EXPRESSION) {
-        return NULL;
-    }
-    Expression *expected_eq =
-        eq_type->value.app.func->value.app.func->value.app.func;
-    if (expected_eq != eq) {
-        return NULL;
-    }
-    return eq_type->value.app.func->value.app.arg;
-}
-
-Expression *get_rhs_eq(Expression *eq_type) {
-    if (eq_type == NULL) {
-        return NULL;
-    }
-    if (eq_type->type != APP_EXPRESSION) {
-        return NULL;
-    }
-    if (eq_type->value.app.func->type != APP_EXPRESSION) {
-        return NULL;
-    }
-    Expression *expected_eq =
-        eq_type->value.app.func->value.app.func->value.app.func;
-    if (expected_eq != eq) {
-        return NULL;
-    }
-    return eq_type->value.app.arg;
-}
+#include "src/kernel/subst.h"
+#include "src/runtime/core.h"
 
 Expression *instantiate_lemma_type(Context *context, Expression *lemma_ty) {
     switch (lemma_ty->type) {
@@ -168,98 +114,6 @@ Expression *_unify2(Expression *exprA, Expression *exprB,
     }
 }
 
-bool _could_apply(Expression *expr, Expression *lemma_ty_body,
-                  DoublyLinkedList *ignore_as_holes) {
-    switch (lemma_ty_body->type) {
-        case (APP_EXPRESSION): {
-            if (expr->type != APP_EXPRESSION) {
-                return false;
-            }
-            // todo: what if it's a hole
-            return _could_apply(expr->value.app.func,
-                                lemma_ty_body->value.app.func,
-                                ignore_as_holes) &&
-                   _could_apply(expr->value.app.arg,
-                                lemma_ty_body->value.app.arg, ignore_as_holes);
-        }
-        case (VAR_EXPRESSION): {
-            if (expr == lemma_ty_body) {
-                return true;
-            }
-
-            bool is_hole = false;
-            DLLNode *curr = ignore_as_holes->head;
-            while (curr != NULL) {
-                if (lemma_ty_body == curr->data) {
-                    is_hole = true;
-                    break;
-                }
-                curr = curr->next;
-            }
-
-            return is_hole;
-        }
-        default:  return false;
-    }
-}
-
-bool could_apply(Expression *expr, Expression *lemma_ty) {
-    DoublyLinkedList *ignore_as_holes = dll_create();
-    Expression *curr_lemma_ty = lemma_ty;
-    while (curr_lemma_ty->type == FORALL_EXPRESSION) {
-        dll_insert_at_tail(
-            ignore_as_holes,
-            dll_new_node(curr_lemma_ty->value.forall.bound_variable));
-        curr_lemma_ty = curr_lemma_ty->value.forall.body;
-    }
-
-    bool result =
-        _could_apply(expr, get_lhs_eq(curr_lemma_ty), ignore_as_holes);
-    dll_destroy(ignore_as_holes);
-    return result;
-}
-
-UnificationResult *unify_and_instantiate(Context *goal_context,
-                                         Expression *lemma,
-                                         Expression *lemma_ty,
-                                         Expression *expr) {
-    // Lemma_ty is like Forall x1: T1, ...
-    // Want to first replace all leading binding variables of lemma_ty by hole
-    // expressions, then try to do unification to instantiate the lemma. It is
-    // possible for there to remain open holes.
-
-    // Section A:
-    if (!could_apply(expr, lemma_ty)) {
-        return NULL;
-    }
-
-    Expression *current_lemma_app = lemma;
-    Expression *current_lemma_app_ty = get_expression_type(current_lemma_app);
-    DoublyLinkedList *remaining_open = dll_create();
-    while (current_lemma_app_ty->type == FORALL_EXPRESSION) {
-        Expression *current_lemma_ty_lhs =
-            get_lhs_eq(get_innermost_body(current_lemma_app_ty));
-        Expression *bound_variable =
-            current_lemma_app_ty->value.forall.bound_variable;
-        Expression *hole_subst =
-            _unify2(current_lemma_ty_lhs, expr, bound_variable);
-
-        if (hole_subst == NULL) {
-            Expression *hole_to_fill = init_hole_expression(
-                bound_variable->value.var.name,
-                get_expression_type(bound_variable), goal_context);
-            current_lemma_app =
-                init_app_expression(current_lemma_app, hole_to_fill);
-            dll_insert_at_tail(remaining_open, dll_new_node(hole_to_fill));
-        } else {
-            current_lemma_app =
-                init_app_expression(current_lemma_app, hole_subst);
-        }
-        current_lemma_app_ty = get_expression_type(current_lemma_app);
-    }
-    return init_unification_result(current_lemma_app, remaining_open);
-}
-
 Expression *instantiate_lemma_with_bindings(Expression *lemma,
                                             Expression *lemma_ty,
                                             Map *binders) {
@@ -325,14 +179,14 @@ UnificationResult *eunify2(Expression *lemma, Expression *goal) {
     return init_unification_result(current_lemma_app, remaining_open);
 }
 
-
-UnificationResult *bad_unify_for_eq(Context *goal_context, Expression *lemma, Expression *expr) {
+UnificationResult *bad_unify_for_eq(Context *goal_context, Expression *lemma,
+                                    Expression *expr) {
     Expression *current_lemma_app = lemma;
     Expression *current_lemma_app_ty = get_expression_type(current_lemma_app);
     DoublyLinkedList *remaining_open = dll_create();
     while (current_lemma_app_ty->type == FORALL_EXPRESSION) {
         Expression *current_lemma_ty_lhs =
-            get_lhs_eq(get_innermost_body(current_lemma_app_ty));
+            _get_lhs_Eq(get_innermost_body(current_lemma_app_ty));
         Expression *bound_variable =
             current_lemma_app_ty->value.forall.bound_variable;
         Expression *hole_subst =
