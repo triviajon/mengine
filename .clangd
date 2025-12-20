@@ -2,7 +2,7 @@ Diagnostics:
   ClangTidy:
     Add: [readability-*]
     Remove:
-      [readability-identifier-length, readability-function-cognitive-complexity]
+      [readability-identifier-length, readability-function-cognitive-complexity, readability-magic-numbers]
   UnusedIncludes: Strict
 
 Index:

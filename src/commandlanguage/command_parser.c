@@ -72,9 +72,9 @@ DeclKeyword command_parse_declaration_keyword(Parser *p) {
     }
     if (parser_expect_consume(p, TOK_VARIABLE)) {
         return DECL_KW_VARIABLE;
-    } else {
-        parser_error(p, "expected 'Axiom' or 'Variable' keyword");
     }
+    parser_error(p, "expected 'Axiom' or 'Variable' keyword");
+
 
     // Unreachable, but avoids compiler warning.
     // TODO: refactor error handling
@@ -90,18 +90,21 @@ Binder command_parse_assumption(Parser *p) { return parse_binder(p); }
  * @return InductiveConstructor structure representing the parsed constructor.
  */
 InductiveConstructor *command_parse_constructor(Parser *p) {
-    if (!parser_expect_consume(p, TOK_PIPE))
+    if (!parser_expect_consume(p, TOK_PIPE)) {
         parser_error(p, "expected '|' before constructor");
+    }
 
-    if (!parser_expect_no_consume(p, TOK_IDENT))
+    if (!parser_expect_no_consume(p, TOK_IDENT)) {
         parser_error(p, "expected constructor name after '|'");
+    }
 
     Token *ctor_token = parser_next(p);
     char *ctor_name = strdup(ctor_token->lexeme);
     lexer_free_token(ctor_token);
 
-    if (!parser_expect_consume(p, TOK_COLON))
+    if (!parser_expect_consume(p, TOK_COLON)) {
         parser_error(p, "expected ':' after constructor name");
+    }
 
     AST *ctor_type = parse_term(p);
     debug_print_ast(p, ctor_type);
@@ -132,8 +135,9 @@ Command *command_parse_definition(Parser *p) {
     while (parser_expect_consume(p, TOK_LPAREN)) {
         Binder b = command_parse_assumption(p);
 
-        if (!parser_expect_consume(p, TOK_RPAREN))
+        if (!parser_expect_consume(p, TOK_RPAREN)) {
             parser_error(p, "expected ')' after parameter");
+        }
 
         params = realloc(params, sizeof(Binder *) * (param_count + 1));
         params[param_count] = malloc(sizeof(Binder));
@@ -141,20 +145,23 @@ Command *command_parse_definition(Parser *p) {
         param_count++;
     }
 
-    if (!parser_expect_consume(p, TOK_COLON))
+    if (!parser_expect_consume(p, TOK_COLON)) {
         parser_error(p, "expected ':' before type");
+    }
 
     AST *type = parse_term(p);
     debug_print_ast(p, type);
 
-    if (!parser_expect_consume(p, TOK_COLON_EQ))
+    if (!parser_expect_consume(p, TOK_COLON_EQ)) {
         parser_error(p, "expected ':=' in definition");
+    }
 
     AST *body = parse_term(p);
     debug_print_ast(p, body);
 
-    if (!parser_expect_consume(p, TOK_DOT))
+    if (!parser_expect_consume(p, TOK_DOT)) {
         parser_error(p, "expected '.' after definition");
+    }
 
     Command *cmd = malloc(sizeof(Command));
     cmd->tag = CMD_DEFINITION;
@@ -170,21 +177,24 @@ Command *command_parse_definition(Parser *p) {
 Command *command_parse_statement(Parser *p) {
     StmtKeyword kw = command_parse_statement_keyword(p);
 
-    if (!parser_expect_no_consume(p, TOK_IDENT))
+    if (!parser_expect_no_consume(p, TOK_IDENT)) {
         parser_error(p, "expected identifier after theorem keyword");
+    }
 
     Token *ident_token = parser_next(p);
     char *name = strdup(ident_token->lexeme);
     lexer_free_token(ident_token);
 
-    if (!parser_expect_consume(p, TOK_COLON))
+    if (!parser_expect_consume(p, TOK_COLON)) {
         parser_error(p, "expected ':' before theorem type");
+    }
 
     AST *ty = parse_term(p);
     debug_print_ast(p, ty);
 
-    if (!parser_expect_consume(p, TOK_DOT))
+    if (!parser_expect_consume(p, TOK_DOT)) {
         parser_error(p, "expected '.' after theorem statement");
+    }
 
     Command *cmd = malloc(sizeof(Command));
     cmd->tag = CMD_STATEMENT;
@@ -201,9 +211,9 @@ StmtKeyword command_parse_statement_keyword(Parser *p) {
     }
     if (parser_expect_consume(p, TOK_LEMMA)) {
         return STMT_KW_LEMMA;
-    } else {
-        parser_error(p, "expected 'Theorem' or 'Lemma' keyword");
     }
+    parser_error(p, "expected 'Theorem' or 'Lemma' keyword");
+
 
     // Unreachable, but avoids compiler warning.
     // TODO: refactor error handling

@@ -1301,98 +1301,181 @@ FlattenProof *flatten_sep_adjunction(Expression *adj) {
                 equality_proof),
             flipped_equality_proof);
         return init_flatten_proof(flipped_adj, final_equality_proof);
-    } else {
-        // adj has form sep lhs rhs where both lhs and rhs are not leaves.
-        FlattenProof *new_lhs = flatten_sep_adjunction(lhs);
-        FlattenProof *new_rhs = flatten_sep_adjunction(rhs);
-
-        Expression *mid = init_app_expression(
-            init_app_expression(
-                init_app_expression(init_app_expression(sep, sep_A), sep_B),
-                new_lhs->rewritten_expr),
-            new_rhs->rewritten_expr);
-        Expression *adj_to_mid = init_app_expression(
-            init_app_expression(
-                init_app_expression(
-                    init_app_expression(
-                        init_app_expression(
-                            init_app_expression(
-                                init_app_expression(
-                                    init_app_expression(sep_cong, sep_A),
-                                    sep_B),
-                                lhs),
-                            new_lhs->rewritten_expr),
-                        rhs),
-                    new_rhs->rewritten_expr),
-                new_lhs->equality_proof),
-            new_rhs->equality_proof);
-
-        Expression *new_lhs_1 = get_sep_lhs(new_lhs->rewritten_expr);
-        Expression *new_lhs_2 = get_sep_rhs(new_lhs->rewritten_expr);
-        Expression *new_rhs_1 = get_sep_lhs(new_rhs->rewritten_expr);
-        Expression *new_rhs_2 = get_sep_rhs(new_rhs->rewritten_expr);
-        Expression *inner_1 = init_app_expression(
-            init_app_expression(
-                init_app_expression(init_app_expression(sep, sep_A), sep_B),
-                new_lhs_2),
-            new_rhs_2);
-        Expression *inner_2 = init_app_expression(
-            init_app_expression(
-                init_app_expression(init_app_expression(sep, sep_A), sep_B),
-                new_rhs_1),
-            inner_1);
-        Expression *mid2 = init_app_expression(
-            init_app_expression(
-                init_app_expression(init_app_expression(sep, sep_A), sep_B),
-                new_lhs_1),
-            inner_2);
-
-        // sep_assoc4 A B new_lhs_1 new_lhs_2 new_rhs_1 new_rhs_2
-        Expression *mid_to_mid2 = init_app_expression(
-            init_app_expression(
-                init_app_expression(
-                    init_app_expression(
-                        init_app_expression(
-                            init_app_expression(sep_assoc4, sep_A), sep_B),
-                        new_lhs_1),
-                    new_lhs_2),
-                new_rhs_1),
-            new_rhs_2);
-
-        // We've reduced the problem by at least 2 leaves, so we call
-        // flatten_sep_adjunction recursively on the rearranged expression.
-        FlattenProof *reduced_proof = flatten_sep_adjunction(mid2);
-        Expression *final = reduced_proof->rewritten_expr;
-        Expression *mid2_to_final = reduced_proof->equality_proof;
-
-        // Now we need to combine the proofs...
-        // iff1_trans adj mid final orig_to_mid (iff1_trans mid mid2 final
-        // mid_to_mid2 mid2_to_final)
-        Expression *mid_to_final = init_app_expression(
-            init_app_expression(
-                init_app_expression(
-                    init_app_expression(
-                        init_app_expression(
-                            init_app_expression(iff1_trans, partial_map_A_B),
-                            mid),
-                        mid2),
-                    final),
-                mid_to_mid2),
-            mid2_to_final);
-        Expression *adj_to_final = init_app_expression(
-            init_app_expression(
-                init_app_expression(
-                    init_app_expression(
-                        init_app_expression(
-                            init_app_expression(iff1_trans, partial_map_A_B),
-                            adj),
-                        mid),
-                    final),
-                adj_to_mid),
-            mid_to_final);
-
-        return init_flatten_proof(final, adj_to_final);
     }
+    // adj has form sep lhs rhs where both lhs and rhs are not leaves.
+
+    FlattenProof *new_lhs = flatten_sep_adjunction(lhs);
+
+    FlattenProof *new_rhs = flatten_sep_adjunction(rhs);
+
+
+    Expression *mid = init_app_expression(
+
+        init_app_expression(
+
+            init_app_expression(init_app_expression(sep, sep_A), sep_B),
+
+            new_lhs->rewritten_expr),
+
+        new_rhs->rewritten_expr);
+
+    Expression *adj_to_mid = init_app_expression(
+
+        init_app_expression(
+
+            init_app_expression(
+
+                init_app_expression(
+
+                    init_app_expression(
+
+                        init_app_expression(
+
+                            init_app_expression(
+
+                                init_app_expression(sep_cong, sep_A),
+
+                                sep_B),
+
+                            lhs),
+
+                        new_lhs->rewritten_expr),
+
+                    rhs),
+
+                new_rhs->rewritten_expr),
+
+            new_lhs->equality_proof),
+
+        new_rhs->equality_proof);
+
+
+    Expression *new_lhs_1 = get_sep_lhs(new_lhs->rewritten_expr);
+
+    Expression *new_lhs_2 = get_sep_rhs(new_lhs->rewritten_expr);
+
+    Expression *new_rhs_1 = get_sep_lhs(new_rhs->rewritten_expr);
+
+    Expression *new_rhs_2 = get_sep_rhs(new_rhs->rewritten_expr);
+
+    Expression *inner_1 = init_app_expression(
+
+        init_app_expression(
+
+            init_app_expression(init_app_expression(sep, sep_A), sep_B),
+
+            new_lhs_2),
+
+        new_rhs_2);
+
+    Expression *inner_2 = init_app_expression(
+
+        init_app_expression(
+
+            init_app_expression(init_app_expression(sep, sep_A), sep_B),
+
+            new_rhs_1),
+
+        inner_1);
+
+    Expression *mid2 = init_app_expression(
+
+        init_app_expression(
+
+            init_app_expression(init_app_expression(sep, sep_A), sep_B),
+
+            new_lhs_1),
+
+        inner_2);
+
+
+    // sep_assoc4 A B new_lhs_1 new_lhs_2 new_rhs_1 new_rhs_2
+
+    Expression *mid_to_mid2 = init_app_expression(
+
+        init_app_expression(
+
+            init_app_expression(
+
+                init_app_expression(
+
+                    init_app_expression(
+
+                        init_app_expression(sep_assoc4, sep_A), sep_B),
+
+                    new_lhs_1),
+
+                new_lhs_2),
+
+            new_rhs_1),
+
+        new_rhs_2);
+
+
+    // We've reduced the problem by at least 2 leaves, so we call
+
+    // flatten_sep_adjunction recursively on the rearranged expression.
+
+    FlattenProof *reduced_proof = flatten_sep_adjunction(mid2);
+
+    Expression *final = reduced_proof->rewritten_expr;
+
+    Expression *mid2_to_final = reduced_proof->equality_proof;
+
+
+    // Now we need to combine the proofs...
+
+    // iff1_trans adj mid final orig_to_mid (iff1_trans mid mid2 final
+
+    // mid_to_mid2 mid2_to_final)
+
+    Expression *mid_to_final = init_app_expression(
+
+        init_app_expression(
+
+            init_app_expression(
+
+                init_app_expression(
+
+                    init_app_expression(
+
+                        init_app_expression(iff1_trans, partial_map_A_B),
+
+                        mid),
+
+                    mid2),
+
+                final),
+
+            mid_to_mid2),
+
+        mid2_to_final);
+
+    Expression *adj_to_final = init_app_expression(
+
+        init_app_expression(
+
+            init_app_expression(
+
+                init_app_expression(
+
+                    init_app_expression(
+
+                        init_app_expression(iff1_trans, partial_map_A_B),
+
+                        adj),
+
+                    mid),
+
+                final),
+
+            adj_to_mid),
+
+        mid_to_final);
+
+
+    return init_flatten_proof(final, adj_to_final);
+
 }
 
 Expression *flatten(Expression *goal) {
@@ -1777,10 +1860,11 @@ Expression *cancel_step(Expression *goal) {
         if (result && dll_len(result) == 1) {
             Expression *cancelled_goal = dll_at(result, 0)->data;
             return cancelled_goal;
-        } else {
-            fprintf(stderr, "Error: Unable to apply sep_cancel_l.\n");
-            exit(EXIT_FAILURE);
         }
+        fprintf(stderr, "Error: Unable to apply sep_cancel_l.\n");
+
+        exit(EXIT_FAILURE);
+
     } else if (congruence2(get_sep_rhs(LHS), w1)) {
         // or possible, the rhs of LHS is a leaf and is w1, so we can apply
         // sep_cancel_r_leaf:
@@ -1788,10 +1872,11 @@ Expression *cancel_step(Expression *goal) {
         if (result && dll_len(result) == 1) {
             Expression *cancelled_goal = dll_at(result, 0)->data;
             return cancelled_goal;
-        } else {
-            fprintf(stderr, "Error: Unable to apply sep_cancel_r_leaf.\n");
-            exit(EXIT_FAILURE);
         }
+        fprintf(stderr, "Error: Unable to apply sep_cancel_r_leaf.\n");
+
+        exit(EXIT_FAILURE);
+
     }
 
     FlattenProof *associated__pf = associate_to_front(LHS, w1);
@@ -1839,10 +1924,11 @@ Expression *cancel_step(Expression *goal) {
         Expression *cancelled_goal = dll_at(result, 0)->data;
         Expression *flattened_goal = flatten(cancelled_goal);
         return flattened_goal;
-    } else {
-        fprintf(stderr, "Error: Unable to apply sep_cancel.\n");
-        exit(EXIT_FAILURE);
     }
+    fprintf(stderr, "Error: Unable to apply sep_cancel.\n");
+
+    exit(EXIT_FAILURE);
+
 }
 
 void cancel(Expression *goal) {

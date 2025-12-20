@@ -31,28 +31,42 @@ Expression *subst(Expression *expression, Expression *old_e,
             if (context_find(lambda_body_ctx, lambda_var) == NULL) {
                 Expression *new_body = subst(lambda_body, old_e, new_e);
                 return init_lambda_expression(new_lambda_var, new_body);
-            } else {
-                DoublyLinkedList *old_exprs = dll_create();
-                DoublyLinkedList *new_exprs = dll_create();
-
-                dll_insert_at_tail(old_exprs, dll_new_node(old_e));
-                dll_insert_at_tail(old_exprs, dll_new_node(lambda_var));
-                dll_insert_at_tail(new_exprs, dll_new_node(new_e));
-                dll_insert_at_tail(new_exprs, dll_new_node(new_lambda_var));
-
-                Expression *new_body =
-                    p_subst(lambda_body, old_exprs, new_exprs);
-
-                dll_remove_tail(old_exprs);
-                dll_remove_tail(old_exprs);
-                dll_destroy(old_exprs);
-
-                dll_remove_tail(new_exprs);
-                dll_remove_tail(new_exprs);
-                dll_destroy(new_exprs);
-
-                return init_lambda_expression(new_lambda_var, new_body);
             }
+            DoublyLinkedList *old_exprs = dll_create();
+
+            DoublyLinkedList *new_exprs = dll_create();
+
+
+            dll_insert_at_tail(old_exprs, dll_new_node(old_e));
+
+            dll_insert_at_tail(old_exprs, dll_new_node(lambda_var));
+
+            dll_insert_at_tail(new_exprs, dll_new_node(new_e));
+
+            dll_insert_at_tail(new_exprs, dll_new_node(new_lambda_var));
+
+
+            Expression *new_body =
+
+                p_subst(lambda_body, old_exprs, new_exprs);
+
+
+            dll_remove_tail(old_exprs);
+
+            dll_remove_tail(old_exprs);
+
+            dll_destroy(old_exprs);
+
+
+            dll_remove_tail(new_exprs);
+
+            dll_remove_tail(new_exprs);
+
+            dll_destroy(new_exprs);
+
+
+            return init_lambda_expression(new_lambda_var, new_body);
+
         }
         case (APP_EXPRESSION): {
             Expression *app_func = expression->value.app.func;
@@ -95,28 +109,42 @@ Expression *subst(Expression *expression, Expression *old_e,
             if (context_find(forall_body_ctx, forall_var) == NULL) {
                 Expression *new_body = subst(forall_body, old_e, new_e);
                 return init_forall_expression(new_forall_var, new_body);
-            } else {
-                DoublyLinkedList *old_exprs = dll_create();
-                DoublyLinkedList *new_exprs = dll_create();
-
-                dll_insert_at_tail(old_exprs, dll_new_node(old_e));
-                dll_insert_at_tail(old_exprs, dll_new_node(forall_var));
-                dll_insert_at_tail(new_exprs, dll_new_node(new_e));
-                dll_insert_at_tail(new_exprs, dll_new_node(new_forall_var));
-
-                Expression *new_body =
-                    p_subst(forall_body, old_exprs, new_exprs);
-
-                dll_remove_tail(old_exprs);
-                dll_remove_tail(old_exprs);
-                dll_destroy(old_exprs);
-
-                dll_remove_tail(new_exprs);
-                dll_remove_tail(new_exprs);
-                dll_destroy(new_exprs);
-
-                return init_forall_expression(new_forall_var, new_body);
             }
+            DoublyLinkedList *old_exprs = dll_create();
+
+            DoublyLinkedList *new_exprs = dll_create();
+
+
+            dll_insert_at_tail(old_exprs, dll_new_node(old_e));
+
+            dll_insert_at_tail(old_exprs, dll_new_node(forall_var));
+
+            dll_insert_at_tail(new_exprs, dll_new_node(new_e));
+
+            dll_insert_at_tail(new_exprs, dll_new_node(new_forall_var));
+
+
+            Expression *new_body =
+
+                p_subst(forall_body, old_exprs, new_exprs);
+
+
+            dll_remove_tail(old_exprs);
+
+            dll_remove_tail(old_exprs);
+
+            dll_destroy(old_exprs);
+
+
+            dll_remove_tail(new_exprs);
+
+            dll_remove_tail(new_exprs);
+
+            dll_destroy(new_exprs);
+
+
+            return init_forall_expression(new_forall_var, new_body);
+
         }
         case (FIX_EXPRESSION): {
             Expression *fix_var = expression->value.fix.bound_variable;

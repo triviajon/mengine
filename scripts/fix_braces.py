@@ -55,6 +55,23 @@ def fix_braces_in_file(filepath):
                     modified_lines.append(indent + '    ' + after_paren)
                     modified_lines.append(indent + '}')
                     i += 1
+                # Check if next line is a single statement without braces
+                elif (not after_paren or after_paren == '') and i + 1 < len(lines):
+                    next_line = lines[i + 1]
+                    next_stripped = next_line.lstrip()
+                    # Next line is a simple statement (not a block, not another control structure)
+                    if (next_stripped and 
+                        not next_stripped.startswith('{') and 
+                        not next_stripped.startswith('//') and
+                        not re.match(r'^(if|else|while|for|switch)\b', next_stripped) and
+                        next_stripped.endswith(';')):
+                        modified_lines.append(indent + f'{keyword} ({condition}) {{')
+                        modified_lines.append(indent + '    ' + next_stripped)
+                        modified_lines.append(indent + '}')
+                        i += 2  # Skip both lines
+                    else:
+                        modified_lines.append(line)
+                        i += 1
                 else:
                     modified_lines.append(line)
                     i += 1
@@ -76,6 +93,22 @@ def fix_braces_in_file(filepath):
                     modified_lines.append(indent + '    ' + after_paren)
                     modified_lines.append(indent + '}')
                     i += 1
+                # Check if next line is a single statement without braces
+                elif (not after_paren or after_paren == '') and i + 1 < len(lines):
+                    next_line = lines[i + 1]
+                    next_stripped = next_line.lstrip()
+                    if (next_stripped and 
+                        not next_stripped.startswith('{') and 
+                        not next_stripped.startswith('//') and
+                        not re.match(r'^(if|else|while|for|switch)\b', next_stripped) and
+                        next_stripped.endswith(';')):
+                        modified_lines.append(indent + f'else if ({condition}) {{')
+                        modified_lines.append(indent + '    ' + next_stripped)
+                        modified_lines.append(indent + '}')
+                        i += 2
+                    else:
+                        modified_lines.append(line)
+                        i += 1
                 else:
                     modified_lines.append(line)
                     i += 1
@@ -89,6 +122,23 @@ def fix_braces_in_file(filepath):
             modified_lines.append(indent + '    ' + statement)
             modified_lines.append(indent + '}')
             i += 1
+
+        # Handle: else\n    statement;
+        elif stripped == 'else' and i + 1 < len(lines):
+            next_line = lines[i + 1]
+            next_stripped = next_line.lstrip()
+            if (next_stripped and 
+                not next_stripped.startswith('{') and 
+                not next_stripped.startswith('//') and
+                not re.match(r'^(if|else|while|for|switch)\b', next_stripped) and
+                next_stripped.endswith(';')):
+                modified_lines.append(indent + 'else {')
+                modified_lines.append(indent + '    ' + next_stripped)
+                modified_lines.append(indent + '}')
+                i += 2
+            else:
+                modified_lines.append(line)
+                i += 1
 
         else:
             modified_lines.append(line)
