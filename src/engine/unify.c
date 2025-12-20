@@ -104,9 +104,8 @@ DoublyLinkedList *_list_holes(Expression *expr, DoublyLinkedList *curr) {
             if (dll_search(curr, expr) == NULL) {
                 dll_insert_at_tail(curr, dll_new_node(expr));
                 return curr;
-            } else {
-                return curr;
             }
+            return curr;
         }
         default:
             return curr;

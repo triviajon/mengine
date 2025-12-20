@@ -22,20 +22,37 @@ def fix_else_after_return(filepath):
         stripped = line.lstrip()
         indent = line[:len(line) - len(stripped)]
 
-        # Check if this is an else block
-        if stripped.startswith('} else {'):
+        # Check if this is an else block (could be "} else {" or just "else {")
+        if stripped.startswith('} else {') or (stripped == 'else {' and i > 0 and lines[i-1].strip() == '}'):
             # Look back to find if the previous block ended with return/break/continue
-            # Search backwards for the last non-empty line before the closing brace
-            prev_idx = i - 1
-            while prev_idx >= 0 and lines[prev_idx].strip() == '':
+            # We need to look for the closing brace of the if block, then search backwards
+            # to find the last statement in that block
+
+            # Find where the if block's closing brace is
+            if stripped.startswith('} else {'):
+                # The closing brace is on this line
+                brace_idx = i
+            else:
+                # The closing brace is on the previous line
+                brace_idx = i - 1
+
+            # Now search backwards from the closing brace to find the last non-empty, non-brace line
+            prev_idx = brace_idx - 1
+            while prev_idx >= 0:
+                prev_line = lines[prev_idx].strip()
+                if prev_line and prev_line != '}' and prev_line != '{':
+                    break
                 prev_idx -= 1
 
             if prev_idx >= 0:
                 prev_stripped = lines[prev_idx].strip()
                 # Check if previous block ends with return, break, or continue
                 if (prev_stripped.startswith('return') or
-                    prev_stripped.startswith('break') or
-                    prev_stripped.startswith('continue')):
+                    prev_stripped.startswith('break;') or
+                    prev_stripped.startswith('continue;') or
+                    prev_stripped.endswith('return;') or
+                    prev_stripped.endswith('break;') or
+                    prev_stripped.endswith('continue;')):
 
                     # Replace "} else {" with just "}"
                     modified_lines.append(indent + '}\n')

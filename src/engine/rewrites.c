@@ -106,10 +106,9 @@ RewriteProof *rewrite_head(Context *goal_context, Expression *expr,
     Expression *rhs = get_rhs_eq(lemma_ty);
     if (congruence(lhs, expr)) {
         return init_rewrite_proof(expr, rhs, lemma, dll_create());
-    } else {
-        return init_rewrite_proof(expr, expr, build_eq_refl(expr),
-                                  dll_create());
     }
+    return init_rewrite_proof(expr, expr, build_eq_refl(expr),
+                                  dll_create());
 }
 
 RewriteProof *rewrites_head(Context *goal_context, Expression *expr, int n,

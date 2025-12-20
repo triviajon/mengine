@@ -69,7 +69,8 @@ Command *command_parse_declaration(Parser *p) {
 DeclKeyword command_parse_declaration_keyword(Parser *p) {
     if (parser_expect_consume(p, TOK_AXIOM)) {
         return DECL_KW_AXIOM;
-    } else if (parser_expect_consume(p, TOK_VARIABLE)) {
+    }
+    if (parser_expect_consume(p, TOK_VARIABLE)) {
         return DECL_KW_VARIABLE;
     } else {
         parser_error(p, "expected 'Axiom' or 'Variable' keyword");
@@ -197,7 +198,8 @@ Command *command_parse_statement(Parser *p) {
 StmtKeyword command_parse_statement_keyword(Parser *p) {
     if (parser_expect_consume(p, TOK_THEOREM)) {
         return STMT_KW_THEOREM;
-    } else if (parser_expect_consume(p, TOK_LEMMA)) {
+    }
+    if (parser_expect_consume(p, TOK_LEMMA)) {
         return STMT_KW_LEMMA;
     } else {
         parser_error(p, "expected 'Theorem' or 'Lemma' keyword");
