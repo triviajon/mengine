@@ -1,7 +1,7 @@
 #include "src/tacticlanguage/tactic_exec.h"
 
 #include "src/common/color.h"
-#include "src/engine/new_tactics.h"
+#include "src/engine/tactics.h"
 #include "src/kernel/utils.h"
 #include "src/metalanguage/ast_to_expression.h"
 #include "src/runtime/core.h"

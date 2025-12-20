@@ -1,4 +1,4 @@
-#include "src/engine/new_tactics.h"
+#include "src/engine/tactics.h"
 
 #include <stdlib.h>
 #include "src/engine/unify.h"
