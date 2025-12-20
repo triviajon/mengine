@@ -160,25 +160,38 @@ char *stringify_expression(Expression *expression) {
 char *stringify_context(Context *context) {
     if (context_is_empty(context)) {
         return strdup("");
-    } else {
-        char *var_str = stringify_expression(context->var_type);
-        char *type_str =
-            stringify_expression(context->var_type->value.var.type);
-        char *parent_str = stringify_context(context->parent);
-
-        char *result = str_concat(parent_str, "\n");
-        result = str_concat(result, "Variable ");
-        result = str_concat(result, var_str);
-        result = str_concat(result, " : ");
-        result = str_concat(result, type_str);
-        result = str_concat(result, ".");
-
-        free(var_str);
-        free(type_str);
-        free(parent_str);
-
-        return result;
     }
+    char *var_str = stringify_expression(context->var_type);
+
+    char *type_str =
+
+        stringify_expression(context->var_type->value.var.type);
+
+    char *parent_str = stringify_context(context->parent);
+
+
+    char *result = str_concat(parent_str, "\n");
+
+    result = str_concat(result, "Variable ");
+
+    result = str_concat(result, var_str);
+
+    result = str_concat(result, " : ");
+
+    result = str_concat(result, type_str);
+
+    result = str_concat(result, ".");
+
+
+    free(var_str);
+
+    free(type_str);
+
+    free(parent_str);
+
+
+    return result;
+
 }
 
 char *_get_str_addr(Expression *expression) {
@@ -224,12 +237,15 @@ char *_top_level_stringify_to_address(Expression *expression) {
 void _count_subexpression(Expression *expression, Map *visited, Map *counts) {
     if (map_get(visited, expression)) {
         return;
-    } else {
-        bool *have_visited = malloc(sizeof(bool));
-        *have_visited = true;  // truly, this can be any non-zero junk. TODO:
-                               // make this a set
-        map_set(visited, expression, have_visited);
     }
+    bool *have_visited = malloc(sizeof(bool));
+
+    *have_visited = true;  // truly, this can be any non-zero junk. TODO:
+
+                           // make this a set
+
+    map_set(visited, expression, have_visited);
+
 
     switch (expression->type) {
         case VAR_EXPRESSION:
@@ -343,24 +359,39 @@ char *_stringify_expression_with_let(Expression *expression) {
                 snprintf(buf, sizeof(buf), "%p", (void *)expression);
                 result = strdup(str_concat("var", buf));
                 break;
-            } else {
-                char *var_str = _stringify_expression_with_let(
-                    expression->value.lambda.bound_variable);
-                char *type_str = _stringify_expression_with_let(
-                    expression->value.lambda.bound_variable->value.var.type);
-                char *body_str = _stringify_expression_with_let(
-                    expression->value.lambda.body);
-                result = str_concat("fun (", var_str);
-                result = str_concat(result, ": ");
-                result = str_concat(result, type_str);
-                result = str_concat(result, ") => ");
-                result = str_concat(result, body_str);
-                result = parenthesize_and_free(result);
-                free(var_str);
-                free(type_str);
-                free(body_str);
-                break;
             }
+            char *var_str = _stringify_expression_with_let(
+
+                expression->value.lambda.bound_variable);
+
+            char *type_str = _stringify_expression_with_let(
+
+                expression->value.lambda.bound_variable->value.var.type);
+
+            char *body_str = _stringify_expression_with_let(
+
+                expression->value.lambda.body);
+
+            result = str_concat("fun (", var_str);
+
+            result = str_concat(result, ": ");
+
+            result = str_concat(result, type_str);
+
+            result = str_concat(result, ") => ");
+
+            result = str_concat(result, body_str);
+
+            result = parenthesize_and_free(result);
+
+            free(var_str);
+
+            free(type_str);
+
+            free(body_str);
+
+            break;
+
         }
         case APP_EXPRESSION: {
             if (dll_len(get_expression_uplinks(expression)) > 1) {
@@ -368,20 +399,29 @@ char *_stringify_expression_with_let(Expression *expression) {
                 snprintf(buf, sizeof(buf), "%p", (void *)expression);
                 result = strdup(str_concat("var", buf));
                 break;
-            } else {
-                char *func_str =
-                    _stringify_expression_with_let(expression->value.app.func);
-                char *arg_str =
-                    _stringify_expression_with_let(expression->value.app.arg);
-
-                char *app_str = str_concat(func_str, " ");
-                app_str = str_concat(app_str, arg_str);
-
-                result = parenthesize_and_free(app_str);
-                free(func_str);
-                free(arg_str);
-                break;
             }
+            char *func_str =
+
+                _stringify_expression_with_let(expression->value.app.func);
+
+            char *arg_str =
+
+                _stringify_expression_with_let(expression->value.app.arg);
+
+
+            char *app_str = str_concat(func_str, " ");
+
+            app_str = str_concat(app_str, arg_str);
+
+
+            result = parenthesize_and_free(app_str);
+
+            free(func_str);
+
+            free(arg_str);
+
+            break;
+
         }
 
         case FORALL_EXPRESSION: {
@@ -390,24 +430,39 @@ char *_stringify_expression_with_let(Expression *expression) {
                 snprintf(buf, sizeof(buf), "%p", (void *)expression);
                 result = strdup(str_concat("var", buf));
                 break;
-            } else {
-                char *var_str = _stringify_expression_with_let(
-                    expression->value.forall.bound_variable);
-                char *type_str = _stringify_expression_with_let(
-                    expression->value.forall.bound_variable->value.var.type);
-                char *body_str = _stringify_expression_with_let(
-                    expression->value.forall.body);
-                result = str_concat("forall (", var_str);
-                result = str_concat(result, ": ");
-                result = str_concat(result, type_str);
-                result = str_concat(result, "), ");
-                result = str_concat(result, body_str);
-                result = parenthesize_and_free(result);
-                free(var_str);
-                free(type_str);
-                free(body_str);
-                break;
             }
+            char *var_str = _stringify_expression_with_let(
+
+                expression->value.forall.bound_variable);
+
+            char *type_str = _stringify_expression_with_let(
+
+                expression->value.forall.bound_variable->value.var.type);
+
+            char *body_str = _stringify_expression_with_let(
+
+                expression->value.forall.body);
+
+            result = str_concat("forall (", var_str);
+
+            result = str_concat(result, ": ");
+
+            result = str_concat(result, type_str);
+
+            result = str_concat(result, "), ");
+
+            result = str_concat(result, body_str);
+
+            result = parenthesize_and_free(result);
+
+            free(var_str);
+
+            free(type_str);
+
+            free(body_str);
+
+            break;
+
         }
 
         case TYPE_EXPRESSION:

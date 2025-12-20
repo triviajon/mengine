@@ -349,10 +349,11 @@ RewriteProof *rewrite_var(Context *goal_context, Expression *expr,
             init_rewrite_proof(expr, expr, build_eq_refl(expr), dll_create());
         set_rresult(expr, result);
         return result;
-    } else {
-        set_rresult(expr, rewritten_expr);
-        return rewritten_expr;
     }
+    set_rresult(expr, rewritten_expr);
+
+    return rewritten_expr;
+
 }
 
 RewriteProof *rewrites_var(Context *goal_context, Expression *expr, int n,
@@ -363,10 +364,11 @@ RewriteProof *rewrites_var(Context *goal_context, Expression *expr, int n,
             init_rewrite_proof(expr, expr, build_eq_refl(expr), dll_create());
         set_rresult(expr, result);
         return result;
-    } else {
-        set_rresult(expr, rewritten_expr);
-        return rewritten_expr;
     }
+    set_rresult(expr, rewritten_expr);
+
+    return rewritten_expr;
+
 }
 
 RewriteProof *rewrite_hole(Context *goal_context, Expression *expr) {

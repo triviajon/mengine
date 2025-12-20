@@ -36,10 +36,12 @@ static void print_error_pointer(const char *source, int pos) {
 
     for (int i = 0; i < pos; i++) {
         char c = source[i];
-        if (c == '\t')
+        if (c == '\t') {
             fputc('\t', stderr);
-        else
+        }
+        else {
             fputc(' ', stderr);
+        }
     }
     fprintf(stderr, "^\n");
 }

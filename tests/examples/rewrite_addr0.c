@@ -42,15 +42,21 @@ RewriteProof *rewrite_addr0__letin(int n_depth) {
 Expression *build_vi(Expression *v0, int i) {
     if (i == 0) {
         return v0;
-    } else {
-        Expression *vim1_a = build_vi(v0, i - 1);
-        Expression *vim1_b = build_vi(v0, i - 1);
-        return init_app_expression(
-            init_app_expression(
-                add,
-                init_app_expression(init_app_expression(add, vim1_a), vim1_b)),
-            O);
     }
+    Expression *vim1_a = build_vi(v0, i - 1);
+
+    Expression *vim1_b = build_vi(v0, i - 1);
+
+    return init_app_expression(
+
+        init_app_expression(
+
+            add,
+
+            init_app_expression(init_app_expression(add, vim1_a), vim1_b)),
+
+        O);
+
 }
 
 RewriteProof *rewrite_addr0__tree(int n_depth) {

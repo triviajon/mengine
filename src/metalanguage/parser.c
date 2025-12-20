@@ -77,8 +77,9 @@ void print_ast(AST *ast) {
 }
 
 void debug_print_ast(Parser *p, AST *ast) {
-    if (!p->options || !p->options->debug || !p->options->debug__print_ast)
+    if (!p->options || !p->options->debug || !p->options->debug__print_ast) {
         return;
+    }
 
     fprintf(stderr, MAG "[PARSE]" DIM " ");
     fprint_ast(stderr, ast);
@@ -374,8 +375,9 @@ AST *parse_atomic(Parser *p) {
         }
 
         return inner;
-    } else {
-        parser_error(p, "Unexpected token in atomic expression");
-        return NULL;
     }
+    parser_error(p, "Unexpected token in atomic expression");
+
+    return NULL;
+
 }

@@ -1052,8 +1052,9 @@ Expression *get_cmd_type(Expression *cmd) {
 
 Expression *solve_skip(Expression *goal) {
     DoublyLinkedList *remaining_goals = apply(goal, exec_skip);
-    if (remaining_goals == NULL)
+    if (remaining_goals == NULL) {
         printf("solve_skip failed to find a solution\n");
+    }
     if (dll_len(remaining_goals) != 1) {
         return NULL;
     }
@@ -1067,8 +1068,9 @@ Expression *solve_skip(Expression *goal) {
 
 Expression *solve_seq(Expression *goal) {
     DoublyLinkedList *remaining_goals = apply(goal, exec_seq);
-    if (remaining_goals == NULL)
+    if (remaining_goals == NULL) {
         printf("solve_seq failed to find a solution\n");
+    }
     if (dll_len(remaining_goals) != 1) {
         return NULL;
     }
@@ -1082,8 +1084,9 @@ Expression *solve_seq(Expression *goal) {
 
 DoublyLinkedList *solve_and(Expression *goal) {
     DoublyLinkedList *remaining_goals = apply(goal, and_conj);
-    if (remaining_goals == NULL)
+    if (remaining_goals == NULL) {
         printf("solve_and failed to find a solution\n");
+    }
     return remaining_goals;
 }
 
@@ -1094,8 +1097,9 @@ DoublyLinkedList *solve_eq(Expression *goal) {
         goal, 5, partial_map_get_put_same, binop_add_to_word_add,
         binop_add_to_word_sub, partial_map_get_put_diff, word_add_sub_cancel);
     remaining_goals = apply(rewrites_result->new_goal, eq_refl);
-    if (remaining_goals != NULL)
+    if (remaining_goals != NULL) {
         return dll_merge(rewrites_result->remaining_open, remaining_goals);
+    }
     if (remaining_goals == NULL) {
         printf("solve_eq failed to find a solution\n");
     }
@@ -1119,8 +1123,9 @@ Expression *solve_ex(Expression *goal) {
 
 void solve_not(Expression *goal) {
     DoublyLinkedList *remaining_goals = apply(goal, not_eq_string_b_a);
-    if (remaining_goals == NULL)
+    if (remaining_goals == NULL) {
         printf("solve_not failed to find a solution\n");
+    }
     if (remaining_goals != NULL) {
         dll_destroy(remaining_goals);
         return;
@@ -1133,8 +1138,9 @@ DoublyLinkedList *solve_set(Expression *goal) {
     DoublyLinkedList *remaining_goals =
         eapply(simplified_locals->new_goal, exec_set);
     // DoublyLinkedList *remaining_goals = eapply(goal, exec_set);
-    if (remaining_goals == NULL)
+    if (remaining_goals == NULL) {
         printf("solve_set failed to find a solution\n");
+    }
     if (dll_len(remaining_goals) != 3) {
         return NULL;
     }
@@ -1153,8 +1159,9 @@ DoublyLinkedList *solve_set(Expression *goal) {
 
 Expression *solve_input(Expression *goal) {
     DoublyLinkedList *remaining_goals = apply(goal, exec_input);
-    if (remaining_goals == NULL)
+    if (remaining_goals == NULL) {
         printf("solve_input failed to find a solution\n");
+    }
     Expression *remaining_goal = dll_remove_tail(remaining_goals)->data;
     dll_destroy(remaining_goals);
     return remaining_goal;

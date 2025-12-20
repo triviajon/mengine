@@ -2,7 +2,8 @@ Checks: >
   -*,
   readability-*,
   -readability-identifier-length,
-  -readability-function-cognitive-complexity
+  -readability-function-cognitive-complexity,
+  -readability-magic-numbers
 
 WarningsAsErrors: "*"
 

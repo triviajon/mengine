@@ -65,11 +65,13 @@ Expression *new_subst(Expression *expression, Expression *old_e,
 
             if (forms_redex(new_app_func, new_app_arg)) {
                 return reduce(new_app_func, new_app_arg);
-            } else {
-                Context *app_ctx = context_add(get_expression_context(new_app_func),
-                                               get_expression_context(new_app_arg));
-                return init_app_expression_wc(new_app_func, new_app_arg, app_ctx);
             }
+            Context *app_ctx = context_add(get_expression_context(new_app_func),
+
+                                           get_expression_context(new_app_arg));
+
+            return init_app_expression_wc(new_app_func, new_app_arg, app_ctx);
+
         }
         case (FORALL_EXPRESSION): {
             // Assume the expression has form forall (x: A), B
@@ -190,11 +192,13 @@ Expression *new_p_subst(Expression *expression, DoublyLinkedList *old_exprs, Dou
             if (forms_redex(new_app_func, new_app_arg)) {
                 Expression *reduced = reduce(new_app_func, new_app_arg);
                 return reduced;
-            } else {
-                Context *app_ctx = context_add(get_expression_context(new_app_func),
-                                               get_expression_context(new_app_arg));
-                return init_app_expression_wc(new_app_func, new_app_arg, app_ctx);
             }
+            Context *app_ctx = context_add(get_expression_context(new_app_func),
+
+                                           get_expression_context(new_app_arg));
+
+            return init_app_expression_wc(new_app_func, new_app_arg, app_ctx);
+
         }
         case (FORALL_EXPRESSION): {
             // Assume expression has form forall (x: A), B
