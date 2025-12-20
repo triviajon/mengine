@@ -1,0 +1,44 @@
+name: fix
+
+on:
+  pull_request:
+    types: [labeled]
+
+jobs:
+  fix:
+    if: github.event.label.name == 'fix'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: get_changed_files
+        run: |
+          FILES=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD -- '*.c' '*.h' | tr '\n' ' ')
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+
+      - name: Fix
+        if: steps.get_changed_files.outputs.files != ''
+        run: |
+          python scripts/fix_else_after_return.py ${{ steps.get_changed_files.outputs.files }}
+          python scripts/fix_simple_else_after_return.py ${{ steps.get_changed_files.outputs.files }}
+          python scripts/fix_braces.py ${{ steps.get_changed_files.outputs.files }}
+
+      - name: Commit and push changes
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "GitHub Actions"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Fix formatting issues"
+            git push
+          fi
