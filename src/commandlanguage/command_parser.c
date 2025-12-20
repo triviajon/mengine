@@ -75,7 +75,6 @@ DeclKeyword command_parse_declaration_keyword(Parser *p) {
     }
     parser_error(p, "expected 'Axiom' or 'Variable' keyword");
 
-
     // Unreachable, but avoids compiler warning.
     // TODO: refactor error handling
     return DECL_KW_VARIABLE;
@@ -214,7 +213,6 @@ StmtKeyword command_parse_statement_keyword(Parser *p) {
     }
     parser_error(p, "expected 'Theorem' or 'Lemma' keyword");
 
-
     // Unreachable, but avoids compiler warning.
     // TODO: refactor error handling
     return STMT_KW_LEMMA;
@@ -287,7 +285,8 @@ Command *command_parse_inductive(Parser *p) {
     while (parser_expect_no_consume(p, TOK_PIPE)) {
         InductiveConstructor *ctor = command_parse_constructor(p);
 
-        constructors = realloc(constructors, sizeof(InductiveConstructor *) * (constructor_count + 1));
+        constructors = realloc(constructors, sizeof(InductiveConstructor *) *
+                                                 (constructor_count + 1));
         constructors[constructor_count] = ctor;
         constructor_count++;
     }
@@ -295,7 +294,7 @@ Command *command_parse_inductive(Parser *p) {
     if (!parser_expect_consume(p, TOK_DOT)) {
         parser_error(p, "expected '.' after inductive definition");
     }
-    
+
     Command *cmd = malloc(sizeof(Command));
     cmd->tag = CMD_INDUCTIVE;
     cmd->as.inductive.name = name;
