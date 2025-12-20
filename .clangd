@@ -1,7 +1,8 @@
 Diagnostics:
   ClangTidy:
-    Add: [performance-*, modernize-*, readability-*]
-    Remove: [modernize-use-trailing-return-type]
+    Add: [readability-*]
+    Remove:
+      [readability-identifier-length, readability-function-cognitive-complexity]
   UnusedIncludes: Strict
 
 Index:

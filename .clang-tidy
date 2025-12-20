@@ -1,0 +1,10 @@
+Checks: >
+  -*,
+  readability-*,
+  -readability-identifier-length,
+  -readability-function-cognitive-complexity
+
+WarningsAsErrors: "*"
+
+HeaderFilterRegex: ".*"
+SystemHeaders: false
