@@ -50,7 +50,9 @@ Expression *_create_definition_body(MEngineRuntime *rt, Binder **params,
 
 static void _handle_definition_command(MEngineRuntime *rt,
                                        DefinitionCmd *defn_cmd) {
-    if (!rt || !defn_cmd) return;
+    if (!rt || !defn_cmd) {
+        return;
+    }
 
     const char *name = defn_cmd->name;
     Binder **params = defn_cmd->params;
@@ -86,7 +88,9 @@ static void _handle_definition_command(MEngineRuntime *rt,
 
 static void _handle_statement_command(MEngineRuntime *rt,
                                       StatementCmd *stmt_cmd) {
-    if (!rt || !stmt_cmd) return;
+    if (!rt || !stmt_cmd) {
+        return;
+    }
 
     Expression *statement_type = ast_to_expression(stmt_cmd->type, rt->ctx);
     if (!statement_type) {
@@ -106,7 +110,9 @@ static void _handle_statement_command(MEngineRuntime *rt,
 }
 
 static void _handle_check_command(MEngineRuntime *rt, CheckCmd *check_cmd) {
-    if (!rt || !check_cmd) return;
+    if (!rt || !check_cmd) {
+        return;
+    }
 
     Expression *expr = ast_to_expression(check_cmd->term, rt->ctx);
     if (!expr) {
@@ -278,8 +284,12 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd,
             fprintf(stderr, "Error: Failed to apply parameter %zu to inductive in conclusion\n", i);
             free(case_vars);
             free(case_contexts);
-            if (index_vars) free(index_vars);
-            if (concl_index_vars) free(concl_index_vars);
+            if (index_vars) {
+                free(index_vars);
+            }
+            if (concl_index_vars) {
+                free(concl_index_vars);
+            }
             return NULL;
         }
     }
@@ -300,8 +310,12 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd,
         fprintf(stderr, "Error: Failed to apply motive to target\n");
         free(case_vars);
         free(case_contexts);
-        if (index_vars) free(index_vars);
-        if (concl_index_vars) free(concl_index_vars);
+        if (index_vars) {
+            free(index_vars);
+        }
+        if (concl_index_vars) {
+            free(concl_index_vars);
+        }
         return NULL;
     }
 
@@ -313,7 +327,9 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd,
         final_ctx = context_minus(final_ctx, concl_index_vars[i-1]);
     }
 
-    if (concl_index_vars) free(concl_index_vars);
+    if (concl_index_vars) {
+        free(concl_index_vars);
+    }
 
     for (size_t i = ctor_count; i > 0; i--) {
         result = init_forall_expression_wc(case_vars[i-1], result, case_contexts[i]);
@@ -345,7 +361,9 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd,
 
     free(case_vars);
     free(case_contexts);
-    if (index_vars) free(index_vars);
+    if (index_vars) {
+        free(index_vars);
+    }
     return result;
 }
 
@@ -443,7 +461,9 @@ static Expression *_build_constructor_case_type(Expression *ctor_expr,
             fprintf(stderr, "Error: Failed to apply motive to index %zu\n", i);
             dll_destroy(arg_types);
             free(arg_vars);
-            if (ctor_indices) free(ctor_indices);
+            if (ctor_indices) {
+                free(ctor_indices);
+            }
             return NULL;
         }
     }
@@ -453,11 +473,15 @@ static Expression *_build_constructor_case_type(Expression *ctor_expr,
         fprintf(stderr, "Error: Failed to apply motive to constructor application\n");
         dll_destroy(arg_types);
         free(arg_vars);
-        if (ctor_indices) free(ctor_indices);
+        if (ctor_indices) {
+            free(ctor_indices);
+        }
         return NULL;
     }
 
-    if (ctor_indices) free(ctor_indices);
+    if (ctor_indices) {
+        free(ctor_indices);
+    }
     Expression *case_type = case_result;
     Context *wrap_ctx = case_ctx;
     for (size_t i = arg_count; i > 0; i--) {
@@ -471,7 +495,9 @@ static Expression *_build_constructor_case_type(Expression *ctor_expr,
 }
 
 static void _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) {
-    if (!rt || !ind_cmd) return;
+    if (!rt || !ind_cmd) {
+        return;
+    }
 
     const char *name = ind_cmd->name;
     Binder **params = ind_cmd->params;

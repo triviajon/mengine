@@ -2,7 +2,9 @@
 
 DoublyLinkedList *dll_create(void) {
     DoublyLinkedList *list;
-    if (!(list = malloc(sizeof(DoublyLinkedList)))) return NULL;
+    if (!(list = malloc(sizeof(DoublyLinkedList)))) {
+        return NULL;
+    }
 
     list->head = NULL;
     list->tail = NULL;
@@ -23,7 +25,9 @@ void dll_destroy(DoublyLinkedList *list) {
 }
 
 DLLNode *dll_insert_at_tail(DoublyLinkedList *list, DLLNode *node) {
-    if (!node) return NULL;
+    if (!node) {
+        return NULL;
+    }
 
     if (list->tail) {
         node->prev = list->tail;
@@ -39,7 +43,9 @@ DLLNode *dll_insert_at_tail(DoublyLinkedList *list, DLLNode *node) {
 }
 
 DLLNode *dll_remove_tail(DoublyLinkedList *list) {
-    if (!list->tail) return NULL;
+    if (!list->tail) {
+        return NULL;
+    }
 
     DLLNode *node = list->tail;
 
@@ -54,7 +60,9 @@ DLLNode *dll_remove_tail(DoublyLinkedList *list) {
 }
 
 DLLNode *dll_remove_head(DoublyLinkedList *list) {
-    if (!list->head) return NULL;
+    if (!list->head) {
+        return NULL;
+    }
 
     DLLNode *node = list->head;
 
@@ -69,7 +77,9 @@ DLLNode *dll_remove_head(DoublyLinkedList *list) {
 }
 
 DLLNode *dll_insert_at_head(DoublyLinkedList *list, DLLNode *node) {
-    if (!node) return NULL;
+    if (!node) {
+        return NULL;
+    }
 
     if (list->head) {
         node->next = list->head;
@@ -161,7 +171,9 @@ void dll_foreach(DoublyLinkedList *list, void (*func)(void *data)) {
 
 DLLNode *dll_new_node(void *val) {
     DLLNode *self;
-    if (!(self = malloc(sizeof(DLLNode)))) return NULL;
+    if (!(self = malloc(sizeof(DLLNode)))) {
+        return NULL;
+    }
     self->prev = NULL;
     self->next = NULL;
     self->data = val;
@@ -176,7 +188,9 @@ DLLNode *dll_new_node(void *val) {
  * @return: Pointer to the merged list (same as list1)
  */
 DoublyLinkedList *dll_merge(DoublyLinkedList *list1, DoublyLinkedList *list2) {
-    if (!list1 || !list2) return NULL;
+    if (!list1 || !list2) {
+        return NULL;
+    }
 
     if (!list1->head) {
         // free(list1);

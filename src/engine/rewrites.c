@@ -128,7 +128,9 @@ RewriteProof *rewrites_head(Context *goal_context, Expression *expr, int n,
 
             UnificationResult *unification_result = unify_and_instantiate(
                 goal_context, ith_lemma, ith_lemma_ty, current_expr);
-            if (unification_result == NULL) continue;
+            if (unification_result == NULL) {
+                continue;
+            }
             Expression *instantiated_lemma =
                 unification_result->lemma_instantiation;
 
@@ -154,7 +156,9 @@ RewriteProof *rewrites_head(Context *goal_context, Expression *expr, int n,
             }
         }
         va_end(copy);
-        if (!rewrote) return current_proof;
+        if (!rewrote) {
+            return current_proof;
+        }
     }
 }
 
@@ -394,7 +398,9 @@ RewriteProof *_rewrite(Context *goal_context, Expression *expr,
 }
 
 void print_ptr_counts(void) {
-    if (ptr_counter == NULL) return;
+    if (ptr_counter == NULL) {
+        return;
+    }
 
     for (int i = 0; i < ptr_counter->size; i++) {
         void *key = (ptr_counter->items + i)->key;
@@ -407,7 +413,9 @@ void print_ptr_counts(void) {
 
 RewriteProof *_rewrites(Context *goal_context, Expression *expr, int n,
                         va_list lemmas) {
-    if (ptr_counter == NULL) ptr_counter = map_new();
+    if (ptr_counter == NULL) {
+        ptr_counter = map_new();
+    }
     // int *count = map_get(ptr_counter, expr);
     // if (count == NULL) {
     //   count = calloc(1, sizeof(int));
@@ -528,7 +536,9 @@ RewrittenGoal *rewrites_transform(Expression *goal, int n, ...) {
             rewrites(get_expression_context(goal), curr_goal_ty, n, args);
 
         va_end(args);
-        if (nothing_rewritten(rewrite_proof)) break;
+        if (nothing_rewritten(rewrite_proof)) {
+            break;
+        }
 
         Expression *new_goal =
             init_hole_expression("Goal", rewrite_proof->rewritten_expr,

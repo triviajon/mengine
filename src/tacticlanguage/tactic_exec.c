@@ -240,7 +240,9 @@ bool _mengine_dispatch_tactic(MEngineRuntime *rt, Tactic *tac) {
 }
 
 void mengine_execute_tactic(MEngineRuntime *rt, Tactic *tac) {
-    if (!rt || !rt->proof_state || !tac) return;
+    if (!rt || !rt->proof_state || !tac) {
+        return;
+    }
 
     bool success = _mengine_dispatch_tactic(rt, tac);
 

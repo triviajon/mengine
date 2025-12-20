@@ -3,8 +3,12 @@
 #include "src/common/options.h"
 
 void debug_print_mode(MEngineRuntime *rt) {
-    if (!rt || !rt->options) return;
-    if (!rt->options->debug || !rt->options->debug__print_mode) return;
+    if (!rt || !rt->options) {
+        return;
+    }
+    if (!rt->options->debug || !rt->options->debug__print_mode) {
+        return;
+    }
 
     fprintf(stderr, MAG "[MODE]" DIM " Runtime mode changed to ");
 

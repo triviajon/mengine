@@ -127,7 +127,9 @@ int num_holes(Expression *expr) {
 
 Expression *_unify2(Expression *exprA, Expression *exprB,
                     Expression *var_to_fill) {
-    if (exprA == exprB) return NULL;
+    if (exprA == exprB) {
+        return NULL;
+    }
 
     switch (exprA->type) {
         case VAR_EXPRESSION: {
@@ -171,7 +173,9 @@ bool _could_apply(Expression *expr, Expression *lemma_ty_body,
                   DoublyLinkedList *ignore_as_holes) {
     switch (lemma_ty_body->type) {
         case (APP_EXPRESSION): {
-            if (expr->type != APP_EXPRESSION) return false;
+            if (expr->type != APP_EXPRESSION) {
+                return false;
+            }
             // todo: what if it's a hole
             return _could_apply(expr->value.app.func,
                                 lemma_ty_body->value.app.func,
@@ -180,7 +184,9 @@ bool _could_apply(Expression *expr, Expression *lemma_ty_body,
                                 lemma_ty_body->value.app.arg, ignore_as_holes);
         }
         case (VAR_EXPRESSION): {
-            if (expr == lemma_ty_body) return true;
+            if (expr == lemma_ty_body) {
+                return true;
+            }
 
             bool is_hole = false;
             DLLNode *curr = ignore_as_holes->head;
@@ -224,7 +230,9 @@ UnificationResult *unify_and_instantiate(Context *goal_context,
     // possible for there to remain open holes.
 
     // Section A:
-    if (!could_apply(expr, lemma_ty)) return NULL;
+    if (!could_apply(expr, lemma_ty)) {
+        return NULL;
+    }
 
     Expression *current_lemma_app = lemma;
     Expression *current_lemma_app_ty = get_expression_type(current_lemma_app);

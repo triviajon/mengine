@@ -15,7 +15,9 @@ ProofState *proof_state_new_from_theorem(Expression *initial_theorem,
 
 ProofState *proof_state_new(Expression *initial_goal) {
     ProofState *ps = malloc(sizeof(ProofState));
-    if (!ps) return NULL;
+    if (!ps) {
+        return NULL;
+    }
 
     ps->goals = dll_create();
     ps->goal_index = 0;
@@ -29,7 +31,9 @@ ProofState *proof_state_new(Expression *initial_goal) {
 }
 
 void proof_state_free(ProofState *ps) {
-    if (!ps) return;
+    if (!ps) {
+        return;
+    }
 
     DLLNode *node = ps->goals->head;
     while (node) {
@@ -46,7 +50,9 @@ void proof_state_free(ProofState *ps) {
 }
 
 Expression *proof_state_current(ProofState *ps) {
-    if (!ps) return NULL;
+    if (!ps) {
+        return NULL;
+    }
     if (ps->goal_index >= dll_len(ps->goals)) {
         return NULL;
     }
@@ -63,7 +69,9 @@ bool proof_state_next(ProofState *ps) {
 }
 
 void proof_state_add_goals(ProofState *ps, DoublyLinkedList *new_goals) {
-    if (!ps || !new_goals) return;
+    if (!ps || !new_goals) {
+        return;
+    }
 
     dll_merge(ps->goals, new_goals);
 }

@@ -304,7 +304,9 @@ Pattern *parse_pattern(Parser *p) {
 }
 
 bool is_atomic_start(Token *t) {
-    if (!t) return false;
+    if (!t) {
+        return false;
+    }
     return t->type == TOK_IDENT || t->type == TOK_LPAREN ||
            t->type == TOK_TYPE || t->type == TOK_PROP;
 }

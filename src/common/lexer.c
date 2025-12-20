@@ -162,7 +162,9 @@ bool is_ident_continue(char c) { return is_ident_start(c) || is_digit(c); }
 
 Token *make_token(TokenType type, int pos, char *lexeme) {
     Token *token = (Token *)malloc(sizeof(Token));
-    if (!token) return NULL;
+    if (!token) {
+        return NULL;
+    }
     token->type = type;
     token->pos = pos;
     token->lexeme = lexeme;
@@ -362,7 +364,11 @@ Token *lexer_peek_token(Lexer *lx) {
 }
 
 void lexer_free_token(Token *t) {
-    if (t == NULL) return;
-    if (t->lexeme != NULL) free(t->lexeme);
+    if (t == NULL) {
+        return;
+    }
+    if (t->lexeme != NULL) {
+        free(t->lexeme);
+    }
     free(t);
 }
