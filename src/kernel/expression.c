@@ -429,19 +429,18 @@ Context *get_expression_context(Expression *expression) {
 Expression *get_innermost_body(Expression *e) {
     if (e->type == LAMBDA_EXPRESSION) {
         return get_innermost_body(e->value.lambda.body);
-    } else if (e->type == FORALL_EXPRESSION) {
-        return get_innermost_body(e->value.forall.body);
-    } else {
-        return e;
     }
+    if (e->type == FORALL_EXPRESSION) {
+        return get_innermost_body(e->value.forall.body);
+    }
+    return e;
 }
 
 Expression *get_innermost_func(Expression *e) {
     if (e->type == APP_EXPRESSION) {
         return get_innermost_func(e->value.app.func);
-    } else {
-        return e;
     }
+    return e;
 }
 
 Expression *get_app_func(Expression *expr) {
@@ -794,22 +793,22 @@ bool _congruent_with_holes(Expression *a, Expression *b, Map *alpha_equivalences
 
     if (a->type == HOLE_EXPRESSION && b->type == HOLE_EXPRESSION) {
         return false;  // TODO: what do we do in this case?
-    } else if (a->type == HOLE_EXPRESSION) {
+    }
+    if (a->type == HOLE_EXPRESSION) {
         bool b_can_fill = can_fill(a, b);
         if (b_can_fill) {
             map_set(required_holes, a, b);
             return true;
-        } else {
-            return false;
         }
-    } else if (b->type == HOLE_EXPRESSION) {
+        return false;
+    }
+    if (b->type == HOLE_EXPRESSION) {
         bool a_can_fill = can_fill(b, a);
         if (a_can_fill) {
             map_set(required_holes, b, a);
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     if (a->type != b->type) {
@@ -1116,7 +1115,8 @@ Expression *refresh(Expression *expr) {
         char *xp_name = strcat(strdup(x_name), "'");
         Expression *xp = init_var_expression(xp_name, T);
         return init_lambda_expression(xp, subst(B, x, xp));
-    } else if (expr->type == FORALL_EXPRESSION) {
+    }
+    if (expr->type == FORALL_EXPRESSION) {
         Expression *x = expr->value.forall.bound_variable;
         char *x_name = x->value.var.name;
         Expression *T = get_expression_type(x);
@@ -1126,9 +1126,8 @@ Expression *refresh(Expression *expr) {
 
         Expression *xp = init_var_expression(xp_name, T);
         return init_forall_expression(xp, subst(B, x, xp));
-    } else {
-        return NULL;
     }
+    return NULL;
 }
 
 bool _congruence2(Expression *a, Expression *b, Map *mapping) {

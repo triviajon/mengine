@@ -79,7 +79,8 @@ int context_size(Context *context) { return context->length; }
 bool context_is_ancestor(Context *contextA, Context *contextB) {
     if (contextA == contextB) {
         return true;
-    } else if (context_is_empty(contextA)) {
+    }
+    if (context_is_empty(contextA)) {
         return true;
     }
 

@@ -93,15 +93,17 @@ AST *parse_term(Parser *p) {
 AST *parse_prefix_term(Parser *p) {
     if (parser_expect_no_consume(p, TOK_FUN)) {
         return parse_lambda(p);
-    } else if (parser_expect_no_consume(p, TOK_FORALL)) {
-        return parse_forall(p);
-    } else if (parser_expect_no_consume(p, TOK_MATCH)) {
-        return parse_match(p);
-    } else if (parser_expect_no_consume(p, TOK_LET)) {
-        return parse_let(p);
-    } else {
-        return parse_application(p);
     }
+    if (parser_expect_no_consume(p, TOK_FORALL)) {
+        return parse_forall(p);
+    }
+    if (parser_expect_no_consume(p, TOK_MATCH)) {
+        return parse_match(p);
+    }
+    if (parser_expect_no_consume(p, TOK_LET)) {
+        return parse_let(p);
+    }
+    return parse_application(p);
 }
 
 AST *parse_lambda(Parser *p) {
@@ -351,17 +353,20 @@ AST *parse_atomic(Parser *p) {
         lexer_free_token(ident_token);
 
         return var_ast;
-    } else if (parser_expect_consume(p, TOK_TYPE)) {
+    }
+    if (parser_expect_consume(p, TOK_TYPE)) {
         AST *type_ast = malloc(sizeof(AST));
         type_ast->tag = AST_TYPE;
 
         return type_ast;
-    } else if (parser_expect_consume(p, TOK_PROP)) {
+    }
+    if (parser_expect_consume(p, TOK_PROP)) {
         AST *prop_ast = malloc(sizeof(AST));
         prop_ast->tag = AST_PROP;
 
         return prop_ast;
-    } else if (parser_expect_consume(p, TOK_LPAREN)) {
+    }
+    if (parser_expect_consume(p, TOK_LPAREN)) {
         AST *inner = parse_term(p);
 
         if (!parser_expect_consume(p, TOK_RPAREN)) {

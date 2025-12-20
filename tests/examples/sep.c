@@ -1248,7 +1248,8 @@ FlattenProof *flatten_sep_adjunction(Expression *adj) {
             new_rhs->equality_proof);
 
         return init_flatten_proof(new_adj, equality_proof);
-    } else if (is_leaf(rhs)) {
+    }
+    if (is_leaf(rhs)) {
         // adj has form sep lhs rhs where rhs is a leaf.
         FlattenProof *new_lhs = flatten_sep_adjunction(lhs);
         Expression *new_adj = init_app_expression(
@@ -1853,7 +1854,8 @@ void cancel(Expression *goal) {
         if (curr_goal_type->type == APP_EXPRESSION &&
             get_innermost_func(curr_goal_type) == iff1) {
             break;
-        } else if (curr_goal_type->type == FORALL_EXPRESSION) {
+        }
+        if (curr_goal_type->type == FORALL_EXPRESSION) {
             IntroReturn *intro_return = intro(curr_goal);
             free_intro_return(intro_return);
             curr_goal_type = get_expression_type(curr_goal);
