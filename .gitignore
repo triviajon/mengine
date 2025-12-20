@@ -35,3 +35,6 @@ mengine
 libmengine.a
 
 *.dSYM/
+tests/**/test_*
+!tests/**/test_*.c
+!tests/**/test_*.h
