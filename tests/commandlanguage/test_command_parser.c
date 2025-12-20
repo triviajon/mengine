@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "src/commandlanguage/command_parser.h"
 #include "src/common/lexer.h"
 #include "src/common/options.h"
@@ -20,7 +16,8 @@ void test_parse_axiom_simple(void) {
 
     Command *cmd = command_parse_command(&parser);
     assert_not_null(cmd, "command should not be null");
-    assert_equal_int(CMD_DECLARATION, cmd->tag, "command should be DECLARATION");
+    assert_equal_int(CMD_DECLARATION, cmd->tag,
+                     "command should be DECLARATION");
     assert_equal_int(DECL_KW_AXIOM, cmd->as.decl.kw, "keyword should be AXIOM");
     assert_equal_str("x", cmd->as.decl.binder.name,
                      "binder name should be 'x'");
@@ -39,7 +36,8 @@ void test_parse_variable_declaration(void) {
 
     Command *cmd = command_parse_command(&parser);
     assert_not_null(cmd, "command should not be null");
-    assert_equal_int(CMD_DECLARATION, cmd->tag, "command should be DECLARATION");
+    assert_equal_int(CMD_DECLARATION, cmd->tag,
+                     "command should be DECLARATION");
     assert_equal_int(DECL_KW_VARIABLE, cmd->as.decl.kw,
                      "keyword should be VARIABLE");
     assert_equal_str("y", cmd->as.decl.binder.name,
@@ -60,8 +58,7 @@ void test_parse_definition_no_params(void) {
     assert_not_null(cmd, "command should not be null");
     assert_equal_int(CMD_DEFINITION, cmd->tag, "command should be DEFINITION");
     assert_equal_str("myType", cmd->as.defn.name, "name should be 'myType'");
-    assert_equal_int(0, cmd->as.defn.param_count,
-                     "should have 0 parameters");
+    assert_equal_int(0, cmd->as.defn.param_count, "should have 0 parameters");
     assert_not_null(cmd->as.defn.type, "type should exist");
     assert_not_null(cmd->as.defn.body, "body should exist");
 }
@@ -134,7 +131,8 @@ void test_parse_lemma(void) {
     MEngineOptions options = {.debug = false};
     Lexer lx;
     lexer_init(
-        &lx, "Lemma add_comm : forall (n : nat), forall (m : nat), eq nat n m.\n",
+        &lx,
+        "Lemma add_comm : forall (n : nat), forall (m : nat), eq nat n m.\n",
         &options);
 
     Parser parser;
@@ -144,7 +142,8 @@ void test_parse_lemma(void) {
     assert_not_null(cmd, "command should not be null");
     assert_equal_int(CMD_STATEMENT, cmd->tag, "command should be STATEMENT");
     assert_equal_int(STMT_KW_LEMMA, cmd->as.stmt.kw, "keyword should be LEMMA");
-    assert_equal_str("add_comm", cmd->as.stmt.name, "name should be 'add_comm'");
+    assert_equal_str("add_comm", cmd->as.stmt.name,
+                     "name should be 'add_comm'");
     assert_not_null(cmd->as.stmt.type, "type should exist");
 }
 
@@ -160,7 +159,8 @@ void test_parse_axiom_extra_whitespace(void) {
 
     Command *cmd = command_parse_command(&parser);
     assert_not_null(cmd, "command should not be null");
-    assert_equal_int(CMD_DECLARATION, cmd->tag, "command should be DECLARATION");
+    assert_equal_int(CMD_DECLARATION, cmd->tag,
+                     "command should be DECLARATION");
     assert_equal_str("z", cmd->as.decl.binder.name,
                      "binder name should be 'z'");
 }
@@ -177,7 +177,8 @@ void test_parse_variable_with_prop(void) {
 
     Command *cmd = command_parse_command(&parser);
     assert_not_null(cmd, "command should not be null");
-    assert_equal_int(CMD_DECLARATION, cmd->tag, "command should be DECLARATION");
+    assert_equal_int(CMD_DECLARATION, cmd->tag,
+                     "command should be DECLARATION");
     assert_equal_str("P", cmd->as.decl.binder.name,
                      "binder name should be 'P'");
 }
@@ -187,10 +188,11 @@ void test_parse_definition_complex_type(void) {
 
     MEngineOptions options = {.debug = false};
     Lexer lx;
-    lexer_init(&lx,
-               "Definition myapply (A : Type) (B : Type) : forall (f : A), B := "
-               "fun (f : A) => f.\n",
-               &options);
+    lexer_init(
+        &lx,
+        "Definition myapply (A : Type) (B : Type) : forall (f : A), B := "
+        "fun (f : A) => f.\n",
+        &options);
 
     Parser parser;
     parser_init(&parser, &lx, &options);
@@ -250,7 +252,8 @@ void test_parse_axiom_complex_type(void) {
 
     Command *cmd = command_parse_command(&parser);
     assert_not_null(cmd, "command should not be null");
-    assert_equal_int(CMD_DECLARATION, cmd->tag, "command should be DECLARATION");
+    assert_equal_int(CMD_DECLARATION, cmd->tag,
+                     "command should be DECLARATION");
     assert_equal_str("functional_extensionality", cmd->as.decl.binder.name,
                      "binder name should be 'functional_extensionality'");
 }
@@ -260,8 +263,7 @@ void test_parse_lemma_complex(void) {
 
     MEngineOptions options = {.debug = false};
     Lexer lx;
-    lexer_init(&lx,
-               "Lemma test : forall (A : Type), forall (B : Type), A.\n",
+    lexer_init(&lx, "Lemma test : forall (A : Type), forall (B : Type), A.\n",
                &options);
 
     Parser parser;
@@ -281,8 +283,7 @@ void test_parse_definition_identity(void) {
 
     MEngineOptions options = {.debug = false};
     Lexer lx;
-    lexer_init(&lx,
-               "Definition identity (A : Type) (x : A) : A := x.\n",
+    lexer_init(&lx, "Definition identity (A : Type) (x : A) : A := x.\n",
                &options);
 
     Parser parser;
@@ -291,9 +292,11 @@ void test_parse_definition_identity(void) {
     Command *cmd = command_parse_command(&parser);
     assert_not_null(cmd, "command should not be null");
     assert_equal_int(CMD_DEFINITION, cmd->tag, "command should be DEFINITION");
-    assert_equal_str("identity", cmd->as.defn.name, "name should be 'identity'");
+    assert_equal_str("identity", cmd->as.defn.name,
+                     "name should be 'identity'");
     assert_equal_int(2, cmd->as.defn.param_count, "should have 2 parameters");
-    assert_equal_int(AST_VAR, cmd->as.defn.body->tag, "body should be variable");
+    assert_equal_int(AST_VAR, cmd->as.defn.body->tag,
+                     "body should be variable");
 }
 
 int main() {

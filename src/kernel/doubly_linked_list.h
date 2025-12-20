@@ -1,9 +1,6 @@
 #ifndef DOUBLY_LINKED_LIST_H
 #define DOUBLY_LINKED_LIST_H
 
-#include <stdio.h>
-#include <stdlib.h>
-
 // Credit: https://github.com/clibs/list/tree/master
 
 typedef struct DLLNode {

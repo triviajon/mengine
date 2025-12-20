@@ -1,5 +1,7 @@
 #include "rewrite_proof.h"
 
+#include <stdlib.h>
+
 RewriteProof *init_rewrite_proof(Expression *expr, Expression *rewritten_expr,
                                  Expression *equality_proof,
                                  DoublyLinkedList *remaining_goals) {

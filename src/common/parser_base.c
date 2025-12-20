@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "src/common/color.h"
+
 void parser_init(Parser *p, Lexer *lx, MEngineOptions *options) {
     p->lx = lx;
     p->current = lexer_next_token(lx);
@@ -38,8 +40,7 @@ static void print_error_pointer(const char *source, int pos) {
         char c = source[i];
         if (c == '\t') {
             fputc('\t', stderr);
-        }
-        else {
+        } else {
             fputc(' ', stderr);
         }
     }

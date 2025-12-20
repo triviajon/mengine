@@ -1,10 +1,12 @@
 #include "src/runtime/repl.h"
-#include "src/kernel/expression.h"
+
 #include "src/commandlanguage/command_exec.h"
+#include "src/common/color.h"
+#include "src/kernel/expression.h"
+#include "src/kernel/utils.h"
+#include "src/runtime/proof_state.h"
 #include "src/runtime/runtime.h"
 #include "src/tacticlanguage/tactic_exec.h"
-#include "src/runtime/proof_state.h"
-#include "src/kernel/utils.h"
 
 void mengine_repl(MEngineRuntime *rt) {
     if (!rt) {
@@ -20,8 +22,9 @@ void mengine_repl(MEngineRuntime *rt) {
     while (fgets(buffer, REPL_LINE_CAP, stdin) != NULL) {
         char *input = buffer;
         while (*input == ' ' || *input == '\t' || *input == '\n' ||
-               *input == '\r')
+               *input == '\r') {
             input++;
+        }
 
         if (strncmp(input, "quit.", 5) == 0) {
             break;
@@ -61,7 +64,7 @@ void mengine_repl(MEngineRuntime *rt) {
                     fflush(stdout);
                     continue;
                 }
-                
+
                 mengine_execute_tactic(rt, tactic);
                 // todo: tactic freeing
                 break;
@@ -70,16 +73,16 @@ void mengine_repl(MEngineRuntime *rt) {
 
         // Getting ready for next prompt
 
-
         if (rt->mode == MENGINE_RUNTIME_PROOF_MODE) {
             if (rt->proof_state) {
                 Expression *current_goal = proof_state_current(rt->proof_state);
                 if (current_goal) {
                     Context *goal_ctx = get_expression_context(current_goal);
-                    printf("\n" CYN "Context:" CRESET "\n%s\n", 
-                            stringify_context(goal_ctx));
-                    printf(CYN "Goal:" CRESET "\n%s\n", 
-                            stringify_expression(get_expression_type(current_goal)));
+                    printf("\n" CYN "Context:" CRESET "\n%s\n",
+                           stringify_context(goal_ctx));
+                    printf(CYN "Goal:" CRESET "\n%s\n",
+                           stringify_expression(
+                               get_expression_type(current_goal)));
                 }
             }
         }

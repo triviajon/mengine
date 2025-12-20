@@ -34,7 +34,7 @@ perf.data*
 mengine
 libmengine.a
 
-*.dSYM/
+tests/**/*.dSYM/
 tests/**/test_*
 !tests/**/test_*.c
 !tests/**/test_*.h

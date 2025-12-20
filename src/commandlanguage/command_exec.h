@@ -3,6 +3,8 @@
 
 #include "src/runtime/runtime.h"
 
+#include "src/commandlanguage/command_parser.h"
+
 /**
  * Execute a single top-level command in the given runtime.
  *

@@ -1,7 +1,6 @@
 #ifndef SUBST_H
 #define SUBST_H
 
-#include "beta_reduction.h"
 #include "doubly_linked_list.h"
 #include "src/kernel/context.h"
 #include "src/kernel/expression.h"

@@ -1,4 +1,5 @@
 #include "core.h"
+
 #include "src/kernel/context.h"
 #include "src/kernel/expression.h"
 
@@ -26,20 +27,24 @@ Expression *Eq_sym = NULL;
 Expression *Eq_trans = NULL;
 Expression *Eq_subst = NULL;
 
-
 static Context *init_Equivalence(Context *c) {
     // Reflexive : forall (A : Type) (R : A -> A -> Prop), Prop.
-    // Reflexive_Definition : forall (A : Type) (R : A -> A -> Prop), Reflexive A R -> forall (x : A), R x x.
+    // Reflexive_Definition : forall (A : Type) (R : A -> A -> Prop), Reflexive
+    // A R -> forall (x : A), R x x.
     {
         Expression *A = init_var_expression_wc("A", init_type_expression(), c);
         Context *ctx_A = context_insert(c, A);
 
-        Expression *R = init_var_expression_wc("R",
-            init_arrow_expression(A, init_arrow_expression(A, init_prop_expression())), ctx_A);
+        Expression *R = init_var_expression_wc(
+            "R",
+            init_arrow_expression(
+                A, init_arrow_expression(A, init_prop_expression())),
+            ctx_A);
         Context *ctx_R = context_insert(ctx_A, R);
 
         Expression *reflexive_body = init_prop_expression();
-        Expression *reflexive_type = init_forall_expression_wc(A, init_forall_expression_wc(R, reflexive_body, ctx_R), ctx_A);
+        Expression *reflexive_type = init_forall_expression_wc(
+            A, init_forall_expression_wc(R, reflexive_body, ctx_R), ctx_A);
         Reflexive = init_var_expression_wc("Reflexive", reflexive_type, c);
     }
 
@@ -49,37 +54,51 @@ static Context *init_Equivalence(Context *c) {
         // Now build Reflexive_Definition
         Expression *A = init_var_expression_wc("A", init_type_expression(), c);
         Context *ctx_A = context_insert(c, A);
-        Expression *R = init_var_expression_wc("R",
-            init_arrow_expression(A, init_arrow_expression(A, init_prop_expression())), ctx_A);
+        Expression *R = init_var_expression_wc(
+            "R",
+            init_arrow_expression(
+                A, init_arrow_expression(A, init_prop_expression())),
+            ctx_A);
         Context *ctx_R = context_insert(ctx_A, R);
 
         Expression *x = init_var_expression_wc("x", A, ctx_R);
         Context *ctx_x = context_insert(ctx_R, x);
-        Expression *R_x_x = init_app_expression_wc(init_app_expression_wc(R, x, ctx_x), x, ctx_x);
-        Expression *reflexive_def_body = init_forall_expression_wc(x, R_x_x, ctx_x);
+        Expression *R_x_x = init_app_expression_wc(
+            init_app_expression_wc(R, x, ctx_x), x, ctx_x);
+        Expression *reflexive_def_body =
+            init_forall_expression_wc(x, R_x_x, ctx_x);
         Expression *reflexive_def_type = init_arrow_expression(
-            init_app_expression_wc(init_app_expression_wc(Reflexive, A, ctx_R), R, ctx_R),
+            init_app_expression_wc(init_app_expression_wc(Reflexive, A, ctx_R),
+                                   R, ctx_R),
             reflexive_def_body);
-        reflexive_def_type = init_forall_expression_wc(R, reflexive_def_type, ctx_R);
-        reflexive_def_type = init_forall_expression_wc(A, reflexive_def_type, ctx_A);
+        reflexive_def_type =
+            init_forall_expression_wc(R, reflexive_def_type, ctx_R);
+        reflexive_def_type =
+            init_forall_expression_wc(A, reflexive_def_type, ctx_A);
 
-        Reflexive_Definition = init_var_expression_wc("Reflexive_Definition", reflexive_def_type, c);
+        Reflexive_Definition = init_var_expression_wc("Reflexive_Definition",
+                                                      reflexive_def_type, c);
     }
 
     c = context_insert(c, Reflexive_Definition);
 
     // Symmetric : forall (A : Type) (R : A -> A -> Prop), Prop.
-    // Symmetric_Definition : forall (A : Type) (R : A -> A -> Prop), Symmetric A R -> forall (x y : A), R x y -> R y x.
+    // Symmetric_Definition : forall (A : Type) (R : A -> A -> Prop), Symmetric
+    // A R -> forall (x y : A), R x y -> R y x.
     {
         Expression *A = init_var_expression_wc("A", init_type_expression(), c);
         Context *ctx_A = context_insert(c, A);
 
-        Expression *R = init_var_expression_wc("R",
-            init_arrow_expression(A, init_arrow_expression(A, init_prop_expression())), ctx_A);
+        Expression *R = init_var_expression_wc(
+            "R",
+            init_arrow_expression(
+                A, init_arrow_expression(A, init_prop_expression())),
+            ctx_A);
         Context *ctx_R = context_insert(ctx_A, R);
 
         Expression *symmetric_body = init_prop_expression();
-        Expression *symmetric_type = init_forall_expression_wc(A, init_forall_expression_wc(R, symmetric_body, ctx_R), ctx_A);
+        Expression *symmetric_type = init_forall_expression_wc(
+            A, init_forall_expression_wc(R, symmetric_body, ctx_R), ctx_A);
         Symmetric = init_var_expression_wc("Symmetric", symmetric_type, c);
     }
 
@@ -89,42 +108,58 @@ static Context *init_Equivalence(Context *c) {
         // Now build Symmetric_Definition
         Expression *A = init_var_expression_wc("A", init_type_expression(), c);
         Context *ctx_A = context_insert(c, A);
-        Expression *R = init_var_expression_wc("R",
-            init_arrow_expression(A, init_arrow_expression(A, init_prop_expression())), ctx_A);
+        Expression *R = init_var_expression_wc(
+            "R",
+            init_arrow_expression(
+                A, init_arrow_expression(A, init_prop_expression())),
+            ctx_A);
         Context *ctx_R = context_insert(ctx_A, R);
 
         Expression *x = init_var_expression_wc("x", A, ctx_R);
         Context *ctx_x = context_insert(ctx_R, x);
         Expression *y = init_var_expression_wc("y", A, ctx_x);
         Context *ctx_y = context_insert(ctx_x, y);
-        Expression *R_x_y = init_app_expression_wc(init_app_expression_wc(R, x, ctx_y), y, ctx_y);
-        Expression *R_y_x = init_app_expression_wc(init_app_expression_wc(R, y, ctx_y), x, ctx_y);
+        Expression *R_x_y = init_app_expression_wc(
+            init_app_expression_wc(R, x, ctx_y), y, ctx_y);
+        Expression *R_y_x = init_app_expression_wc(
+            init_app_expression_wc(R, y, ctx_y), x, ctx_y);
         Expression *symmetric_def_body = init_arrow_expression(R_x_y, R_y_x);
-        symmetric_def_body = init_forall_expression_wc(y, symmetric_def_body, ctx_y);
-        symmetric_def_body = init_forall_expression_wc(x, symmetric_def_body, ctx_x);
+        symmetric_def_body =
+            init_forall_expression_wc(y, symmetric_def_body, ctx_y);
+        symmetric_def_body =
+            init_forall_expression_wc(x, symmetric_def_body, ctx_x);
         Expression *symmetric_def_type = init_arrow_expression(
-            init_app_expression_wc(init_app_expression_wc(Symmetric, A, ctx_R), R,
-            ctx_R), symmetric_def_body);
-        symmetric_def_type = init_forall_expression_wc(R, symmetric_def_type, ctx_R);
-        symmetric_def_type = init_forall_expression_wc(A, symmetric_def_type, ctx_A);
+            init_app_expression_wc(init_app_expression_wc(Symmetric, A, ctx_R),
+                                   R, ctx_R),
+            symmetric_def_body);
+        symmetric_def_type =
+            init_forall_expression_wc(R, symmetric_def_type, ctx_R);
+        symmetric_def_type =
+            init_forall_expression_wc(A, symmetric_def_type, ctx_A);
 
-        Symmetric_Definition = init_var_expression_wc("Symmetric_Definition", symmetric_def_type, c);
+        Symmetric_Definition = init_var_expression_wc("Symmetric_Definition",
+                                                      symmetric_def_type, c);
     }
 
     c = context_insert(c, Symmetric_Definition);
 
     // Transitive : forall (A : Type) (R : A -> A -> Prop), Prop.
-    // Transitive_Definition : forall (A : Type) (R : A -> A -> Prop), Transitive A R -> forall (x y z : A), R x y -> R y z -> R x z.
+    // Transitive_Definition : forall (A : Type) (R : A -> A -> Prop),
+    // Transitive A R -> forall (x y z : A), R x y -> R y z -> R x z.
     {
         Expression *A = init_var_expression_wc("A", init_type_expression(), c);
         Context *ctx_A = context_insert(c, A);
 
-        Expression *R = init_var_expression_wc("R",
-            init_arrow_expression(A, init_arrow_expression(A, init_prop_expression())), ctx_A);
+        Expression *R = init_var_expression_wc(
+            "R",
+            init_arrow_expression(
+                A, init_arrow_expression(A, init_prop_expression())),
+            ctx_A);
         Context *ctx_R = context_insert(ctx_A, R);
 
         Expression *transitive_body = init_prop_expression();
-        Expression *transitive_type = init_forall_expression_wc(A, init_forall_expression_wc(R, transitive_body, ctx_R), ctx_A);
+        Expression *transitive_type = init_forall_expression_wc(
+            A, init_forall_expression_wc(R, transitive_body, ctx_R), ctx_A);
         Transitive = init_var_expression_wc("Transitive", transitive_type, c);
     }
 
@@ -134,8 +169,11 @@ static Context *init_Equivalence(Context *c) {
         // Now build Transitive_Definition
         Expression *A = init_var_expression_wc("A", init_type_expression(), c);
         Context *ctx_A = context_insert(c, A);
-        Expression *R = init_var_expression_wc("R",
-            init_arrow_expression(A, init_arrow_expression(A, init_prop_expression())), ctx_A);
+        Expression *R = init_var_expression_wc(
+            "R",
+            init_arrow_expression(
+                A, init_arrow_expression(A, init_prop_expression())),
+            ctx_A);
         Context *ctx_R = context_insert(ctx_A, R);
 
         Expression *x = init_var_expression_wc("x", A, ctx_R);
@@ -144,21 +182,31 @@ static Context *init_Equivalence(Context *c) {
         Context *ctx_y = context_insert(ctx_x, y);
         Expression *z = init_var_expression_wc("z", A, ctx_y);
         Context *ctx_z = context_insert(ctx_y, z);
-        Expression *R_x_y = init_app_expression_wc(init_app_expression_wc(R, x, ctx_z), y, ctx_z);
-        Expression *R_y_z = init_app_expression_wc(init_app_expression_wc(R, y, ctx_z), z, ctx_z);
-        Expression *R_x_z = init_app_expression_wc(init_app_expression_wc(R, x, ctx_z), z, ctx_z);
-        Expression *transitive_def_body = init_arrow_expression(
-            R_x_y, init_arrow_expression(R_y_z, R_x_z));
-        transitive_def_body = init_forall_expression_wc(z, transitive_def_body, ctx_z);
-        transitive_def_body = init_forall_expression_wc(y, transitive_def_body, ctx_y);
-        transitive_def_body = init_forall_expression_wc(x, transitive_def_body, ctx_x);
+        Expression *R_x_y = init_app_expression_wc(
+            init_app_expression_wc(R, x, ctx_z), y, ctx_z);
+        Expression *R_y_z = init_app_expression_wc(
+            init_app_expression_wc(R, y, ctx_z), z, ctx_z);
+        Expression *R_x_z = init_app_expression_wc(
+            init_app_expression_wc(R, x, ctx_z), z, ctx_z);
+        Expression *transitive_def_body =
+            init_arrow_expression(R_x_y, init_arrow_expression(R_y_z, R_x_z));
+        transitive_def_body =
+            init_forall_expression_wc(z, transitive_def_body, ctx_z);
+        transitive_def_body =
+            init_forall_expression_wc(y, transitive_def_body, ctx_y);
+        transitive_def_body =
+            init_forall_expression_wc(x, transitive_def_body, ctx_x);
         Expression *transitive_def_type = init_arrow_expression(
-            init_app_expression_wc(init_app_expression_wc(Transitive, A, ctx_R), R,
-            ctx_R), transitive_def_body);
-        transitive_def_type = init_forall_expression_wc(R, transitive_def_type, ctx_R);
-        transitive_def_type = init_forall_expression_wc(A, transitive_def_type, ctx_A);
+            init_app_expression_wc(init_app_expression_wc(Transitive, A, ctx_R),
+                                   R, ctx_R),
+            transitive_def_body);
+        transitive_def_type =
+            init_forall_expression_wc(R, transitive_def_type, ctx_R);
+        transitive_def_type =
+            init_forall_expression_wc(A, transitive_def_type, ctx_A);
 
-        Transitive_Definition = init_var_expression_wc("Transitive_Definition", transitive_def_type, c);
+        Transitive_Definition = init_var_expression_wc("Transitive_Definition",
+                                                       transitive_def_type, c);
     }
 
     c = context_insert(c, Transitive_Definition);
@@ -166,18 +214,23 @@ static Context *init_Equivalence(Context *c) {
     // TODO: Skipping app congruence for now
 
     // Equivalence : forall (A : Type) (R : A -> A -> Prop), Prop.
-    // Build_Equivalence : forall (A : Type) (R : A -> A -> Prop), Reflexive A R -> Symmetric A R -> Transitive A R -> Equivalence A R.
+    // Build_Equivalence : forall (A : Type) (R : A -> A -> Prop), Reflexive A R
+    // -> Symmetric A R -> Transitive A R -> Equivalence A R.
     {
         Expression *A = init_var_expression_wc("A", init_type_expression(), c);
         Context *ctx_A = context_insert(c, A);
-        Expression *R = init_var_expression_wc("R",
-            init_arrow_expression(A, init_arrow_expression(A, init_prop_expression())), ctx_A);
+        Expression *R = init_var_expression_wc(
+            "R",
+            init_arrow_expression(
+                A, init_arrow_expression(A, init_prop_expression())),
+            ctx_A);
         Context *ctx_R = context_insert(ctx_A, R);
 
         Expression *Equivalence_body = init_prop_expression();
-        Expression *Equivalence_type = init_forall_expression_wc(A, init_forall_expression_wc(R, Equivalence_body, ctx_R), ctx_A);
-        Equivalence = init_var_expression_wc("Equivalence", Equivalence_type, c);
-
+        Expression *Equivalence_type = init_forall_expression_wc(
+            A, init_forall_expression_wc(R, Equivalence_body, ctx_R), ctx_A);
+        Equivalence =
+            init_var_expression_wc("Equivalence", Equivalence_type, c);
     }
 
     c = context_insert(c, Equivalence);
@@ -186,93 +239,135 @@ static Context *init_Equivalence(Context *c) {
         // Now build Build_Equivalence
         Expression *A = init_var_expression_wc("A", init_type_expression(), c);
         Context *ctx_A = context_insert(c, A);
-        Expression *R = init_var_expression_wc("R",
-            init_arrow_expression(A, init_arrow_expression(A, init_prop_expression())), ctx_A);
+        Expression *R = init_var_expression_wc(
+            "R",
+            init_arrow_expression(
+                A, init_arrow_expression(A, init_prop_expression())),
+            ctx_A);
         Context *ctx_R = context_insert(ctx_A, R);
 
         Expression *build_Equivalence_body = init_app_expression_wc(
             init_app_expression_wc(Equivalence, A, ctx_R), R, ctx_R);
         Expression *build_Equivalence_type = init_arrow_expression(
-            init_app_expression_wc(init_app_expression_wc(Reflexive, A, ctx_R), R, ctx_R),
+            init_app_expression_wc(init_app_expression_wc(Reflexive, A, ctx_R),
+                                   R, ctx_R),
             init_arrow_expression(
-                init_app_expression_wc(init_app_expression_wc(Symmetric, A, ctx_R), R, ctx_R),
+                init_app_expression_wc(
+                    init_app_expression_wc(Symmetric, A, ctx_R), R, ctx_R),
                 init_arrow_expression(
-                    init_app_expression_wc(init_app_expression_wc(Transitive, A, ctx_R), R, ctx_R),
+                    init_app_expression_wc(
+                        init_app_expression_wc(Transitive, A, ctx_R), R, ctx_R),
                     build_Equivalence_body)));
-        build_Equivalence_type = init_forall_expression_wc(R, build_Equivalence_type, ctx_R);
-        build_Equivalence_type = init_forall_expression_wc(A, build_Equivalence_type, ctx_A);
-        Build_Equivalence = init_var_expression_wc("Build_Equivalence", build_Equivalence_type, c);
+        build_Equivalence_type =
+            init_forall_expression_wc(R, build_Equivalence_type, ctx_R);
+        build_Equivalence_type =
+            init_forall_expression_wc(A, build_Equivalence_type, ctx_A);
+        Build_Equivalence = init_var_expression_wc("Build_Equivalence",
+                                                   build_Equivalence_type, c);
     }
 
     c = context_insert(c, Build_Equivalence);
 
-    // Equivalence_Reflexive : forall (A : Type) (R : A -> A -> Prop) (E : Equivalence A R), Reflexive A R.
+    // Equivalence_Reflexive : forall (A : Type) (R : A -> A -> Prop) (E :
+    // Equivalence A R), Reflexive A R.
     {
         Expression *A = init_var_expression_wc("A", init_type_expression(), c);
         Context *ctx_A = context_insert(c, A);
-        Expression *R = init_var_expression_wc("R",
-            init_arrow_expression(A, init_arrow_expression(A, init_prop_expression())), ctx_A);
+        Expression *R = init_var_expression_wc(
+            "R",
+            init_arrow_expression(
+                A, init_arrow_expression(A, init_prop_expression())),
+            ctx_A);
         Context *ctx_R = context_insert(ctx_A, R);
-        Expression *E = init_var_expression_wc("E",
-            init_app_expression_wc(init_app_expression_wc(Equivalence, A, ctx_R), R, ctx_R), ctx_R);
+        Expression *E = init_var_expression_wc(
+            "E",
+            init_app_expression_wc(
+                init_app_expression_wc(Equivalence, A, ctx_R), R, ctx_R),
+            ctx_R);
         Context *ctx_E = context_insert(ctx_R, E);
 
         Expression *Equiv_reflexive_body = init_app_expression_wc(
             init_app_expression_wc(Reflexive, A, ctx_E), R, ctx_E);
-        Expression *Equiv_reflexive_type = init_forall_expression_wc(E, Equiv_reflexive_body, ctx_E);
-        Equiv_reflexive_type = init_forall_expression_wc(R, Equiv_reflexive_type, ctx_R);
-        Equiv_reflexive_type = init_forall_expression_wc(A, Equiv_reflexive_type, ctx_A);
+        Expression *Equiv_reflexive_type =
+            init_forall_expression_wc(E, Equiv_reflexive_body, ctx_E);
+        Equiv_reflexive_type =
+            init_forall_expression_wc(R, Equiv_reflexive_type, ctx_R);
+        Equiv_reflexive_type =
+            init_forall_expression_wc(A, Equiv_reflexive_type, ctx_A);
 
-        Equivalence_Reflexive = init_var_expression_wc("Equivalence_Reflexive", Equiv_reflexive_type, c);
+        Equivalence_Reflexive = init_var_expression_wc("Equivalence_Reflexive",
+                                                       Equiv_reflexive_type, c);
     }
 
     c = context_insert(c, Equivalence_Reflexive);
 
-    // Equivalence_Symmetric : forall (A : Type) (R : A -> A -> Prop) (E : Equivalence A R), Symmetric A R.
+    // Equivalence_Symmetric : forall (A : Type) (R : A -> A -> Prop) (E :
+    // Equivalence A R), Symmetric A R.
     {
         Expression *A = init_var_expression_wc("A", init_type_expression(), c);
         Context *ctx_A = context_insert(c, A);
-        Expression *R = init_var_expression_wc("R",
-            init_arrow_expression(A, init_arrow_expression(A, init_prop_expression())), ctx_A);
+        Expression *R = init_var_expression_wc(
+            "R",
+            init_arrow_expression(
+                A, init_arrow_expression(A, init_prop_expression())),
+            ctx_A);
         Context *ctx_R = context_insert(ctx_A, R);
-        Expression *E = init_var_expression_wc("E",
-            init_app_expression_wc(init_app_expression_wc(Equivalence, A, ctx_R), R, ctx_R), ctx_R);
+        Expression *E = init_var_expression_wc(
+            "E",
+            init_app_expression_wc(
+                init_app_expression_wc(Equivalence, A, ctx_R), R, ctx_R),
+            ctx_R);
         Context *ctx_E = context_insert(ctx_R, E);
 
         Expression *Equiv_symmetric_body = init_app_expression_wc(
             init_app_expression_wc(Symmetric, A, ctx_E), R, ctx_E);
-        Expression *Equiv_symmetric_type = init_forall_expression_wc(E, Equiv_symmetric_body, ctx_E);
-        Equiv_symmetric_type = init_forall_expression_wc(R, Equiv_symmetric_type, ctx_R);
-        Equiv_symmetric_type = init_forall_expression_wc(A, Equiv_symmetric_type, ctx_A);
+        Expression *Equiv_symmetric_type =
+            init_forall_expression_wc(E, Equiv_symmetric_body, ctx_E);
+        Equiv_symmetric_type =
+            init_forall_expression_wc(R, Equiv_symmetric_type, ctx_R);
+        Equiv_symmetric_type =
+            init_forall_expression_wc(A, Equiv_symmetric_type, ctx_A);
 
-        Equivalence_Symmetric = init_var_expression_wc("Equivalence_Symmetric", Equiv_symmetric_type, c);
+        Equivalence_Symmetric = init_var_expression_wc("Equivalence_Symmetric",
+                                                       Equiv_symmetric_type, c);
     }
 
     c = context_insert(c, Equivalence_Symmetric);
 
-    // Equivalence_Transitive : forall (A : Type) (R : A -> A -> Prop) (E : Equivalence A R), Transitive A R.
+    // Equivalence_Transitive : forall (A : Type) (R : A -> A -> Prop) (E :
+    // Equivalence A R), Transitive A R.
     {
         Expression *A = init_var_expression_wc("A", init_type_expression(), c);
         Context *ctx_A = context_insert(c, A);
-        Expression *R = init_var_expression_wc("R",
-            init_arrow_expression(A, init_arrow_expression(A, init_prop_expression())), ctx_A);
+        Expression *R = init_var_expression_wc(
+            "R",
+            init_arrow_expression(
+                A, init_arrow_expression(A, init_prop_expression())),
+            ctx_A);
         Context *ctx_R = context_insert(ctx_A, R);
-        Expression *E = init_var_expression_wc("E",
-            init_app_expression_wc(init_app_expression_wc(Equivalence, A, ctx_R), R, ctx_R), ctx_R);
+        Expression *E = init_var_expression_wc(
+            "E",
+            init_app_expression_wc(
+                init_app_expression_wc(Equivalence, A, ctx_R), R, ctx_R),
+            ctx_R);
         Context *ctx_E = context_insert(ctx_R, E);
 
         Expression *Equiv_transitive_body = init_app_expression_wc(
             init_app_expression_wc(Transitive, A, ctx_E), R, ctx_E);
-        Expression *Equiv_transitive_type = init_forall_expression_wc(E, Equiv_transitive_body, ctx_E);
-        Equiv_transitive_type = init_forall_expression_wc(R, Equiv_transitive_type, ctx_R);
-        Equiv_transitive_type = init_forall_expression_wc(A, Equiv_transitive_type, ctx_A);
+        Expression *Equiv_transitive_type =
+            init_forall_expression_wc(E, Equiv_transitive_body, ctx_E);
+        Equiv_transitive_type =
+            init_forall_expression_wc(R, Equiv_transitive_type, ctx_R);
+        Equiv_transitive_type =
+            init_forall_expression_wc(A, Equiv_transitive_type, ctx_A);
 
-        Equivalence_Transitive = init_var_expression_wc("Equivalence_Transitive", Equiv_transitive_type, c);
+        Equivalence_Transitive = init_var_expression_wc(
+            "Equivalence_Transitive", Equiv_transitive_type, c);
     }
 
     c = context_insert(c, Equivalence_Transitive);
-        // app_cong : forall (A B: Type) (f g : A -> B) (x y : A), R (A -> B) f g -> R A x y ->
-        // f x = g y
+    // app_cong : forall (A B: Type) (f g : A -> B) (x y : A), R (A -> B) f g ->
+    // R A x y -> f x = g y
 
     return c;
 }
@@ -288,10 +383,10 @@ static Context *init_Eq(Context *c) {
         Context *ctx_y = context_insert(ctx_x, y);
 
         Expression *Eq_body = init_prop_expression();
-        Expression *Eq_type = init_forall_expression_wc(A,
-            init_forall_expression_wc(x,
-                init_forall_expression_wc(y, Eq_body, ctx_y),
-                ctx_x),
+        Expression *Eq_type = init_forall_expression_wc(
+            A,
+            init_forall_expression_wc(
+                x, init_forall_expression_wc(y, Eq_body, ctx_y), ctx_x),
             ctx_A);
         Eq = init_var_expression_wc("Eq", Eq_type, c);
     }
@@ -305,11 +400,12 @@ static Context *init_Eq(Context *c) {
         Expression *x = init_var_expression_wc("x", A, ctx_A);
         Context *ctx_x = context_insert(ctx_A, x);
 
-        Expression *Eq_refl_body = init_app_expression_wc(init_app_expression_wc(
-            init_app_expression_wc(Eq, A, ctx_x), x, ctx_x), x, ctx_x);
-        Expression *Eq_refl_type = init_forall_expression_wc(A,
-            init_forall_expression_wc(x, Eq_refl_body, ctx_x),
-            ctx_A);
+        Expression *Eq_refl_body = init_app_expression_wc(
+            init_app_expression_wc(init_app_expression_wc(Eq, A, ctx_x), x,
+                                   ctx_x),
+            x, ctx_x);
+        Expression *Eq_refl_type = init_forall_expression_wc(
+            A, init_forall_expression_wc(x, Eq_refl_body, ctx_x), ctx_A);
         Eq_refl = init_var_expression_wc("Eq_refl", Eq_refl_type, c);
     }
 
@@ -329,17 +425,18 @@ static Context *init_Eq(Context *c) {
             init_app_expression_wc(Eq, A, ctx_y), y, ctx_y);
 
         Expression *Eq_sym_body = init_arrow_expression(Eq_A_x_y, Eq_A_y_x);
-        Expression *Eq_sym_type = init_forall_expression_wc(A,
-            init_forall_expression_wc(x,
-                init_forall_expression_wc(y, Eq_sym_body, ctx_y),
-                ctx_x),
+        Expression *Eq_sym_type = init_forall_expression_wc(
+            A,
+            init_forall_expression_wc(
+                x, init_forall_expression_wc(y, Eq_sym_body, ctx_y), ctx_x),
             ctx_A);
         Eq_sym = init_var_expression_wc("Eq_sym", Eq_sym_type, c);
     }
 
     c = context_insert(c, Eq_sym);
 
-    // Eq_trans : forall (A : Type) (x y z : A), Eq A x y -> Eq A y z -> Eq A x z.
+    // Eq_trans : forall (A : Type) (x y z : A), Eq A x y -> Eq A y z -> Eq A x
+    // z.
     {
         Expression *A = init_var_expression_wc("A", init_type_expression(), c);
         Context *ctx_A = context_insert(c, A);
@@ -351,21 +448,26 @@ static Context *init_Eq(Context *c) {
         Context *ctx_z = context_insert(ctx_y, z);
 
         Expression *Eq_A_x_y = init_app_expression_wc(
-            init_app_expression_wc(init_app_expression_wc(Eq, A, ctx_z), x, ctx_z), y, ctx_z);
+            init_app_expression_wc(init_app_expression_wc(Eq, A, ctx_z), x,
+                                   ctx_z),
+            y, ctx_z);
         Expression *Eq_A_y_z = init_app_expression_wc(
-            init_app_expression_wc(init_app_expression_wc(Eq, A, ctx_z), y, ctx_z), z, ctx_z);
+            init_app_expression_wc(init_app_expression_wc(Eq, A, ctx_z), y,
+                                   ctx_z),
+            z, ctx_z);
         Expression *Eq_A_x_z = init_app_expression_wc(
-            init_app_expression_wc(init_app_expression_wc(Eq, A, ctx_z), x, ctx_z), z, ctx_z);
+            init_app_expression_wc(init_app_expression_wc(Eq, A, ctx_z), x,
+                                   ctx_z),
+            z, ctx_z);
 
         Expression *Eq_trans_body = init_arrow_expression(
-            Eq_A_x_y,
-            init_arrow_expression(
-                Eq_A_y_z,
-                Eq_A_x_z));
-        Expression *Eq_trans_type = init_forall_expression_wc(A,
-            init_forall_expression_wc(x,
-                init_forall_expression_wc(y,
-                    init_forall_expression_wc(z, Eq_trans_body, ctx_z),
+            Eq_A_x_y, init_arrow_expression(Eq_A_y_z, Eq_A_x_z));
+        Expression *Eq_trans_type = init_forall_expression_wc(
+            A,
+            init_forall_expression_wc(
+                x,
+                init_forall_expression_wc(
+                    y, init_forall_expression_wc(z, Eq_trans_body, ctx_z),
                     ctx_y),
                 ctx_x),
             ctx_A);
@@ -378,21 +480,22 @@ static Context *init_Eq(Context *c) {
     {
         Expression *P = init_var_expression_wc("P", init_prop_expression(), c);
         Context *ctx_P = context_insert(c, P);
-        Expression *Q = init_var_expression_wc("Q", init_prop_expression(), ctx_P);
+        Expression *Q =
+            init_var_expression_wc("Q", init_prop_expression(), ctx_P);
         Context *ctx_Q = context_insert(ctx_P, Q);
 
         Expression *Eq_Prop_P_Q = init_app_expression_wc(
-            init_app_expression_wc(Eq, init_prop_expression(), ctx_Q), P, ctx_Q);
+            init_app_expression_wc(Eq, init_prop_expression(), ctx_Q), P,
+            ctx_Q);
         Eq_Prop_P_Q = init_app_expression_wc(Eq_Prop_P_Q, Q, ctx_Q);
 
         Expression *Eq_subst_body = P;
-        Expression *Eq_subst_type = init_forall_expression_wc(P,
-            init_forall_expression_wc(Q,
-                init_arrow_expression(
-                    Eq_Prop_P_Q,
-                    init_arrow_expression(
-                        Q,
-                        Eq_subst_body)),
+        Expression *Eq_subst_type = init_forall_expression_wc(
+            P,
+            init_forall_expression_wc(
+                Q,
+                init_arrow_expression(Eq_Prop_P_Q,
+                                      init_arrow_expression(Q, Eq_subst_body)),
                 ctx_Q),
             ctx_P);
         Eq_subst = init_var_expression_wc("Eq_subst", Eq_subst_type, c);
@@ -404,15 +507,19 @@ static Context *init_Eq(Context *c) {
 }
 
 static Context *init_bad_app_congruence(Context *c) {
-    // Bad_App_Congruence : forall (A B : Type) (f g : A -> B) (x y: A), Eq (A -> B) f g -> Eq (A) x y -> Eq (B) (f x) (g y).
+    // Bad_App_Congruence : forall (A B : Type) (f g : A -> B) (x y: A), Eq (A
+    // -> B) f g -> Eq (A) x y -> Eq (B) (f x) (g y).
     {
         Expression *A = init_var_expression_wc("A", init_type_expression(), c);
         Context *ctx_A = context_insert(c, A);
-        Expression *B = init_var_expression_wc("B", init_type_expression(), ctx_A);
+        Expression *B =
+            init_var_expression_wc("B", init_type_expression(), ctx_A);
         Context *ctx_B = context_insert(ctx_A, B);
-        Expression *f = init_var_expression_wc("f", init_arrow_expression(A, B), ctx_B);
+        Expression *f =
+            init_var_expression_wc("f", init_arrow_expression(A, B), ctx_B);
         Context *ctx_f = context_insert(ctx_B, f);
-        Expression *g = init_var_expression_wc("g", init_arrow_expression(A, B), ctx_f);
+        Expression *g =
+            init_var_expression_wc("g", init_arrow_expression(A, B), ctx_f);
         Context *ctx_g = context_insert(ctx_f, g);
         Expression *x = init_var_expression_wc("x", A, ctx_g);
         Context *ctx_x = context_insert(ctx_g, x);
@@ -422,44 +529,40 @@ static Context *init_bad_app_congruence(Context *c) {
         Expression *Eq_A_to_B_f_g = init_app_expression_wc(
             init_app_expression_wc(
                 init_app_expression_wc(Eq, init_arrow_expression(A, B), ctx_y),
-                f,
-                ctx_y),
-            g,
-            ctx_y);
+                f, ctx_y),
+            g, ctx_y);
         Expression *Eq_A_x_y = init_app_expression_wc(
-            init_app_expression_wc(
-                init_app_expression_wc(Eq, A, ctx_y),
-                x,
-                ctx_y),
-            y,
-            ctx_y);
+            init_app_expression_wc(init_app_expression_wc(Eq, A, ctx_y), x,
+                                   ctx_y),
+            y, ctx_y);
         Expression *f_x = init_app_expression_wc(f, x, ctx_y);
         Expression *g_y = init_app_expression_wc(g, y, ctx_y);
         Expression *Eq_B_f_x_g_y = init_app_expression_wc(
-            init_app_expression_wc(
-                init_app_expression_wc(Eq, B, ctx_y),
-                f_x,
-                ctx_y),
-            g_y,
-            ctx_y);
+            init_app_expression_wc(init_app_expression_wc(Eq, B, ctx_y), f_x,
+                                   ctx_y),
+            g_y, ctx_y);
 
         Expression *bad_app_congruence_body = init_arrow_expression(
-            Eq_A_to_B_f_g,
-            init_arrow_expression(
-                Eq_A_x_y,
-                Eq_B_f_x_g_y));
-        Expression *bad_app_congruence_type = init_forall_expression_wc(A,
-            init_forall_expression_wc(B,
-                init_forall_expression_wc(f,
-                    init_forall_expression_wc(g,
-                        init_forall_expression_wc(x,
-                            init_forall_expression_wc(y, bad_app_congruence_body, ctx_y),
+            Eq_A_to_B_f_g, init_arrow_expression(Eq_A_x_y, Eq_B_f_x_g_y));
+        Expression *bad_app_congruence_type = init_forall_expression_wc(
+            A,
+            init_forall_expression_wc(
+                B,
+                init_forall_expression_wc(
+                    f,
+                    init_forall_expression_wc(
+                        g,
+                        init_forall_expression_wc(
+                            x,
+                            init_forall_expression_wc(
+                                y, bad_app_congruence_body, ctx_y),
                             ctx_x),
                         ctx_g),
                     ctx_f),
                 ctx_B),
             ctx_A);
-        Bad_App_Congruence = init_var_expression_wc("Bad_App_Congruence", bad_app_congruence_type, c);
+        Bad_App_Congruence = init_var_expression_wc("Bad_App_Congruence",
+                                                    bad_app_congruence_type, c);
     }
 
     c = context_insert(c, Bad_App_Congruence);
@@ -467,6 +570,15 @@ static Context *init_bad_app_congruence(Context *c) {
     return c;
 }
 
+Expression *_get_lhs_Eq(Expression *eq_expression) {
+    // eq_expression is of the form Eq A x y
+    return get_app_arg(get_app_func(eq_expression));
+}
+
+Expression *_get_rhs_Eq(Expression *eq_expression) {
+    // eq_expression is of the form Eq A x y
+    return get_app_arg(eq_expression);
+}
 
 void init_core(Context **ctx) {
     if (*ctx == NULL) {

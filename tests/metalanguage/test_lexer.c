@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "src/common/lexer.h"
 #include "tests/helpers/test_framework.h"
 

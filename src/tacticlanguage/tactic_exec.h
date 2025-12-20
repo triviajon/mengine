@@ -2,6 +2,7 @@
 #define TACTIC_EXEC_H
 
 #include "src/runtime/runtime.h"
+#include "src/tacticlanguage/tactic_parser.h"
 
 /**
  * Execute a single top-level tactic in the given runtime.

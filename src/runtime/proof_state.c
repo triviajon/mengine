@@ -1,5 +1,8 @@
 #include "src/runtime/proof_state.h"
 
+#include <stddef.h>
+#include <stdlib.h>
+
 static void proof_state_register_top_level_uplink(Expression *goal) {
     Uplink *ul = new_uplink_tl();
     add_to_parents(goal, ul);
@@ -53,7 +56,8 @@ Expression *proof_state_current(ProofState *ps) {
     if (!ps) {
         return NULL;
     }
-    if (ps->goal_index >= dll_len(ps->goals)) {
+    if (ps->goal_index >=
+        /*todo: change spec of dll_len */ (size_t)dll_len(ps->goals)) {
         return NULL;
     }
     return (Expression *)dll_at(ps->goals, ps->goal_index)->data;

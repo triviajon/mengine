@@ -31,6 +31,10 @@ extern Expression *Eq_sym;
 extern Expression *Eq_trans;
 extern Expression *Eq_subst;
 
+Expression *_get_lhs_Eq(Expression *eq_expression);
+
+Expression *_get_rhs_Eq(Expression *eq_expression);
+
 /**
  * Initialize the core library.
  *

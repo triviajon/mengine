@@ -4,12 +4,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "src/common/color.h"
+
 static inline char peek_char(Lexer *lx) { return lx->src[lx->pos]; }
 
 static void debug_print_token(Lexer *lx, Token *t) {
     if (!lx->options || !lx->options->debug ||
-        !lx->options->debug__print_tokens)
+        !lx->options->debug__print_tokens) {
         return;
+    }
 
     char *name;
     switch (t->type) {

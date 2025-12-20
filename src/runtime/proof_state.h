@@ -3,7 +3,6 @@
 
 #include <stddef.h>
 
-#include "src/engine/logic.h"
 #include "src/kernel/expression.h"
 
 typedef struct {

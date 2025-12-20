@@ -1,7 +1,6 @@
 #ifndef PARSER_BASE_H
 #define PARSER_BASE_H
 
-#include "src/common/color.h"
 #include "src/common/lexer.h"
 #include "src/common/options.h"
 

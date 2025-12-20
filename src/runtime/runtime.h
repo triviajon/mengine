@@ -1,14 +1,11 @@
 #ifndef RUNTIME_H
 #define RUNTIME_H
 
-#include "src/commandlanguage/command_parser.h"
 #include "src/common/options.h"
 #include "src/kernel/context.h"
 #include "src/kernel/utils.h"
-#include "src/metalanguage/ast_to_expression.h"
 #include "src/runtime/definition_table.h"
 #include "src/runtime/proof_state.h"
-#include "src/tacticlanguage/tactic_parser.h"
 
 typedef enum {
     MENGINE_RUNTIME_COMMAND_MODE,  // Normal mode of the Mengine Runtime, where
