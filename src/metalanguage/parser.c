@@ -59,9 +59,10 @@ void fprint_ast(FILE *stream, AST *ast) {
 
         case AST_MATCHBRANCH:
             fprintf(stream, "BRANCH(");
-            fprintf(stream, "pattern=%s, ", ast->value.matchbranch.pattern
-                                       ? ast->value.matchbranch.pattern->name
-                                       : "_");
+            fprintf(stream, "pattern=%s, ",
+                    ast->value.matchbranch.pattern
+                        ? ast->value.matchbranch.pattern->name
+                        : "_");
             fprint_ast(stream, ast->value.matchbranch.body);
             fprintf(stream, ")");
             return;
@@ -72,9 +73,7 @@ void fprint_ast(FILE *stream, AST *ast) {
     }
 }
 
-void print_ast(AST *ast) {
-    fprint_ast(stdout, ast);
-}
+void print_ast(AST *ast) { fprint_ast(stdout, ast); }
 
 void debug_print_ast(Parser *p, AST *ast) {
     if (!p->options || !p->options->debug || !p->options->debug__print_ast) {
@@ -379,5 +378,4 @@ AST *parse_atomic(Parser *p) {
     parser_error(p, "Unexpected token in atomic expression");
 
     return NULL;
-
 }

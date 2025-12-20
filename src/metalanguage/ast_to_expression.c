@@ -6,9 +6,9 @@
 
 #include "src/common/color.h"
 #include "src/common/lexer.h"
+#include "src/kernel/dyn_array_map.h"
 #include "src/kernel/expression.h"
 #include "src/metalanguage/parser.h"
-#include "src/kernel/dyn_array_map.h"
 
 /**
  * Internal helper for recursive conversion.
@@ -19,16 +19,19 @@
  * @param letbindings The map of let bindings to the expressions they bind.
  * @return The converted Expression, or NULL on failure.
  */
-static Expression *_ast_to_expression(AST *ast, Context *context, Map *letbindings);
+static Expression *_ast_to_expression(AST *ast, Context *context,
+                                      Map *letbindings);
 
-static Expression *_ast_to_expression(AST *ast, Context *context, Map *letbindings) {
+static Expression *_ast_to_expression(AST *ast, Context *context,
+                                      Map *letbindings) {
     if (!ast) {
         return NULL;
     }
 
     switch (ast->tag) {
         case AST_VAR: {
-            Expression *letbinding = (Expression *)map_get(letbindings, ast->value.var.name);
+            Expression *letbinding =
+                (Expression *)map_get(letbindings, ast->value.var.name);
             if (letbinding) {
                 return letbinding;
             }
@@ -43,8 +46,8 @@ static Expression *_ast_to_expression(AST *ast, Context *context, Map *letbindin
             return init_prop_expression();
 
         case AST_LAMBDA: {
-            Expression *binder_type =
-                _ast_to_expression(ast->value.lambda.binder.type, context, letbindings);
+            Expression *binder_type = _ast_to_expression(
+                ast->value.lambda.binder.type, context, letbindings);
             if (!binder_type) {
                 return NULL;
             }
@@ -59,8 +62,8 @@ static Expression *_ast_to_expression(AST *ast, Context *context, Map *letbindin
 
             // Handle "_" as anonymous binder
             if (name && strcmp(name, "_") == 0) {
-                Expression *body =
-                    _ast_to_expression(ast->value.lambda.body, context, letbindings);
+                Expression *body = _ast_to_expression(ast->value.lambda.body,
+                                                      context, letbindings);
                 if (!body) {
                     return NULL;
                 }
@@ -72,8 +75,8 @@ static Expression *_ast_to_expression(AST *ast, Context *context, Map *letbindin
                 return NULL;
             }
 
-            Expression *body =
-                _ast_to_expression(ast->value.lambda.body, extended_context, letbindings);
+            Expression *body = _ast_to_expression(
+                ast->value.lambda.body, extended_context, letbindings);
             if (!body) {
                 return NULL;
             }
@@ -82,8 +85,8 @@ static Expression *_ast_to_expression(AST *ast, Context *context, Map *letbindin
         }
 
         case AST_FORALL: {
-            Expression *binder_type =
-                _ast_to_expression(ast->value.forall.binder.type, context, letbindings);
+            Expression *binder_type = _ast_to_expression(
+                ast->value.forall.binder.type, context, letbindings);
             if (!binder_type) {
                 return NULL;
             }
@@ -98,8 +101,8 @@ static Expression *_ast_to_expression(AST *ast, Context *context, Map *letbindin
 
             // Handle "_" as anonymous binder
             if (name && strcmp(name, "_") == 0) {
-                Expression *body =
-                    _ast_to_expression(ast->value.forall.body, context, letbindings);
+                Expression *body = _ast_to_expression(ast->value.forall.body,
+                                                      context, letbindings);
                 if (!body) {
                     return NULL;
                 }
@@ -111,8 +114,8 @@ static Expression *_ast_to_expression(AST *ast, Context *context, Map *letbindin
                 return NULL;
             }
 
-            Expression *body =
-                _ast_to_expression(ast->value.forall.body, extended_context, letbindings);
+            Expression *body = _ast_to_expression(
+                ast->value.forall.body, extended_context, letbindings);
             if (!body) {
                 return NULL;
             }
@@ -121,12 +124,14 @@ static Expression *_ast_to_expression(AST *ast, Context *context, Map *letbindin
         }
 
         case AST_APP: {
-            Expression *func = _ast_to_expression(ast->value.app.func, context, letbindings);
+            Expression *func =
+                _ast_to_expression(ast->value.app.func, context, letbindings);
             if (!func) {
                 return NULL;
             }
 
-            Expression *arg = _ast_to_expression(ast->value.app.arg, context, letbindings);
+            Expression *arg =
+                _ast_to_expression(ast->value.app.arg, context, letbindings);
             if (!arg) {
                 return NULL;
             }
@@ -135,18 +140,22 @@ static Expression *_ast_to_expression(AST *ast, Context *context, Map *letbindin
         }
 
         case AST_LET: {
-            Expression *type = _ast_to_expression(ast->value.let.type, context, letbindings);
+            Expression *type =
+                _ast_to_expression(ast->value.let.type, context, letbindings);
             if (!type) {
                 return NULL;
             }
 
-            Expression *value = _ast_to_expression(ast->value.let.value, context, letbindings);
+            Expression *value =
+                _ast_to_expression(ast->value.let.value, context, letbindings);
             if (!value) {
                 return NULL;
             }
 
-            // Note: something to consider is the fact that we could using an identifier that is already in use in the context.
-            // wrt the kernel, this doesn't matter. But for the user, this could be confusing so we'll fail here.
+            // Note: something to consider is the fact that we could using an
+            // identifier that is already in use in the context. wrt the kernel,
+            // this doesn't matter. But for the user, this could be confusing so
+            // we'll fail here.
             if (context_contains_name(context, ast->value.let.name)) {
                 return NULL;
             }
