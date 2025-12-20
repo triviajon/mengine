@@ -1,0 +1,22 @@
+name: clang-tidy
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  clang-tidy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install clang-tidy
+        run: |
+          sudo apt update
+          sudo apt install -y clang clang-tidy
+
+      - name: Run clang-tidy
+        run: |
+          clang-tidy $(git ls-files '*.c') --warnings-as-errors=* --header-filter=.*
