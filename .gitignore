@@ -34,10 +34,4 @@ perf.data*
 mengine
 libmengine.a
 
-tests/**/*
-!tests/examples/
-!tests/metalanguage/
-!tests/commandlanguage/
-!tests/helpers/
-!tests/**/*.c
-!tests/**/*.h
+*.dSYM/
