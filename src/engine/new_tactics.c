@@ -22,7 +22,9 @@ TacticResult *init_tactic_result(bool success, DoublyLinkedList *new_goals, char
 
 
 void free_tactic_result(TacticResult *result) {
-    if (!result) return;
+    if (!result) {
+        return;
+    }
     free(result);
 }
 
@@ -293,7 +295,9 @@ RewriteResult *init_rewrite_result(Expression *original, Expression *rewritten, 
 }
 
 void free_rewrite_result(RewriteResult *rwr) {
-    if (!rwr) return;
+    if (!rwr) {
+        return;
+    }
     free(rwr);
 }
 

@@ -23,10 +23,14 @@ DoublyLinkedList *eapply(Expression *goal, Expression *lemma) {
 }
 
 Expression *eexists(Expression *goal) {
-    if (goal->type != HOLE_EXPRESSION) return NULL;
+    if (goal->type != HOLE_EXPRESSION) {
+        return NULL;
+    }
 
     Expression *goal_ty = get_expression_type(goal);
-    if (get_innermost_func(goal_ty) != ex) return NULL;
+    if (get_innermost_func(goal_ty) != ex) {
+        return NULL;
+    }
     DoublyLinkedList *remaining_goals = eapply(goal, ex_intro);
 
     if (!remaining_goals || dll_len(remaining_goals) != 2) {
@@ -40,10 +44,14 @@ Expression *eexists(Expression *goal) {
 }
 
 IntroReturn *intro(Expression *goal) {
-    if (goal->type != HOLE_EXPRESSION) return NULL;
+    if (goal->type != HOLE_EXPRESSION) {
+        return NULL;
+    }
 
     Expression *goal_ty = get_expression_type(goal);
-    if (goal_ty->type != FORALL_EXPRESSION) return NULL;
+    if (goal_ty->type != FORALL_EXPRESSION) {
+        return NULL;
+    }
 
     Expression *goal_ty_bv = goal_ty->value.forall.bound_variable;
     Expression *goal_ty_body = goal_ty->value.forall.body;

@@ -29,10 +29,14 @@ Expression *reduce(Expression *app_func, Expression *app_arg) {
 }
 
 Expression *eval_fix(Expression *app_func, Expression *app_arg) {
-    if (app_func->type != FIX_EXPRESSION) return NULL;
+    if (app_func->type != FIX_EXPRESSION) {
+        return NULL;
+    }
 
     Expression *match_statement = app_func->value.fix.body;
-    if (match_statement->type != MATCH_EXPR_EXPRESSION) return NULL;
+    if (match_statement->type != MATCH_EXPR_EXPRESSION) {
+        return NULL;
+    }
 
     Expression *innermost = get_innermost_func(app_arg);
     Expression *match_result = NULL;
@@ -60,7 +64,9 @@ Expression *eval_fix(Expression *app_func, Expression *app_arg) {
             get_innermost_body(match_statement->value.matchExpr.op_result));
     }
 
-    if (match_result == NULL) return NULL;
+    if (match_result == NULL) {
+        return NULL;
+    }
 
     Expression *ident = app_func->value.fix.ident;
     Expression *replaced_references = subst(match_result, ident, app_func);
@@ -97,7 +103,9 @@ Expression *normalize(Expression *expression) {
 }
 
 void normalize_hole_type(Expression *expression) {
-    if (expression->type != HOLE_EXPRESSION) return;
+    if (expression->type != HOLE_EXPRESSION) {
+        return;
+    }
 
     Expression *expr_type = get_expression_type(expression);
     Expression *normalized_type = normalize(expr_type);

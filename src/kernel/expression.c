@@ -72,7 +72,9 @@ Uplink *new_uplink2(Context *parent, Relation relation) {
 
 Uplink *new_uplink_tl() {
     Uplink *new_uplink = malloc(sizeof(Uplink));
-    if (!new_uplink) return NULL;
+    if (!new_uplink) {
+        return NULL;
+    }
 
     new_uplink->relation = TOP_LEVEL_HOLE;
 
@@ -265,7 +267,9 @@ Expression *init_match_expr_expression(
 
 Expression *init_var_expression_wc(const char *name, Expression *type,
                                    Context *defining_context) {
-    if (!valid_in_context(type, defining_context)) return NULL;
+    if (!valid_in_context(type, defining_context)) {
+        return NULL;
+    }
 
     Expression *expr = (Expression *)malloc(sizeof(Expression));
     expr->type = VAR_EXPRESSION;
@@ -283,7 +287,9 @@ Expression *init_var_expression_wc(const char *name, Expression *type,
 
 Expression *init_lambda_expression_wc(Expression *bound_variable,
                                       Expression *body, Context *context) {
-    if (!valid_in_context(body, context)) return NULL;
+    if (!valid_in_context(body, context)) {
+        return NULL;
+    }
 
     Expression *expr = (Expression *)malloc(sizeof(Expression));
     expr->type = LAMBDA_EXPRESSION;
@@ -299,8 +305,12 @@ Expression *init_lambda_expression_wc(Expression *bound_variable,
 
 Expression *init_app_expression_wc(Expression *func, Expression *arg,
                                    Context *context) {
-    if (!valid_in_context(func, context)) return NULL;
-    if (!valid_in_context(arg, context)) return NULL;
+    if (!valid_in_context(func, context)) {
+        return NULL;
+    }
+    if (!valid_in_context(arg, context)) {
+        return NULL;
+    }
 
     Expression *expr = (Expression *)malloc(sizeof(Expression));
     expr->type = APP_EXPRESSION;
@@ -320,7 +330,9 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg,
 
 Expression *init_forall_expression_wc(Expression *bound_variable,
                                       Expression *body, Context *context) {
-    if (!valid_in_context(body, context)) return NULL;
+    if (!valid_in_context(body, context)) {
+        return NULL;
+    }
 
     Expression *expr = (Expression *)malloc(sizeof(Expression));
     expr->type = FORALL_EXPRESSION;
@@ -711,11 +723,15 @@ void _match_and_subst(Expression *a, Expression *b, Map *mapping) {
             break;
         }
         case (VAR_EXPRESSION): {
-            if (a != b) (map_set(mapping, a, b));
+            if (a != b) {
+                (map_set(mapping, a, b));
+            }
             break;
         }
         case (HOLE_EXPRESSION): {
-            if (a != b) (map_set(mapping, a, b));
+            if (a != b) {
+                (map_set(mapping, a, b));
+            }
             break;
         }
         case (FIX_EXPRESSION): {
@@ -1083,7 +1099,9 @@ char c_counter = 'a';
 char *get_char() {
     char temp[2] = {c_counter, '\0'};
     c_counter += 1;
-    if (c_counter > 'z') c_counter = 'a';
+    if (c_counter > 'z') {
+        c_counter = 'a';
+    }
     return strdup(temp);
 }
 

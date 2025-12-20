@@ -7,7 +7,9 @@
 #include "src/kernel/utils.h"
 
 void mengine_repl(MEngineRuntime *rt) {
-    if (!rt) return;
+    if (!rt) {
+        return;
+    }
 
     char buffer[REPL_LINE_CAP];
 
@@ -21,7 +23,9 @@ void mengine_repl(MEngineRuntime *rt) {
                *input == '\r')
             input++;
 
-        if (strncmp(input, "quit.", 5) == 0) break;
+        if (strncmp(input, "quit.", 5) == 0) {
+            break;
+        }
 
         if (*input == '\0') {
             printf("> ");

@@ -1096,14 +1096,18 @@ DoublyLinkedList *solve_eq(Expression *goal) {
     remaining_goals = apply(rewrites_result->new_goal, eq_refl);
     if (remaining_goals != NULL)
         return dll_merge(rewrites_result->remaining_open, remaining_goals);
-    if (remaining_goals == NULL) printf("solve_eq failed to find a solution\n");
+    if (remaining_goals == NULL) {
+        printf("solve_eq failed to find a solution\n");
+    }
 
     return NULL;
 }
 
 Expression *solve_ex(Expression *goal) {
     DoublyLinkedList *remaining_goals = eapply(goal, ex_intro);
-    if (remaining_goals == NULL) printf("solve_ex failed to find a solution\n");
+    if (remaining_goals == NULL) {
+        printf("solve_ex failed to find a solution\n");
+    }
     if (dll_len(remaining_goals) != 2) {
         return NULL;
     }
