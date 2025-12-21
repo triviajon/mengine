@@ -33,17 +33,15 @@ void prompt_proof_mode(MEngineRuntime *rt) {
     }
 
     Expression *current_goal = proof_state_current(rt->proof_state);
-    Context *current_ctx = mengine_runtime_context(rt);
-    if (!current_goal || !current_ctx) {
+    Context *runtime_ctx = mengine_runtime_context(rt);
+    if (!current_goal || !runtime_ctx) {
         return;
     }
 
     Context *goal_ctx = get_expression_context(current_goal);
-    char *ctx_str = stringify_context_until(current_ctx, goal_ctx);
-    if (!ctx_str) {
-        ctx_str = stringify_context(goal_ctx);
-    }
-    printf("\n" CYN "Context:" CRESET "\n%s\n", ctx_str ? ctx_str : "");
+    char *ctx_str = NULL;
+    ctx_str = stringify_context_until(goal_ctx, runtime_ctx);
+    printf("\n" CYN "Context:" CRESET "\n%s\n", ctx_str);
     free(ctx_str);
     printf(CYN "Goal:" CRESET "\n%s\n", stringify_expression(get_expression_type(current_goal)));
     prompt();

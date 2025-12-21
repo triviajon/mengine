@@ -183,11 +183,7 @@ char *stringify_context(Context *context) {
 }
 
 char *stringify_context_until(Context *context, Context *until) {
-    if (!context_is_ancestor(until, context)) {
-        return NULL;
-    }
-
-    if (context == until) {
+    if (context == until || context_is_empty(context)) {
         return strdup("");
     }
 
