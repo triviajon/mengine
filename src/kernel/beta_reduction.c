@@ -128,7 +128,8 @@ Expression *weak_head_normalize(Expression *expression) {
             if (new_func->type == FIX_EXPRESSION) {
                 return eval_fix(new_func, expression->value.app.arg);
             }
-            Expression *result = init_app_expression(new_func, expression->value.app.arg);
+            Expression *result =
+                init_app_expression(new_func, expression->value.app.arg);
             if (!result) {
                 return NULL;
             }
