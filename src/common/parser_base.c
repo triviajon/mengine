@@ -10,6 +10,7 @@ void parser_init(Parser *p, Lexer *lx, MEngineOptions *options) {
     p->current = lexer_next_token(lx);
     p->source = lx->src;
     p->options = options;
+    p->error_recovery_set = false;
 }
 
 Token *parser_next(Parser *p) {
@@ -58,5 +59,12 @@ void parser_error(Parser *p, const char *msg) {
         print_error_pointer(p->source, pos);
     }
     fprintf(stderr, BOLD RED "Parse Error: " CRESET "%s\n", msg);
+
+    // If error recovery is enabled, jump back to the recovery point
+    // Otherwise, exit the program (legacy behavior for non-interactive use)
+    if (p->error_recovery_set) {
+        longjmp(p->error_jmp, 1);
+    }
+
     exit(EXIT_FAILURE);
 }

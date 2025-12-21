@@ -97,7 +97,7 @@ Expression *constr_app_type(Expression *func, Expression *arg) {
     Expression *weak_func_type = weak_head_normalize(func_type);
     if (func_type->type != FORALL_EXPRESSION) {
         fprintf(stderr, "Error: Trying to apply a non-function.\n");
-        exit(EXIT_FAILURE);
+        return NULL;
     }
     Expression *variable = weak_func_type->value.forall.bound_variable;  // x
     Expression *expected_arg_type = get_expression_type(variable);       // A
@@ -117,7 +117,7 @@ Expression *constr_app_type(Expression *func, Expression *arg) {
     }
 
     fprintf(stderr, "Error: Application does not type check.\n");
-    exit(EXIT_FAILURE);
+    return NULL;
 }
 
 Expression *init_var_expression(const char *name, Expression *type) {
@@ -148,6 +148,11 @@ Expression *init_lambda_expression(Expression *bound_variable,
 }
 
 Expression *init_app_expression(Expression *func, Expression *arg) {
+    Expression *app_type = constr_app_type(func, arg);
+    if (!app_type) {
+        return NULL;
+    }
+
     Expression *expr = (Expression *)malloc(sizeof(Expression));
     expr->type = APP_EXPRESSION;
     Context *combined_ctx =
@@ -157,7 +162,7 @@ Expression *init_app_expression(Expression *func, Expression *arg) {
     add_to_parents(func, new_uplink(expr, APP_FUNC));
     expr->value.app.arg = arg;
     add_to_parents(arg, new_uplink(expr, APP_ARG));
-    expr->value.app.type = constr_app_type(func, arg);
+    expr->value.app.type = app_type;
     expr->value.app.cache = NULL;
     expr->value.app.uplinks = dll_create();
     expr->value.app.maybe_hole_free =

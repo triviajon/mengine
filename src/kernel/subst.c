@@ -83,7 +83,11 @@ Expression *subst(Expression *expression, Expression *old_e,
             if (forms_redex(new_app_func, new_app_arg)) {
                 return reduce(new_app_func, new_app_arg);
             }
-            return init_app_expression(new_app_func, new_app_arg);
+            Expression *result = init_app_expression(new_app_func, new_app_arg);
+            if (!result) {
+                return NULL;
+            }
+            return result;
         }
         case (FORALL_EXPRESSION): {
             Expression *forall_var = expression->value.forall.bound_variable;
@@ -279,7 +283,11 @@ Expression *p_subst(Expression *expression, DoublyLinkedList *old_exprs,
                 Expression *reduced = reduce(new_app_func, new_app_arg);
                 return reduced;
             }
-            return init_app_expression(new_app_func, new_app_arg);
+            Expression *result = init_app_expression(new_app_func, new_app_arg);
+            if (!result) {
+                return NULL;
+            }
+            return result;
         }
         case (FORALL_EXPRESSION): {
             Expression *forall_var = expression->value.forall.bound_variable;

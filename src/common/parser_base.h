@@ -1,6 +1,9 @@
 #ifndef PARSER_BASE_H
 #define PARSER_BASE_H
 
+#include <setjmp.h>
+#include <stdbool.h>
+
 #include "src/common/lexer.h"
 #include "src/common/options.h"
 
@@ -9,6 +12,8 @@ typedef struct {
     Token *current;           // Current lookahead token (owned by parser)
     const char *source;       // Source string being parsed
     MEngineOptions *options;  // Parser options
+    jmp_buf error_jmp;        // Jump buffer for error recovery
+    bool error_recovery_set;  // Whether error recovery is active
 } Parser;
 
 /**

@@ -42,11 +42,6 @@ Command *command_parse_command(Parser *p) {
     }
 
     Command *cmd = fn(p);
-
-    if (!parser_expect_no_consume(p, TOK_EOF)) {
-        parser_error(p, "Expected end of command (newline)");
-    }
-
     return cmd;
 }
 

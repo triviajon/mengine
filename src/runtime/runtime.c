@@ -95,7 +95,15 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
 
     int rc = 0;
 
+    parser.error_recovery_set = true;
+
     while (!parser_eof(&parser)) {
+        if (setjmp(parser.error_jmp) != 0) {
+            // Parse error occurred
+            rc = 1;
+            break;
+        }
+
         switch (rt->mode) {
             case MENGINE_RUNTIME_COMMAND_MODE: {
                 Command *cmd = command_parse_command(&parser);
