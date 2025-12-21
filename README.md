@@ -6,7 +6,7 @@ the main idea: https://dspace.mit.edu/handle/1721.1/162908
 
 ## building
 
-you need `clang` and `make`. on macOS, you'll also need argp-standalone:
+to build, you need `clang` and `make`. on macOS, you'll also need argp-standalone:
 
 ```bash
 brew install argp-standalone
@@ -32,7 +32,7 @@ make clangd
 ./mengine --help  # for options
 ```
 
-check out `tests/examples/*.me` for example scripts showing the syntax
+check out `examples/` for example scripts showing the syntax.
 
 ## status
 
