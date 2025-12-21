@@ -53,6 +53,24 @@ MEngineRuntime *mengine_runtime_new(MEngineOptions *options);
 void mengine_runtime_free(MEngineRuntime *rt);
 
 /**
+ * Execute a string of MEngine commands/statements.
+ *
+ * @param rt Pointer to an initialized runtime.
+ * @param source Null-terminated string containing the program.
+ * @return 0 on success, non-zero on error.
+ */
+int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source);
+
+/**
+ * Execute a file of MEngine commands/statements.
+ *
+ * @param rt Pointer to an initialized runtime.
+ * @param filename Path to the file.
+ * @return 0 on success, non-zero on error.
+ */
+int mengine_runtime_exec_file(MEngineRuntime *rt, const char *filename);
+
+/**
  * Access the runtime's current context.
  *
  * @param rt Pointer to the runtime.

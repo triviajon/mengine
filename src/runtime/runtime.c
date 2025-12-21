@@ -3,9 +3,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "src/commandlanguage/command_exec.h"
 #include "src/common/color.h"
 #include "src/common/options.h"
+#include "src/kernel/expression.h"
+#include "src/kernel/utils.h"
 #include "src/runtime/core.h"
+#include "src/runtime/proof_state.h"
+#include "src/tacticlanguage/tactic_exec.h"
 
 void debug_print_mode(MEngineRuntime *rt) {
     if (!rt || !rt->options) {
@@ -75,6 +80,81 @@ void mengine_runtime_free(MEngineRuntime *rt) {
     // free_context(rt->ctx);
     definition_table_free(rt->def_table);
     free(rt);
+}
+
+int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
+    if (!rt || !source) {
+        return 1;
+    }
+
+    Lexer lx;
+    lexer_init(&lx, source, rt->options);
+
+    Parser parser;
+    parser_init(&parser, &lx, rt->options);
+
+    int rc = 0;
+
+    while (!parser_eof(&parser)) {
+        switch (rt->mode) {
+            case MENGINE_RUNTIME_COMMAND_MODE: {
+                Command *cmd = command_parse_command(&parser);
+                if (!cmd) {
+                    fprintf(stderr, "Command parse error.\n");
+                    rc = 1;
+                    break;
+                }
+                mengine_execute_command(rt, cmd);
+                // TODO: free Command
+                break;
+            }
+
+            case MENGINE_RUNTIME_PROOF_MODE: {
+                Tactic *tactic = tactic_parse_proof_command(&parser);
+                if (!tactic) {
+                    fprintf(stderr, "Tactic parse error.\n");
+                    rc = 1;
+                    break;
+                }
+                mengine_execute_tactic(rt, tactic);
+                // TODO: free Tactic
+                break;
+            }
+        }
+
+        if (rc != 0) {
+            break;
+        }
+    }
+
+    return rc;
+}
+
+int mengine_runtime_exec_file(MEngineRuntime *rt, const char *filename) {
+    FILE *f = fopen(filename, "rb");
+    if (!f) {
+        fprintf(stderr, "Could not open file: %s\n", filename);
+        return 1;
+    }
+
+    fseek(f, 0, SEEK_END);
+    long size = ftell(f);
+    rewind(f);
+
+    char *buf = malloc(size + 1);
+    if (!buf) {
+        fclose(f);
+        fprintf(stderr, "Out of memory reading file: %s\n", filename);
+        return 1;
+    }
+
+    fread(buf, 1, size, f);
+    buf[size] = '\0';
+    fclose(f);
+
+    int rc = mengine_runtime_exec_string(rt, buf);
+    free(buf);
+    return rc;
 }
 
 Context *mengine_runtime_context(MEngineRuntime *rt) {

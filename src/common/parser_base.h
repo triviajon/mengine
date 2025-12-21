@@ -21,6 +21,13 @@ typedef struct {
 void parser_init(Parser *p, Lexer *lx, MEngineOptions *options);
 
 /**
+ * Returns true if the parser has no more tokens to consume.
+ * @param p Pointer to the Parser to initialize.
+ * @return true if the current token is TOK_EOF or NULL, false otherwise.
+ */
+bool parser_eof(Parser *p);
+
+/**
  * Return the next token and advance the parser.
  *
  * @param p Pointer to the Parser.
