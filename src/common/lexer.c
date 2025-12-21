@@ -130,6 +130,9 @@ static void debug_print_token(Lexer *lx, Token *t) {
         case TOK_EXISTS:
             name = "EXISTS";
             break;
+        case TOK_COMMENT:
+            name = "COMMENT";
+            break;
         case TOK_EOF:
             name = "EOF";
             break;
@@ -152,9 +155,9 @@ void skip_whitespace(Lexer *lx) {
 }
 
 char *skip_comment(Lexer *lx) {
-    int depth = 0;
+    int depth = 1;
     int start_pos = lx->pos - 1;
-    size_t length = 0;
+    size_t length = 2;
 
     while (lx->src[lx->pos] != '\0' && depth > 0) {
         if (lx->src[lx->pos] == '(' && lx->src[lx->pos + 1] == '*') {

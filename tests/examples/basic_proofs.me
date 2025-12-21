@@ -1,0 +1,12 @@
+(* basic example with definitions and proofs *)
+
+Axiom nat : Type.
+Axiom zero : nat.
+Axiom succ : forall (n: nat), nat.
+
+(* define the identity function *)
+Definition id : forall (A : Type), forall (x : A), A :=
+  fun (A : Type) => fun (x : A) => x.
+
+Check id.
+Check succ.
