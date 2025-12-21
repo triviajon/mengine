@@ -8,6 +8,12 @@
 void parser_init(Parser *p, Lexer *lx, MEngineOptions *options) {
     p->lx = lx;
     p->current = lexer_next_token(lx);
+    // Skip any leading comment tokens
+    while (p->current && p->current->type == TOK_COMMENT) {
+        Token *comment = p->current;
+        p->current = lexer_next_token(lx);
+        lexer_free_token(comment);
+    }
     p->source = lx->src;
     p->options = options;
     p->error_recovery_set = false;
@@ -16,6 +22,12 @@ void parser_init(Parser *p, Lexer *lx, MEngineOptions *options) {
 Token *parser_next(Parser *p) {
     Token *old_current = p->current;
     p->current = lexer_next_token(p->lx);
+    // Skip any comment tokens
+    while (p->current && p->current->type == TOK_COMMENT) {
+        Token *comment = p->current;
+        p->current = lexer_next_token(p->lx);
+        lexer_free_token(comment);
+    }
     return old_current;
 }
 
