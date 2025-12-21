@@ -18,6 +18,10 @@ Token *parser_next(Parser *p) {
     return old_current;
 }
 
+bool parser_eof(Parser *p) {
+    return p->current == NULL || p->current->type == TOK_EOF;
+}
+
 Token *parser_peek(Parser *p) { return p->current; }
 
 bool parser_expect_consume(Parser *p, TokenType type) {

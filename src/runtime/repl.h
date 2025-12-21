@@ -3,10 +3,7 @@
 
 #define REPL_LINE_CAP 1024
 
-#include "src/commandlanguage/command_exec.h"
-#include "src/runtime/definition_table.h"
 #include "src/runtime/runtime.h"
-#include "src/tacticlanguage/tactic_exec.h"
 
 /**
  * Run an interactive read–eval–print loop (REPL) on stdin/stdout.
