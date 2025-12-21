@@ -56,6 +56,7 @@ typedef enum {
     TOK_RIGHT,        // right
     TOK_EXISTS,       // exists
 
+    TOK_COMMENT,
     TOK_EOF,
     TOK_ERROR,
 } TokenType;
