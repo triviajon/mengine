@@ -151,6 +151,37 @@ void skip_whitespace(Lexer *lx) {
     }
 }
 
+char *skip_comment(Lexer *lx) {
+    int depth = 0;
+    int start_pos = lx->pos - 1;
+    size_t length = 0;
+
+    while (lx->src[lx->pos] != '\0' && depth > 0) {
+        if (lx->src[lx->pos] == '(' && lx->src[lx->pos + 1] == '*') {
+            depth++;
+            lx->pos += 2;
+            length += 2;
+        } else if (lx->src[lx->pos] == '*' && lx->src[lx->pos + 1] == ')') {
+            depth--;
+            lx->pos += 2;
+            length += 2;
+        } else {
+            lx->pos++;
+            length += 1;
+        }
+    }
+
+    if (depth != 0) {
+        fprintf(stderr, BOLD RED "Unterminated comment\n" CRESET);
+        exit(EXIT_FAILURE);
+    }
+
+    char *lexeme = (char *)malloc(length + 1);
+    strncpy(lexeme, &lx->src[start_pos], length);
+    lexeme[length] = '\0';
+    return lexeme;
+}
+
 char next_char(Lexer *lx) { return lx->src[lx->pos++]; }
 
 bool is_alpha(char c) {
@@ -187,6 +218,13 @@ Token *lexer_next_token(Lexer *lx) {
     Token *token;
     switch (c) {
         case '(': {
+            char next = peek_char(lx);
+            if (next == '*') {
+                int start_pos = lx->pos - 1;
+                token = make_token(TOK_COMMENT, start_pos, skip_comment(lx));
+                break;
+            }
+
             token = make_token(TOK_LPAREN, lx->pos - 1, NULL);
             break;
         }
