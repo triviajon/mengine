@@ -1,6 +1,7 @@
 #include "src/runtime/repl.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "src/common/color.h"
 #include "src/kernel/expression.h"
@@ -26,21 +27,33 @@ void prompt() {
     fflush(stdout);
 }
 
-void print_prompt_and_goal(MEngineRuntime *rt) {
-    prompt();
-
-    if (rt->mode == MENGINE_RUNTIME_PROOF_MODE && rt->proof_state) {
-        Expression *current_goal = proof_state_current(rt->proof_state);
-        if (current_goal) {
-            Context *goal_ctx = get_expression_context(current_goal);
-            printf("\n" CYN "Context:" CRESET "\n%s\n",
-                   stringify_context(goal_ctx));
-            printf(CYN "Goal:" CRESET "\n%s\n",
-                   stringify_expression(get_expression_type(current_goal)));
-        }
+void prompt_proof_mode(MEngineRuntime *rt) {
+    if (!rt || !rt->proof_state) {
+        return;
     }
 
-    fflush(stdout);
+    Expression *current_goal = proof_state_current(rt->proof_state);
+    Context *current_ctx = mengine_runtime_context(rt);
+    if (!current_goal || !current_ctx) {
+        return;
+    }
+
+    Context *goal_ctx = get_expression_context(current_goal);
+    char *ctx_str = stringify_context_until(current_ctx, goal_ctx);
+    if (!ctx_str) {
+        ctx_str = stringify_context(goal_ctx);
+    }
+    printf("\n" CYN "Context:" CRESET "\n%s\n", ctx_str ? ctx_str : "");
+    free(ctx_str);
+    printf(CYN "Goal:" CRESET "\n%s\n", stringify_expression(get_expression_type(current_goal)));
+    prompt();
+}
+void print_prompt_and_goal(MEngineRuntime *rt) {
+    if (rt->mode == MENGINE_RUNTIME_PROOF_MODE) {
+        prompt_proof_mode(rt);
+    } else {
+        prompt();
+    }
 }
 
 void mengine_repl(MEngineRuntime *rt) {

@@ -100,7 +100,7 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
     while (!parser_eof(&parser)) {
         if (setjmp(parser.error_jmp) != 0) {
             // Parse error occurred
-            rc = 1;
+            rc = 0;
             break;
         }
 

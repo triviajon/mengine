@@ -165,29 +165,45 @@ char *stringify_context(Context *context) {
         return strdup("");
     }
     char *var_str = stringify_expression(context->var_type);
-
-    char *type_str =
-
-        stringify_expression(context->var_type->value.var.type);
-
+    char *type_str = stringify_expression(context->var_type->value.var.type);
     char *parent_str = stringify_context(context->parent);
 
     char *result = str_concat(parent_str, "\n");
-
     result = str_concat(result, "Variable ");
-
     result = str_concat(result, var_str);
-
     result = str_concat(result, " : ");
-
     result = str_concat(result, type_str);
-
     result = str_concat(result, ".");
 
     free(var_str);
-
     free(type_str);
+    free(parent_str);
 
+    return result;
+}
+
+char *stringify_context_until(Context *context, Context *until) {
+    if (!context_is_ancestor(until, context)) {
+        return NULL;
+    }
+
+    if (context == until) {
+        return strdup("");
+    }
+
+    char *var_str = stringify_expression(context->var_type);
+    char *type_str = stringify_expression(context->var_type->value.var.type);
+    char *parent_str = stringify_context_until(context->parent, until);
+
+    char *result = str_concat(parent_str, "\n");
+    result = str_concat(result, "Variable ");
+    result = str_concat(result, var_str);
+    result = str_concat(result, " : ");
+    result = str_concat(result, type_str);
+    result = str_concat(result, ".");
+
+    free(var_str);
+    free(type_str);
     free(parent_str);
 
     return result;
