@@ -1,5 +1,6 @@
 CC = clang
 CFLAGS = -Wall -Wextra -O0 -g -march=native -I.
+LDFLAGS =
 
 ENGINE_SRC := $(shell find src -name '*.c' ! -name 'main.c')
 ENGINE_OBJ := $(ENGINE_SRC:.c=.o)
@@ -17,13 +18,37 @@ HELPERS_OBJ := $(HELPERS_SRC:.c=.o)
 
 UNAME := $(shell uname)
 
+# On macOS, detect and link argp-standalone if available
+ifeq ($(UNAME), Darwin)
+    ARGP_PREFIX := $(shell brew --prefix argp-standalone 2>/dev/null || echo "")
+    ifneq ($(ARGP_PREFIX),)
+        CFLAGS += -I$(ARGP_PREFIX)/include
+        LDFLAGS += -L$(ARGP_PREFIX)/lib -largp
+    else
+        $(error argp-standalone not found via brew, please install it with `brew install argp-standalone`)
+    endif
+endif
+
 all: $(ENGINE_LIB) $(MENGINE_BIN)
+
+.clangd: .clangd.template
+	@echo "Generating .clangd..."
+ifeq ($(UNAME), Darwin)
+	@echo "CompileFlags:" > .clangd
+	@echo "  Add:" >> .clangd
+	@echo "    - -I$(ARGP_PREFIX)/include" >> .clangd
+	@echo "" >> .clangd
+	@cat .clangd.template >> .clangd
+else
+	@cp .clangd.template .clangd
+endif
+	@echo ".clangd generated successfully"
 
 $(ENGINE_LIB): $(ENGINE_OBJ)
 	ar rcs $@ $^
 
 $(MENGINE_BIN): $(MENGINE_OBJ) $(ENGINE_LIB)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 tests: $(TEST_BINARIES)
 
@@ -48,4 +73,6 @@ clean:
 		find . -name "*.dSYM" -type d -exec rm -rf {} +; \
 	fi
 
-.PHONY: all clean tests check
+.PHONY: all clean tests check clangd
+
+clangd: .clangd
