@@ -100,6 +100,7 @@ int main(int argc, char **argv) {
     arguments.debug__print_tokens = false;
     arguments.debug__print_ast = false;
     arguments.debug__print_mode = false;
+    arguments.filename = NULL;
 
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
     MEngineOptions options = build_options(&arguments);

@@ -86,7 +86,11 @@ Expression *normalize(Expression *expression) {
             if (new_func->type == FIX_EXPRESSION) {
                 return eval_fix(new_func, new_arg);
             }
-            return init_app_expression(new_func, new_arg);
+            Expression *result = init_app_expression(new_func, new_arg);
+            if (!result) {
+                return NULL;
+            }
+            return result;
         }
         case (LAMBDA_EXPRESSION): {
             Expression *new_body = normalize(expression->value.lambda.body);
@@ -124,7 +128,11 @@ Expression *weak_head_normalize(Expression *expression) {
             if (new_func->type == FIX_EXPRESSION) {
                 return eval_fix(new_func, expression->value.app.arg);
             }
-            return init_app_expression(new_func, expression->value.app.arg);
+            Expression *result = init_app_expression(new_func, expression->value.app.arg);
+            if (!result) {
+                return NULL;
+            }
+            return result;
         }
         default:
             return expression;
