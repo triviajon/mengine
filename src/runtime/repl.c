@@ -8,10 +8,16 @@
 #include "src/runtime/proof_state.h"
 #include "src/runtime/runtime.h"
 
-void trim_whitespace(char *input) {
-    while (*input == ' ' || *input == '\t' || *input == '\n' ||
-           *input == '\r') {
-        input++;
+void trim_whitespace(char *s) {
+    char *start = s;
+
+    while (*start == ' ' || *start == '\t' || *start == '\n' ||
+           *start == '\r') {
+        start++;
+    }
+
+    if (start != s) {
+        memmove(s, start, strlen(start) + 1);
     }
 }
 
