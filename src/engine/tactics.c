@@ -86,7 +86,8 @@ TacticResult *intro_tactic(Expression *goal, char *name) {
 
 TacticResult *intros_tactic(Expression *goal, char **names, size_t name_count) {
     if (name_count == 0) {
-        return init_tactic_result(false, NULL, "intros requires at least one name");
+        return init_tactic_result(false, NULL,
+                                  "intros requires at least one name");
     }
 
     Expression *current_goal = goal;

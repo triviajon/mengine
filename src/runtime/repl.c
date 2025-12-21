@@ -46,6 +46,7 @@ void prompt_proof_mode(MEngineRuntime *rt) {
     printf(CYN "Goal:" CRESET "\n%s\n", stringify_expression(get_expression_type(current_goal)));
     prompt();
 }
+
 void print_prompt_and_goal(MEngineRuntime *rt) {
     if (rt->mode == MENGINE_RUNTIME_PROOF_MODE) {
         prompt_proof_mode(rt);
