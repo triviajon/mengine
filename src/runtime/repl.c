@@ -23,17 +23,17 @@ void trim_whitespace(char *s) {
 }
 
 void prompt() {
-    printf("> ");
+    fprintf(stdout, "> ");
     fflush(stdout);
 }
 
 static void prompt_normal(void) {
-    printf(PROMPT "> " CRESET);
+    fprintf(stdout, PROMPT "> " CRESET);
     fflush(stdout);
 }
 
 static void prompt_proof(void) {
-    printf(PROMPT "proof ❯ " CRESET);
+    fprintf(stdout, PROMPT "proof ❯ " CRESET);
     fflush(stdout);
 }
 
@@ -56,18 +56,18 @@ static void print_proof_state(MEngineRuntime *rt) {
     // Header
     Expression *current_theorem = rt->pending_theorem;
     char *theorem_name = current_theorem->value.var.name;
-    printf("\n" UI "⊢ " CRESET BOLD "%s\n", theorem_name);
-    printf(UI "────────────────────────────────\n" CRESET);
+    fprintf(stdout, "\n" UI "⊢ " CRESET BOLD "%s\n", theorem_name);
+    fprintf(stdout, UI "────────────────────────────────\n" CRESET);
 
     // Context
     if (ctx_str && *ctx_str) {
-        printf(HEADER "Context:\n" CRESET);
-        printf(CTXCLR "%s\n" CRESET, ctx_str);
+        fprintf(stdout, HEADER "Context:\n" CRESET);
+        fprintf(stdout, CTXCLR "%s\n" CRESET, ctx_str);
     }
 
     // Goal
-    printf(HEADER "Goal:\n" CRESET);
-    printf(GOALCLR "  %s\n" CRESET, goal_str);
+    fprintf(stdout, HEADER "Goal:\n" CRESET);
+    fprintf(stdout, GOALCLR "  %s\n" CRESET, goal_str);
 
     free(ctx_str);
     free(goal_str);
@@ -89,7 +89,7 @@ void mengine_repl(MEngineRuntime *rt) {
 
     char buffer[REPL_LINE_CAP];
 
-    printf(UI "MEngine REPL. Type 'quit.' to exit.\n" CRESET);
+    fprintf(stdout, UI "MEngine REPL. Type 'quit.' to exit.\n" CRESET);
     print_prompt_and_state(rt);
 
     while (fgets(buffer, REPL_LINE_CAP, stdin) != NULL) {
@@ -104,12 +104,12 @@ void mengine_repl(MEngineRuntime *rt) {
         if (*buffer != '\0') {
             int rc = mengine_runtime_exec_string(rt, buffer);
             if (rc != 0) {
-                printf(RED "Error in command.\n" CRESET);
+                fprintf(stderr, ERROR "Error in command.\n" CRESET);
             }
         }
 
         print_prompt_and_state(rt);
     }
 
-    printf(UI "Goodbye.\n" CRESET);
+    fprintf(stdout, UI "Goodbye.\n" CRESET);
 }

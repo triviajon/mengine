@@ -108,7 +108,7 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
             case MENGINE_RUNTIME_COMMAND_MODE: {
                 Command *cmd = command_parse_command(&parser);
                 if (!cmd) {
-                    fprintf(stderr, "Command parse error.\n");
+                    fprintf(stderr, ERROR "Command parse error.\n" CRESET);
                     rc = 1;
                     break;
                 }
@@ -126,7 +126,7 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
                 if (cmd_entry != NULL) {
                     Command *cmd = command_parse_command(&parser);
                     if (!cmd) {
-                        fprintf(stderr, "Command parse error.\n");
+                        fprintf(stderr, ERROR "Command parse error.\n" CRESET);
                         rc = 1;
                         break;
                     }
@@ -138,7 +138,7 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
                 // It's a tactic, parse and execute it
                 Tactic *tactic = tactic_parse_proof_command(&parser);
                 if (!tactic) {
-                    fprintf(stderr, "Tactic parse error.\n");
+                    fprintf(stderr, ERROR "Tactic parse error.\n" CRESET);
                     rc = 1;
                     break;
                 }
@@ -159,7 +159,7 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
 int mengine_runtime_exec_file(MEngineRuntime *rt, const char *filename) {
     FILE *f = fopen(filename, "rb");
     if (!f) {
-        fprintf(stderr, "Could not open file: %s\n", filename);
+        fprintf(stderr, ERROR "Could not open file: %s\n" CRESET, filename);
         return 1;
     }
 
@@ -170,7 +170,7 @@ int mengine_runtime_exec_file(MEngineRuntime *rt, const char *filename) {
     char *buf = malloc(size + 1);
     if (!buf) {
         fclose(f);
-        fprintf(stderr, "Out of memory reading file: %s\n", filename);
+        fprintf(stderr, ERROR "Out of memory reading file: %s\n" CRESET, filename);
         return 1;
     }
 

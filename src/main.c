@@ -1,6 +1,7 @@
 #include <argp.h>
 #include <stdio.h>
 
+#include "src/common/color.h"
 #include "src/common/options.h"
 #include "src/runtime/repl.h"
 #include "src/runtime/runtime.h"
@@ -69,7 +70,7 @@ MEngineOptions build_options(struct arguments *args) {
 int interactive_mode(MEngineOptions options) {
     MEngineRuntime *rt = mengine_runtime_new(&options);
     if (!rt) {
-        fprintf(stderr, "Failed to initialize MEngine runtime.\n");
+        fprintf(stderr, ERROR "Failed to initialize MEngine runtime.\n" CRESET);
         return 1;
     }
 
@@ -82,7 +83,7 @@ int interactive_mode(MEngineOptions options) {
 int file_mode(MEngineOptions options, char *filename) {
     MEngineRuntime *rt = mengine_runtime_new(&options);
     if (!rt) {
-        fprintf(stderr, "Failed to initialize MEngine runtime.\n");
+        fprintf(stderr, ERROR "Failed to initialize MEngine runtime.\n" CRESET);
         return 1;
     }
 

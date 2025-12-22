@@ -23,7 +23,7 @@ static bool _handle_intro_tactic(MEngineRuntime *rt, IntroTactic *t) {
     if (result->success) {
         proof_state_add_goals(rt->proof_state, result->new_goals);
     } else {
-        fprintf(stderr, "Error: %s\n", result->error_message);
+        fprintf(stderr, ERROR "%s\n" CRESET, result->error_message);
     }
     bool success = result->success;
     free_tactic_result(result);
@@ -37,7 +37,7 @@ static bool _handle_intros_tactic(MEngineRuntime *rt, IntrosTactic *t) {
     if (result->success) {
         proof_state_add_goals(rt->proof_state, result->new_goals);
     } else {
-        fprintf(stderr, "Error: %s\n", result->error_message);
+        fprintf(stderr, ERROR "%s\n" CRESET, result->error_message);
     }
     bool success = result->success;
     free_tactic_result(result);
@@ -50,7 +50,7 @@ static bool _handle_apply_tactic(MEngineRuntime *rt, ApplyTactic *t) {
 
     Expression *lemma = ast_to_expression(t->lemma, ctx);
     if (!lemma) {
-        fprintf(stderr, "Error: could not resolve lemma\n");
+        fprintf(stderr, ERROR "Could not resolve lemma\n" CRESET);
         return false;
     }
 
@@ -58,7 +58,7 @@ static bool _handle_apply_tactic(MEngineRuntime *rt, ApplyTactic *t) {
     if (result->success) {
         proof_state_add_goals(rt->proof_state, result->new_goals);
     } else {
-        fprintf(stderr, "Error: %s\n", result->error_message);
+        fprintf(stderr, ERROR "%s\n" CRESET, result->error_message);
     }
     bool success = result->success;
     free_tactic_result(result);
@@ -71,7 +71,7 @@ static bool _handle_eapply_tactic(MEngineRuntime *rt, EapplyTactic *t) {
 
     Expression *lemma = ast_to_expression(t->lemma, ctx);
     if (!lemma) {
-        fprintf(stderr, "Error: could not resolve lemma\n");
+        fprintf(stderr, ERROR "Could not resolve lemma\n" CRESET);
         return false;
     }
 
@@ -79,7 +79,7 @@ static bool _handle_eapply_tactic(MEngineRuntime *rt, EapplyTactic *t) {
     if (result->success) {
         proof_state_add_goals(rt->proof_state, result->new_goals);
     } else {
-        fprintf(stderr, "Error: %s\n", result->error_message);
+        fprintf(stderr, ERROR "%s\n" CRESET, result->error_message);
     }
     bool success = result->success;
     free_tactic_result(result);
@@ -92,7 +92,7 @@ static bool _handle_exact_tactic(MEngineRuntime *rt, ExactTactic *t) {
 
     Expression *proof_term = ast_to_expression(t->proof_term, ctx);
     if (!proof_term) {
-        fprintf(stderr, "Error: could not resolve proof term\n");
+        fprintf(stderr, ERROR "Could not resolve proof term\n" CRESET);
         return false;
     }
 
@@ -100,7 +100,7 @@ static bool _handle_exact_tactic(MEngineRuntime *rt, ExactTactic *t) {
     if (result->success) {
         proof_state_add_goals(rt->proof_state, result->new_goals);
     } else {
-        fprintf(stderr, "Error: %s\n", result->error_message);
+        fprintf(stderr, ERROR "%s\n" CRESET, result->error_message);
     }
     bool success = result->success;
     free_tactic_result(result);
@@ -113,13 +113,13 @@ static bool _handle_rewrite_tactic(MEngineRuntime *rt, RewriteTactic *t) {
 
     Expression *lemma = ast_to_expression(t->lemma, ctx);
     if (!lemma) {
-        fprintf(stderr, "Error: could not resolve rewrite lemma\n");
+        fprintf(stderr, ERROR "Could not resolve rewrite lemma\n" CRESET);
         return false;
     }
 
     Expression *equiv_proof = ast_to_expression(t->equiv_proof, ctx);
     if (!equiv_proof) {
-        fprintf(stderr, "Error: could not resolve equivalence proof\n");
+        fprintf(stderr, ERROR "Could not resolve equivalence proof\n" CRESET);
         return false;
     }
 
@@ -127,7 +127,7 @@ static bool _handle_rewrite_tactic(MEngineRuntime *rt, RewriteTactic *t) {
     if (result->success) {
         proof_state_add_goals(rt->proof_state, result->new_goals);
     } else {
-        fprintf(stderr, "Error: %s\n", result->error_message);
+        fprintf(stderr, ERROR "%s\n" CRESET, result->error_message);
     }
     bool success = result->success;
     free_tactic_result(result);
@@ -145,7 +145,7 @@ static bool _handle_assumption_tactic(MEngineRuntime *rt) {
     if (result->success) {
         proof_state_add_goals(rt->proof_state, result->new_goals);
     } else {
-        fprintf(stderr, "Error: %s\n", result->error_message);
+        fprintf(stderr, ERROR "%s\n" CRESET, result->error_message);
     }
     bool success = result->success;
     free_tactic_result(result);
@@ -241,8 +241,8 @@ void mengine_execute_tactic(MEngineRuntime *rt, Tactic *tac) {
         Expression *thm = rt->pending_theorem;
         rt->ctx = context_insert(rt->ctx, thm);
 
-        printf(GRN "Proof complete." CRESET " %s declared.\n",
-               thm->value.var.name);
+        fprintf(stdout, SUCCESS "Proof complete." CRESET " %s declared.\n",
+                thm->value.var.name);
 
         mengine_runtime_command_mode(rt);
     }

@@ -52,7 +52,7 @@ bool parser_expect_no_consume(Parser *p, TokenType type) {
 }
 
 static void print_error_pointer(const char *source, int pos) {
-    fprintf(stderr, RED "%s" CRESET, source);
+    fprintf(stderr, ERROR "%s" CRESET, source);
 
     for (int i = 0; i < pos; i++) {
         char c = source[i];
@@ -72,7 +72,7 @@ void parser_error(Parser *p, const char *msg) {
         if (p->source && pos >= 0) {
             print_error_pointer(p->source, pos);
         }
-        fprintf(stderr, BOLD RED "Parse Error: " CRESET "%s\n", msg);
+        fprintf(stderr, ERROR BOLD "Parse Error: " CRESET "%s\n", msg);
     }
 
     if (p->error_recovery_set) {

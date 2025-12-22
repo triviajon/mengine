@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 
+#include "src/common/color.h"
 #include "src/kernel/beta_reduction.h"
 #include "src/kernel/context.h"
 #include "src/kernel/dyn_array_map.h"
@@ -42,8 +43,8 @@ void add_to_parents(Expression *expression, Uplink *uplink) {
                                dll_new_node(uplink));
             break;
         default:
-            fprintf(stderr,
-                    "Error: Unknown expression type in add_to_parents.\n");
+            fprintf(stderr, ERROR
+                    "Unknown expression type in add_to_parents.\n" CRESET);
             exit(EXIT_FAILURE);
     }
 }
@@ -77,7 +78,7 @@ Expression *constr_app_type(Expression *func, Expression *arg) {
         get_expression_type(func);  // something like Forall x: A, B
     Expression *weak_func_type = weak_head_normalize(func_type);
     if (func_type->type != FORALL_EXPRESSION) {
-        fprintf(stderr, "Error: Trying to apply a non-function.\n");
+        fprintf(stderr, ERROR "Trying to apply a non-function.\n" CRESET);
         return NULL;
     }
     Expression *variable = weak_func_type->value.forall.bound_variable;  // x
@@ -97,7 +98,7 @@ Expression *constr_app_type(Expression *func, Expression *arg) {
         return subst(return_type, variable, arg);  // return B[x -> arg]
     }
 
-    fprintf(stderr, "Error: Application does not type check.\n");
+    fprintf(stderr, ERROR "Application does not type check.\n" CRESET);
     return NULL;
 }
 
@@ -364,9 +365,8 @@ DoublyLinkedList *get_expression_uplinks(Expression *expression) {
         case (MATCH_EXPR_EXPRESSION):
             return expression->value.matchExpr.uplinks;
         default:
-            fprintf(
-                stderr,
-                "Error: Unknown expression type in get_expression_uplinks.\n");
+            fprintf(stderr, ERROR
+                    "Unknown expression type in get_expression_uplinks.\n" CRESET);
             exit(EXIT_FAILURE);
     }
 }
@@ -945,7 +945,7 @@ bool has_holes(Expression *expr) {
                    has_holes(expr->value.matchExpr.op_case_item) ||
                    has_holes(expr->value.matchExpr.op_result);
         default:
-            fprintf(stderr, "Error: Unknown expression type in has_holes.\n");
+            fprintf(stderr, ERROR "Unknown expression type in has_holes.\n" CRESET);
             exit(EXIT_FAILURE);
     }
 }
@@ -1021,7 +1021,7 @@ bool _occurs_in(Expression *var_or_hole, Expression *term, Map *visited) {
                    _occurs_in(var_or_hole, term->value.matchExpr.op_result,
                               visited);
         default:
-            fprintf(stderr, "Error: Unknown expression type in occurs_in.\n");
+            fprintf(stderr, ERROR "Unknown expression type in occurs_in.\n" CRESET);
             exit(EXIT_FAILURE);
     }
 }

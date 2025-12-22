@@ -27,4 +27,16 @@
 #define BOLD "\033[1m"
 #define CRESET "\e[0m"
 
+// Semantic color definitions for UI elements
+#define UI GRAY
+#define HEADER BLU BOLD
+#define GOALCLR WHT
+#define CTXCLR GRN
+#define PROMPT MAG BOLD
+#define SUCCESS GRN
+#define ERROR RED
+#define WARNING YEL
+#define INFO CYN
+#define DIMTEXT DIM
+
 #endif  // COLOR_H
