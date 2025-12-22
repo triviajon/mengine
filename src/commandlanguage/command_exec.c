@@ -3,6 +3,7 @@
 #include "src/commandlanguage/command_parser.h"
 #include "src/common/color.h"
 #include "src/kernel/expression.h"
+#include "src/kernel/utils.h"
 #include "src/metalanguage/ast_to_expression.h"
 #include "src/runtime/proof_state.h"
 #include "src/runtime/runtime.h"
@@ -654,7 +655,7 @@ static void _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
         case SHOW_KW_CONTEXT: {
             Context *ctx = mengine_runtime_context(rt);
             fprintf(stdout, CYN "Context:" CRESET "\n%s\n",
-                    stringify_context(ctx));
+                    stringify_context(ctx, CTX_STRINGIFY_PRETTY_IND0));
             break;
         }
         case SHOW_KW_PROOF: {
@@ -708,7 +709,8 @@ static void _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
             Context *goal_ctx = get_expression_context(current_goal);
             Context *runtime_ctx = mengine_runtime_context(rt);
             if (goal_ctx && runtime_ctx) {
-                char *ctx_str = stringify_context_until(goal_ctx, runtime_ctx);
+                char *ctx_str = stringify_context_until(
+                    goal_ctx, runtime_ctx, CTX_STRINGIFY_PRETTY_IND0);
                 printf(CYN "Goal Context:" CRESET "\n%s\n", ctx_str);
                 free(ctx_str);
             }
@@ -749,7 +751,8 @@ static void _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
             Context *goal_ctx = get_expression_context(current_goal);
             Context *runtime_ctx = mengine_runtime_context(rt);
             if (goal_ctx && runtime_ctx) {
-                char *ctx_str = stringify_context_until(goal_ctx, runtime_ctx);
+                char *ctx_str = stringify_context_until(
+                    goal_ctx, runtime_ctx, CTX_STRINGIFY_PRETTY_IND0);
                 fprintf(stdout, CYN "Goal Context:" CRESET "\n%s\n", ctx_str);
                 free(ctx_str);
             }

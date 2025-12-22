@@ -5,6 +5,12 @@
 
 #include "src/runtime/runtime.h"
 
+#define UI GRAY
+#define HEADER BLU BOLD
+#define GOALCLR WHT
+#define CTXCLR GRN
+#define PROMPT MAG BOLD
+
 /**
  * Run an interactive read–eval–print loop (REPL) on stdin/stdout.
  *
