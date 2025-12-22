@@ -27,32 +27,58 @@ void prompt() {
     fflush(stdout);
 }
 
-void prompt_proof_mode(MEngineRuntime *rt) {
+static void prompt_normal(void) {
+    printf(PROMPT "> " CRESET);
+    fflush(stdout);
+}
+
+static void prompt_proof(void) {
+    printf(PROMPT "proof ❯ " CRESET);
+    fflush(stdout);
+}
+
+static void print_proof_state(MEngineRuntime *rt) {
     if (!rt || !rt->proof_state) {
         return;
     }
 
-    Expression *current_goal = proof_state_current(rt->proof_state);
-    Context *runtime_ctx = mengine_runtime_context(rt);
-    if (!current_goal || !runtime_ctx) {
+    Expression *goal = proof_state_current(rt->proof_state);
+    Context *rt_ctx = mengine_runtime_context(rt);
+    if (!goal || !rt_ctx) {
         return;
     }
 
-    Context *goal_ctx = get_expression_context(current_goal);
-    char *ctx_str = NULL;
-    ctx_str = stringify_context_until(goal_ctx, runtime_ctx);
-    printf("\n" CYN "Context:" CRESET "\n%s\n", ctx_str);
+    Context *goal_ctx = get_expression_context(goal);
+    char *ctx_str =
+        stringify_context_until(goal_ctx, rt_ctx, CTX_STRINGIFY_PRETTY_IND2);
+    char *goal_str = stringify_expression(get_expression_type(goal));
+
+    // Header
+    Expression *current_theorem = rt->pending_theorem;
+    char *theorem_name = current_theorem->value.var.name;
+    printf("\n" UI "⊢ " CRESET BOLD "%s\n", theorem_name);
+    printf(UI "────────────────────────────────\n" CRESET);
+
+    // Context
+    if (ctx_str && *ctx_str) {
+        printf(HEADER "Context:\n" CRESET);
+        printf(CTXCLR "%s\n" CRESET, ctx_str);
+    }
+
+    // Goal
+    printf(HEADER "Goal:\n" CRESET);
+    printf(GOALCLR "  %s\n" CRESET, goal_str);
+
     free(ctx_str);
-    printf(CYN "Goal:" CRESET "\n%s\n",
-           stringify_expression(get_expression_type(current_goal)));
-    prompt();
+    free(goal_str);
 }
 
-void print_prompt_and_goal(MEngineRuntime *rt) {
+void print_prompt_and_state(MEngineRuntime *rt) {
     if (rt->mode == MENGINE_RUNTIME_PROOF_MODE) {
-        prompt_proof_mode(rt);
+        print_proof_state(rt);
+        prompt_proof();
     } else {
-        prompt();
+        prompt_normal();
     }
 }
 
@@ -63,28 +89,27 @@ void mengine_repl(MEngineRuntime *rt) {
 
     char buffer[REPL_LINE_CAP];
 
-    printf("MEngine REPL. Type 'quit.' to exit.\n");
-    printf("> ");
-    fflush(stdout);
+    printf(UI "MEngine REPL. Type 'quit.' to exit.\n" CRESET);
+    print_prompt_and_state(rt);
 
     while (fgets(buffer, REPL_LINE_CAP, stdin) != NULL) {
         trim_whitespace(buffer);
-        if (strncmp(buffer, "quit.", 5) == 0) {
+
+        // Handle graceful quitting
+        if (strcmp(buffer, "quit.") == 0) {
             break;
         }
 
-        if (*buffer == '\0') {
-            prompt();
-            continue;
+        // If it's non-empty, handle the input
+        if (*buffer != '\0') {
+            int rc = mengine_runtime_exec_string(rt, buffer);
+            if (rc != 0) {
+                printf(RED "Error in command.\n" CRESET);
+            }
         }
 
-        int rc = mengine_runtime_exec_string(rt, buffer);
-        if (rc != 0) {
-            printf("Error in command.\n");
-        }
-
-        print_prompt_and_goal(rt);
+        print_prompt_and_state(rt);
     }
 
-    printf("Goodbye.\n");
+    printf(UI "Goodbye.\n" CRESET);
 }

@@ -160,20 +160,33 @@ char *stringify_expression(Expression *expression) {
     return result;
 }
 
-char *stringify_context(Context *context) {
-    if (context_is_empty(context)) {
+char *stringify_context(Context *context, ContextStringifyOptions opts) {
+    if (!context || context_is_empty(context)) {
         return strdup("");
     }
+
     char *var_str = stringify_expression(context->var_type);
     char *type_str = stringify_expression(context->var_type->value.var.type);
-    char *parent_str = stringify_context(context->parent);
+    char *parent_str = stringify_context(context->parent, opts);
 
-    char *result = str_concat(parent_str, "\n");
-    result = str_concat(result, "Variable ");
+    char *result = parent_str;
+
+    // Handle indent option
+    if (opts.indent > 0) {
+        for (int i = 0; i < opts.indent; i++) {
+            result = str_concat(result, " ");
+        }
+    }
+
+    // Handle print_prefix option
+    if (opts.print_prefix) {
+        result = str_concat(result, "Variable ");
+    }
+
     result = str_concat(result, var_str);
     result = str_concat(result, " : ");
     result = str_concat(result, type_str);
-    result = str_concat(result, ".");
+    result = str_concat(result, ".\n");
 
     free(var_str);
     free(type_str);
@@ -182,21 +195,34 @@ char *stringify_context(Context *context) {
     return result;
 }
 
-char *stringify_context_until(Context *context, Context *until) {
+char *stringify_context_until(Context *context, Context *until,
+                              ContextStringifyOptions opts) {
     if (context == until || context_is_empty(context)) {
         return strdup("");
     }
 
     char *var_str = stringify_expression(context->var_type);
     char *type_str = stringify_expression(context->var_type->value.var.type);
-    char *parent_str = stringify_context_until(context->parent, until);
+    char *parent_str = stringify_context_until(context->parent, until, opts);
 
-    char *result = str_concat(parent_str, "\n");
-    result = str_concat(result, "Variable ");
+    char *result = parent_str;
+
+    // Handle indent option
+    if (opts.indent > 0) {
+        for (int i = 0; i < opts.indent; i++) {
+            result = str_concat(result, " ");
+        }
+    }
+
+    // Handle print_prefix option
+    if (opts.print_prefix) {
+        result = str_concat(result, "Variable ");
+    }
+
     result = str_concat(result, var_str);
     result = str_concat(result, " : ");
     result = str_concat(result, type_str);
-    result = str_concat(result, ".");
+    result = str_concat(result, ".\n");
 
     free(var_str);
     free(type_str);
@@ -353,7 +379,9 @@ DoublyLinkedList *topo_order(Expression *top_expr, Map *expr_counts) {
 
 char *se(Expression *expression) { return stringify_expression(expression); }
 
-char *sc(Context *context) { return stringify_context(context); }
+char *sc(Context *context) {
+    return stringify_context(context, CTX_STRINGIFY_VERBOSE);
+}
 
 char *_stringify_expression_with_let(Expression *expression) {
     char *result = NULL;
