@@ -53,7 +53,9 @@ typedef struct {
 // A variable/type binding.
 typedef struct {
     char *name;  // User-friendly name for the variable. Not used internally.
-    Expression *type;  // The type of the variable.
+    Expression *type;        // The type of the variable.
+    Expression *definition;  // If the variable is non-opaque, then this field
+                             // will be non-NULL with the definition body
     Context *context;  // The minimal context which this expression is valid in.
                        // In this case, it is the context which is needed to
                        // define the type of the variable.
@@ -229,6 +231,11 @@ Expression *init_hole_expression(char *name, Expression *return_type,
 // context. The variable's type must be valid in the defining context.
 Expression *init_var_expression_wc(const char *name, Expression *type,
                                    Context *defining_context);
+
+// Create a variable expression with a definition body.
+Expression *init_var_expression_wc_with_definition(const char *name,
+                                                   Expression *definition,
+                                                   Context *defining_context);
 
 // Initialize a new lambda expression with a bound variable, body, and context.
 // The body must be valid in the given context.

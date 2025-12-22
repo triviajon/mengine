@@ -1,2 +1,5 @@
-Definition id : forall (A : Type), forall (x : A), A := fun (A : Type) => fun (x : A) => x.
+Definition id (A: Type) (x: A) : A := x.
+
+Check id. 
+
 Theorem simple : forall (P : Prop), forall (H : P), P.

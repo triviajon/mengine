@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "src/commandlanguage/command_exec.h"
+#include "src/commandlanguage/command_parser.h"
 #include "src/common/color.h"
 #include "src/common/options.h"
 #include "src/kernel/expression.h"
@@ -50,6 +51,8 @@ MEngineRuntime *mengine_runtime_new(MEngineOptions *options) {
         return NULL;
     }
 
+    rt->proof_state = NULL;
+    rt->pending_theorem = NULL;
     rt->options = options;
 
     rt->ctx = context_create_empty();
@@ -59,13 +62,6 @@ MEngineRuntime *mengine_runtime_new(MEngineOptions *options) {
     }
 
     init_core(&rt->ctx);
-
-    rt->def_table = malloc(sizeof(DefinitionTable));
-    if (!rt->def_table) {
-        free(rt);
-        return NULL;
-    }
-    definition_table_init(rt->def_table);
     mengine_runtime_command_mode(rt);
 
     return rt;
@@ -76,9 +72,8 @@ void mengine_runtime_free(MEngineRuntime *rt) {
         return;
     }
 
-    // TODO: A memory management strategy forcontexts and expressions is needed.
+    // TODO: A memory management strategy...
     // free_context(rt->ctx);
-    definition_table_free(rt->def_table);
     free(rt);
 }
 
@@ -170,7 +165,8 @@ int mengine_runtime_exec_file(MEngineRuntime *rt, const char *filename) {
     char *buf = malloc(size + 1);
     if (!buf) {
         fclose(f);
-        fprintf(stderr, ERROR "Out of memory reading file: %s\n" CRESET, filename);
+        fprintf(stderr, ERROR "Out of memory reading file: %s\n" CRESET,
+                filename);
         return 1;
     }
 
