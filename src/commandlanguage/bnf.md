@@ -7,6 +7,7 @@ Similar to Rocq's Vernacular:
             | <inductive>
        <!-- | <fixpoint> -->
             | <check>
+            | <show>
 
 <declaration> ::= <declaration_keyword> <assumption> "."
 <declaration_keyword> ::= "Axiom" | "Variable"
@@ -27,6 +28,9 @@ Similar to Rocq's Vernacular:
 <constructor> ::= "|" <identifier> ":" <term>
 
 <check> ::= "Check" <term> "."
+
+<show> ::= "Show" <show_keyword> "."
+<show_keyword> ::= "Context" | "Proof" | "Goal" | "State"
 
 <!-- The following are defined in src/metalanguage/bnf.md -->
 <binder> ::= ...

@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "src/common/lexer.h"
+#include "src/common/parser_base.h"
+
 char *decl_keyword_to_string(DeclKeyword kw) {
     switch (kw) {
         case DECL_KW_AXIOM:
@@ -229,6 +232,48 @@ Command *command_parse_check(Parser *p) {
     cmd->tag = CMD_CHECK;
     cmd->as.check.term = term;
     return cmd;
+}
+
+Command *command_parse_show(Parser *p) {
+    if (!parser_expect_consume(p, TOK_SHOW)) {
+        parser_error(p, "expected 'Show'");
+    }
+
+    ShowKeyword sh_kw = command_parse_show_type(p);
+
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "expected '.' after show command");
+    }
+
+    Command *cmd = malloc(sizeof(Command));
+    cmd->tag = CMD_SHOW;
+    cmd->as.show.kw = sh_kw;
+
+    return cmd;
+}
+
+ShowKeyword command_parse_show_type(Parser *p) {
+    if (parser_expect_consume(p, TOK_CONTEXT)) {
+        return SHOW_KW_CONTEXT;
+    }
+
+    if (parser_expect_consume(p, TOK_PROOF)) {
+        return SHOW_KW_PROOF;
+    }
+
+    if (parser_expect_consume(p, TOK_GOAL)) {
+        return SHOW_KW_GOAL;
+    }
+
+    if (parser_expect_consume(p, TOK_STATE)) {
+        return SHOW_KW_STATE;
+    }
+
+    parser_error(
+        p, "expected 'Context', 'Proof', 'Goal', or 'State' after 'Show'");
+
+    // Unreachable, but avoids compiler warning.
+    return SHOW_KW_STATE;
 }
 
 Command *command_parse_inductive(Parser *p) {

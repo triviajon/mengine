@@ -118,6 +118,24 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
             }
 
             case MENGINE_RUNTIME_PROOF_MODE: {
+                // Check if the current token is a command keyword
+                TokenType tok_type = parser.current->type;
+                CommandDispatchEntry *cmd_entry = NULL;
+                CMD_LOOKUP_ENTRY(&cmd_entry, tok_type);
+
+                if (cmd_entry != NULL) {
+                    Command *cmd = command_parse_command(&parser);
+                    if (!cmd) {
+                        fprintf(stderr, "Command parse error.\n");
+                        rc = 1;
+                        break;
+                    }
+                    mengine_execute_command(rt, cmd);
+                    // TODO: free Command
+                    break;
+                }
+
+                // It's a tactic, parse and execute it
                 Tactic *tactic = tactic_parse_proof_command(&parser);
                 if (!tactic) {
                     fprintf(stderr, "Tactic parse error.\n");

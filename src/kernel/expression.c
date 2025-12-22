@@ -6,6 +6,7 @@
 #include "src/kernel/context.h"
 #include "src/kernel/dyn_array_map.h"
 #include "src/kernel/subst.h"
+#include "src/runtime/proof_state.h"
 
 void add_to_parents(Expression *expression, Uplink *uplink) {
     switch (expression->type) {
@@ -52,34 +53,14 @@ void remove_tl_uplink(Expression *expression) {
     // todo: implement me
 }
 
-Uplink *new_uplink(Expression *parent, Relation relation) {
-    Uplink *new_uplink = malloc(sizeof(Uplink));
-    if (new_uplink == NULL) {
-        return NULL;
-    }
-    new_uplink->expression = parent;
-    new_uplink->relation = relation;
-    return new_uplink;
-}
-
-Uplink *new_uplink2(Context *parent, Relation relation) {
-    Uplink *new_uplink = malloc(sizeof(Uplink));
-    if (new_uplink == NULL) {
-        return NULL;
-    }
-    new_uplink->context = parent;
-    new_uplink->relation = relation;
-    return new_uplink;
-}
-
-Uplink *new_uplink_tl() {
+Uplink *new_uplink(void *ptr, Relation r) {
     Uplink *new_uplink = malloc(sizeof(Uplink));
     if (!new_uplink) {
         return NULL;
     }
 
-    new_uplink->relation = TOP_LEVEL_HOLE;
-
+    new_uplink->ptr = ptr;
+    new_uplink->relation = r;
     return new_uplink;
 }
 
@@ -1081,18 +1062,47 @@ void fill_hole(Expression *hole, Expression *term) {
     for (int i = 0; i < dll_len(holepars); i++) {
         Uplink *uplink = dll_at(holepars, i)->data;
         switch (uplink->relation) {
-            case (APP_FUNC):
-                uplink->expression->value.app.func = term;
+                // LAMBDA_BODY,
+                // APP_FUNC,
+                // APP_ARG,
+                // FORALL_BODY,
+                // CTX_VAR,
+                // HOLE_TYPE,
+                // TOP_LEVEL_HOLE,
+            case (LAMBDA_BODY): {
+                Expression *ptr = (Expression *)uplink->ptr;
+                ptr->value.lambda.body = term;
                 break;
-            case (APP_ARG):
-                uplink->expression->value.app.arg = term;
+            }
+            case (APP_FUNC): {
+                Expression *ptr = (Expression *)uplink->ptr;
+                ptr->value.app.func = term;
                 break;
-            case (LAMBDA_BODY):
-                uplink->expression->value.lambda.body = term;
+            }
+            case (APP_ARG): {
+                Expression *ptr = (Expression *)uplink->ptr;
+                ptr->value.app.arg = term;
                 break;
-            case (HOLE_TYPE):
-                uplink->expression->value.hole.return_type = term;
+            }
+            case (FORALL_BODY): {
+                Expression *ptr = (Expression *)uplink->ptr;
+                ptr->value.forall.body = term;
                 break;
+            }
+            case (CTX_VAR): {
+                Context *ptr = (Context *)uplink->ptr;
+                ptr->var_type = term;
+                break;
+            }
+            case (HOLE_TYPE): {
+                Expression *ptr = (Expression *)uplink->ptr;
+                ptr->value.hole.return_type = term;
+                break;
+            }
+            case (TOP_LEVEL_HOLE): {
+                ProofState *ptr = (ProofState *)uplink->ptr;
+                ptr->initial_goal = term;
+            }
             default:
                 break;
         }

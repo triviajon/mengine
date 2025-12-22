@@ -82,11 +82,23 @@ static void debug_print_token(Lexer *lx, Token *t) {
         case TOK_CHECK:
             name = "CHECK";
             break;
+        case TOK_SHOW:
+            name = "SHOW";
+            break;
+        case TOK_CONTEXT:
+            name = "CONTEXT";
+            break;
         case TOK_PROOF:
             name = "PROOF";
             break;
-        case TOK_QED:
-            name = "QED";
+        case TOK_GOAL:
+            name = "GOAL";
+            break;
+        case TOK_STATE:
+            name = "STATE";
+            break;
+        case TOK_INDUCTIVE:
+            name = "INDUCTIVE";
             break;
         case TOK_ADMITTED:
             name = "ADMITTED";
@@ -214,6 +226,17 @@ void lexer_init(Lexer *lx, const char *input, MEngineOptions *options) {
     lx->options = options;
 }
 
+static Token *keyword_or_ident(char *lexeme, size_t start_pos) {
+    for (size_t i = 0; i < sizeof(keywords) / sizeof(keywords[0]); i++) {
+        if (strcmp(lexeme, keywords[i].name) == 0) {
+            free(lexeme);
+            return make_token(keywords[i].kind, start_pos, NULL);
+        }
+    }
+
+    return make_token(TOK_IDENT, start_pos, lexeme);
+}
+
 Token *lexer_next_token(Lexer *lx) {
     skip_whitespace(lx);
 
@@ -294,102 +317,7 @@ Token *lexer_next_token(Lexer *lx) {
                 lexeme[length] = '\0';
 
                 // Check for keywords
-                if (strcmp(lexeme, "fun") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_FUN, start_pos, NULL);
-                } else if (strcmp(lexeme, "forall") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_FORALL, start_pos, NULL);
-                } else if (strcmp(lexeme, "Type") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_TYPE, start_pos, NULL);
-                } else if (strcmp(lexeme, "Prop") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_PROP, start_pos, NULL);
-                } else if (strcmp(lexeme, "let") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_LET, start_pos, NULL);
-                } else if (strcmp(lexeme, "in") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_IN, start_pos, NULL);
-                } else if (strcmp(lexeme, "match") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_MATCH, start_pos, NULL);
-                } else if (strcmp(lexeme, "with") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_WITH, start_pos, NULL);
-                } else if (strcmp(lexeme, "end") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_END, start_pos, NULL);
-                } else if (strcmp(lexeme, "Axiom") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_AXIOM, start_pos, NULL);
-                } else if (strcmp(lexeme, "Variable") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_VARIABLE, start_pos, NULL);
-                } else if (strcmp(lexeme, "Definition") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_DEFINITION, start_pos, NULL);
-                } else if (strcmp(lexeme, "Theorem") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_THEOREM, start_pos, NULL);
-                } else if (strcmp(lexeme, "Lemma") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_LEMMA, start_pos, NULL);
-                } else if (strcmp(lexeme, "Check") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_CHECK, start_pos, NULL);
-                } else if (strcmp(lexeme, "Inductive") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_INDUCTIVE, start_pos, NULL);
-                } else if (strcmp(lexeme, "Proof") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_PROOF, start_pos, NULL);
-                } else if (strcmp(lexeme, "Qed") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_QED, start_pos, NULL);
-                } else if (strcmp(lexeme, "Admitted") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_ADMITTED, start_pos, NULL);
-                } else if (strcmp(lexeme, "intro") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_INTRO, start_pos, NULL);
-                } else if (strcmp(lexeme, "intros") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_INTROS, start_pos, NULL);
-                } else if (strcmp(lexeme, "apply") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_APPLY, start_pos, NULL);
-                } else if (strcmp(lexeme, "eapply") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_EAPPLY, start_pos, NULL);
-                } else if (strcmp(lexeme, "exact") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_EXACT, start_pos, NULL);
-                } else if (strcmp(lexeme, "rewrite") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_REWRITE, start_pos, NULL);
-                } else if (strcmp(lexeme, "reflexivity") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_REFLEXIVITY, start_pos, NULL);
-                } else if (strcmp(lexeme, "assumption") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_ASSUMPTION, start_pos, NULL);
-                } else if (strcmp(lexeme, "split") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_SPLIT, start_pos, NULL);
-                } else if (strcmp(lexeme, "left") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_LEFT, start_pos, NULL);
-                } else if (strcmp(lexeme, "right") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_RIGHT, start_pos, NULL);
-                } else if (strcmp(lexeme, "exists") == 0) {
-                    free(lexeme);
-                    token = make_token(TOK_EXISTS, start_pos, NULL);
-                } else {
-                    token = make_token(TOK_IDENT, start_pos, lexeme);
-                }
+                token = keyword_or_ident(lexeme, start_pos);
             } else {
                 token = make_token(TOK_ERROR, lx->pos - 1, NULL);
             }

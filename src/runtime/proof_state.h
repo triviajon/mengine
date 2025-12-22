@@ -6,6 +6,7 @@
 #include "src/kernel/expression.h"
 
 typedef struct {
+    Expression *initial_goal;  // Original hole being solved.
     DoublyLinkedList
         *goals;         // list of Expression* representing proof obligations
     size_t goal_index;  // current goal index
@@ -47,6 +48,14 @@ void proof_state_free(ProofState *ps);
  * @return Pointer to the current goal.
  */
 Expression *proof_state_current(ProofState *ps);
+
+/**
+ * Return the original goal, which may be partially filled.
+ *
+ * @param ps Pointer to the ProofState to free.
+ * @return Pointer to the original goal.
+ */
+Expression *proof_state_original_goal(ProofState *ps);
 
 /**
  * Advance to next goal, if it exists.

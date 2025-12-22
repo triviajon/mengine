@@ -4,8 +4,6 @@
 #include "src/metalanguage/parser.h"
 
 typedef enum {
-    TACTIC_PROOF,
-    TACTIC_QED,
     TACTIC_ADMITTED,
     TACTIC_INTRO,
     TACTIC_INTROS,
@@ -69,18 +67,12 @@ typedef struct Tactic {
 char *tactic_tag_to_string(TacticTag tag);
 
 /**
- * <proof_command> ::= "Proof" "." | <tactic> "." | "Qed" "." | "Admitted" "."
+ * <proof_command> ::= <tactic> "." | "Admitted" "."
  *
  * @param p Pointer to the Parser.
  * @return Tactic structure representing the parsed proof command.
  */
 Tactic *tactic_parse_proof_command(Parser *p);
-
-/**
- * @param p Pointer to the Parser.
- * @return Tactic structure representing the Proof command.
- */
-Tactic *tactic_parse_proof(Parser *p);
 
 /**
  * <tactic> ::= "intro" [ <ident> ]
@@ -101,12 +93,6 @@ Tactic *tactic_parse_proof(Parser *p);
  * @return Tactic structure representing the parsed tactic.
  */
 Tactic *tactic_parse_tactic(Parser *p);
-
-/**
- * @param p Pointer to the Parser.
- * @return Tactic structure representing the Qed command.
- */
-Tactic *tactic_parse_qed(Parser *p);
 
 /**
  * @param p Pointer to the Parser.
@@ -194,8 +180,6 @@ typedef struct {
 } TacticDispatchEntry;
 
 static TacticDispatchEntry tactic_dispatch_table[] = {
-    {TOK_PROOF, tactic_parse_proof},
-    {TOK_QED, tactic_parse_qed},
     {TOK_ADMITTED, tactic_parse_admitted},
     {TOK_INTRO, tactic_parse_intro},
     {TOK_INTROS, tactic_parse_intros},

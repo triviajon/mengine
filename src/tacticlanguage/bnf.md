@@ -1,10 +1,8 @@
 Tactic language
 
 ```bnf
-<proof_command> ::= "Proof" "."
-                 | <tactic> "."
-                 | "Qed" "."
-                 | "Admitted" "."
+<proof_command> ::= | <tactic> "."
+                    | "Admitted" "."
 
 <tactic> ::= "intro" [ <ident> ]
           | "intros" { <ident> }

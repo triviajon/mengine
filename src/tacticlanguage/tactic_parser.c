@@ -6,10 +6,6 @@
 
 char *tactic_tag_to_string(TacticTag tag) {
     switch (tag) {
-        case TACTIC_PROOF:
-            return "Proof";
-        case TACTIC_QED:
-            return "Qed";
         case TACTIC_ADMITTED:
             return "Admitted";
         case TACTIC_INTRO:
@@ -84,36 +80,6 @@ Tactic *tactic_parse_tactic(Parser *p) {
     }
 
     return fn(p);
-}
-
-Tactic *tactic_parse_proof(Parser *p) {
-    if (!parser_expect_consume(p, TOK_PROOF)) {
-        parser_error(p, "expected 'Proof'");
-    }
-
-    if (!parser_expect_consume(p, TOK_DOT)) {
-        parser_error(p, "Expected '.' at end of Proof");
-    }
-
-    Tactic *tactic = malloc(sizeof(Tactic));
-    tactic->tag = TACTIC_PROOF;
-
-    return tactic;
-}
-
-Tactic *tactic_parse_qed(Parser *p) {
-    if (!parser_expect_consume(p, TOK_QED)) {
-        parser_error(p, "expected 'Qed'");
-    }
-
-    if (!parser_expect_consume(p, TOK_DOT)) {
-        parser_error(p, "Expected '.' at end of Qed");
-    }
-
-    Tactic *tactic = malloc(sizeof(Tactic));
-    tactic->tag = TACTIC_QED;
-
-    return tactic;
 }
 
 Tactic *tactic_parse_admitted(Parser *p) {
