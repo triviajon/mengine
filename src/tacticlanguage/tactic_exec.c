@@ -10,19 +10,6 @@ static Expression *_current_goal(MEngineRuntime *rt) {
     return proof_state_current(rt->proof_state);
 }
 
-static bool _handle_proof_tactic(MEngineRuntime *rt) {
-    // nothing to do for now!
-    (void)rt;
-    return true;
-}
-
-static bool _handle_qed_tactic(MEngineRuntime *rt) {
-    Expression *thm = rt->pending_theorem;
-    rt->ctx = context_insert(rt->ctx, thm);
-    mengine_runtime_command_mode(rt);
-    return true;
-}
-
 static bool _handle_admitted_tactic(MEngineRuntime *rt) {
     Expression *thm = rt->pending_theorem;
     rt->ctx = context_insert(rt->ctx, thm);
@@ -188,12 +175,6 @@ static bool _handle_exists_tactic(MEngineRuntime *rt, ExistsTactic *t) {
 
 bool _mengine_dispatch_tactic(MEngineRuntime *rt, Tactic *tac) {
     switch (tac->tag) {
-        case TACTIC_PROOF:
-            return _handle_proof_tactic(rt);
-
-        case TACTIC_QED:
-            return _handle_qed_tactic(rt);
-
         case TACTIC_ADMITTED:
             return _handle_admitted_tactic(rt);
 
@@ -249,11 +230,7 @@ void mengine_execute_tactic(MEngineRuntime *rt, Tactic *tac) {
         return;
     }
 
-    // TACTIC_PROOF is a no-op marker that doesn't consume goals
-    // QED and ADMITTED handle mode switching themselves
-    // Don't advance to next goal for these special tactics
-    if (tac->tag == TACTIC_PROOF || tac->tag == TACTIC_QED ||
-        tac->tag == TACTIC_ADMITTED) {
+    if (tac->tag == TACTIC_ADMITTED) {
         return;
     }
 

@@ -1,8 +1,11 @@
 #include "src/commandlanguage/command_exec.h"
 
+#include "src/commandlanguage/command_parser.h"
 #include "src/common/color.h"
 #include "src/kernel/expression.h"
 #include "src/metalanguage/ast_to_expression.h"
+#include "src/runtime/proof_state.h"
+#include "src/runtime/runtime.h"
 
 static void _handle_declaration_command(MEngineRuntime *rt,
                                         DeclarationCmd *decl_cmd) {
@@ -642,6 +645,123 @@ static void _handle_inductive_command(MEngineRuntime *rt,
     free(contexts);
 }
 
+static void _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
+    if (!rt || !show_cmd) {
+        return;
+    }
+
+    switch (show_cmd->kw) {
+        case SHOW_KW_CONTEXT: {
+            Context *ctx = mengine_runtime_context(rt);
+            fprintf(stdout, CYN "Context:" CRESET "\n%s\n",
+                    stringify_context(ctx));
+            break;
+        }
+        case SHOW_KW_PROOF: {
+            if (rt->mode == MENGINE_RUNTIME_COMMAND_MODE) {
+                fprintf(stderr, RED
+                        "Error: 'Show Proof' can only be used in Proof "
+                        "Mode.\n" CRESET);
+                break;
+            }
+
+            if (!rt->proof_state) {
+                fprintf(stderr, RED "Error: No active proof state.\n" CRESET);
+                break;
+            }
+
+            Expression *current_goal = proof_state_current(rt->proof_state);
+            if (!current_goal) {
+                fprintf(stderr, RED "Error: No current goal.\n" CRESET);
+                break;
+            }
+
+            Expression *proof_term = proof_state_original_goal(rt->proof_state);
+            if (!proof_term) {
+                fprintf(stderr,
+                        RED "Error: Couldn't get original goal.\n" CRESET);
+                break;
+            }
+            fprintf(stdout, CYN "Proof Term:" CRESET "\n%s\n",
+                    stringify_expression(proof_term));
+            break;
+        }
+        case SHOW_KW_GOAL: {
+            if (rt->mode == MENGINE_RUNTIME_COMMAND_MODE) {
+                fprintf(stderr, RED
+                        "Error: 'Show Goal' can only be used in Proof "
+                        "Mode.\n" CRESET);
+                break;
+            }
+
+            if (!rt->proof_state) {
+                fprintf(stderr, RED "Error: No active proof state.\n" CRESET);
+                break;
+            }
+
+            Expression *current_goal = proof_state_current(rt->proof_state);
+            if (!current_goal) {
+                fprintf(stderr, RED "Error: No current goal.\n" CRESET);
+                break;
+            }
+
+            Context *goal_ctx = get_expression_context(current_goal);
+            Context *runtime_ctx = mengine_runtime_context(rt);
+            if (goal_ctx && runtime_ctx) {
+                char *ctx_str = stringify_context_until(goal_ctx, runtime_ctx);
+                printf(CYN "Goal Context:" CRESET "\n%s\n", ctx_str);
+                free(ctx_str);
+            }
+            printf(CYN "Goal:" CRESET "\n%s\n",
+                   stringify_expression(get_expression_type(current_goal)));
+            break;
+        }
+        case SHOW_KW_STATE: {
+            if (rt->mode == MENGINE_RUNTIME_COMMAND_MODE) {
+                fprintf(stderr, RED
+                        "Error: 'Show State' can only be used in Proof "
+                        "Mode.\n" CRESET);
+                break;
+            }
+
+            if (!rt->proof_state) {
+                fprintf(stderr, RED "Error: No active proof state.\n" CRESET);
+                break;
+            }
+
+            Expression *current_goal = proof_state_current(rt->proof_state);
+            if (!current_goal) {
+                fprintf(stderr, RED "Error: No current goal.\n" CRESET);
+                break;
+            }
+
+            // Show proof term
+            Expression *proof_term = proof_state_original_goal(rt->proof_state);
+            if (!proof_term) {
+                fprintf(stderr,
+                        RED "Error: Couldn't get original goal.\n" CRESET);
+                break;
+            }
+            fprintf(stdout, CYN "Proof Term:" CRESET "\n%s\n",
+                    stringify_expression(proof_term));
+
+            // Show current goal context
+            Context *goal_ctx = get_expression_context(current_goal);
+            Context *runtime_ctx = mengine_runtime_context(rt);
+            if (goal_ctx && runtime_ctx) {
+                char *ctx_str = stringify_context_until(goal_ctx, runtime_ctx);
+                fprintf(stdout, CYN "Goal Context:" CRESET "\n%s\n", ctx_str);
+                free(ctx_str);
+            }
+
+            // Show goal
+            fprintf(stdout, CYN "Goal:" CRESET "\n%s\n",
+                    stringify_expression(get_expression_type(current_goal)));
+            break;
+        }
+    }
+}
+
 void mengine_execute_command(MEngineRuntime *rt, Command *cmd) {
     if (!rt || !cmd) {
         return;
@@ -663,8 +783,9 @@ void mengine_execute_command(MEngineRuntime *rt, Command *cmd) {
         case CMD_INDUCTIVE: {
             return _handle_inductive_command(rt, &cmd->as.inductive);
         }
-        case CMD_DECL_KEYWORD:
-        case CMD_STMT_KEYWORD:
+        case CMD_SHOW: {
+            return _handle_show_command(rt, &cmd->as.show);
+        }
         default:
             return;
     }

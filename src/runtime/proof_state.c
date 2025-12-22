@@ -3,8 +3,11 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-static void proof_state_register_top_level_uplink(Expression *goal) {
-    Uplink *ul = new_uplink_tl();
+#include "src/kernel/expression.h"
+
+static void proof_state_register_top_level_uplink(ProofState *ps,
+                                                  Expression *goal) {
+    Uplink *ul = new_uplink(ps, TOP_LEVEL_HOLE);
     add_to_parents(goal, ul);
 }
 
@@ -22,13 +25,13 @@ ProofState *proof_state_new(Expression *initial_goal) {
         return NULL;
     }
 
+    ps->initial_goal = initial_goal;
     ps->goals = dll_create();
     ps->goal_index = 0;
 
     DLLNode *n = dll_new_node(initial_goal);
     dll_insert_at_tail(ps->goals, n);
-
-    proof_state_register_top_level_uplink(initial_goal);
+    proof_state_register_top_level_uplink(ps, initial_goal);
 
     return ps;
 }
@@ -61,6 +64,13 @@ Expression *proof_state_current(ProofState *ps) {
         return NULL;
     }
     return (Expression *)dll_at(ps->goals, ps->goal_index)->data;
+}
+
+Expression *proof_state_original_goal(ProofState *ps) {
+    if (!ps) {
+        return NULL;
+    }
+    return ps->initial_goal;
 }
 
 bool proof_state_next(ProofState *ps) {

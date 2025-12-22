@@ -1,6 +1,7 @@
 #ifndef COMMAND_PARSER_H
 #define COMMAND_PARSER_H
 
+#include "src/common/lexer.h"
 #include "src/metalanguage/parser.h"
 
 typedef enum {
@@ -9,29 +10,40 @@ typedef enum {
     CMD_STATEMENT,
     CMD_CHECK,
     CMD_INDUCTIVE,
-    CMD_DECL_KEYWORD,
-    CMD_STMT_KEYWORD
+    CMD_SHOW
 } CommandTag;
 
 typedef enum { DECL_KW_AXIOM, DECL_KW_VARIABLE } DeclKeyword;
-
-typedef enum { STMT_KW_THEOREM, STMT_KW_LEMMA } StmtKeyword;
 
 typedef struct {
     DeclKeyword kw;
 } DeclKeywordCmd;
 
+char *decl_keyword_to_string(DeclKeyword kw);
+
+typedef enum { STMT_KW_THEOREM, STMT_KW_LEMMA } StmtKeyword;
+
 typedef struct {
     StmtKeyword kw;
 } StmtKeywordCmd;
+
+char *stmt_keyword_to_string(StmtKeyword kw);
+
+typedef enum {
+    SHOW_KW_CONTEXT,
+    SHOW_KW_PROOF,
+    SHOW_KW_GOAL,
+    SHOW_KW_STATE
+} ShowKeyword;
+
+typedef struct {
+    ShowKeyword kw;
+} ShowCmd;
 
 typedef struct {
     DeclKeyword kw;
     Binder binder;
 } DeclarationCmd;
-
-char *decl_keyword_to_string(DeclKeyword kw);
-char *stmt_keyword_to_string(StmtKeyword kw);
 
 typedef struct {
     AST *term;
@@ -52,15 +64,15 @@ typedef struct {
 } StatementCmd;
 
 typedef struct {
-    char *name;     // Constructor name
-    AST *type;      // Constructor type
+    char *name;  // Constructor name
+    AST *type;   // Constructor type
 } InductiveConstructor;
 
 typedef struct {
-    char *name;                       // Inductive type name
-    Binder **params;                  // Parameters (e.g., A : Type, R : A -> A -> Prop)
+    char *name;       // Inductive type name
+    Binder **params;  // Parameters (e.g., A : Type, R : A -> A -> Prop)
     size_t param_count;
-    AST *type;                        // Return type (e.g., Prop, Set, Type)
+    AST *type;                            // Return type (e.g., Prop, Set, Type)
     InductiveConstructor **constructors;  // List of constructors
     size_t constructor_count;
 } InductiveCmd;
@@ -68,8 +80,7 @@ typedef struct {
 typedef struct Command {
     CommandTag tag;
     union {
-        DeclKeywordCmd decl_kw;
-        StmtKeywordCmd stmt_kw;
+        ShowCmd show;
         CheckCmd check;
         DeclarationCmd decl;
         DefinitionCmd defn;
@@ -146,6 +157,22 @@ StmtKeyword command_parse_statement_keyword(Parser *p);
 Command *command_parse_check(Parser *p);
 
 /**
+ * <show> ::= "Show" <show_keyword>
+ *
+ * @param p Pointer to the Parser.
+ * @return Command structure representing the parsed show command.
+ */
+Command *command_parse_show(Parser *p);
+
+/**
+ * <show_keyword> ::= "Context" | "Proof" | "Goal" | "State"
+ *
+ * @param p Pointer to the Parser.
+ * @return ShowKeyword representing the parsed show keyword.
+ */
+ShowKeyword command_parse_show_type(Parser *p);
+
+/**
  * <constructor> ::= "|" <identifier> ":" <term>
  *
  * @param p Pointer to the Parser.
@@ -178,7 +205,7 @@ static CommandDispatchEntry command_dispatch_table[] = {
     {TOK_LEMMA, command_parse_statement},
     {TOK_CHECK, command_parse_check},
     {TOK_INDUCTIVE, command_parse_inductive},
-};
+    {TOK_SHOW, command_parse_show}};
 
 #define CMD_DISPATCH_TABLE (command_dispatch_table)
 #define CMD_DISPATCH_TABLE_SIZE \

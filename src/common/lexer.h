@@ -36,11 +36,14 @@ typedef enum {
     TOK_THEOREM,     // Theorem
     TOK_LEMMA,       // Lemma
     TOK_CHECK,       // Check
+    TOK_SHOW,        // Show
+    TOK_CONTEXT,     // Context
+    TOK_PROOF,       // Proof
+    TOK_GOAL,        // Goal
+    TOK_STATE,       // State
     TOK_INDUCTIVE,   // Inductive
 
     // tactic keywords
-    TOK_PROOF,        // Proof
-    TOK_QED,          // Qed
     TOK_ADMITTED,     // Admitted
     TOK_INTRO,        // intro
     TOK_INTROS,       // intros
@@ -73,6 +76,51 @@ typedef struct {
     int pos;                  // current char index
     MEngineOptions *options;  // Parser options
 } Lexer;
+
+typedef struct {
+    const char *name;
+    TokenType kind;
+} Keyword;
+
+// clang-format off
+static const Keyword keywords[] = {
+    #define KEYWORD(name, tok) {name, tok},
+        KEYWORD("fun", TOK_FUN)
+        KEYWORD("forall", TOK_FORALL)
+        KEYWORD("Type", TOK_TYPE)
+        KEYWORD("Prop", TOK_PROP)
+        KEYWORD("let", TOK_LET)
+        KEYWORD("in", TOK_IN)
+        KEYWORD("match", TOK_MATCH)
+        KEYWORD("with", TOK_WITH)
+        KEYWORD("end", TOK_END)
+        KEYWORD("Axiom", TOK_AXIOM)
+        KEYWORD("Variable", TOK_VARIABLE)
+        KEYWORD("Definition", TOK_DEFINITION)
+        KEYWORD("Theorem", TOK_THEOREM)
+        KEYWORD("Lemma", TOK_LEMMA)
+        KEYWORD("Check", TOK_CHECK)
+        KEYWORD("Show", TOK_SHOW)
+        KEYWORD("Context", TOK_CONTEXT)
+        KEYWORD("Proof", TOK_PROOF)
+        KEYWORD("Goal", TOK_GOAL)
+        KEYWORD("State", TOK_STATE)
+        KEYWORD("Inductive", TOK_INDUCTIVE)
+        KEYWORD("Admitted", TOK_ADMITTED)
+        KEYWORD("intro", TOK_INTRO)
+        KEYWORD("intros", TOK_INTROS)
+        KEYWORD("apply", TOK_APPLY)
+        KEYWORD("eapply", TOK_EAPPLY)
+        KEYWORD("exact", TOK_EXACT)
+        KEYWORD("rewrite", TOK_REWRITE)
+        KEYWORD("reflexivity", TOK_REFLEXIVITY)
+        KEYWORD("assumption", TOK_ASSUMPTION)
+        KEYWORD("split", TOK_SPLIT)
+        KEYWORD("left", TOK_LEFT)
+        KEYWORD("right", TOK_RIGHT)
+        KEYWORD("exists", TOK_EXISTS)
+};
+// clang-format on
 
 /* Lexer API */
 
