@@ -2,6 +2,7 @@
 
 #include "src/commandlanguage/command_parser.h"
 #include "src/common/color.h"
+#include "src/kernel/context.h"
 #include "src/kernel/expression.h"
 #include "src/kernel/utils.h"
 #include "src/metalanguage/ast_to_expression.h"
@@ -22,7 +23,8 @@ static void _handle_declaration_command(MEngineRuntime *rt,
 
 Expression *_create_definition_body(MEngineRuntime *rt, Binder **params,
                                     size_t param_count, AST *body,
-                                    Expression **rendered_def_body) {
+                                    Expression **rendered_def_body,
+                                    Context **rendered_type_ctx) {
     // Given params = {(p0: P0) (p1: P1) ... (pn: Pn)}, param_count = n, and a
     // body, convert it to the term fun (p0: P0) => ... => fun (pn: Pn) => body
     Context *c = rt->ctx;
@@ -45,9 +47,10 @@ Expression *_create_definition_body(MEngineRuntime *rt, Binder **params,
 
     Expression *result = ast_to_expression(body, c);
     *rendered_def_body = result;
+    *rendered_type_ctx = c;
     for (size_t i = param_count; i > 0; i--) {
         result = init_lambda_expression_wc(params_rendered[i - 1], result,
-                                           contexts[i - 1]);
+                                           contexts[i]);
     }
 
     free(params_rendered);
@@ -66,15 +69,25 @@ static void _handle_definition_command(MEngineRuntime *rt,
     size_t param_count = defn_cmd->param_count;
 
     Expression *rendered_def_body = NULL;
-    Expression *body = _create_definition_body(
-        rt, params, param_count, defn_cmd->body, &rendered_def_body);
+    Context *rendered_type_ctx = NULL;
+    Expression *body =
+        _create_definition_body(rt, params, param_count, defn_cmd->body,
+                                &rendered_def_body, &rendered_type_ctx);
 
     Expression *inferred_type_def_body = get_expression_type(rendered_def_body);
     Expression *expected_type_def_body =
-        ast_to_expression(defn_cmd->type, rt->ctx);
+        ast_to_expression(defn_cmd->type, rendered_type_ctx);
+    if (!expected_type_def_body) {
+        fprintf(stderr,
+                ERROR "Error:" CRESET " definition '%s' has a invalid type.\n",
+                name);
+    }
+
     if (!congruence(inferred_type_def_body, expected_type_def_body)) {
-        fprintf(stderr, ERROR "Type error:" CRESET
-                " definition '%s' has a mismatched type.\n", name);
+        fprintf(stderr,
+                ERROR "Type error:" CRESET
+                      " definition '%s' has a mismatched type.\n",
+                name);
         fprintf(stderr, "  Declared type: %s\n",
                 stringify_expression(expected_type_def_body));
         fprintf(stderr, "  Inferred type: %s\n",
@@ -82,13 +95,11 @@ static void _handle_definition_command(MEngineRuntime *rt,
         return;
     }
 
-    definition_table_insert(rt->def_table, name, inferred_type_def_body, body);
     Expression *defn_var =
-        init_var_expression_wc(defn_cmd->name, inferred_type_def_body, rt->ctx);
+        init_var_expression_wc_with_definition(defn_cmd->name, body, rt->ctx);
     rt->ctx = context_insert(rt->ctx, defn_var);
-
     fprintf(stdout, UI "Definition " CRESET "%s : %s defined.\n", name,
-            stringify_expression(inferred_type_def_body));
+            stringify_expression(get_expression_type(defn_var)));
 }
 
 static void _handle_statement_command(MEngineRuntime *rt,
@@ -99,7 +110,8 @@ static void _handle_statement_command(MEngineRuntime *rt,
 
     Expression *statement_type = ast_to_expression(stmt_cmd->type, rt->ctx);
     if (!statement_type) {
-        fprintf(stderr, ERROR "Failed to convert type for Statement %s\n" CRESET,
+        fprintf(stderr,
+                ERROR "Failed to convert type for Statement %s\n" CRESET,
                 stmt_cmd->name);
         return;
     }
@@ -120,9 +132,16 @@ static void _handle_check_command(MEngineRuntime *rt, CheckCmd *check_cmd) {
         return;
     }
 
-    Expression *expr = ast_to_expression(check_cmd->term, rt->ctx);
+    // If we're in proof mode, we should render this Expression against the
+    // current goal's context rather than the runtime context.
+    Context *ctx =
+        (rt->mode == MENGINE_RUNTIME_PROOF_MODE)
+            ? get_expression_context(proof_state_current(rt->proof_state))
+            : rt->ctx;
+    Expression *expr = ast_to_expression(check_cmd->term, ctx);
     if (!expr) {
-        fprintf(stderr, ERROR "Failed to convert term in Check command.\n" CRESET);
+        fprintf(stderr,
+                ERROR "Failed to convert term in Check command.\n" CRESET);
         return;
     }
 
@@ -151,8 +170,10 @@ static Expression *_build_motive_type(Expression *ind_var,
     for (size_t i = 0; i < param_count; i++) {
         ind_applied = init_app_expression_wc(ind_applied, param_vars[i], ctx);
         if (!ind_applied) {
-            fprintf(stderr, ERROR
-                    "Failed to apply parameter %zu in motive type\n" CRESET, i);
+            fprintf(stderr,
+                    ERROR
+                    "Failed to apply parameter %zu in motive type\n" CRESET,
+                    i);
             return NULL;
         }
     }
@@ -238,7 +259,8 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd,
         InductiveConstructor *ctor = ind_cmd->constructors[i];
         Expression *ctor_expr = context_lookup_by_name(elim_ctx, ctor->name);
         if (!ctor_expr) {
-            fprintf(stderr, ERROR "Constructor %s not found in context\n" CRESET,
+            fprintf(stderr,
+                    ERROR "Constructor %s not found in context\n" CRESET,
                     ctor->name);
             free(case_vars);
             free(case_contexts);
@@ -263,7 +285,8 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd,
         case_vars[i] =
             init_var_expression_wc(case_name, case_type, case_contexts[i]);
         if (!case_vars[i]) {
-            fprintf(stderr, ERROR "Failed to create case variable for %s\n" CRESET,
+            fprintf(stderr,
+                    ERROR "Failed to create case variable for %s\n" CRESET,
                     ctor->name);
             free(case_vars);
             free(case_contexts);
@@ -296,8 +319,10 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd,
         ind_applied =
             init_app_expression_wc(ind_applied, param_vars[i], final_ctx);
         if (!ind_applied) {
-            fprintf(stderr, ERROR
-                    "Failed to apply parameter %zu to inductive in conclusion\n" CRESET,
+            fprintf(stderr,
+                    ERROR
+                    "Failed to apply parameter %zu to inductive in "
+                    "conclusion\n" CRESET,
                     i);
             free(case_vars);
             free(case_contexts);
@@ -359,7 +384,8 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd,
         result = init_forall_expression_wc(case_vars[i - 1], result,
                                            case_contexts[i]);
         if (!result) {
-            fprintf(stderr, ERROR "Failed to wrap with constructor case %zu\n" CRESET,
+            fprintf(stderr,
+                    ERROR "Failed to wrap with constructor case %zu\n" CRESET,
                     i - 1);
             free(case_vars);
             free(case_contexts);
@@ -419,8 +445,10 @@ static Expression *_build_constructor_case_type(
     for (size_t i = 0; i < param_count; i++) {
         ctor_app = init_app_expression_wc(ctor_app, param_vars[i], elim_ctx);
         if (!ctor_app) {
-            fprintf(stderr, ERROR
-                    "Failed to apply parameter %zu to constructor\n" CRESET, i);
+            fprintf(stderr,
+                    ERROR
+                    "Failed to apply parameter %zu to constructor\n" CRESET,
+                    i);
             dll_destroy(arg_types);
             return NULL;
         }
@@ -439,7 +467,8 @@ static Expression *_build_constructor_case_type(
         case_ctx = context_insert(case_ctx, arg_vars[i]);
         ctor_app = init_app_expression_wc(ctor_app, arg_vars[i], case_ctx);
         if (!ctor_app) {
-            fprintf(stderr, ERROR "Failed to apply constructor arg %zu\n" CRESET, i);
+            fprintf(stderr,
+                    ERROR "Failed to apply constructor arg %zu\n" CRESET, i);
             dll_destroy(arg_types);
             free(arg_vars);
             return NULL;
@@ -490,7 +519,8 @@ static Expression *_build_constructor_case_type(
         case_result =
             init_app_expression_wc(case_result, ctor_indices[i], case_ctx);
         if (!case_result) {
-            fprintf(stderr, ERROR "Failed to apply motive to index %zu\n" CRESET, i);
+            fprintf(stderr,
+                    ERROR "Failed to apply motive to index %zu\n" CRESET, i);
             dll_destroy(arg_types);
             free(arg_vars);
             if (ctor_indices) {
@@ -578,8 +608,8 @@ static void _handle_inductive_command(MEngineRuntime *rt,
 
         Expression *ctor_core_type = ast_to_expression(ctor->type, c);
         if (!ctor_core_type) {
-            fprintf(stderr, ERROR
-                    "Failed to convert constructor type for %s\n" CRESET,
+            fprintf(stderr,
+                    ERROR "Failed to convert constructor type for %s\n" CRESET,
                     ctor->name);
             free(param_vars);
             free(contexts);
@@ -591,8 +621,10 @@ static void _handle_inductive_command(MEngineRuntime *rt,
             ctor_type = init_forall_expression_wc(param_vars[j - 1], ctor_type,
                                                   contexts[j]);
             if (!ctor_type) {
-                fprintf(stderr, ERROR
-                        "Failed to wrap constructor type with parameter %zu\n" CRESET,
+                fprintf(stderr,
+                        ERROR
+                        "Failed to wrap constructor type with parameter "
+                        "%zu\n" CRESET,
                         j - 1);
                 free(param_vars);
                 free(contexts);
@@ -603,7 +635,8 @@ static void _handle_inductive_command(MEngineRuntime *rt,
         Expression *ctor_var =
             init_var_expression_wc(ctor->name, ctor_type, rt->ctx);
         if (!ctor_var) {
-            fprintf(stderr, ERROR
+            fprintf(stderr,
+                    ERROR
                     "Failed to create constructor variable for %s\n" CRESET,
                     ctor->name);
             free(param_vars);
@@ -707,11 +740,12 @@ static void _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
             if (goal_ctx && runtime_ctx) {
                 char *ctx_str = stringify_context_until(
                     goal_ctx, runtime_ctx, CTX_STRINGIFY_PRETTY_IND0);
-                fprintf(stdout, HEADER "Goal Context:" CRESET "\n%s\n", ctx_str);
+                fprintf(stdout, HEADER "Goal Context:" CRESET "\n%s\n",
+                        ctx_str);
                 free(ctx_str);
             }
             fprintf(stdout, HEADER "Goal:" CRESET "\n%s\n",
-                   stringify_expression(get_expression_type(current_goal)));
+                    stringify_expression(get_expression_type(current_goal)));
             break;
         }
         case SHOW_KW_STATE: {

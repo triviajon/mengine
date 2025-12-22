@@ -4,7 +4,6 @@
 #include "src/common/options.h"
 #include "src/kernel/context.h"
 #include "src/kernel/utils.h"
-#include "src/runtime/definition_table.h"
 #include "src/runtime/proof_state.h"
 
 typedef enum {
@@ -20,8 +19,6 @@ typedef enum {
 typedef struct {
     MEngineOptions *options;  // Runtime options
     Context *ctx;             // current runtime context
-    DefinitionTable
-        *def_table;  // table of definitions (bindings from strings to terms)
     Expression
         *pending_theorem;  // when in proof mode, this holds a reference to the
                            // theorem yet to be proven. It is expected that when
