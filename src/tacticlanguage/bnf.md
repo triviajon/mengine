@@ -4,8 +4,8 @@ Tactic language
 <proof_command> ::= | <tactic> "."
                     | "Admitted" "."
 
-<tactic> ::= "intro" [ <ident> ]
-          | "intros" { <ident> }
+<tactic> ::= "intro" [ <identifier> ]
+          | "intros" { <identifier> }
           | "apply" <term>
           | "eapply" <term>
           | "exact" <term>
