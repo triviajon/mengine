@@ -207,7 +207,7 @@ bool is_alpha(char c) {
 
 bool is_digit(char c) { return (c >= '0' && c <= '9'); }
 
-bool is_ident_start(char c) { return is_alpha(c) || c == '_'; }
+bool is_ident_start(char c) { return is_alpha(c) || c == '_' || c == '\''; }
 
 bool is_ident_continue(char c) { return is_ident_start(c) || is_digit(c); }
 
