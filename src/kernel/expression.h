@@ -264,6 +264,9 @@ DoublyLinkedList *get_expression_uplinks(Expression *expression);
 // Returns the type of an expression.
 Expression *get_expression_type(Expression *expression);
 
+// Returns the body of an expression, or null if the variable is opaque.
+Expression *get_expression_body(Expression *expression);
+
 // Returns the context of an expression.
 Context *get_expression_context(Expression *expression);
 

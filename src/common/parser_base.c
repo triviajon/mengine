@@ -52,10 +52,49 @@ bool parser_expect_no_consume(Parser *p, TokenType type) {
 }
 
 static void print_error_pointer(const char *source, int pos) {
-    fprintf(stderr, ERROR "%s" CRESET, source);
+    // Find the start/end of the current line
+    int line_start = pos;
+    while (line_start > 0 && source[line_start - 1] != '\n') {
+        line_start--;
+    }
 
-    for (int i = 0; i < pos; i++) {
-        char c = source[i];
+    int line_end = pos;
+    while (source[line_end] && source[line_end] != '\n') {
+        line_end++;
+    }
+
+    // If line is too long, show context around the error
+    const int MAX_LINE_LEN = 120;
+    int context_start = line_start;
+    int context_end = line_end;
+    int display_pos = pos - line_start;
+
+    if (line_end - line_start > MAX_LINE_LEN) {
+        context_start = pos - (MAX_LINE_LEN / 4);
+        if (context_start < line_start) {
+            context_start = line_start;
+        }
+        context_end = context_start + MAX_LINE_LEN;
+        if (context_end > line_end) {
+            context_end = line_end;
+            context_start = context_end - MAX_LINE_LEN;
+            if (context_start < line_start) {
+                context_start = line_start;
+            }
+        }
+        display_pos = pos - context_start;
+    }
+
+    // Print the source snippet
+    fprintf(stderr, ERROR);
+    for (int i = context_start; i < context_end; i++) {
+        fputc(source[i], stderr);
+    }
+    fprintf(stderr, CRESET "\n");
+
+    // Print the pointer
+    for (int i = 0; i < display_pos; i++) {
+        char c = source[context_start + i];
         if (c == '\t') {
             fputc('\t', stderr);
         } else {

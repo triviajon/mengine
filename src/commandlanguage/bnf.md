@@ -7,6 +7,7 @@ Similar to Rocq's Vernacular:
             | <inductive>
        <!-- | <fixpoint> -->
             | <check>
+            | <print>
             | <show>
 
 <declaration> ::= <declaration_keyword> <assumption> "."
@@ -28,6 +29,8 @@ Similar to Rocq's Vernacular:
 <constructor> ::= "|" <identifier> ":" <term>
 
 <check> ::= "Check" <term> "."
+
+<print> ::= "Print" <identifer> "."
 
 <show> ::= "Show" <show_keyword> "."
 <show_keyword> ::= "Context" | "Proof" | "Goal" | "State"

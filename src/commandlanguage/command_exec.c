@@ -108,6 +108,10 @@ static void _handle_statement_command(MEngineRuntime *rt,
         return;
     }
 
+    // todo immediately: oh my god jon you just bundle the hole with the
+    // var_expression that's created, and then make sure add_to_parents and
+    // fill_hole are updated. in this sense, a theorem is just a definition we
+    // need to figure out the body for.
     Expression *statement_type = ast_to_expression(stmt_cmd->type, rt->ctx);
     if (!statement_type) {
         fprintf(stderr,
@@ -153,6 +157,44 @@ static void _handle_check_command(MEngineRuntime *rt, CheckCmd *check_cmd) {
     }
 
     fprintf(stdout, DIMTEXT "%s\n\t: %s\n" CRESET, stringify_expression(expr),
+            stringify_expression(expr_type));
+}
+
+static void _handle_print_command(MEngineRuntime *rt, PrintCmd *print_cmd) {
+    if (!rt || !print_cmd) {
+        return;
+    }
+
+    // If we're in proof mode, we should render this Expression against the
+    // current goal's context rather than the runtime context.
+    Context *ctx =
+        (rt->mode == MENGINE_RUNTIME_PROOF_MODE)
+            ? get_expression_context(proof_state_current(rt->proof_state))
+            : rt->ctx;
+    Expression *expr = context_lookup_by_name(ctx, print_cmd->name);
+    if (!expr) {
+        fprintf(stderr,
+                ERROR "Failed to convert term in Print command.\n" CRESET);
+        return;
+    }
+
+    Expression *expr_type = get_expression_type(expr);
+    if (!expr_type) {
+        fprintf(stderr, ERROR
+                "Failed to get type of expression in Print command.\n" CRESET);
+        return;
+    }
+
+    // Attempt to get the variable's body
+    Expression *expr_body = get_expression_body(expr);
+    if (!expr_body) {
+        fprintf(stderr, ERROR "%s is an opaque variable.\n" CRESET,
+                stringify_expression(expr_body));
+        return;
+    }
+
+    fprintf(stdout, DIMTEXT "%s := %s\n\t: %s\n" CRESET,
+            stringify_expression(expr), stringify_expression(expr_body),
             stringify_expression(expr_type));
 }
 
@@ -812,6 +854,9 @@ void mengine_execute_command(MEngineRuntime *rt, Command *cmd) {
         }
         case CMD_CHECK: {
             return _handle_check_command(rt, &cmd->as.check);
+        }
+        case CMD_PRINT: {
+            return _handle_print_command(rt, &cmd->as.print);
         }
         case CMD_INDUCTIVE: {
             return _handle_inductive_command(rt, &cmd->as.inductive);

@@ -234,6 +234,29 @@ Command *command_parse_check(Parser *p) {
     return cmd;
 }
 
+Command *command_parse_print(Parser *p) {
+    if (!parser_expect_consume(p, TOK_PRINT)) {
+        parser_error(p, "expected 'Print'");
+    }
+
+    if (!parser_expect_no_consume(p, TOK_IDENT)) {
+        parser_error(p, "expected identifier after 'Print'");
+    }
+
+    Token *ident_token = parser_next(p);
+    char *name = strdup(ident_token->lexeme);
+    lexer_free_token(ident_token);
+
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "Expected '.' at end of print command");
+    }
+
+    Command *cmd = malloc(sizeof(Command));
+    cmd->tag = CMD_PRINT;
+    cmd->as.print.name = name;
+    return cmd;
+}
+
 Command *command_parse_show(Parser *p) {
     if (!parser_expect_consume(p, TOK_SHOW)) {
         parser_error(p, "expected 'Show'");

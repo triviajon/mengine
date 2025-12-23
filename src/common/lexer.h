@@ -36,6 +36,7 @@ typedef enum {
     TOK_THEOREM,     // Theorem
     TOK_LEMMA,       // Lemma
     TOK_CHECK,       // Check
+    TOK_PRINT,       // Print
     TOK_SHOW,        // Show
     TOK_CONTEXT,     // Context
     TOK_PROOF,       // Proof
@@ -100,6 +101,7 @@ static const Keyword keywords[] = {
         KEYWORD("Theorem", TOK_THEOREM)
         KEYWORD("Lemma", TOK_LEMMA)
         KEYWORD("Check", TOK_CHECK)
+        KEYWORD("Print", TOK_PRINT)
         KEYWORD("Show", TOK_SHOW)
         KEYWORD("Context", TOK_CONTEXT)
         KEYWORD("Proof", TOK_PROOF)

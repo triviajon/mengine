@@ -97,7 +97,7 @@ void mengine_repl(MEngineRuntime *rt) {
         trim_whitespace(buffer);
 
         // Handle graceful quitting
-        if (strcmp(buffer, "quit.") == 0) {
+        if (strncmp(buffer, "quit.", 5) == 0) {
             break;
         }
 

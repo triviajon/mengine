@@ -9,6 +9,7 @@ typedef enum {
     CMD_DEFINITION,
     CMD_STATEMENT,
     CMD_CHECK,
+    CMD_PRINT,
     CMD_INDUCTIVE,
     CMD_SHOW
 } CommandTag;
@@ -51,6 +52,10 @@ typedef struct {
 
 typedef struct {
     char *name;
+} PrintCmd;
+
+typedef struct {
+    char *name;
     Binder **params;
     size_t param_count;
     AST *type;
@@ -82,6 +87,7 @@ typedef struct Command {
     union {
         ShowCmd show;
         CheckCmd check;
+        PrintCmd print;
         DeclarationCmd decl;
         DefinitionCmd defn;
         StatementCmd stmt;
@@ -157,6 +163,14 @@ StmtKeyword command_parse_statement_keyword(Parser *p);
 Command *command_parse_check(Parser *p);
 
 /**
+ * <print> ::= "Print" <term> "."
+ *
+ * @param p Pointer to the Parser.
+ * @return Command structure representing the parsed print command.
+ */
+Command *command_parse_print(Parser *p);
+
+/**
  * <show> ::= "Show" <show_keyword>
  *
  * @param p Pointer to the Parser.
@@ -204,6 +218,7 @@ static CommandDispatchEntry command_dispatch_table[] = {
     {TOK_THEOREM, command_parse_statement},
     {TOK_LEMMA, command_parse_statement},
     {TOK_CHECK, command_parse_check},
+    {TOK_PRINT, command_parse_print},
     {TOK_INDUCTIVE, command_parse_inductive},
     {TOK_SHOW, command_parse_show}};
 
