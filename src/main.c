@@ -13,11 +13,11 @@ static char args_doc[] = "[FILENAME]";
 static struct argp_option options[] = {
     {"debug", 'd', 0, 0, "Enable debug mode (default: false)", 0},
     {"print-tokens", OPT_PRINT_TOKENS, 0, 0,
-     "Print tokens during parsing (default: false)", 0},
+     "Print tokens during parsing (default: true, requires --debug)", 0},
     {"print-ast", OPT_PRINT_AST, 0, 0,
-     "Print AST during parsing (default: false)", 0},
+     "Print AST during parsing (default: true, requires --debug)", 0},
     {"print-mode", OPT_PRINT_MODE, 0, 0,
-     "Print mode during execution (default: false)", 0},
+     "Print mode during execution (default: true, requires --debug)", 0},
     {0}};
 struct arguments {
     char *filename;  // [FILENAME]
@@ -98,9 +98,9 @@ int main(int argc, char **argv) {
 
     // Default values
     arguments.debug = false;
-    arguments.debug__print_tokens = false;
-    arguments.debug__print_ast = false;
-    arguments.debug__print_mode = false;
+    arguments.debug__print_tokens = true;
+    arguments.debug__print_ast = true;
+    arguments.debug__print_mode = true;
     arguments.filename = NULL;
 
     argp_parse(&argp, argc, argv, 0, 0, &arguments);

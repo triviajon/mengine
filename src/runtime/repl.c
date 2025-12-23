@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "src/common/color.h"
 #include "src/kernel/expression.h"
@@ -109,6 +110,7 @@ void mengine_repl(MEngineRuntime *rt) {
         }
 
         print_prompt_and_state(rt);
+        memset(buffer, 0, REPL_LINE_CAP);
     }
 
     fprintf(stdout, UI "Goodbye.\n" CRESET);

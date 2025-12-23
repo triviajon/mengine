@@ -68,12 +68,10 @@ static void print_error_pointer(const char *source, int pos) {
 void parser_error(Parser *p, const char *msg) {
     int pos = p->current ? p->current->pos : -1;
 
-    if (!p->error_recovery_set) {
-        if (p->source && pos >= 0) {
-            print_error_pointer(p->source, pos);
-        }
-        fprintf(stderr, ERROR BOLD "Parse Error: " CRESET "%s\n", msg);
+    if (p->source && pos >= 0) {
+        print_error_pointer(p->source, pos);
     }
+    fprintf(stderr, ERROR BOLD "Parse Error: " CRESET "%s\n", msg);
 
     if (p->error_recovery_set) {
         longjmp(p->error_jmp, 1);
