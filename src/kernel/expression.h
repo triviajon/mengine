@@ -33,14 +33,13 @@ typedef enum {
     FORALL_BODY,
     CTX_VAR,
     HOLE_TYPE,
-    TOP_LEVEL_HOLE,
+    VAR_BODY,
 } Relation;
 
 /*
 An uplink is a combination of
     1a) a pointer to a expression (one of my parents) OR
     1b) a pointer to a context (where I am referenced)
-    1c) a pointer to a proof state (where I am the initial goal)
     2) an uplink relation (how what am I to that parent)
 
     Either 1a or 1b will ever be true, but never both.

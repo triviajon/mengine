@@ -108,10 +108,6 @@ static void _handle_statement_command(MEngineRuntime *rt,
         return;
     }
 
-    // todo immediately: oh my god jon you just bundle the hole with the
-    // var_expression that's created, and then make sure add_to_parents and
-    // fill_hole are updated. in this sense, a theorem is just a definition we
-    // need to figure out the body for.
     Expression *statement_type = ast_to_expression(stmt_cmd->type, rt->ctx);
     if (!statement_type) {
         fprintf(stderr,
@@ -120,9 +116,11 @@ static void _handle_statement_command(MEngineRuntime *rt,
         return;
     }
 
-    Expression *theorem =
-        init_var_expression_wc(stmt_cmd->name, statement_type, rt->ctx);
-    mengine_runtime_proof_mode(rt, theorem);
+    Expression *initial_goal =
+        init_hole_expression("Goal", statement_type, rt->ctx);
+    Expression *pending_theorem = init_var_expression_wc_with_definition(
+        stmt_cmd->name, initial_goal, rt->ctx);
+    mengine_runtime_proof_mode(rt, pending_theorem);
 
     fprintf(stdout, UI "%s " CRESET "%s : %s stated.\n",
             stmt_keyword_to_string(stmt_cmd->kw), stmt_cmd->name,
@@ -748,14 +746,13 @@ static void _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
                 break;
             }
 
-            Expression *proof_term = proof_state_original_goal(rt->proof_state);
-            if (!proof_term) {
-                fprintf(stderr,
-                        RED "Error: Couldn't get original goal.\n" CRESET);
-                break;
-            }
+            // Show proof term
+            Expression *pending_theorem =
+                proof_state_pending_theorem(rt->proof_state);
+            Expression *pending_theorem_body =
+                get_expression_body(pending_theorem);
             fprintf(stdout, HEADER "Proof Term:" CRESET "\n%s\n",
-                    stringify_expression(proof_term));
+                    stringify_expression(pending_theorem_body));
             break;
         }
         case SHOW_KW_GOAL: {
@@ -810,14 +807,12 @@ static void _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
             }
 
             // Show proof term
-            Expression *proof_term = proof_state_original_goal(rt->proof_state);
-            if (!proof_term) {
-                fprintf(stderr,
-                        RED "Error: Couldn't get original goal.\n" CRESET);
-                break;
-            }
+            Expression *pending_theorem =
+                proof_state_pending_theorem(rt->proof_state);
+            Expression *pending_theorem_body =
+                get_expression_body(pending_theorem);
             fprintf(stdout, HEADER "Proof Term:" CRESET "\n%s\n",
-                    stringify_expression(proof_term));
+                    stringify_expression(pending_theorem_body));
 
             // Show current goal context
             Context *goal_ctx = get_expression_context(current_goal);

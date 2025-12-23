@@ -6,33 +6,20 @@
 #include "src/kernel/expression.h"
 
 typedef struct {
-    Expression *initial_goal;  // Original hole being solved.
+    Expression *pending_theorem;
     DoublyLinkedList
         *goals;         // list of Expression* representing proof obligations
     size_t goal_index;  // current goal index
 } ProofState;
 
 /**
- * Create a new proof state with a single initial theorem, and adds a TOP_LEVEL
- * uplink for the goal.
+ * Create a new proof state to prove the pending theorem.
  *
- * @param initial_goal The initial theorem expression (should be a
- * VAR_EXPRESSION representing "theorem_name : type").
- * @param initial_context The initial context of the theorem.
+ * @param pending_theorem The pending theorem expression (variable) whose body
+ * should be a hole.
  * @return Pointer to the newly allocated ProofState.
  */
-ProofState *proof_state_new_from_theorem(Expression *initial_theorem,
-                                         Context *initial_context);
-
-/**
- * Create a new proof state with a single initial goal, and adds a TOP_LEVEL
- * uplink for the goal.
- *
- * @param initial_goal The initial goal expression (should be a
- * HOLE_EXPRESSION).
- * @return Pointer to the newly allocated ProofState.
- */
-ProofState *proof_state_new(Expression *initial_goal);
+ProofState *proof_state_new(Expression *pending_theorem);
 
 /**
  * Free a proof state and all associated resources.
@@ -50,12 +37,12 @@ void proof_state_free(ProofState *ps);
 Expression *proof_state_current(ProofState *ps);
 
 /**
- * Return the original goal, which may be partially filled.
+ * Return the pending theorem, whose body may be partially filled.
  *
  * @param ps Pointer to the ProofState to free.
  * @return Pointer to the original goal.
  */
-Expression *proof_state_original_goal(ProofState *ps);
+Expression *proof_state_pending_theorem(ProofState *ps);
 
 /**
  * Advance to next goal, if it exists.

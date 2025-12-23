@@ -186,14 +186,16 @@ Context *mengine_runtime_context(MEngineRuntime *rt) {
     return rt->ctx;
 }
 
-void mengine_runtime_proof_mode(MEngineRuntime *rt, Expression *theorem) {
-    if (!rt || !theorem) {
+void mengine_runtime_proof_mode(MEngineRuntime *rt,
+                                Expression *pending_theorem) {
+    if (!rt || !pending_theorem) {
         return;
     }
 
     rt->mode = MENGINE_RUNTIME_PROOF_MODE;
-    rt->pending_theorem = theorem;
-    rt->proof_state = proof_state_new_from_theorem(theorem, rt->ctx);
+    rt->pending_theorem = pending_theorem;
+    rt->proof_state = proof_state_new(pending_theorem);
+
     debug_print_mode(rt);
 }
 
