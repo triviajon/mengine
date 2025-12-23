@@ -79,9 +79,10 @@ Context *mengine_runtime_context(MEngineRuntime *rt);
  * Switch runtime to proof mode.
  *
  * @param rt Pointer to the runtime. Must not be NULL.
- * @param theorem Pointer to theorem to be proven (variable). Must not be NULL.
+ * @param pending_theorem
  */
-void mengine_runtime_proof_mode(MEngineRuntime *rt, Expression *theorem);
+void mengine_runtime_proof_mode(MEngineRuntime *rt,
+                                Expression *pending_theorem);
 
 /**
  * Switch runtime to command mode.

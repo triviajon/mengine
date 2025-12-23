@@ -7,7 +7,6 @@
 #include "src/kernel/context.h"
 #include "src/kernel/dyn_array_map.h"
 #include "src/kernel/subst.h"
-#include "src/runtime/proof_state.h"
 
 void add_to_parents(Expression *expression, Uplink *uplink) {
     switch (expression->type) {
@@ -288,6 +287,7 @@ Expression *init_var_expression_wc_with_definition(const char *name,
     expr->type = VAR_EXPRESSION;
     expr->value.var.name = strdup(name);
     expr->value.var.definition = definition;
+    add_to_parents(definition, new_uplink(expr, VAR_BODY));
     expr->value.var.type = get_expression_type(definition);
     expr->value.var.uplinks = dll_create();
     expr->value.var.context = context_insert(defining_context, expr);
@@ -1091,13 +1091,6 @@ void fill_hole(Expression *hole, Expression *term) {
     for (int i = 0; i < dll_len(holepars); i++) {
         Uplink *uplink = dll_at(holepars, i)->data;
         switch (uplink->relation) {
-                // LAMBDA_BODY,
-                // APP_FUNC,
-                // APP_ARG,
-                // FORALL_BODY,
-                // CTX_VAR,
-                // HOLE_TYPE,
-                // TOP_LEVEL_HOLE,
             case (LAMBDA_BODY): {
                 Expression *ptr = (Expression *)uplink->ptr;
                 ptr->value.lambda.body = term;
@@ -1128,9 +1121,9 @@ void fill_hole(Expression *hole, Expression *term) {
                 ptr->value.hole.return_type = term;
                 break;
             }
-            case (TOP_LEVEL_HOLE): {
-                ProofState *ptr = (ProofState *)uplink->ptr;
-                ptr->initial_goal = term;
+            case (VAR_BODY): {
+                Expression *ptr = (Expression *)uplink->ptr;
+                ptr->value.var.definition = term;
             }
             default:
                 break;
