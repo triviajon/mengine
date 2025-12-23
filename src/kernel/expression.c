@@ -413,6 +413,14 @@ Expression *get_expression_type(Expression *expression) {
     }
 }
 
+Expression *get_expression_body(Expression *expression) {
+    if (expression->type != VAR_EXPRESSION) {
+        return NULL;
+    }
+
+    return expression->value.var.definition;
+}
+
 Context *get_expression_context(Expression *expression) {
     switch (expression->type) {
         case (VAR_EXPRESSION):

@@ -82,6 +82,8 @@ static void debug_print_token(Lexer *lx, Token *t) {
         case TOK_CHECK:
             name = "CHECK";
             break;
+        case TOK_PRINT:
+            name = "PRINT";
         case TOK_SHOW:
             name = "SHOW";
             break;

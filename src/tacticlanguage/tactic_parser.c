@@ -57,10 +57,6 @@ Tactic *tactic_parse_proof_command(Parser *p) {
 
     Tactic *tactic = fn(p);
 
-    if (!parser_expect_consume(p, TOK_EOF)) {
-        parser_error(p, "Expected end of proof command (newline)");
-    }
-
     return tactic;
 }
 
