@@ -6,9 +6,18 @@
 
 #include "src/common/color.h"
 #include "src/common/lexer.h"
+#include "src/kernel/doubly_linked_list.h"
 #include "src/kernel/dyn_array_map.h"
 #include "src/kernel/expression.h"
 #include "src/metalanguage/parser.h"
+
+/**
+ * Simple linked list node for storing let bindings with string keys.
+ */
+typedef struct LetBinding {
+    char *name;
+    Expression *value;
+} LetBinding;
 
 /**
  * Internal helper for recursive conversion.
@@ -16,14 +25,54 @@
  *
  * @param ast The AST node to convert.
  * @param context The current context including any bound variables.
- * @param letbindings The map of let bindings to the expressions they bind.
+ * @param letbindings A linked list of LetBinding structs for variable
+ * substitutions.
  * @return The converted Expression, or NULL on failure.
  */
 static Expression *_ast_to_expression(AST *ast, Context *context,
-                                      Map *letbindings);
+                                      DoublyLinkedList *letbindings);
+
+/**
+ * Helper to look up a let binding by name.
+ */
+static Expression *letbindings_get(DoublyLinkedList *letbindings,
+                                   const char *name) {
+    if (!letbindings || !name) {
+        return NULL;
+    }
+
+    DLLNode *current = letbindings->head;
+    while (current) {
+        LetBinding *binding = (LetBinding *)current->data;
+        if (binding && strcmp(binding->name, name) == 0) {
+            return binding->value;
+        }
+        current = current->next;
+    }
+    return NULL;
+}
+
+/**
+ * Helper to add a let binding.
+ */
+static void letbindings_set(DoublyLinkedList *letbindings, const char *name,
+                            Expression *value) {
+    if (!letbindings || !name) {
+        return;
+    }
+
+    LetBinding *binding = (LetBinding *)malloc(sizeof(LetBinding));
+    if (!binding) {
+        return;
+    }
+
+    binding->name = strdup(name);
+    binding->value = value;
+    dll_insert_at_tail(letbindings, dll_new_node(binding));
+}
 
 static Expression *_ast_to_expression(AST *ast, Context *context,
-                                      Map *letbindings) {
+                                      DoublyLinkedList *letbindings) {
     if (!ast) {
         return NULL;
     }
@@ -31,7 +80,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context,
     switch (ast->tag) {
         case AST_VAR: {
             Expression *letbinding =
-                (Expression *)map_get(letbindings, ast->value.var.name);
+                letbindings_get(letbindings, ast->value.var.name);
             if (letbinding) {
                 return letbinding;
             }
@@ -160,9 +209,10 @@ static Expression *_ast_to_expression(AST *ast, Context *context,
                 return NULL;
             }
 
-            map_set(letbindings, (void *)ast->value.let.name, (void *)value);
+            letbindings_set(letbindings, ast->value.let.name, value);
 
-            return value;
+            return _ast_to_expression(ast->value.let.body, context,
+                                      letbindings);
         }
 
         case AST_MATCH: {
@@ -185,9 +235,24 @@ Expression *ast_to_expression(AST *ast, Context *context) {
         return NULL;
     }
 
-    Map *letbindings = map_new();
+    DoublyLinkedList *letbindings = dll_create();
+    Expression *result = _ast_to_expression(ast, context, letbindings);
 
-    return _ast_to_expression(ast, context, letbindings);
+    // Free the letbindings list and its contents
+    if (letbindings) {
+        DLLNode *current = letbindings->head;
+        while (current) {
+            LetBinding *binding = (LetBinding *)current->data;
+            if (binding) {
+                free(binding->name);
+                free(binding);
+            }
+            current = current->next;
+        }
+        dll_destroy(letbindings);
+    }
+
+    return result;
 }
 
 Expression *parse_string_to_expression(const char *input, Context *context) {
