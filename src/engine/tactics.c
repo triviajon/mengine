@@ -438,9 +438,23 @@ TacticResult *rewrite_tactic(Expression *goal, Expression *lemma) {
     // type of lhs/rhs are what the relation are over.
     Expression *return_type = get_expression_type(goal);
     Context *operating_ctx = get_expression_context(goal);
-    Expression *relation_left_hand = get_app_arg(get_app_func(return_type));
+
+    Expression *func1 = get_app_func(return_type);
+    if (!func1) {
+        return init_tactic_result(false, NULL,
+                                  "Goal type is not an application");
+    }
+    Expression *relation_left_hand = get_app_arg(func1);
     Expression *relation_right_hand = get_app_arg(return_type);
-    Expression *relation = get_app_func(get_app_func(return_type));
+    if (!relation_left_hand || !relation_right_hand) {
+        return init_tactic_result(false, NULL, "Goal type malformed");
+    }
+    Expression *func2 = get_app_func(func1);
+    if (!func2) {
+        return init_tactic_result(false, NULL,
+                                  "Goal type is not a binary relation");
+    }
+    Expression *relation = func2;
     Expression *relation_over = get_expression_type(relation_right_hand);
 
     // Require that Equivalence proof applies to relation
