@@ -1,0 +1,44 @@
+(* rewrite_hxx_iter.me *)
+(* This is an example of rewriting a term whose size grows exponentially with respect to the number of nestings. *)
+
+(* Axiomize a base type A, binary function h : A -> A -> A, and a member 'a' of A. *)
+Axiom A : Type.
+Axiom h : forall (_ : A), forall (_ : A), A.
+Axiom a : A.
+
+(* Axiomize a rewrite rule stating that h x x rewrites to x. *)
+Lemma hxx_x : forall (x : A), Eq A
+    (h x x)
+    x.
+Admitted.
+
+(* Build a deeply nested self-application of h and rewrite it away. *)
+Theorem hxx_expo : Eq A
+    (h
+      (h
+        (h
+          (h a a)
+          (h a a))
+        (h
+          (h a a)
+          (h a a)))
+      (h
+        (h
+          (h a a)
+          (h a a))
+        (h
+          (h a a)
+          (h a a))))
+    a.
+rewrite hxx_x with Eq.
+apply Eq_refl.
+
+(* Build the same term but using let-bindings. *)
+Theorem hxx_expo' : Eq A
+  (let x: A := (h a a) in
+   let y: A := (h x x) in
+   let z: A := (h y y) in
+   h z z)
+  a.
+rewrite hxx_x with Eq.
+apply Eq_refl.

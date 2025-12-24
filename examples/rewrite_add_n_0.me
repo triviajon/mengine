@@ -1,0 +1,30 @@
+(* rewrite_add_n_0.me *)
+(* This is an example of rewriting "+ 0"s. *)
+
+(* Axiomize some basics of natural numbers. *)
+Axiom nat : Type.
+Axiom zero : nat.
+Axiom v0 : nat.
+
+Axiom add : forall (_: nat), forall (_: nat), nat.
+Axiom add_n_0 : forall (n: nat), Eq nat (add n zero) (n).
+
+(* Our 1st example: rewriting "tree" expressions *)
+Theorem rewrite_zeros_tree : Eq nat 
+    (add (add (add (add v0 zero) zero) zero) zero)
+    (v0).
+(* Note: This notation is temporary *)
+rewrite add_n_0 with Eq.
+apply Eq_refl.
+
+(* Our 2nd example: rewriting the same expression built with let-bindings *)
+Theorem rewrite_zeros_let : Eq nat 
+    (let v1: nat := (add v0 zero) in
+     let v2: nat := (add v1 zero) in
+     let v3: nat := (add v2 zero) in
+     v3
+    )
+    (v0).
+(* Note: This notation is temporary *)
+rewrite add_n_0 with Eq.
+apply Eq_refl.

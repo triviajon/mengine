@@ -12,8 +12,22 @@
 static void _handle_declaration_command(MEngineRuntime *rt,
                                         DeclarationCmd *decl_cmd) {
     Expression *var_type = ast_to_expression(decl_cmd->binder.type, rt->ctx);
+    if (!var_type) {
+        fprintf(stderr,
+                ERROR "Failed to convert type for declaration '%s'.\n" CRESET,
+                decl_cmd->binder.name);
+        return;
+    }
     Expression *new_var =
         init_var_expression_wc(decl_cmd->binder.name, var_type, rt->ctx);
+    if (!new_var) {
+        fprintf(stderr,
+                ERROR
+                "Failed to create variable '%s' (invalid type or "
+                "context).\n" CRESET,
+                decl_cmd->binder.name);
+        return;
+    }
     rt->ctx = context_insert(rt->ctx, new_var);
 
     fprintf(stdout, UI "%s " CRESET "%s : %s declared.\n",
