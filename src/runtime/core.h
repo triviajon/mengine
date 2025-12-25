@@ -2,10 +2,12 @@
 #define CORE_H
 
 #include <stdbool.h>
+
 #include "src/kernel/context.h"
 #include "src/kernel/expression.h"
 
-// Core types and constructors hardcoded in C. All of this won't be necessary once we implement a tactic rewriting language
+// Core types and constructors hardcoded in C. All of this won't be necessary
+// once we implement a tactic rewriting language
 
 extern Expression *Reflexive;
 extern Expression *Reflexive_Definition;
@@ -25,15 +27,15 @@ extern Expression *Equivalence_Transitive;
 
 extern Expression *Bad_App_Congruence;
 
-extern Expression *Eq;
-extern Expression *Eq_refl;
-extern Expression *Eq_sym;
-extern Expression *Eq_trans;
-extern Expression *Eq_subst;
+extern Expression *eq;
+extern Expression *eq_refl;
+extern Expression *eq_sym;
+extern Expression *eq_trans;
+extern Expression *eq_subst;
 
-Expression *_get_lhs_Eq(Expression *eq_expression);
+Expression *_get_lhs_eq(Expression *eq_expression);
 
-Expression *_get_rhs_Eq(Expression *eq_expression);
+Expression *_get_rhs_eq(Expression *eq_expression);
 
 /**
  * Initialize the core library.

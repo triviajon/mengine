@@ -6,15 +6,15 @@ Axiom nat : Type.
 
 (* Axiomize modulo as a function with the property that: ((a mod n) mod n) = (a mod n). *)
 Axiom mod : forall (_: nat), forall (_: nat), nat.
-Lemma mod_mod : forall (a: nat), forall (n: nat), Eq nat
+Lemma mod_mod : forall (a: nat), forall (n: nat), eq nat
     (mod (mod a n) n)
     (mod a n).
 Admitted.
 
-Theorem chained_modulo : forall (b: nat), forall (p: nat), Eq nat 
+Theorem chained_modulo : forall (b: nat), forall (p: nat), eq nat 
     (mod (mod (mod (mod (mod (mod b p) p) p) p) p) p)
     (mod b p).
 intros b p.
 (* Note: This notation is temporary *)
-rewrite mod_mod with Eq.
-apply Eq_refl.
+rewrite mod_mod with eq.
+apply eq_refl.

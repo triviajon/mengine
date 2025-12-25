@@ -186,7 +186,7 @@ UnificationResult *bad_unify_for_eq(Context *goal_context, Expression *lemma,
     DoublyLinkedList *remaining_open = dll_create();
     while (current_lemma_app_ty->type == FORALL_EXPRESSION) {
         Expression *current_lemma_ty_lhs =
-            _get_lhs_Eq(get_innermost_body(current_lemma_app_ty));
+            _get_lhs_eq(get_innermost_body(current_lemma_app_ty));
         Expression *bound_variable =
             current_lemma_app_ty->value.forall.bound_variable;
         Expression *hole_subst =

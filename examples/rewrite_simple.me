@@ -6,14 +6,14 @@ Axiom t : T.
 Axiom f : forall (_: T), T.
 Axiom g : forall (_: T), T.
 
-Lemma f_t_t : Eq T (f t) t.
+Lemma f_t_t : eq T (f t) t.
 Admitted.
 
-Theorem example : Eq T (f (f (f t))) t.
-rewrite f_t_t with Eq.
-apply Eq_refl.
+Theorem example : eq T (f (f (f t))) t.
+rewrite f_t_t with eq.
+apply eq_refl.
 
 (* or *)
-Theorem example' : Eq T (g (f (f t))) (g t).
-rewrite f_t_t with Eq.
-apply Eq_refl.
+Theorem example' : eq T (g (f (f t))) (g t).
+rewrite f_t_t with eq.
+apply eq_refl.
