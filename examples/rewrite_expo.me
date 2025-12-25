@@ -7,13 +7,13 @@ Axiom h : forall (_ : A), forall (_ : A), A.
 Axiom a : A.
 
 (* Axiomize a rewrite rule stating that h x x rewrites to x. *)
-Lemma hxx_x : forall (x : A), Eq A
+Lemma hxx_x : forall (x : A), eq A
     (h x x)
     x.
 Admitted.
 
 (* Build a deeply nested self-application of h and rewrite it away. *)
-Theorem hxx_expo : Eq A
+Theorem hxx_expo : eq A
     (h
       (h
         (h
@@ -30,15 +30,15 @@ Theorem hxx_expo : Eq A
           (h a a)
           (h a a))))
     a.
-rewrite hxx_x with Eq.
-apply Eq_refl.
+rewrite hxx_x with eq.
+apply eq_refl.
 
 (* Build the same term but using let-bindings. *)
-Theorem hxx_expo' : Eq A
+Theorem hxx_expo' : eq A
   (let x: A := (h a a) in
    let y: A := (h x x) in
    let z: A := (h y y) in
    h z z)
   a.
-rewrite hxx_x with Eq.
-apply Eq_refl.
+rewrite hxx_x with eq.
+apply eq_refl.

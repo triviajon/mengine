@@ -222,11 +222,11 @@ bool n_rewrite_is_noop(RewriteResult *rwr) {
 }
 
 Expression *_build_reflexivity_proof(Expression *expr, Context *ctx) {
-    // The goal is to build a proof of Eq type(expr) expr expr.
+    // The goal is to build a proof of eq type(expr) expr expr.
 
     Expression *relation_over = get_expression_type(expr);
     Expression *proof = init_app_expression_wc(
-        init_app_expression_wc(Eq_refl, relation_over, ctx), expr, ctx);
+        init_app_expression_wc(eq_refl, relation_over, ctx), expr, ctx);
 
     return proof;
 }
@@ -235,8 +235,8 @@ Expression *_build_transitivity_proof(RewriteResult *first_rwr,
                                       RewriteResult *second_rwr, Context *ctx) {
     // Given first_rwr : original -> mid with proof pf
     // and second_rwr : mid -> rewritten with proof pg
-    // Eq_trans : forall (A : Type) (x y z : A), Eq A x y -> Eq A y z -> Eq A x
-    // z. build the term "Eq_trans relation_over original mid rewritten H1 H2"
+    // eq_trans : forall (A : Type) (x y z : A), eq A x y -> eq A y z -> eq A x
+    // z. build the term "eq_trans relation_over original mid rewritten H1 H2"
     Expression *relation_over = get_expression_type(first_rwr->original);
     Expression *original = first_rwr->original;
     Expression *mid = first_rwr->rewritten;
@@ -249,7 +249,7 @@ Expression *_build_transitivity_proof(RewriteResult *first_rwr,
             init_app_expression_wc(
                 init_app_expression_wc(
                     init_app_expression_wc(
-                        init_app_expression_wc(Eq_trans, relation_over, ctx),
+                        init_app_expression_wc(eq_trans, relation_over, ctx),
                         original, ctx),
                     mid, ctx),
                 rewritten, ctx),
@@ -261,9 +261,9 @@ Expression *_build_transitivity_proof(RewriteResult *first_rwr,
 
 Expression *_build_app_congruence_proof(RewriteResult *func_rwr,
                                         RewriteResult *arg_rwr, Context *ctx) {
-    // Bad_App_Congruence : forall (A B : Type) (f g : A -> B) (x y: A), Eq (A
-    // -> B) f g -> Eq (A) x y -> Eq (B) (f x) (g y). if func_rw provides pf :
-    // Eq (A -> B) f g and arg_rwr provided pg : Eq A x y, build the term
+    // Bad_App_Congruence : forall (A B : Type) (f g : A -> B) (x y: A), eq (A
+    // -> B) f g -> eq (A) x y -> eq (B) (f x) (g y). if func_rw provides pf :
+    // eq (A -> B) f g and arg_rwr provided pg : eq A x y, build the term
     // "Bad_App_Congruence A B f g x y pf pg"
 
     Expression *A_implies_B = get_app_arg(get_app_func(get_app_func(
@@ -355,7 +355,7 @@ RewriteResult *n_rewrite_head(Expression *mid, Expression *lemma,
 
     Expression *proof = unif_result->lemma_instantiation;
     Expression *proof_type = get_expression_type(proof);
-    if (!congruence(_get_lhs_Eq(proof_type), mid)) {
+    if (!congruence(_get_lhs_eq(proof_type), mid)) {
         free_unification_result(unif_result);
         return init_rewrite_result(mid, mid, dll_create(),
                                    _build_reflexivity_proof(mid, context));
@@ -363,7 +363,7 @@ RewriteResult *n_rewrite_head(Expression *mid, Expression *lemma,
 
     free_unification_result(unif_result);
 
-    return init_rewrite_result(mid, _get_rhs_Eq(proof_type), dll_create(),
+    return init_rewrite_result(mid, _get_rhs_eq(proof_type), dll_create(),
                                proof);
 }
 
@@ -459,7 +459,7 @@ TacticResult *rewrite_tactic(Expression *goal, Expression *lemma) {
 
     // Require that Equivalence proof applies to relation
     // TODO: Since we are hardcoding rewriting only for Leibniz Equality....
-    if (get_app_func(relation) != Eq) {
+    if (get_app_func(relation) != eq) {
         return init_tactic_result(
             false, NULL,
             "Currently only rewriting for Leibniz Equality is supported");
@@ -472,13 +472,13 @@ TacticResult *rewrite_tactic(Expression *goal, Expression *lemma) {
         return init_tactic_result(false, NULL, "Rewriting failed");
     }
 
-    // rwr gives us Eq A lhs lhs' with proof pf. We now need to build the proof
-    // of Eq relation_over lhs rhs. We'll just use Eq_trans : (forall (A: Type),
-    // (forall (x: A), (forall (y: A), (forall (z: A), (forall (_: (((Eq A) x)
-    // y)), (forall (_: (((Eq A) y) z)), (((Eq A) x) z)))))))
+    // rwr gives us eq A lhs lhs' with proof pf. We now need to build the proof
+    // of eq relation_over lhs rhs. We'll just use eq_trans : (forall (A: Type),
+    // (forall (x: A), (forall (y: A), (forall (z: A), (forall (_: (((eq A) x)
+    // y)), (forall (_: (((eq A) y) z)), (((eq A) x) z)))))))
     Expression *new_goal_type = init_app_expression_wc(
         init_app_expression_wc(
-            init_app_expression_wc(Eq, relation_over, operating_ctx),
+            init_app_expression_wc(eq, relation_over, operating_ctx),
             rwr->rewritten, operating_ctx),
         relation_right_hand, operating_ctx);
     Expression *new_goal =
@@ -488,7 +488,7 @@ TacticResult *rewrite_tactic(Expression *goal, Expression *lemma) {
             init_app_expression_wc(
                 init_app_expression_wc(
                     init_app_expression_wc(
-                        init_app_expression_wc(Eq_trans, relation_over,
+                        init_app_expression_wc(eq_trans, relation_over,
                                                operating_ctx),
                         rwr->original, operating_ctx),
                     rwr->rewritten, operating_ctx),
