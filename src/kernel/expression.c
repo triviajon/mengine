@@ -33,14 +33,6 @@ void add_to_parents(Expression *expression, Uplink *uplink) {
             dll_insert_at_head(expression->value.hole.uplinks,
                                dll_new_node(uplink));
             break;
-        case (FIX_EXPRESSION):
-            dll_insert_at_head(expression->value.fix.uplinks,
-                               dll_new_node(uplink));
-            break;
-        case (MATCH_EXPR_EXPRESSION):
-            dll_insert_at_head(expression->value.matchExpr.uplinks,
-                               dll_new_node(uplink));
-            break;
         default:
             fprintf(stderr, ERROR
                     "Unknown expression type in add_to_parents.\n" CRESET);
@@ -205,54 +197,6 @@ Expression *init_hole_expression(char *name, Expression *type,
     return expr;
 }
 
-Expression *init_fix_expression(Expression *ident, Expression *bound_variable,
-                                Expression *body) {
-    Expression *expr = (Expression *)malloc(sizeof(Expression));
-    expr->type = FIX_EXPRESSION;
-    expr->value.fix.ident = ident;
-    expr->value.fix.bound_variable = bound_variable;
-    expr->value.fix.body = body;
-    // TODO: wrong for similar reasons to match_expr.
-    expr->value.fix.context = get_expression_context(body);
-    expr->value.fix.type = constr_lambda_type(bound_variable, body);
-    expr->value.fix.uplinks = dll_create();
-    expr->value.fix.maybe_hole_free = get_maybe_hole_free(body);
-    return expr;
-}
-
-Expression *init_match_expr_expression(
-    Expression *match_scrutinee, Expression *literal_case_item,
-    Expression *literal_result, Expression *var_case_item,
-    Expression *var_result, Expression *op_case_item, Expression *op_result,
-    Expression *type) {
-    Expression *expr = (Expression *)malloc(sizeof(Expression));
-    expr->type = MATCH_EXPR_EXPRESSION;
-    expr->value.matchExpr.match_scrutinee = get_innermost_body(match_scrutinee);
-    expr->value.matchExpr.literal_case_item =
-        get_innermost_body(literal_case_item);
-    expr->value.matchExpr.literal_result = get_innermost_body(literal_result);
-    expr->value.matchExpr.var_case_item = get_innermost_body(var_case_item);
-    expr->value.matchExpr.var_result = get_innermost_body(var_result);
-    expr->value.matchExpr.op_case_item = get_innermost_body(op_case_item);
-    expr->value.matchExpr.op_result = get_innermost_body(op_result);
-    expr->value.matchExpr.type = type;
-    expr->value.matchExpr.context = context_add(
-        context_add(context_add(get_expression_context(literal_case_item),
-                                get_expression_context(literal_result)),
-                    context_add(get_expression_context(var_case_item),
-                                get_expression_context(var_result))),
-        context_add(get_expression_context(op_case_item),
-                    get_expression_context(op_result)));
-    expr->value.matchExpr.uplinks = dll_create();
-    expr->value.matchExpr.maybe_hole_free =
-        get_maybe_hole_free(match_scrutinee) &&
-        get_maybe_hole_free(literal_case_item) &&
-        get_maybe_hole_free(literal_result) &&
-        get_maybe_hole_free(var_case_item) && get_maybe_hole_free(var_result) &&
-        get_maybe_hole_free(op_case_item) && get_maybe_hole_free(op_result);
-    return expr;
-}
-
 Expression *init_var_expression_wc(const char *name, Expression *type,
                                    Context *defining_context) {
     if (!valid_in_context(type, defining_context)) {
@@ -378,10 +322,6 @@ DoublyLinkedList *get_expression_uplinks(Expression *expression) {
             return expression->value.prop.uplinks;
         case (HOLE_EXPRESSION):
             return expression->value.hole.uplinks;
-        case (FIX_EXPRESSION):
-            return expression->value.fix.uplinks;
-        case (MATCH_EXPR_EXPRESSION):
-            return expression->value.matchExpr.uplinks;
         default:
             fprintf(
                 stderr, ERROR
@@ -406,10 +346,6 @@ Expression *get_expression_type(Expression *expression) {
             return init_type_expression();
         case (HOLE_EXPRESSION):
             return expression->value.hole.return_type;
-        case (FIX_EXPRESSION):
-            return expression->value.fix.type;
-        case (MATCH_EXPR_EXPRESSION):
-            return expression->value.matchExpr.type;
     }
 }
 
@@ -437,10 +373,6 @@ Context *get_expression_context(Expression *expression) {
             return context_create_empty();
         case (HOLE_EXPRESSION):
             return expression->value.hole.defining_context;
-        case (MATCH_EXPR_EXPRESSION):
-            return expression->value.matchExpr.context;
-        case (FIX_EXPRESSION):
-            return expression->value.fix.context;
     }
 }
 
@@ -662,30 +594,6 @@ bool _congruence(Expression *a, Expression *b, Map *mapping) {
         case (HOLE_EXPRESSION): {
             return (a == b) || (map_get(mapping, a) == b);
         }
-        case (FIX_EXPRESSION): {
-            map_set(mapping, a->value.fix.ident, b->value.fix.ident);
-            map_set(mapping, a->value.fix.bound_variable,
-                    b->value.fix.bound_variable);
-            return _congruence(a->value.fix.body, b->value.fix.body, mapping);
-        }
-        case (MATCH_EXPR_EXPRESSION): {
-            map_set(mapping, a->value.matchExpr.match_scrutinee,
-                    b->value.matchExpr.match_scrutinee);
-            return _congruence(a->value.matchExpr.literal_case_item,
-                               b->value.matchExpr.literal_case_item, mapping) &&
-                   _congruence(a->value.matchExpr.literal_result,
-                               b->value.matchExpr.literal_result, mapping) &&
-                   _congruence(a->value.matchExpr.var_case_item,
-                               b->value.matchExpr.var_case_item, mapping) &&
-                   _congruence(a->value.matchExpr.var_result,
-                               b->value.matchExpr.var_result, mapping) &&
-                   _congruence(a->value.matchExpr.op_case_item,
-                               b->value.matchExpr.op_case_item, mapping) &&
-                   _congruence(a->value.matchExpr.op_result,
-                               b->value.matchExpr.op_result, mapping) &&
-                   _congruence(a->value.matchExpr.type, b->value.matchExpr.type,
-                               mapping);
-        }
     }
 }
 
@@ -746,32 +654,6 @@ void _match_and_subst(Expression *a, Expression *b, Map *mapping) {
             if (a != b) {
                 (map_set(mapping, a, b));
             }
-            break;
-        }
-        case (FIX_EXPRESSION): {
-            map_set(mapping, a->value.fix.ident, b->value.fix.ident);
-            map_set(mapping, a->value.fix.bound_variable,
-                    b->value.fix.bound_variable);
-            _match_and_subst(a->value.fix.body, b->value.fix.body, mapping);
-            break;
-        }
-        case (MATCH_EXPR_EXPRESSION): {
-            map_set(mapping, a->value.matchExpr.match_scrutinee,
-                    b->value.matchExpr.match_scrutinee);
-            _match_and_subst(a->value.matchExpr.literal_case_item,
-                             b->value.matchExpr.literal_case_item, mapping);
-            _match_and_subst(a->value.matchExpr.literal_result,
-                             b->value.matchExpr.literal_result, mapping);
-            _match_and_subst(a->value.matchExpr.var_case_item,
-                             b->value.matchExpr.var_case_item, mapping);
-            _match_and_subst(a->value.matchExpr.var_result,
-                             b->value.matchExpr.var_result, mapping);
-            _match_and_subst(a->value.matchExpr.op_case_item,
-                             b->value.matchExpr.op_case_item, mapping);
-            _match_and_subst(a->value.matchExpr.op_result,
-                             b->value.matchExpr.op_result, mapping);
-            _match_and_subst(a->value.matchExpr.type, b->value.matchExpr.type,
-                             mapping);
             break;
         }
     }
@@ -863,46 +745,6 @@ bool _congruent_with_holes(Expression *a, Expression *b,
         case (VAR_EXPRESSION): {
             return (a == b) || map_get(alpha_equivalences, a) == b;
         }
-        case (FIX_EXPRESSION): {
-            map_set(alpha_equivalences, a->value.fix.ident, b->value.fix.ident);
-            map_set(alpha_equivalences, a->value.fix.bound_variable,
-                    b->value.fix.bound_variable);
-            bool result =
-                _congruent_with_holes(a->value.fix.body, b->value.fix.body,
-                                      alpha_equivalences, required_holes);
-            return result;
-        }
-        case (MATCH_EXPR_EXPRESSION): {
-            map_set(alpha_equivalences, a->value.matchExpr.match_scrutinee,
-                    b->value.matchExpr.match_scrutinee);
-            bool result1 =
-                _congruent_with_holes(a->value.matchExpr.literal_case_item,
-                                      b->value.matchExpr.literal_case_item,
-                                      alpha_equivalences, required_holes);
-            bool result2 =
-                _congruent_with_holes(a->value.matchExpr.literal_result,
-                                      b->value.matchExpr.literal_result,
-                                      alpha_equivalences, required_holes);
-            bool result3 =
-                _congruent_with_holes(a->value.matchExpr.var_case_item,
-                                      b->value.matchExpr.var_case_item,
-                                      alpha_equivalences, required_holes);
-            bool result4 = _congruent_with_holes(
-                a->value.matchExpr.var_result, b->value.matchExpr.var_result,
-                alpha_equivalences, required_holes);
-            bool result5 =
-                _congruent_with_holes(a->value.matchExpr.op_case_item,
-                                      b->value.matchExpr.op_case_item,
-                                      alpha_equivalences, required_holes);
-            bool result6 = _congruent_with_holes(
-                a->value.matchExpr.op_result, b->value.matchExpr.op_result,
-                alpha_equivalences, required_holes);
-            bool result7 = _congruent_with_holes(
-                a->value.matchExpr.type, b->value.matchExpr.type,
-                alpha_equivalences, required_holes);
-            return result1 && result2 && result3 && result4 && result5 &&
-                   result6 && result7;
-        }
         default:
             return false;
     }
@@ -932,10 +774,6 @@ bool get_maybe_hole_free(Expression *expr) {
             return expr->value.lambda.maybe_hole_free;
         case (VAR_EXPRESSION):
             return expr->value.var.maybe_hole_free;
-        case (FIX_EXPRESSION):
-            return expr->value.fix.maybe_hole_free;
-        case (MATCH_EXPR_EXPRESSION):
-            return expr->value.matchExpr.maybe_hole_free;
         default:
             return false;
     }
@@ -961,16 +799,6 @@ bool has_holes(Expression *expr) {
             return has_holes(expr->value.lambda.body);
         case (VAR_EXPRESSION):
             return false;
-        case (FIX_EXPRESSION):
-            return has_holes(expr->value.fix.body);
-        case (MATCH_EXPR_EXPRESSION):
-            return has_holes(expr->value.matchExpr.match_scrutinee) ||
-                   has_holes(expr->value.matchExpr.literal_case_item) ||
-                   has_holes(expr->value.matchExpr.literal_result) ||
-                   has_holes(expr->value.matchExpr.var_case_item) ||
-                   has_holes(expr->value.matchExpr.var_result) ||
-                   has_holes(expr->value.matchExpr.op_case_item) ||
-                   has_holes(expr->value.matchExpr.op_result);
         default:
             fprintf(stderr,
                     ERROR "Unknown expression type in has_holes.\n" CRESET);
@@ -1027,27 +855,6 @@ bool _occurs_in(Expression *var_or_hole, Expression *term, Map *visited) {
                    _occurs_in(var_or_hole, term->value.forall.body, visited);
         case HOLE_EXPRESSION:
             return var_or_hole == term;
-        case FIX_EXPRESSION:
-            return _occurs_in(var_or_hole, term->value.fix.ident, visited) ||
-                   _occurs_in(var_or_hole, term->value.fix.bound_variable,
-                              visited) ||
-                   _occurs_in(var_or_hole, term->value.fix.body, visited);
-        case MATCH_EXPR_EXPRESSION:
-            return _occurs_in(var_or_hole,
-                              term->value.matchExpr.match_scrutinee, visited) ||
-                   _occurs_in(var_or_hole,
-                              term->value.matchExpr.literal_case_item,
-                              visited) ||
-                   _occurs_in(var_or_hole, term->value.matchExpr.literal_result,
-                              visited) ||
-                   _occurs_in(var_or_hole, term->value.matchExpr.var_case_item,
-                              visited) ||
-                   _occurs_in(var_or_hole, term->value.matchExpr.var_result,
-                              visited) ||
-                   _occurs_in(var_or_hole, term->value.matchExpr.op_case_item,
-                              visited) ||
-                   _occurs_in(var_or_hole, term->value.matchExpr.op_result,
-                              visited);
         default:
             fprintf(stderr,
                     ERROR "Unknown expression type in occurs_in.\n" CRESET);
@@ -1204,34 +1011,6 @@ bool _congruence2(Expression *a, Expression *b, Map *mapping) {
             }
             case (HOLE_EXPRESSION): {
                 return (a == b) || (map_get(mapping, a) == b);
-            }
-            case (FIX_EXPRESSION): {
-                map_set(mapping, a->value.fix.ident, b->value.fix.ident);
-                map_set(mapping, a->value.fix.bound_variable,
-                        b->value.fix.bound_variable);
-                return _congruence2(a->value.fix.body, b->value.fix.body,
-                                    mapping);
-            }
-            case (MATCH_EXPR_EXPRESSION): {
-                map_set(mapping, a->value.matchExpr.match_scrutinee,
-                        b->value.matchExpr.match_scrutinee);
-                return _congruence2(a->value.matchExpr.literal_case_item,
-                                    b->value.matchExpr.literal_case_item,
-                                    mapping) &&
-                       _congruence2(a->value.matchExpr.literal_result,
-                                    b->value.matchExpr.literal_result,
-                                    mapping) &&
-                       _congruence2(a->value.matchExpr.var_case_item,
-                                    b->value.matchExpr.var_case_item,
-                                    mapping) &&
-                       _congruence2(a->value.matchExpr.var_result,
-                                    b->value.matchExpr.var_result, mapping) &&
-                       _congruence2(a->value.matchExpr.op_case_item,
-                                    b->value.matchExpr.op_case_item, mapping) &&
-                       _congruence2(a->value.matchExpr.op_result,
-                                    b->value.matchExpr.op_result, mapping) &&
-                       _congruence2(a->value.matchExpr.type,
-                                    b->value.matchExpr.type, mapping);
             }
         }
     } else {

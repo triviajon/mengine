@@ -93,68 +93,6 @@ char *stringify_expression(Expression *expression) {
         case HOLE_EXPRESSION:
             result = str_concat("?", strdup(expression->value.hole.name));
             break;
-
-        case FIX_EXPRESSION: {
-            char *ident_str = stringify_expression(expression->value.fix.ident);
-            char *var_str =
-                stringify_expression(expression->value.fix.bound_variable);
-            char *type_str = stringify_expression(
-                expression->value.fix.bound_variable->value.var.type);
-            char *body_str = stringify_expression(expression->value.fix.body);
-            result = str_concat("(fix ", ident_str);
-            result = str_concat(result, " (");
-            result = str_concat(result, var_str);
-            result = str_concat(result, ": ");
-            result = str_concat(result, type_str);
-            result = str_concat(result, ") := ");
-            result = str_concat(result, body_str);
-            result = str_concat(result, ")");
-            free(ident_str);
-            free(var_str);
-            free(type_str);
-            free(body_str);
-            break;
-        }
-
-        case MATCH_EXPR_EXPRESSION: {
-            char *match_scrutinee_str = stringify_expression(
-                expression->value.matchExpr.match_scrutinee);
-            char *literal_case_item_str = stringify_expression(
-                expression->value.matchExpr.literal_case_item);
-            char *literal_result_str = stringify_expression(
-                expression->value.matchExpr.literal_result);
-            char *var_case_item_str =
-                stringify_expression(expression->value.matchExpr.var_case_item);
-            char *var_result_str =
-                stringify_expression(expression->value.matchExpr.var_result);
-            char *op_case_item_str =
-                stringify_expression(expression->value.matchExpr.op_case_item);
-            char *op_result_str =
-                stringify_expression(expression->value.matchExpr.op_result);
-            result = str_concat("match ", match_scrutinee_str);
-            result = str_concat(result, " with ");
-
-            result = str_concat(result, "| ");
-            result = str_concat(result, literal_case_item_str);
-            result = str_concat(result, " => ");
-            result = str_concat(result, literal_result_str);
-            result = str_concat(result, " ");
-
-            result = str_concat(result, "| ");
-            result = str_concat(result, var_case_item_str);
-            result = str_concat(result, " => ");
-            result = str_concat(result, var_result_str);
-            result = str_concat(result, " ");
-
-            result = str_concat(result, "| ");
-            result = str_concat(result, op_case_item_str);
-            result = str_concat(result, " => ");
-            result = str_concat(result, op_result_str);
-            result = str_concat(result, " ");
-
-            result = str_concat(result, "end");
-            break;
-        }
     }
 
     return result;
