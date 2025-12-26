@@ -20,9 +20,7 @@ typedef enum {
     FORALL_EXPRESSION,
     TYPE_EXPRESSION,
     PROP_EXPRESSION,
-    FIX_EXPRESSION,
     HOLE_EXPRESSION,
-    MATCH_EXPR_EXPRESSION,
 } ExpressionType;
 
 // Represents a parent-child relationship between expressions
@@ -133,34 +131,6 @@ typedef struct {
                            // false means that it may contain holes.
 } HoleExpression;
 
-// A fix expression: fix ident (bound_variable) => body.
-typedef struct {
-    Expression *ident;
-    Expression *bound_variable;
-    Expression *body;
-    Context *context;
-    Expression *type;
-    DoublyLinkedList *uplinks;
-    bool maybe_hole_free;  // A value of true means that the term is hole-free,
-                           // false means that it may contain holes.
-} FixExpression;
-
-// Special case; we don't implement matching in general for this POC.
-typedef struct {
-    Expression *match_scrutinee;
-    Expression *literal_case_item;
-    Expression *literal_result;
-    Expression *var_case_item;
-    Expression *var_result;
-    Expression *op_case_item;
-    Expression *op_result;
-    Context *context;
-    Expression *type;
-    DoublyLinkedList *uplinks;
-    bool maybe_hole_free;  // A value of true means that the term is hole-free,
-                           // false means that it may contain holes.
-} MatchExprExpression;
-
 // Represents a generic expression.
 struct Expression {
     ExpressionType type;
@@ -172,8 +142,6 @@ struct Expression {
         TypeExpression type;
         PropExpression prop;
         HoleExpression hole;
-        FixExpression fix;
-        MatchExprExpression matchExpr;
     } value;
 };
 
@@ -205,15 +173,6 @@ Expression *init_forall_expression(Expression *bound_variable,
                                    Expression *body);
 Expression *init_type_expression();
 Expression *init_prop_expression();
-Expression *init_fix_expression(Expression *ident, Expression *bound_variable,
-                                Expression *body);
-Expression *init_match_expr_expression(Expression *match_scrutinee,
-                                       Expression *literal_case_item,
-                                       Expression *literal_result,
-                                       Expression *var_case_item,
-                                       Expression *var_result,
-                                       Expression *op_case_item,
-                                       Expression *op_result, Expression *type);
 
 // Initialize a new hole expression with a given name, return type, and defining
 // context. To fill the hole using `fill_hole(hole, term)`, the term used to

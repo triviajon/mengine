@@ -140,66 +140,6 @@ Expression *subst(Expression *expression, Expression *old_e,
 
             return init_forall_expression(new_forall_var, new_body);
         }
-        case (FIX_EXPRESSION): {
-            Expression *fix_var = expression->value.fix.bound_variable;
-            Expression *fix_var_ty = get_expression_type(fix_var);
-            Expression *new_fix_var_type = subst(fix_var_ty, old_e, new_e);
-            Expression *new_fix_var =
-                init_var_expression(fix_var->value.var.name, new_fix_var_type);
-
-            Expression *fix_ident = expression->value.fix.ident;
-            Expression *fix_ident_ty = get_expression_type(fix_ident);
-            Expression *new_fix_ident_type = subst(fix_ident_ty, old_e, new_e);
-            Expression *new_fix_ident = init_var_expression(
-                fix_ident->value.var.name, new_fix_ident_type);
-
-            DoublyLinkedList *old_exprs = dll_create();
-            DoublyLinkedList *new_exprs = dll_create();
-
-            dll_insert_at_tail(old_exprs, dll_new_node(old_e));
-            dll_insert_at_tail(old_exprs, dll_new_node(fix_var));
-            dll_insert_at_tail(old_exprs, dll_new_node(fix_ident));
-            dll_insert_at_tail(new_exprs, dll_new_node(new_e));
-            dll_insert_at_tail(new_exprs, dll_new_node(new_fix_var));
-            dll_insert_at_tail(new_exprs, dll_new_node(new_fix_ident));
-
-            Expression *fix_body = expression->value.fix.body;
-            Expression *new_body = p_subst(fix_body, old_exprs, new_exprs);
-
-            dll_remove_tail(old_exprs);
-            dll_remove_tail(old_exprs);
-            dll_remove_tail(old_exprs);
-            dll_destroy(old_exprs);
-            dll_remove_tail(new_exprs);
-            dll_remove_tail(new_exprs);
-            dll_remove_tail(new_exprs);
-            dll_destroy(new_exprs);
-
-            return init_fix_expression(new_fix_ident, new_fix_var, new_body);
-        }
-        case (MATCH_EXPR_EXPRESSION): {
-            Expression *new_match_scrutinee =
-                expression->value.matchExpr.match_scrutinee;
-            Expression *new_literal_case_item =
-                expression->value.matchExpr.literal_case_item;
-            Expression *new_literal_result =
-                subst(expression->value.matchExpr.literal_result, old_e, new_e);
-            Expression *new_var_case_item =
-                expression->value.matchExpr.var_case_item;
-            Expression *new_var_result =
-                subst(expression->value.matchExpr.var_result, old_e, new_e);
-            Expression *new_op_case_item =
-                expression->value.matchExpr.op_case_item;
-            Expression *new_op_result =
-                subst(expression->value.matchExpr.op_result, old_e, new_e);
-            Expression *new_type =
-                subst(expression->value.matchExpr.type, old_e, new_e);
-
-            return init_match_expr_expression(
-                new_match_scrutinee, new_literal_case_item, new_literal_result,
-                new_var_case_item, new_var_result, new_op_case_item,
-                new_op_result, new_type);
-        }
         case (TYPE_EXPRESSION):
             return expression;
         case (PROP_EXPRESSION):
@@ -316,60 +256,6 @@ Expression *p_subst(Expression *expression, DoublyLinkedList *old_exprs,
             dll_remove_tail(new_exprs);
 
             return init_forall_expression(new_forall_var, new_body);
-        }
-        case (FIX_EXPRESSION): {
-            Expression *fix_var = expression->value.fix.bound_variable;
-            Expression *fix_var_ty = get_expression_type(fix_var);
-            Expression *new_fix_var_type =
-                p_subst(fix_var_ty, old_exprs, new_exprs);
-            Expression *new_fix_var =
-                init_var_expression(fix_var->value.var.name, new_fix_var_type);
-
-            Expression *fix_ident = expression->value.fix.ident;
-            Expression *fix_ident_ty = get_expression_type(fix_ident);
-            Expression *new_fix_ident_type =
-                p_subst(fix_ident_ty, old_exprs, new_exprs);
-            Expression *new_fix_ident = init_var_expression(
-                fix_ident->value.var.name, new_fix_ident_type);
-
-            dll_insert_at_tail(old_exprs, dll_new_node(fix_var));
-            dll_insert_at_tail(old_exprs, dll_new_node(fix_ident));
-            dll_insert_at_tail(new_exprs, dll_new_node(new_fix_var));
-            dll_insert_at_tail(new_exprs, dll_new_node(new_fix_ident));
-
-            Expression *fix_body = expression->value.fix.body;
-            Expression *new_body = p_subst(fix_body, old_exprs, new_exprs);
-
-            dll_remove_tail(old_exprs);
-            dll_remove_tail(old_exprs);
-            dll_remove_tail(new_exprs);
-            dll_remove_tail(new_exprs);
-
-            return init_fix_expression(new_fix_ident, new_fix_var, new_body);
-        }
-        case (MATCH_EXPR_EXPRESSION): {
-            Expression *new_match_scrutinee =
-                expression->value.matchExpr.match_scrutinee;
-            Expression *new_literal_case_item =
-                expression->value.matchExpr.literal_case_item;
-            Expression *new_literal_result =
-                p_subst(expression->value.matchExpr.literal_result, old_exprs,
-                        new_exprs);
-            Expression *new_var_case_item =
-                expression->value.matchExpr.var_case_item;
-            Expression *new_var_result = p_subst(
-                expression->value.matchExpr.var_result, old_exprs, new_exprs);
-            Expression *new_op_case_item =
-                expression->value.matchExpr.op_case_item;
-            Expression *new_op_result = p_subst(
-                expression->value.matchExpr.op_result, old_exprs, new_exprs);
-            Expression *new_type =
-                p_subst(expression->value.matchExpr.type, old_exprs, new_exprs);
-
-            return init_match_expr_expression(
-                new_match_scrutinee, new_literal_case_item, new_literal_result,
-                new_var_case_item, new_var_result, new_op_case_item,
-                new_op_result, new_type);
         }
         case (TYPE_EXPRESSION):
             return expression;

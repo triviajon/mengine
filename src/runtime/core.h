@@ -7,7 +7,7 @@
 #include "src/kernel/expression.h"
 
 // Core types and constructors hardcoded in C. All of this won't be necessary
-// once we implement a tactic rewriting language
+// once we implement a tactic writing language
 
 extern Expression *Reflexive;
 extern Expression *Reflexive_Definition;

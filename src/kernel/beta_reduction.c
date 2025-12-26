@@ -29,52 +29,6 @@ Expression *reduce(Expression *app_func, Expression *app_arg) {
     return subst(body, old, new);
 }
 
-Expression *eval_fix(Expression *app_func, Expression *app_arg) {
-    if (app_func->type != FIX_EXPRESSION) {
-        return NULL;
-    }
-
-    Expression *match_statement = app_func->value.fix.body;
-    if (match_statement->type != MATCH_EXPR_EXPRESSION) {
-        return NULL;
-    }
-
-    Expression *innermost = get_innermost_func(app_arg);
-    Expression *match_result = NULL;
-    if (innermost == get_innermost_func(get_innermost_body(
-                         match_statement->value.matchExpr.literal_case_item))) {
-        match_result = match_and_subst(
-            get_innermost_body(
-                match_statement->value.matchExpr.literal_case_item),
-            app_arg,
-            get_innermost_body(
-                match_statement->value.matchExpr.literal_result));
-    } else if (innermost ==
-               get_innermost_func(get_innermost_body(
-                   match_statement->value.matchExpr.var_case_item))) {
-        match_result = match_and_subst(
-            get_innermost_body(match_statement->value.matchExpr.var_case_item),
-            app_arg,
-            get_innermost_body(match_statement->value.matchExpr.var_result));
-    } else if (innermost ==
-               get_innermost_func(get_innermost_body(
-                   match_statement->value.matchExpr.op_case_item))) {
-        match_result = match_and_subst(
-            get_innermost_body(match_statement->value.matchExpr.op_case_item),
-            app_arg,
-            get_innermost_body(match_statement->value.matchExpr.op_result));
-    }
-
-    if (match_result == NULL) {
-        return NULL;
-    }
-
-    Expression *ident = app_func->value.fix.ident;
-    Expression *replaced_references = subst(match_result, ident, app_func);
-    Expression *normalized = normalize(replaced_references);
-    return normalized;
-}
-
 Expression *normalize(Expression *expression) {
     switch (expression->type) {
         case (APP_EXPRESSION): {
@@ -82,9 +36,6 @@ Expression *normalize(Expression *expression) {
             Expression *new_arg = normalize(expression->value.app.arg);
             if (new_func->type == LAMBDA_EXPRESSION) {
                 return reduce(new_func, new_arg);
-            }
-            if (new_func->type == FIX_EXPRESSION) {
-                return eval_fix(new_func, new_arg);
             }
             Expression *result = init_app_expression(new_func, new_arg);
             if (!result) {
@@ -124,9 +75,6 @@ Expression *weak_head_normalize(Expression *expression) {
                 weak_head_normalize(expression->value.app.func);
             if (new_func->type == LAMBDA_EXPRESSION) {
                 return reduce(new_func, expression->value.app.arg);
-            }
-            if (new_func->type == FIX_EXPRESSION) {
-                return eval_fix(new_func, expression->value.app.arg);
             }
             Expression *result =
                 init_app_expression(new_func, expression->value.app.arg);
