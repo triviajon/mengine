@@ -8,7 +8,8 @@
 #include "src/kernel/dyn_array_map.h"
 #include "src/kernel/subst.h"
 
-void add_to_parents(Expression *expression, Uplink *uplink) {
+void add_to_parents(Expression *expression, void *ptr, Relation r) {
+    Uplink *uplink = new_uplink(ptr, r);
     switch (expression->type) {
         case (VAR_EXPRESSION):
             dll_insert_at_head(expression->value.var.uplinks,
@@ -114,7 +115,7 @@ Expression *init_lambda_expression(Expression *bound_variable,
     expr->value.lambda.bound_variable = bound_variable;
     expr->value.lambda.type = constr_lambda_type(bound_variable, body);
     expr->value.lambda.body = body;
-    add_to_parents(body, new_uplink(expr, LAMBDA_BODY));
+    add_to_parents(body, expr, LAMBDA_BODY);
     expr->value.lambda.uplinks = dll_create();
     expr->value.lambda.maybe_hole_free = get_maybe_hole_free(body);
     return expr;
@@ -132,9 +133,9 @@ Expression *init_app_expression(Expression *func, Expression *arg) {
         context_add(get_expression_context(func), get_expression_context(arg));
     expr->value.app.context = combined_ctx;
     expr->value.app.func = func;
-    add_to_parents(func, new_uplink(expr, APP_FUNC));
+    add_to_parents(func, expr, APP_FUNC);
     expr->value.app.arg = arg;
-    add_to_parents(arg, new_uplink(expr, APP_ARG));
+    add_to_parents(arg, expr, APP_ARG);
     expr->value.app.type = app_type;
     expr->value.app.cache = NULL;
     expr->value.app.uplinks = dll_create();
@@ -160,7 +161,7 @@ Expression *init_forall_expression(Expression *bound_variable,
         expr->value.forall.type = init_type_expression();
     }
     expr->value.forall.body = body;
-    add_to_parents(body, new_uplink(expr, FORALL_BODY));
+    add_to_parents(body, expr, FORALL_BODY);
     expr->value.forall.uplinks = dll_create();
     expr->value.forall.maybe_hole_free = get_maybe_hole_free(body);
     return expr;
@@ -191,7 +192,7 @@ Expression *init_hole_expression(char *name, Expression *type,
     expr->value.hole.name = name;
     expr->value.hole.defining_context = context;
     expr->value.hole.return_type = type;
-    add_to_parents(type, new_uplink(expr, HOLE_TYPE));
+    add_to_parents(type, expr, HOLE_TYPE);
     expr->value.hole.uplinks = dll_create();
     expr->value.hole.maybe_hole_free = false;
     return expr;
@@ -231,7 +232,7 @@ Expression *init_var_expression_wc_with_definition(const char *name,
     expr->type = VAR_EXPRESSION;
     expr->value.var.name = strdup(name);
     expr->value.var.definition = definition;
-    add_to_parents(definition, new_uplink(expr, VAR_BODY));
+    add_to_parents(definition, expr, VAR_BODY);
     expr->value.var.type = get_expression_type(definition);
     expr->value.var.uplinks = dll_create();
     expr->value.var.context = context_insert(defining_context, expr);
@@ -251,7 +252,7 @@ Expression *init_lambda_expression_wc(Expression *bound_variable,
     expr->value.lambda.bound_variable = bound_variable;
     expr->value.lambda.type = constr_lambda_type(bound_variable, body);
     expr->value.lambda.body = body;
-    add_to_parents(body, new_uplink(expr, LAMBDA_BODY));
+    add_to_parents(body, expr, LAMBDA_BODY);
     expr->value.lambda.uplinks = dll_create();
     expr->value.lambda.maybe_hole_free = get_maybe_hole_free(body);
     return expr;
@@ -271,9 +272,9 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg,
     Context *combined_ctx = context;
     expr->value.app.context = combined_ctx;
     expr->value.app.func = func;
-    add_to_parents(func, new_uplink(expr, APP_FUNC));
+    add_to_parents(func, expr, APP_FUNC);
     expr->value.app.arg = arg;
-    add_to_parents(arg, new_uplink(expr, APP_ARG));
+    add_to_parents(arg, expr, APP_ARG);
     expr->value.app.type = constr_app_type(func, arg);
     expr->value.app.cache = NULL;
     expr->value.app.uplinks = dll_create();
@@ -294,7 +295,7 @@ Expression *init_forall_expression_wc(Expression *bound_variable,
     expr->value.forall.bound_variable = bound_variable;
     expr->value.forall.type = init_type_expression();
     expr->value.forall.body = body;
-    add_to_parents(body, new_uplink(expr, FORALL_BODY));
+    add_to_parents(body, expr, FORALL_BODY);
     expr->value.forall.uplinks = dll_create();
     expr->value.forall.maybe_hole_free = get_maybe_hole_free(body);
     return expr;
