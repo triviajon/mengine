@@ -146,7 +146,7 @@ struct Expression {
 };
 
 // Helper function to add an uplink to the uplinks list of an expression.
-void add_to_parents(Expression *expression, Uplink *uplink);
+void add_to_parents(Expression *expression, void *ptr, Relation r);
 
 // Helper function to remove the first top_level_hole uplink from an
 // expression's uplinks.

@@ -54,7 +54,7 @@ Context *context_insert(Context *context, Expression *var_type) {
     new_ctx->var_type = var_type;
     new_ctx->parent = context;
     new_ctx->length = context->length + 1;
-    add_to_parents(var_type, new_uplink(new_ctx, CTX_VAR));
+    add_to_parents(var_type, new_ctx, CTX_VAR);
     return new_ctx;
 }
 
