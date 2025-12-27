@@ -3,8 +3,7 @@
 #include <stdlib.h>
 
 RewriteProof *init_rewrite_proof(Expression *expr, Expression *rewritten_expr,
-                                 Expression *equality_proof,
-                                 DoublyLinkedList *remaining_goals) {
+                                 Expression *equality_proof, DoublyLinkedList *remaining_goals) {
     RewriteProof *proof = malloc(sizeof(RewriteProof));
     proof->expr = expr;
     proof->rewritten_expr = rewritten_expr;
@@ -19,8 +18,7 @@ void free_rewrite_proof(RewriteProof *proof) {
     }
 }
 
-RewrittenGoal *init_rewritten_goal(Expression *new_goal,
-                                   DoublyLinkedList *remaining_open) {
+RewrittenGoal *init_rewritten_goal(Expression *new_goal, DoublyLinkedList *remaining_open) {
     RewrittenGoal *rewritten_goal = malloc(sizeof(RewrittenGoal));
     rewritten_goal->new_goal = new_goal;
     rewritten_goal->remaining_open = remaining_open;

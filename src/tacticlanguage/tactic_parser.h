@@ -204,10 +204,9 @@ static TacticDispatchEntry tactic_dispatch_table[] = {
  *
  * @param entry Loop variable of type TacticDispatchEntry*.
  */
-#define TACTIC_FOREACH_ENTRY(entry)                                    \
-    for (TacticDispatchEntry * (entry) = TACTIC_DISPATCH_TABLE;        \
-         (entry) < TACTIC_DISPATCH_TABLE + TACTIC_DISPATCH_TABLE_SIZE; \
-         ++(entry))
+#define TACTIC_FOREACH_ENTRY(entry)                             \
+    for (TacticDispatchEntry * (entry) = TACTIC_DISPATCH_TABLE; \
+         (entry) < TACTIC_DISPATCH_TABLE + TACTIC_DISPATCH_TABLE_SIZE; ++(entry))
 
 /**
  * Macro to get the key (token type) from a tactic dispatch entry.

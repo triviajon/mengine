@@ -13,8 +13,7 @@ typedef struct RewriteProof {
 } RewriteProof;
 
 RewriteProof *init_rewrite_proof(Expression *expr, Expression *rewritten_expr,
-                                 Expression *equality_proof,
-                                 DoublyLinkedList *remaining_goals);
+                                 Expression *equality_proof, DoublyLinkedList *remaining_goals);
 void free_rewrite_proof(RewriteProof *proof);
 
 typedef struct {
@@ -22,8 +21,7 @@ typedef struct {
     DoublyLinkedList *remaining_open;
 } RewrittenGoal;
 
-RewrittenGoal *init_rewritten_goal(Expression *new_goal,
-                                   DoublyLinkedList *remaining_open);
+RewrittenGoal *init_rewritten_goal(Expression *new_goal, DoublyLinkedList *remaining_open);
 void free_rewritten_goal(RewrittenGoal *rewritten_goal);
 
 typedef struct {

@@ -1,9 +1,8 @@
 #ifndef COMMAND_EXEC_H
 #define COMMAND_EXEC_H
 
-#include "src/runtime/runtime.h"
-
 #include "src/commandlanguage/command_parser.h"
+#include "src/runtime/runtime.h"
 
 /**
  * Execute a single top-level command in the given runtime.

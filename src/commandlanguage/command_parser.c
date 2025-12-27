@@ -292,8 +292,7 @@ ShowKeyword command_parse_show_type(Parser *p) {
         return SHOW_KW_STATE;
     }
 
-    parser_error(
-        p, "expected 'Context', 'Proof', 'Goal', or 'State' after 'Show'");
+    parser_error(p, "expected 'Context', 'Proof', 'Goal', or 'State' after 'Show'");
 
     // Unreachable, but avoids compiler warning.
     return SHOW_KW_STATE;
@@ -348,8 +347,8 @@ Command *command_parse_inductive(Parser *p) {
     while (parser_expect_no_consume(p, TOK_PIPE)) {
         InductiveConstructor *ctor = command_parse_constructor(p);
 
-        constructors = realloc(constructors, sizeof(InductiveConstructor *) *
-                                                 (constructor_count + 1));
+        constructors =
+            realloc(constructors, sizeof(InductiveConstructor *) * (constructor_count + 1));
         constructors[constructor_count] = ctor;
         constructor_count++;
     }

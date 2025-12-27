@@ -16,8 +16,7 @@ char *str_concat(const char *s1, const char *s2) {
 
 // Helper function to add parentheses around an expression if needed
 char *parenthesize_and_free(char *expr_str) {
-    char *result =
-        (char *)malloc(strlen(expr_str) + 3);  // +3 for '(', ')' and '\0'
+    char *result = (char *)malloc(strlen(expr_str) + 3);  // +3 for '(', ')' and '\0'
     strcpy(result, "(");
     strcat(result, expr_str);
     strcat(result, ")");
@@ -34,10 +33,9 @@ char *stringify_expression(Expression *expression) {
             break;
 
         case LAMBDA_EXPRESSION: {
-            char *var_str =
-                stringify_expression(get_lambda_bound_variable(expression));
-            char *type_str = stringify_expression(
-                get_expression_type(get_lambda_bound_variable(expression)));
+            char *var_str = stringify_expression(get_lambda_bound_variable(expression));
+            char *type_str =
+                stringify_expression(get_expression_type(get_lambda_bound_variable(expression)));
             char *body_str = stringify_expression(get_lambda_body(expression));
             result = str_concat("fun (", var_str);
             result = str_concat(result, ": ");
@@ -64,10 +62,9 @@ char *stringify_expression(Expression *expression) {
         }
 
         case FORALL_EXPRESSION: {
-            char *var_str =
-                stringify_expression(get_forall_bound_variable(expression));
-            char *type_str = stringify_expression(
-                get_expression_type(get_forall_bound_variable(expression)));
+            char *var_str = stringify_expression(get_forall_bound_variable(expression));
+            char *type_str =
+                stringify_expression(get_expression_type(get_forall_bound_variable(expression)));
             char *body_str = stringify_expression(get_forall_body(expression));
             result = str_concat("forall (", var_str);
             result = str_concat(result, ": ");
@@ -133,8 +130,7 @@ char *stringify_context(Context *context, ContextStringifyOptions opts) {
     return result;
 }
 
-char *stringify_context_until(Context *context, Context *until,
-                              ContextStringifyOptions opts) {
+char *stringify_context_until(Context *context, Context *until, ContextStringifyOptions opts) {
     if (context == until || context_is_empty(context)) {
         return strdup("");
     }
@@ -142,8 +138,7 @@ char *stringify_context_until(Context *context, Context *until,
     Expression *var = context;
     char *var_str = stringify_expression(var);
     char *type_str = stringify_expression(get_expression_type(var));
-    char *parent_str =
-        stringify_context_until(get_expression_context(var), until, opts);
+    char *parent_str = stringify_context_until(get_expression_context(var), until, opts);
 
     char *result = parent_str;
 
@@ -190,14 +185,12 @@ char *_top_level_stringify_to_address(Expression *expression) {
 
         case APP_EXPRESSION: {
             char buf1[(2 * sizeof(void *)) + 1];
-            snprintf(buf1, sizeof(buf1), "%p",
-                     (void *)get_app_func(expression));
+            snprintf(buf1, sizeof(buf1), "%p", (void *)get_app_func(expression));
             result = strdup(str_concat("var", buf1));
 
             char buf2[(2 * sizeof(void *)) + 1];
             snprintf(buf2, sizeof(buf2), "%p", (void *)get_app_arg(expression));
-            result = strdup(
-                str_concat(str_concat(result, " "), str_concat("var", buf2)));
+            result = strdup(str_concat(str_concat(result, " "), str_concat("var", buf2)));
             result = parenthesize_and_free(result);
             break;
         }
@@ -258,10 +251,8 @@ DoublyLinkedList *topo_order(Expression *top_expr, Map *expr_counts) {
     // We assume top_expr is NOT in expr_counts, since it should always have
     // in-degree 0.
 
-    DoublyLinkedList *L =
-        dll_create();  // Empty list that will contain the sorted elements
-    DoublyLinkedList *S =
-        dll_create();  // Set of all nodes with no incoming edge
+    DoublyLinkedList *L = dll_create();  // Empty list that will contain the sorted elements
+    DoublyLinkedList *S = dll_create();  // Set of all nodes with no incoming edge
     dll_insert_at_head(S, dll_new_node(top_expr));
 
     while (dll_len(S) != 0) {
@@ -317,9 +308,7 @@ DoublyLinkedList *topo_order(Expression *top_expr, Map *expr_counts) {
 
 char *se(Expression *expression) { return stringify_expression(expression); }
 
-char *sc(Context *context) {
-    return stringify_context(context, CTX_STRINGIFY_VERBOSE);
-}
+char *sc(Context *context) { return stringify_context(context, CTX_STRINGIFY_VERBOSE); }
 
 char *_stringify_expression_with_let(Expression *expression) {
     char *result = NULL;
@@ -465,12 +454,10 @@ char *_top_level_stringify_expression_with_let(Expression *expression) {
             break;
 
         case LAMBDA_EXPRESSION: {
-            char *var_str = _stringify_expression_with_let(
-                get_lambda_bound_variable(expression));
+            char *var_str = _stringify_expression_with_let(get_lambda_bound_variable(expression));
             char *type_str = _stringify_expression_with_let(
                 get_expression_type(get_lambda_bound_variable(expression)));
-            char *body_str =
-                _stringify_expression_with_let(get_lambda_body(expression));
+            char *body_str = _stringify_expression_with_let(get_lambda_body(expression));
             result = str_concat("fun (", var_str);
             result = str_concat(result, ": ");
             result = str_concat(result, type_str);
@@ -483,10 +470,8 @@ char *_top_level_stringify_expression_with_let(Expression *expression) {
             break;
         }
         case APP_EXPRESSION: {
-            char *func_str =
-                _stringify_expression_with_let(get_app_func(expression));
-            char *arg_str =
-                _stringify_expression_with_let(get_app_arg(expression));
+            char *func_str = _stringify_expression_with_let(get_app_func(expression));
+            char *arg_str = _stringify_expression_with_let(get_app_arg(expression));
 
             char *app_str = str_concat(func_str, " ");
             app_str = str_concat(app_str, arg_str);
@@ -498,12 +483,10 @@ char *_top_level_stringify_expression_with_let(Expression *expression) {
         }
 
         case FORALL_EXPRESSION: {
-            char *var_str = _stringify_expression_with_let(
-                get_forall_bound_variable(expression));
+            char *var_str = _stringify_expression_with_let(get_forall_bound_variable(expression));
             char *type_str = _stringify_expression_with_let(
                 get_expression_type(get_forall_bound_variable(expression)));
-            char *body_str =
-                _stringify_expression_with_let(get_forall_body(expression));
+            char *body_str = _stringify_expression_with_let(get_forall_body(expression));
             result = str_concat("forall (", var_str);
             result = str_concat(result, ": ");
             result = str_concat(result, type_str);
@@ -547,11 +530,9 @@ char *stringify_expression_with_let(Expression *expression) {
         DLLNode *node = dll_at(ordering, i);
         Expression *node_expr = (Expression *)node->data;
 
-        if (node_expr->tag != VAR_EXPRESSION &&
-            dll_len(get_expression_uplinks(node_expr)) > 1) {
+        if (node_expr->tag != VAR_EXPRESSION && dll_len(get_expression_uplinks(node_expr)) > 1) {
             char *str_adr = _get_str_addr(node_expr);
-            char *expr_string =
-                _top_level_stringify_expression_with_let(node_expr);
+            char *expr_string = _top_level_stringify_expression_with_let(node_expr);
             char *line = str_concat("let ", str_adr);
             line = str_concat(line, " := ");
             line = str_concat(line, expr_string);
@@ -569,8 +550,6 @@ char *stringify_expression_with_let(Expression *expression) {
     }
 
     char *stringified_expr = _stringify_expression_with_let(expression);
-    char *final_output = (result == NULL)
-                             ? stringified_expr
-                             : str_concat(result, stringified_expr);
+    char *final_output = (result == NULL) ? stringified_expr : str_concat(result, stringified_expr);
     return final_output;
 }

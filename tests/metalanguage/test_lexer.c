@@ -86,8 +86,7 @@ void test_identifier_complex(void) {
 
     Token *tok = get_next_token(&lexer);
     assert_equal_int(TOK_IDENT, tok->type, "should be identifier");
-    assert_equal_str("_var_123_x", tok->lexeme,
-                     "lexeme should be '_var_123_x'");
+    assert_equal_str("_var_123_x", tok->lexeme, "lexeme should be '_var_123_x'");
     lexer_free_token(tok);
 }
 

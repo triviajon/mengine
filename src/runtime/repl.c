@@ -13,8 +13,7 @@
 void trim_whitespace(char *s) {
     char *start = s;
 
-    while (*start == ' ' || *start == '\t' || *start == '\n' ||
-           *start == '\r') {
+    while (*start == ' ' || *start == '\t' || *start == '\n' || *start == '\r') {
         start++;
     }
 
@@ -50,8 +49,7 @@ static void print_proof_state(MEngineRuntime *rt) {
     }
 
     Context *goal_ctx = get_expression_context(goal);
-    char *ctx_str =
-        stringify_context_until(goal_ctx, rt_ctx, CTX_STRINGIFY_PRETTY_IND2);
+    char *ctx_str = stringify_context_until(goal_ctx, rt_ctx, CTX_STRINGIFY_PRETTY_IND2);
     char *goal_str = stringify_expression(get_expression_type(goal));
 
     // Header

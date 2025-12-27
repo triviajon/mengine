@@ -46,8 +46,7 @@ Tactic *tactic_parse_proof_command(Parser *p) {
     TACTIC_LOOKUP_ENTRY(&entry, tok_type);
 
     if (entry == NULL) {
-        parser_error(p,
-                     "Unknown or unsupported proof command or tactic keyword");
+        parser_error(p, "Unknown or unsupported proof command or tactic keyword");
     }
 
     TacticParseFunc fn = TACTIC_ENTRY_PARSER(entry);

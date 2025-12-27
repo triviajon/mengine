@@ -30,12 +30,7 @@ typedef struct {
 
 char *stmt_keyword_to_string(StmtKeyword kw);
 
-typedef enum {
-    SHOW_KW_CONTEXT,
-    SHOW_KW_PROOF,
-    SHOW_KW_GOAL,
-    SHOW_KW_STATE
-} ShowKeyword;
+typedef enum { SHOW_KW_CONTEXT, SHOW_KW_PROOF, SHOW_KW_GOAL, SHOW_KW_STATE } ShowKeyword;
 
 typedef struct {
     ShowKeyword kw;
@@ -211,20 +206,18 @@ typedef struct {
     CommandParseFunc parse_func;
 } CommandDispatchEntry;
 
-static CommandDispatchEntry command_dispatch_table[] = {
-    {TOK_AXIOM, command_parse_declaration},
-    {TOK_VARIABLE, command_parse_declaration},
-    {TOK_DEFINITION, command_parse_definition},
-    {TOK_THEOREM, command_parse_statement},
-    {TOK_LEMMA, command_parse_statement},
-    {TOK_CHECK, command_parse_check},
-    {TOK_PRINT, command_parse_print},
-    {TOK_INDUCTIVE, command_parse_inductive},
-    {TOK_SHOW, command_parse_show}};
+static CommandDispatchEntry command_dispatch_table[] = {{TOK_AXIOM, command_parse_declaration},
+                                                        {TOK_VARIABLE, command_parse_declaration},
+                                                        {TOK_DEFINITION, command_parse_definition},
+                                                        {TOK_THEOREM, command_parse_statement},
+                                                        {TOK_LEMMA, command_parse_statement},
+                                                        {TOK_CHECK, command_parse_check},
+                                                        {TOK_PRINT, command_parse_print},
+                                                        {TOK_INDUCTIVE, command_parse_inductive},
+                                                        {TOK_SHOW, command_parse_show}};
 
 #define CMD_DISPATCH_TABLE (command_dispatch_table)
-#define CMD_DISPATCH_TABLE_SIZE \
-    (sizeof(command_dispatch_table) / sizeof(command_dispatch_table[0]))
+#define CMD_DISPATCH_TABLE_SIZE (sizeof(command_dispatch_table) / sizeof(command_dispatch_table[0]))
 
 /**
  * Macro to iterate over all entries in the command dispatch table.

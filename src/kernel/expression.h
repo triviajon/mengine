@@ -49,7 +49,7 @@ typedef struct {
 
 // A variable/type binding.
 typedef struct {
-    char *name;  // User-friendly name for the variable. Not used internally.
+    char *name;              // User-friendly name for the variable. Not used internally.
     Expression *definition;  // If the variable is non-opaque, then this field
                              // will be non-NULL with the definition body
 } VarExpression;
@@ -99,14 +99,14 @@ struct Expression {
 
     // Common fields across most expression types
     DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced
-    Context *context;      // The minimal context this expression is valid in
-                           // NULL for TYPE and PROP
-    int ctx_size;          // Size of the context (0 for empty, 1+ for variables)
-                           // 0 for TYPE and PROP
-    Expression *type;      // The type of this expression
-                           // NULL for TYPE and PROP
-    bool maybe_hole_free;  // True means term is hole-free, false means may
-                           // contain holes. Unused for TYPE and PROP.
+    Context *context;           // The minimal context this expression is valid in
+                                // NULL for TYPE and PROP
+    int ctx_size;               // Size of the context (0 for empty, 1+ for variables)
+                                // 0 for TYPE and PROP
+    Expression *type;           // The type of this expression
+                                // NULL for TYPE and PROP
+    bool maybe_hole_free;       // True means term is hole-free, false means may
+                                // contain holes. Unused for TYPE and PROP.
 
     union {
         VarExpression var;
@@ -143,8 +143,7 @@ Expression *init_prop_expression();
 //    s in {Prop, Type_i}
 // ------------------------------------------------
 //    gamma, name : return_type |-
-Expression *init_hole_expression(char *name, Expression *return_type,
-                                 Context *gamma);
+Expression *init_hole_expression(char *name, Expression *return_type, Context *gamma);
 
 // Create a new variable expression with a given name, type, and defining
 // context. Typing rule:
@@ -154,8 +153,7 @@ Expression *init_hole_expression(char *name, Expression *return_type,
 //    gamma, name : type |-
 // In other words, if the type is valid in the input context, and the type(s) is
 // a Prop/Type_i, then this variable is valid in the extension of the context.
-Expression *init_var_expression_wc(const char *name, Expression *type,
-                                   Context *gamma);
+Expression *init_var_expression_wc(const char *name, Expression *type, Context *gamma);
 
 // Create a new variable expression with a given name, definition, and context.
 // context. Typing rule:
@@ -166,8 +164,7 @@ Expression *init_var_expression_wc(const char *name, Expression *type,
 //    gamma, x : A |-
 // In other words, if the type is valid in the input context, and the type(s) is
 // a Prop/Type_i, then this variable is valid in the extension of the context.
-Expression *init_var_expression_wc_with_definition(const char *name,
-                                                   Expression *definition,
+Expression *init_var_expression_wc_with_definition(const char *name, Expression *definition,
                                                    Context *gamma);
 
 // Create a new lambda/abstraction expression with a bound variable and body.
@@ -176,8 +173,7 @@ Expression *init_var_expression_wc_with_definition(const char *name,
 // ------------------------------------------------
 //     gamma |- fun (bound_variable: A) => body : Forall (bound_variable: A), B
 // Where gamma = context(bound_variable).
-Expression *init_lambda_expression_wc(Expression *bound_variable,
-                                      Expression *body);
+Expression *init_lambda_expression_wc(Expression *bound_variable, Expression *body);
 
 // Create a new application expression with a function, argument, and context.
 // Typing rule:
@@ -186,8 +182,7 @@ Expression *init_lambda_expression_wc(Expression *bound_variable,
 // ------------------------------------------------
 //    gamma |- func arg : B[bound_variable -> arg]
 // The context parameter should typically be the longer of context(func) and context(arg).
-Expression *init_app_expression_wc(Expression *func, Expression *arg,
-                                   Context *context);
+Expression *init_app_expression_wc(Expression *func, Expression *arg, Context *context);
 
 // Create a new forall expression with a bound variable and body.
 // Typing rule:
@@ -196,8 +191,7 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg,
 // ------------------------------------------------
 //    gamma |- Forall bound_variable: A, body : s
 // Where gamma = context(bound_variable).
-Expression *init_forall_expression_wc(Expression *bound_variable,
-                                      Expression *body);
+Expression *init_forall_expression_wc(Expression *bound_variable, Expression *body);
 
 // Create a new arrow expression with a left-hand side, right-hand side, and context.
 // The typing rule is a special case of the forall expression typing rule.
@@ -207,8 +201,7 @@ Expression *init_forall_expression_wc(Expression *bound_variable,
 // ------------------------------------------------
 //    gamma |- Forall _: lhs, rhs : s (which is equivalent to "lhs -> rhs")
 // The context parameter should typically be the longer of context(lhs) and context(rhs).
-Expression *init_arrow_expression_wc(Expression *lhs, Expression *rhs,
-                                     Context *gamma);
+Expression *init_arrow_expression_wc(Expression *lhs, Expression *rhs, Context *gamma);
 
 // Returns the uplinks of an expression.
 DoublyLinkedList *get_expression_uplinks(Expression *expression);

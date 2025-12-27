@@ -11,26 +11,24 @@ typedef enum {
                                    // we are expecting commands such as
                                    // definitions, statements (theorem
                                    // statements), and checks.
-    MENGINE_RUNTIME_PROOF_MODE,  // Proof mode of the Mengine Runtime, where wem
-                                 // are exclusively expecting tactic language
-                                 // commands.
+    MENGINE_RUNTIME_PROOF_MODE,    // Proof mode of the Mengine Runtime, where wem
+                                   // are exclusively expecting tactic language
+                                   // commands.
 } MEngineRuntimeMode;
 
 typedef struct {
-    MEngineOptions *options;  // Runtime options
-    Context *ctx;             // current runtime context
-    Expression
-        *pending_theorem;  // when in proof mode, this holds a reference to the
-                           // theorem yet to be proven. It is expected that when
-                           // the proof script is complete, and the runtime
-                           // transitions back to command mode, we will add this
-                           // expression to the runtime context and clear this
-                           // field.
-    ProofState *proof_state;  // when in proof mode, this holds a reference to
-                              // the current state of the proof being created
-                              // for pending_theorem.
-    MEngineRuntimeMode
-        mode;  // current mode of operation, see MEngineRuntimeMode
+    MEngineOptions *options;      // Runtime options
+    Context *ctx;                 // current runtime context
+    Expression *pending_theorem;  // when in proof mode, this holds a reference to the
+                                  // theorem yet to be proven. It is expected that when
+                                  // the proof script is complete, and the runtime
+                                  // transitions back to command mode, we will add this
+                                  // expression to the runtime context and clear this
+                                  // field.
+    ProofState *proof_state;      // when in proof mode, this holds a reference to
+                                  // the current state of the proof being created
+                                  // for pending_theorem.
+    MEngineRuntimeMode mode;      // current mode of operation, see MEngineRuntimeMode
 } MEngineRuntime;
 
 void debug_print_mode(MEngineRuntime *rt);
@@ -81,8 +79,7 @@ Context *mengine_runtime_context(MEngineRuntime *rt);
  * @param rt Pointer to the runtime. Must not be NULL.
  * @param pending_theorem
  */
-void mengine_runtime_proof_mode(MEngineRuntime *rt,
-                                Expression *pending_theorem);
+void mengine_runtime_proof_mode(MEngineRuntime *rt, Expression *pending_theorem);
 
 /**
  * Switch runtime to command mode.

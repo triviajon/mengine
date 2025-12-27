@@ -241,8 +241,7 @@ void mengine_execute_tactic(MEngineRuntime *rt, Tactic *tac) {
         Expression *thm = rt->pending_theorem;
         rt->ctx = thm;
 
-        fprintf(stdout, SUCCESS "Proof complete." CRESET " %s declared.\n",
-                get_var_name(thm));
+        fprintf(stdout, SUCCESS "Proof complete." CRESET " %s declared.\n", get_var_name(thm));
 
         mengine_runtime_command_mode(rt);
     }

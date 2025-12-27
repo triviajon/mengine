@@ -63,16 +63,14 @@ void assert_false(bool condition, const char *message) {
 void assert_equal_int(int expected, int actual, const char *message) {
     if (expected != actual) {
         char buf[512];
-        snprintf(buf, sizeof(buf), "Expected %d, got %d: %s", expected, actual,
-                 message);
+        snprintf(buf, sizeof(buf), "Expected %d, got %d: %s", expected, actual, message);
         test_fail(buf);
     } else if (current_test_passed) {
         test_pass();
     }
 }
 
-void assert_equal_str(const char *expected, const char *actual,
-                      const char *message) {
+void assert_equal_str(const char *expected, const char *actual, const char *message) {
     if (expected == NULL && actual == NULL) {
         if (current_test_passed) {
             test_pass();
@@ -82,8 +80,7 @@ void assert_equal_str(const char *expected, const char *actual,
     if (expected == NULL || actual == NULL || strcmp(expected, actual) != 0) {
         char buf[512];
         snprintf(buf, sizeof(buf), "Expected \"%s\", got \"%s\": %s",
-                 expected ? expected : "(null)", actual ? actual : "(null)",
-                 message);
+                 expected ? expected : "(null)", actual ? actual : "(null)", message);
         test_fail(buf);
     } else if (current_test_passed) {
         test_pass();
@@ -103,8 +100,7 @@ void assert_not_null(const void *ptr, const char *message) {
 void assert_null(const void *ptr, const char *message) {
     if (ptr != NULL) {
         char buf[512];
-        snprintf(buf, sizeof(buf), "Expected null pointer, got %p: %s", ptr,
-                 message);
+        snprintf(buf, sizeof(buf), "Expected null pointer, got %p: %s", ptr, message);
         test_fail(buf);
     } else if (current_test_passed) {
         test_pass();

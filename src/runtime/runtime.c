@@ -31,8 +31,7 @@ void debug_print_mode(MEngineRuntime *rt) {
         case MENGINE_RUNTIME_PROOF_MODE:
             fprintf(stderr, "PROOF_MODE");
             if (rt->pending_theorem) {
-                fprintf(stderr, " (goal: %s)",
-                        stringify_expression(rt->pending_theorem));
+                fprintf(stderr, " (goal: %s)", stringify_expression(rt->pending_theorem));
             }
             // todo: I also should print proof_state
             break;
@@ -165,8 +164,7 @@ int mengine_runtime_exec_file(MEngineRuntime *rt, const char *filename) {
     char *buf = malloc(size + 1);
     if (!buf) {
         fclose(f);
-        fprintf(stderr, ERROR "Out of memory reading file: %s\n" CRESET,
-                filename);
+        fprintf(stderr, ERROR "Out of memory reading file: %s\n" CRESET, filename);
         return 1;
     }
 
@@ -186,8 +184,7 @@ Context *mengine_runtime_context(MEngineRuntime *rt) {
     return rt->ctx;
 }
 
-void mengine_runtime_proof_mode(MEngineRuntime *rt,
-                                Expression *pending_theorem) {
+void mengine_runtime_proof_mode(MEngineRuntime *rt, Expression *pending_theorem) {
     if (!rt || !pending_theorem) {
         return;
     }
