@@ -13,11 +13,6 @@ void add_to_parents(Expression *expression, void *ptr, Relation r) {
     dll_insert_at_head(expression->uplinks, dll_new_node(uplink));
 }
 
-void remove_tl_uplink(Expression *expression) {
-    (void)expression;
-    // todo: implement me
-}
-
 Uplink *new_uplink(void *ptr, Relation r) {
     Uplink *new_uplink = malloc(sizeof(Uplink));
     if (!new_uplink) {
@@ -59,28 +54,46 @@ Expression *_construct_app_type(Context *context, Expression *func, Expression *
     return NULL;
 }
 
+Expression *_init_expression_base(ExpressionType tag, Context *context, int ctx_size,
+                                  Expression *type, bool maybe_hole_free) {
+    Expression *expr = (Expression *)malloc(sizeof(Expression));
+    if (!expr) {
+        return NULL;
+    }
+
+    SET_EXPR_TAG(expr, tag);
+    SET_EXPR_UPLINKS(expr, dll_create());
+    SET_EXPR_CONTEXT(expr, context);
+    SET_EXPR_CTX_SIZE(expr, ctx_size);
+    SET_EXPR_TYPE(expr, type);
+    SET_EXPR_MAYBE_HOLE_FREE(expr, maybe_hole_free);
+
+    return expr;
+}
+
 Expression *init_prop_expression() {
     if (PROP == NULL) {
-        PROP = (Expression *)malloc(sizeof(Expression));
-        PROP->tag = PROP_EXPRESSION;
-        PROP->uplinks = dll_create();
-        PROP->context = context_create_empty();
-        PROP->ctx_size = 0;
-        PROP->type = init_type_expression();
-        PROP->maybe_hole_free = true;
+        PROP =
+            _init_expression_base(/* tag */ PROP_EXPRESSION, /* context */ context_create_empty(),
+                                  /* ctx_size */ 0, /* type */ init_type_expression(),
+                                  /* maybe_hole_free */ true);
     }
     return PROP;
 }
 
 Expression *init_type_expression() {
     if (TYPE == NULL) {
-        TYPE = (Expression *)malloc(sizeof(Expression));
-        TYPE->tag = TYPE_EXPRESSION;
-        TYPE->uplinks = dll_create();
-        TYPE->context = context_create_empty();
-        TYPE->ctx_size = 0;
-        TYPE->type = init_type_expression();
-        TYPE->maybe_hole_free = true;
+        Context *context = context_create_empty();
+        // Special case: Type's type is recursive, so we need to create it manually.
+        TYPE = malloc(sizeof(Expression));
+        if (!TYPE) {
+            return NULL;
+        }
+        SET_EXPR_TAG(TYPE, TYPE_EXPRESSION);
+        SET_EXPR_UPLINKS(TYPE, dll_create());
+        SET_EXPR_CONTEXT(TYPE, context);
+        SET_EXPR_CTX_SIZE(TYPE, 0);
+        SET_EXPR_TYPE(TYPE, init_type_expression());
     }
     return TYPE;
 }
@@ -96,15 +109,12 @@ Expression *init_hole_expression(char *name, Expression *type, Context *gamma) {
         return NULL;
     }
 
-    Expression *expr = (Expression *)malloc(sizeof(Expression));
-    expr->tag = HOLE_EXPRESSION;
-    expr->as.hole.name = name;
-    expr->context = gamma;
-    expr->ctx_size = context_is_empty(gamma) ? 0 : gamma->ctx_size;
-    expr->type = type;
-    add_to_parents(type, expr, HOLE_TYPE);
-    expr->uplinks = dll_create();
-    expr->maybe_hole_free = false;
+    Expression *expr = _init_expression_base(/* tag */ HOLE_EXPRESSION, /* context */ gamma,
+                                             /* ctx_size */ gamma->ctx_size,
+                                             /* type */ type,
+                                             /* maybe_hole_free */ false);
+
+    SET_HOLE_NAME(expr, name);
     return expr;
 }
 
@@ -120,25 +130,22 @@ Expression *init_var_expression_wc(const char *name, Expression *type, Context *
         return NULL;
     }
 
-    Expression *expr = (Expression *)malloc(sizeof(Expression));
-    expr->tag = VAR_EXPRESSION;
-    expr->as.var.name = strdup(name);
-    expr->type = type;
-    expr->uplinks = dll_create();
-    expr->context = gamma;
-    expr->ctx_size = context_is_empty(gamma) ? 1 : gamma->ctx_size + 1;
-    expr->maybe_hole_free = true;
+    Expression *expr = _init_expression_base(/* tag */ VAR_EXPRESSION, /* context */ gamma,
+                                             /* ctx_size */ gamma->ctx_size + 1,
+                                             /* type */ type,
+                                             /* maybe_hole_free */ true);
+
+    SET_VAR_NAME(expr, strdup(name));
     return expr;
 }
 
-Expression *init_var_expression_wc_with_definition(const char *name, Expression *definition,
-                                                   Context *gamma) {
-    if (!valid_in_context(definition, gamma)) {
-        fprintf(stderr, ERROR "Definition is not valid in context.\n" CRESET);
+Expression *init_var_expression_wc_with_body(const char *name, Expression *body, Context *gamma) {
+    if (!valid_in_context(body, gamma)) {
+        fprintf(stderr, ERROR "Body is not valid in context.\n" CRESET);
         return NULL;
     }
 
-    Expression *type = get_expression_type(definition);
+    Expression *type = get_expression_type(body);
     if (!valid_in_context(type, gamma)) {
         fprintf(stderr, ERROR "Type is not valid in context.\n" CRESET);
         return NULL;
@@ -150,16 +157,14 @@ Expression *init_var_expression_wc_with_definition(const char *name, Expression 
         return NULL;
     }
 
-    Expression *expr = (Expression *)malloc(sizeof(Expression));
-    expr->tag = VAR_EXPRESSION;
-    expr->as.var.name = strdup(name);
-    expr->as.var.definition = definition;
-    add_to_parents(definition, expr, VAR_BODY);
-    expr->type = type;
-    expr->uplinks = dll_create();
-    expr->context = gamma;
-    expr->ctx_size = context_is_empty(gamma) ? 1 : gamma->ctx_size + 1;
-    expr->maybe_hole_free = true;
+    Expression *expr = _init_expression_base(/* tag */ VAR_EXPRESSION, /* context */ gamma,
+                                             /* ctx_size */ gamma->ctx_size + 1,
+                                             /* type */ type,
+                                             /* maybe_hole_free */ true);
+
+    SET_VAR_NAME(expr, strdup(name));
+    SET_VAR_BODY(expr, body);
+
     return expr;
 }
 
@@ -172,16 +177,15 @@ Expression *init_lambda_expression_wc(Expression *bound_variable, Expression *bo
         return NULL;
     }
 
-    Expression *expr = (Expression *)malloc(sizeof(Expression));
-    expr->tag = LAMBDA_EXPRESSION;
-    expr->context = gamma;
-    expr->ctx_size = context_is_empty(gamma) ? 0 : gamma->ctx_size;
-    expr->as.lambda.bound_variable = bound_variable;
-    expr->type = _construct_lambda_type(bound_variable, body);
-    expr->as.lambda.body = body;
-    add_to_parents(body, expr, LAMBDA_BODY);
-    expr->uplinks = dll_create();
-    expr->maybe_hole_free = get_maybe_hole_free(body);
+    Expression *expr =
+        _init_expression_base(/* tag */ LAMBDA_EXPRESSION, /* context */ gamma,
+                              /* ctx_size */ gamma->ctx_size,
+                              /* type */ _construct_lambda_type(bound_variable, body),
+                              /* maybe_hole_free */ get_maybe_hole_free(body));
+
+    SET_LAMBDA_BOUND_VAR(expr, bound_variable);
+    SET_LAMBDA_BODY(expr, body);
+
     return expr;
 }
 
@@ -209,18 +213,15 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg, Context *c
         return NULL;
     }
 
-    Expression *expr = (Expression *)malloc(sizeof(Expression));
-    expr->tag = APP_EXPRESSION;
-    expr->context = context;
-    expr->ctx_size = context_is_empty(context) ? 0 : context->ctx_size;
-    expr->as.app.func = func;
-    add_to_parents(func, expr, APP_FUNC);
-    expr->as.app.arg = arg;
-    add_to_parents(arg, expr, APP_ARG);
-    expr->type = type;
-    expr->as.app.cache = NULL;
-    expr->uplinks = dll_create();
-    expr->maybe_hole_free = get_maybe_hole_free(func) && get_maybe_hole_free(arg);
+    Expression *expr = _init_expression_base(
+        /* tag */ APP_EXPRESSION, /* context */ context,
+        /* ctx_size */ context->ctx_size,
+        /* type */ type,
+        /* maybe_hole_free */ get_maybe_hole_free(func) && get_maybe_hole_free(arg));
+
+    SET_APP_FUNC(expr, func);
+    SET_APP_ARG(expr, arg);
+
     return expr;
 }
 
@@ -245,16 +246,14 @@ Expression *init_forall_expression_wc(Expression *bound_variable, Expression *bo
         return NULL;
     }
 
-    Expression *expr = (Expression *)malloc(sizeof(Expression));
-    expr->tag = FORALL_EXPRESSION;
-    expr->context = gamma;
-    expr->ctx_size = context_is_empty(gamma) ? 0 : gamma->ctx_size;
-    expr->as.forall.bound_variable = bound_variable;
-    expr->type = body_type;
-    expr->as.forall.body = body;
-    add_to_parents(body, expr, FORALL_BODY);
-    expr->uplinks = dll_create();
-    expr->maybe_hole_free = get_maybe_hole_free(body);
+    Expression *expr = _init_expression_base(/* tag */ FORALL_EXPRESSION, /* context */ gamma,
+                                             /* ctx_size */ gamma->ctx_size,
+                                             /* type */ body_type,
+                                             /* maybe_hole_free */ get_maybe_hole_free(body));
+
+    SET_FORALL_BOUND_VAR(expr, bound_variable);
+    SET_FORALL_BODY(expr, body);
+
     return expr;
 }
 
@@ -293,7 +292,7 @@ Expression *get_expression_body(Expression *expression) {
         return NULL;
     }
 
-    return expression->as.var.definition;
+    return expression->as.var.body;
 }
 
 Context *get_expression_context(Expression *expression) { return expression->context; }
@@ -428,7 +427,8 @@ void free_expression(Expression *expr) {
             free_hole_expression(expr);
             break;
         default:
-            break;
+            fprintf(stderr, ERROR "Unknown expression type in free_expression.\n" CRESET);
+            exit(EXIT_FAILURE);
     }
 }
 
@@ -641,6 +641,7 @@ bool _congruent_with_holes(Expression *a, Expression *b, Map *alpha_equivalences
             return (a == b) || map_get(alpha_equivalences, a) == b;
         }
         default:
+            fprintf(stderr, ERROR "Unknown expression type in _congruent_with_holes.\n" CRESET);
             return false;
     }
 }
@@ -771,6 +772,11 @@ void fill_hole(Expression *hole, Expression *term) {
                 ptr->as.lambda.body = term;
                 break;
             }
+            case (LAMBDA_BOUND_VAR): {
+                Expression *ptr = (Expression *)uplink->ptr;
+                ptr->as.lambda.bound_variable = term;
+                break;
+            }
             case (APP_FUNC): {
                 Expression *ptr = (Expression *)uplink->ptr;
                 ptr->as.app.func = term;
@@ -786,17 +792,26 @@ void fill_hole(Expression *hole, Expression *term) {
                 ptr->as.forall.body = term;
                 break;
             }
-            case (HOLE_TYPE): {
+            case (FORALL_BOUND_VAR): {
                 Expression *ptr = (Expression *)uplink->ptr;
-                ptr->type = term;
+                ptr->as.forall.bound_variable = term;
                 break;
             }
             case (VAR_BODY): {
                 Expression *ptr = (Expression *)uplink->ptr;
-                ptr->as.var.definition = term;
-            }
-            default:
+                ptr->as.var.body = term;
                 break;
+            }
+            case (EXPR_TYPE): {
+                Expression *ptr = (Expression *)uplink->ptr;
+                ptr->type = term;
+                break;
+            }
+            case (EXPR_CONTEXT): {
+                Expression *ptr = (Expression *)uplink->ptr;
+                ptr->context = term;
+                break;
+            }
         }
     }
 
