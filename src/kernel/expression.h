@@ -155,23 +155,6 @@ void remove_tl_uplink(Expression *expression);
 // Create a new uplink describing how ptr relates.
 Uplink *new_uplink(void *ptr, Relation r);
 
-// The following functions are helper functions to initialize new expressions,
-// without providing explicit contexts. The function will take care of computing
-// the context needed to type the expression. For example:
-//  init_app_expression(func, arg) will take the contexts of func and arg, and
-//  "merge" them into a single context, and then use that context to type the
-//  expression, which necessarily
-//   types the expression given that the inputs are valid in their respective
-//   contexts.
-// These are useful convenience functions, but are not always the best choice.
-
-Expression *init_var_expression(const char *name, Expression *type);
-Expression *init_lambda_expression(Expression *bound_variable,
-                                   Expression *body);
-Expression *init_app_expression(Expression *func, Expression *arg);
-Expression *init_forall_expression(Expression *bound_variable,
-                                   Expression *body);
-
 // Todo: We should consider adding context arguments to these functions?
 
 // Create a new type expression.
@@ -349,10 +332,5 @@ bool congruence2(Expression *a, Expression *b);
 
 extern char c_counter;
 char *get_char();
-
-// Take a lambda expression as input, like fun x: T => B, and
-// return a new lambda expression with a fresh variable x' and
-// x substituted for by x'.
-Expression *refresh(Expression *expr);
 
 #endif  // EXPRESSION_H/

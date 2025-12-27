@@ -1,6 +1,6 @@
 #include "unify.h"
 
-#include "src/kernel/subst.h"
+#include "src/kernel/new_subst.h"
 #include "src/runtime/core.h"
 
 Expression *instantiate_lemma_type(Context *context, Expression *lemma_ty) {
@@ -11,7 +11,7 @@ Expression *instantiate_lemma_type(Context *context, Expression *lemma_ty) {
             Expression *hole = init_hole_expression(bound_var->value.var.name,
                                                     bound_var_ty, context);
             Expression *lemma_ty_body = lemma_ty->value.forall.body;
-            Expression *new_body = subst(lemma_ty_body, bound_var, hole);
+            Expression *new_body = new_subst(lemma_ty_body, bound_var, hole);
             // The result of inner_inst should be the body of lemma with binding
             // variables substituted for holes
             Expression *inner_inst = instantiate_lemma_type(context, new_body);
@@ -122,9 +122,11 @@ Expression *instantiate_lemma_with_bindings(Expression *lemma,
     while (curr_forall->type == FORALL_EXPRESSION) {
         Expression *binding_var = curr_forall->value.forall.bound_variable;
         Expression *binding_result = map_get(binders, binding_var);
-        final_expr = init_app_expression(final_expr, binding_result);
+        Context *app_ctx = context_add(get_expression_context(final_expr),
+                                       get_expression_context(binding_result));
+        final_expr = init_app_expression_wc(final_expr, binding_result, app_ctx);
         Expression *curr_forall_body = curr_forall->value.forall.body;
-        curr_forall = subst(curr_forall_body, binding_var, binding_result);
+        curr_forall = new_subst(curr_forall_body, binding_var, binding_result);
     }
     return final_expr;
 }
@@ -168,11 +170,11 @@ UnificationResult *eunify2(Expression *lemma, Expression *goal) {
                 bound_variable->value.var.name,
                 get_expression_type(bound_variable), goal_context);
             current_lemma_app =
-                init_app_expression(current_lemma_app, hole_to_fill);
+                init_app_expression_wc(current_lemma_app, hole_to_fill, goal_context);
             dll_insert_at_tail(remaining_open, dll_new_node(hole_to_fill));
         } else {
             current_lemma_app =
-                init_app_expression(current_lemma_app, hole_subst);
+                init_app_expression_wc(current_lemma_app, hole_subst, goal_context);
         }
         current_lemma_app_ty = get_expression_type(current_lemma_app);
     }
@@ -197,11 +199,11 @@ UnificationResult *bad_unify_for_eq(Context *goal_context, Expression *lemma,
                 bound_variable->value.var.name,
                 get_expression_type(bound_variable), goal_context);
             current_lemma_app =
-                init_app_expression(current_lemma_app, hole_to_fill);
+                init_app_expression_wc(current_lemma_app, hole_to_fill, goal_context);
             dll_insert_at_tail(remaining_open, dll_new_node(hole_to_fill));
         } else {
             current_lemma_app =
-                init_app_expression(current_lemma_app, hole_subst);
+                init_app_expression_wc(current_lemma_app, hole_subst, goal_context);
         }
         current_lemma_app_ty = get_expression_type(current_lemma_app);
     }
