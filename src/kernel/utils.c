@@ -27,18 +27,17 @@ char *parenthesize_and_free(char *expr_str) {
 char *stringify_expression(Expression *expression) {
     char *result = NULL;
 
-    switch (expression->type) {
+    switch (expression->tag) {
         case VAR_EXPRESSION:
-            result = strdup(expression->value.var.name);
+            result = strdup(get_var_name(expression));
             break;
 
         case LAMBDA_EXPRESSION: {
             char *var_str =
-                stringify_expression(expression->value.lambda.bound_variable);
+                stringify_expression(get_lambda_bound_variable(expression));
             char *type_str = stringify_expression(
-                expression->value.lambda.bound_variable->value.var.type);
-            char *body_str =
-                stringify_expression(expression->value.lambda.body);
+                get_expression_type(get_lambda_bound_variable(expression)));
+            char *body_str = stringify_expression(get_lambda_body(expression));
             result = str_concat("fun (", var_str);
             result = str_concat(result, ": ");
             result = str_concat(result, type_str);
@@ -51,8 +50,8 @@ char *stringify_expression(Expression *expression) {
             break;
         }
         case APP_EXPRESSION: {
-            char *func_str = stringify_expression(expression->value.app.func);
-            char *arg_str = stringify_expression(expression->value.app.arg);
+            char *func_str = stringify_expression(get_app_func(expression));
+            char *arg_str = stringify_expression(get_app_arg(expression));
 
             char *app_str = str_concat(func_str, " ");
             app_str = str_concat(app_str, arg_str);
@@ -65,11 +64,10 @@ char *stringify_expression(Expression *expression) {
 
         case FORALL_EXPRESSION: {
             char *var_str =
-                stringify_expression(expression->value.forall.bound_variable);
+                stringify_expression(get_forall_bound_variable(expression));
             char *type_str = stringify_expression(
-                expression->value.forall.bound_variable->value.var.type);
-            char *body_str =
-                stringify_expression(expression->value.forall.body);
+                get_expression_type(get_forall_bound_variable(expression)));
+            char *body_str = stringify_expression(get_forall_body(expression));
             result = str_concat("forall (", var_str);
             result = str_concat(result, ": ");
             result = str_concat(result, type_str);
@@ -91,7 +89,7 @@ char *stringify_expression(Expression *expression) {
             break;
 
         case HOLE_EXPRESSION:
-            result = str_concat("?", strdup(expression->value.hole.name));
+            result = str_concat("?", strdup(get_hole_name(expression)));
             break;
     }
 
@@ -104,7 +102,8 @@ char *stringify_context(Context *context, ContextStringifyOptions opts) {
     }
 
     char *var_str = stringify_expression(context->var_type);
-    char *type_str = stringify_expression(context->var_type->value.var.type);
+    char *type_str =
+        stringify_expression(get_expression_type(context->var_type));
     char *parent_str = stringify_context(context->parent, opts);
 
     char *result = parent_str;
@@ -140,7 +139,8 @@ char *stringify_context_until(Context *context, Context *until,
     }
 
     char *var_str = stringify_expression(context->var_type);
-    char *type_str = stringify_expression(context->var_type->value.var.type);
+    char *type_str =
+        stringify_expression(get_expression_type(context->var_type));
     char *parent_str = stringify_context_until(context->parent, until, opts);
 
     char *result = parent_str;
@@ -178,7 +178,7 @@ char *_get_str_addr(Expression *expression) {
 char *_top_level_stringify_to_address(Expression *expression) {
     char *result = NULL;
 
-    switch (expression->type) {
+    switch (expression->tag) {
         case VAR_EXPRESSION: {
             char buf[(2 * sizeof(void *)) + 1];
             snprintf(buf, sizeof(buf), "%p", (void *)expression);
@@ -189,12 +189,11 @@ char *_top_level_stringify_to_address(Expression *expression) {
         case APP_EXPRESSION: {
             char buf1[(2 * sizeof(void *)) + 1];
             snprintf(buf1, sizeof(buf1), "%p",
-                     (void *)expression->value.app.func);
+                     (void *)get_app_func(expression));
             result = strdup(str_concat("var", buf1));
 
             char buf2[(2 * sizeof(void *)) + 1];
-            snprintf(buf2, sizeof(buf2), "%p",
-                     (void *)expression->value.app.arg);
+            snprintf(buf2, sizeof(buf2), "%p", (void *)get_app_arg(expression));
             result = strdup(
                 str_concat(str_concat(result, " "), str_concat("var", buf2)));
             result = parenthesize_and_free(result);
@@ -221,31 +220,30 @@ void _count_subexpression(Expression *expression, Map *visited, Map *counts) {
 
     map_set(visited, expression, have_visited);
 
-    switch (expression->type) {
+    switch (expression->tag) {
         case VAR_EXPRESSION:
             break;
         case APP_EXPRESSION: {
-            int *func_lookup_value =
-                map_get(counts, expression->value.app.func);
+            int *func_lookup_value = map_get(counts, get_app_func(expression));
             if (!func_lookup_value) {
                 int *value = malloc(sizeof(int));
                 *value = 1;
-                map_set(counts, (void *)expression->value.app.func, value);
+                map_set(counts, (void *)get_app_func(expression), value);
             } else {
                 (*func_lookup_value)++;
             }
 
-            int *arg_lookup_value = map_get(counts, expression->value.app.arg);
+            int *arg_lookup_value = map_get(counts, get_app_arg(expression));
             if (!arg_lookup_value) {
                 int *value = malloc(sizeof(int));
                 *value = 1;
-                map_set(counts, (void *)expression->value.app.arg, value);
+                map_set(counts, (void *)get_app_arg(expression), value);
             } else {
                 (*arg_lookup_value)++;
             }
 
-            _count_subexpression(expression->value.app.func, visited, counts);
-            _count_subexpression(expression->value.app.arg, visited, counts);
+            _count_subexpression(get_app_func(expression), visited, counts);
+            _count_subexpression(get_app_arg(expression), visited, counts);
             break;
         }
 
@@ -271,15 +269,15 @@ DoublyLinkedList *topo_order(Expression *top_expr, Map *expr_counts) {
         Expression *expr = (Expression *)n->data;
 
         // Reduce counts for all of expr's immediate children
-        switch (expr->type) {
+        switch (expr->tag) {
             case (VAR_EXPRESSION):
                 break;
             case (APP_EXPRESSION): {
-                Expression *func = expr->value.app.func;
+                Expression *func = get_app_func(expr);
                 int *func_count = map_get(expr_counts, func);
                 (*func_count)--;
 
-                Expression *arg = expr->value.app.arg;
+                Expression *arg = get_app_arg(expr);
                 int *arg_count = map_get(expr_counts, arg);
                 (*arg_count)--;
                 break;
@@ -290,16 +288,16 @@ DoublyLinkedList *topo_order(Expression *top_expr, Map *expr_counts) {
 
         // For each of expr's immediate children who have a count of 0, add them
         // to S.
-        switch (expr->type) {
+        switch (expr->tag) {
             case (VAR_EXPRESSION):
                 break;
             case (APP_EXPRESSION): {
-                Expression *func = expr->value.app.func;
+                Expression *func = get_app_func(expr);
                 int *func_count = map_get(expr_counts, func);
                 if (*func_count == 0) {
                     dll_insert_at_tail(S, dll_new_node(func));
                 }
-                Expression *arg = expr->value.app.arg;
+                Expression *arg = get_app_arg(expr);
                 int *arg_count = map_get(expr_counts, arg);
                 if (*arg_count == 0) {
                     dll_insert_at_tail(S, dll_new_node(arg));
@@ -324,9 +322,9 @@ char *sc(Context *context) {
 char *_stringify_expression_with_let(Expression *expression) {
     char *result = NULL;
 
-    switch (expression->type) {
+    switch (expression->tag) {
         case VAR_EXPRESSION:
-            result = strdup(expression->value.var.name);
+            result = strdup(get_var_name(expression));
             break;
 
         case LAMBDA_EXPRESSION: {
@@ -338,15 +336,15 @@ char *_stringify_expression_with_let(Expression *expression) {
             }
             char *var_str = _stringify_expression_with_let(
 
-                expression->value.lambda.bound_variable);
+                get_lambda_bound_variable(expression));
 
             char *type_str = _stringify_expression_with_let(
 
-                expression->value.lambda.bound_variable->value.var.type);
+                get_expression_type(get_lambda_bound_variable(expression)));
 
             char *body_str = _stringify_expression_with_let(
 
-                expression->value.lambda.body);
+                get_lambda_body(expression));
 
             result = str_concat("fun (", var_str);
 
@@ -377,11 +375,11 @@ char *_stringify_expression_with_let(Expression *expression) {
             }
             char *func_str =
 
-                _stringify_expression_with_let(expression->value.app.func);
+                _stringify_expression_with_let(get_app_func(expression));
 
             char *arg_str =
 
-                _stringify_expression_with_let(expression->value.app.arg);
+                _stringify_expression_with_let(get_app_arg(expression));
 
             char *app_str = str_concat(func_str, " ");
 
@@ -405,15 +403,15 @@ char *_stringify_expression_with_let(Expression *expression) {
             }
             char *var_str = _stringify_expression_with_let(
 
-                expression->value.forall.bound_variable);
+                get_forall_bound_variable(expression));
 
             char *type_str = _stringify_expression_with_let(
 
-                expression->value.forall.bound_variable->value.var.type);
+                get_expression_type(get_forall_bound_variable(expression)));
 
             char *body_str = _stringify_expression_with_let(
 
-                expression->value.forall.body);
+                get_forall_body(expression));
 
             result = str_concat("forall (", var_str);
 
@@ -445,7 +443,7 @@ char *_stringify_expression_with_let(Expression *expression) {
             break;
 
         case HOLE_EXPRESSION:
-            result = str_concat("?", strdup(expression->value.hole.name));
+            result = str_concat("?", strdup(get_hole_name(expression)));
             break;
 
         default:
@@ -459,18 +457,18 @@ char *_stringify_expression_with_let(Expression *expression) {
 char *_top_level_stringify_expression_with_let(Expression *expression) {
     char *result = NULL;
 
-    switch (expression->type) {
+    switch (expression->tag) {
         case VAR_EXPRESSION:
-            result = strdup(expression->value.var.name);
+            result = strdup(get_var_name(expression));
             break;
 
         case LAMBDA_EXPRESSION: {
             char *var_str = _stringify_expression_with_let(
-                expression->value.lambda.bound_variable);
+                get_lambda_bound_variable(expression));
             char *type_str = _stringify_expression_with_let(
-                expression->value.lambda.bound_variable->value.var.type);
+                get_expression_type(get_lambda_bound_variable(expression)));
             char *body_str =
-                _stringify_expression_with_let(expression->value.lambda.body);
+                _stringify_expression_with_let(get_lambda_body(expression));
             result = str_concat("fun (", var_str);
             result = str_concat(result, ": ");
             result = str_concat(result, type_str);
@@ -484,9 +482,9 @@ char *_top_level_stringify_expression_with_let(Expression *expression) {
         }
         case APP_EXPRESSION: {
             char *func_str =
-                _stringify_expression_with_let(expression->value.app.func);
+                _stringify_expression_with_let(get_app_func(expression));
             char *arg_str =
-                _stringify_expression_with_let(expression->value.app.arg);
+                _stringify_expression_with_let(get_app_arg(expression));
 
             char *app_str = str_concat(func_str, " ");
             app_str = str_concat(app_str, arg_str);
@@ -499,11 +497,11 @@ char *_top_level_stringify_expression_with_let(Expression *expression) {
 
         case FORALL_EXPRESSION: {
             char *var_str = _stringify_expression_with_let(
-                expression->value.forall.bound_variable);
+                get_forall_bound_variable(expression));
             char *type_str = _stringify_expression_with_let(
-                expression->value.forall.bound_variable->value.var.type);
+                get_expression_type(get_forall_bound_variable(expression)));
             char *body_str =
-                _stringify_expression_with_let(expression->value.forall.body);
+                _stringify_expression_with_let(get_forall_body(expression));
             result = str_concat("forall (", var_str);
             result = str_concat(result, ": ");
             result = str_concat(result, type_str);
@@ -525,7 +523,7 @@ char *_top_level_stringify_expression_with_let(Expression *expression) {
             break;
 
         case HOLE_EXPRESSION:
-            result = str_concat("?", strdup(expression->value.hole.name));
+            result = str_concat("?", strdup(get_hole_name(expression)));
             break;
 
         default:
@@ -547,7 +545,7 @@ char *stringify_expression_with_let(Expression *expression) {
         DLLNode *node = dll_at(ordering, i);
         Expression *node_expr = (Expression *)node->data;
 
-        if (node_expr->type != VAR_EXPRESSION &&
+        if (node_expr->tag != VAR_EXPRESSION &&
             dll_len(get_expression_uplinks(node_expr)) > 1) {
             char *str_adr = _get_str_addr(node_expr);
             char *expr_string =

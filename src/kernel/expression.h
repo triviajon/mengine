@@ -50,33 +50,14 @@ typedef struct {
 // A variable/type binding.
 typedef struct {
     char *name;  // User-friendly name for the variable. Not used internally.
-    Expression *type;        // The type of the variable.
     Expression *definition;  // If the variable is non-opaque, then this field
                              // will be non-NULL with the definition body
-    Context *context;  // The minimal context which this expression is valid in.
-                       // In this case, it is the context which is needed to
-                       // define the type of the variable.
-    DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced.
-    RewriteProof *rresult;  // When rewriting, cache of the result. NULL while
-                            // not rewriting.
-    bool maybe_hole_free;   // A value of true means that the term is hole-free,
-                            // false means that it may contain holes.
 } VarExpression;
 
 // A lambda expression: fun (bound_variable) => body.
 typedef struct {
-    Context *context;  // The minimal context which this expression is valid in.
-                       // In this case, it is the context which the body is
-                       // valid in minus the bound variable.
     Expression *bound_variable;  // The bound variable of the lambda.
-    Expression *type;  // The type of the lambda expression, which is a Forall
-                       // with similar structure.
-    Expression *body;  // The body of the lamdbda expression.
-    DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced.
-    RewriteProof *rresult;  // When rewriting, cache of the result. NULL while
-                            // not rewriting.
-    bool maybe_hole_free;   // A value of true means that the term is hole-free,
-                            // false means that it may contain holes.
+    Expression *body;            // The body of the lamdbda expression.
 } LambdaExpression;
 
 // An application expression: (func arg).
@@ -86,34 +67,20 @@ typedef struct {
     Expression *arg;    // The argument being operating on.
     Expression *cache;  // A copied version of this application which is used in
                         // beta-reduction with Lambda-DAGs
-    Expression *type;   // The type of this application expression.
-    Context *context;  // The minimal context which this expression is valid in.
-                       // In this case, it is the context which both the func
-                       // and the arg are valid in.
-    DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced.
-    RewriteProof *rresult;  // When rewriting, cache of the result. NULL while
-                            // not rewriting.
-    bool maybe_hole_free;   // A value of true means that the term is hole-free,
-                            // false means that it may contain holes.
 } AppExpression;
 
 // Similar to LambdaExpression.
 typedef struct {
-    Context *context;
     Expression *bound_variable;
-    Expression *type;  // Always a "Type" expression
     Expression *body;
-    DoublyLinkedList *uplinks;
-    bool maybe_hole_free;  // A value of true means that the term is hole-free,
-                           // false means that it may contain holes.
 } ForallExpression;
 
 typedef struct {
-    DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced.
+    // No additional fields beyond what's in Expression
 } TypeExpression;
 
 typedef struct {
-    DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced.
+    // No additional fields beyond what's in Expression
 } PropExpression;
 
 // TYPE and PROP are the only structs with the TypeExpression and PropExpression
@@ -124,25 +91,30 @@ static Expression *PROP = NULL;
 // A typed hole to be filled later.
 typedef struct {
     char *name;  // A user-friendly name for the hole. Not used internally.
-    Expression *type;           // The required type for the hole.
-    Context *context;           // The context which this hole was defined in.
-    DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced.
-    bool maybe_hole_free;  // A value of true means that the term is hole-free,
-                           // false means that it may contain holes.
 } HoleExpression;
 
 // Represents a generic expression.
 struct Expression {
-    ExpressionType type;
+    ExpressionType tag;  // The kind of expression (VAR, LAMBDA, APP, etc.)
+
+    // Common fields across most expression types
+    DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced
+    Context *context;      // The minimal context this expression is valid in
+                           // NULL for TYPE and PROP
+    Expression *type;      // The type of this expression
+                           // NULL for TYPE and PROP
+    bool maybe_hole_free;  // True means term is hole-free, false means may
+                           // contain holes. Unused for TYPE and PROP.
+
     union {
         VarExpression var;
         LambdaExpression lambda;
         AppExpression app;
         ForallExpression forall;
-        TypeExpression type;
-        PropExpression prop;
+        TypeExpression type_expr;
+        PropExpression prop_expr;
         HoleExpression hole;
-    } value;
+    } as;
 };
 
 // Helper function to add an uplink to the uplinks list of an expression.
@@ -258,6 +230,12 @@ Expression *get_innermost_body(Expression *expression);
 //     (((f x3) x1) x0)
 // then get_innermost_func(expression) will return f.
 Expression *get_innermost_func(Expression *expression);
+
+// Returns the name of a variable expression.
+char *get_var_name(Expression *expr);
+
+// Returns the name of a hole expression.
+char *get_hole_name(Expression *expr);
 
 // Returns the function of an application.
 Expression *get_app_func(Expression *expr);

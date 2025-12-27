@@ -4,42 +4,42 @@
 #include "src/kernel/new_subst.h"
 
 bool forms_redex(Expression *app_func, Expression *app_arg) {
-    return app_func != NULL && (app_func->type == LAMBDA_EXPRESSION) &&
+    return app_func != NULL && (app_func->tag == LAMBDA_EXPRESSION) &&
            app_arg != NULL;
 }
 
 bool is_redex(Expression *app_expr) {
-    if (app_expr->type != APP_EXPRESSION) {
+    if (app_expr->tag != APP_EXPRESSION) {
         return false;
     }
 
-    Expression *app_func = app_expr->value.app.func;
-    return (app_func->type == LAMBDA_EXPRESSION);
+    Expression *app_func = get_app_func(app_expr);
+    return (app_func->tag == LAMBDA_EXPRESSION);
 }
 
 Expression *reduce(Expression *app_func, Expression *app_arg) {
-    if (app_func->type != LAMBDA_EXPRESSION) {
+    if (app_func->tag != LAMBDA_EXPRESSION) {
         // printf("Expression is not a redex.");
         return NULL;
     }
 
-    Expression *body = app_func->value.lambda.body;
-    Expression *old = app_func->value.lambda.bound_variable;
+    Expression *body = get_lambda_body(app_func);
+    Expression *old = get_lambda_bound_variable(app_func);
     Expression *new = app_arg;
     return new_subst(body, old, new);
 }
 
 Expression *weak_head_normalize(Expression *expression) {
-    switch (expression->type) {
+    switch (expression->tag) {
         case (APP_EXPRESSION): {
             Expression *new_func =
-                weak_head_normalize(expression->value.app.func);
-            if (new_func->type == LAMBDA_EXPRESSION) {
-                return reduce(new_func, expression->value.app.arg);
+                weak_head_normalize(get_app_func(expression));
+            if (new_func->tag == LAMBDA_EXPRESSION) {
+                return reduce(new_func, get_app_arg(expression));
             }
             Context *app_context = get_expression_context(expression);
             Expression *result = init_app_expression_wc(
-                new_func, expression->value.app.arg, app_context);
+                new_func, get_app_arg(expression), app_context);
             if (!result) {
                 return NULL;
             }

@@ -56,7 +56,7 @@ static void print_proof_state(MEngineRuntime *rt) {
 
     // Header
     Expression *current_theorem = rt->pending_theorem;
-    char *theorem_name = current_theorem->value.var.name;
+    char *theorem_name = get_var_name(current_theorem);
     fprintf(stdout, "\n" UI "⊢ " CRESET BOLD "%s\n", theorem_name);
     fprintf(stdout, UI "────────────────────────────────\n" CRESET);
 

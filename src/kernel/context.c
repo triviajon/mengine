@@ -17,7 +17,7 @@ bool context_is_empty(Context *context) { return context == EMPTY_CONTEXT; }
 bool context_contains_name(Context *context, char *name) {
     Context *curr = context;
     while (!context_is_empty(curr)) {
-        if (strcmp(curr->var_type->value.var.name, name) == 0) {
+        if (strcmp(get_var_name(curr->var_type), name) == 0) {
             return true;
         }
         curr = curr->parent;
@@ -28,7 +28,7 @@ bool context_contains_name(Context *context, char *name) {
 Expression *context_lookup_by_name(Context *context, char *name) {
     Context *curr = context;
     while (!context_is_empty(curr)) {
-        if (strcmp(curr->var_type->value.var.name, name) == 0) {
+        if (strcmp(get_var_name(curr->var_type), name) == 0) {
             return curr->var_type;
         }
         curr = curr->parent;
@@ -37,7 +37,7 @@ Expression *context_lookup_by_name(Context *context, char *name) {
 }
 
 Context *context_insert(Context *context, Expression *var_type) {
-    if (var_type->type != VAR_EXPRESSION) {
+    if (var_type->tag != VAR_EXPRESSION) {
         return NULL;
     }
 
@@ -45,7 +45,7 @@ Context *context_insert(Context *context, Expression *var_type) {
         return context;
     }
 
-    Expression *expr_type = var_type->value.var.type;
+    Expression *expr_type = get_expression_type(var_type);
     if (!valid_in_context(expr_type, context)) {
         return NULL;
     }
@@ -210,7 +210,7 @@ bool valid_in_context(Expression *expr, Context *context) {
 }
 
 bool valid_to_add_to_context(Expression *expr, Context *context) {
-    if (expr->type != VAR_EXPRESSION) {
+    if (expr->tag != VAR_EXPRESSION) {
         return false;
     }
 
