@@ -6,6 +6,7 @@
 #include "src/kernel/beta_reduction.h"
 #include "src/kernel/context.h"
 #include "src/kernel/dyn_array_map.h"
+#include "src/kernel/new_subst.h"
 #include "src/kernel/subst.h"
 
 void add_to_parents(Expression *expression, void *ptr, Relation r) {
@@ -57,37 +58,29 @@ Uplink *new_uplink(void *ptr, Relation r) {
     return new_uplink;
 }
 
-// Helper function to construct a lambda type
-Expression *constr_lambda_type(Expression *bound_variable, Expression *body) {
-    Expression *type =
-        init_forall_expression(bound_variable, get_expression_type(body));
-    return type;
+// Helper to construct a lambda type from a bound variable and body.
+// Assumes all inputs are valid.
+Expression *_construct_lambda_type(Expression *bound_variable,
+                                   Expression *body) {
+    return init_forall_expression(bound_variable, get_expression_type(body));
 }
 
-// Helper function to construct a app type
-Expression *constr_app_type(Expression *func, Expression *arg) {
-    Expression *func_type =
-        get_expression_type(func);  // something like Forall x: A, B
+// Helper to construct a app type from a function and argument.
+// Assumes all inputs are valid.
+Expression *_construct_app_type(Expression *func, Expression *arg) {
+    Expression *func_type = get_expression_type(func);  // Forall x: A, B
     Expression *weak_func_type = weak_head_normalize(func_type);
-    if (func_type->type != FORALL_EXPRESSION) {
+    if (weak_func_type->type != FORALL_EXPRESSION) {
         fprintf(stderr, ERROR "Trying to apply a non-function.\n" CRESET);
         return NULL;
     }
-    Expression *variable = weak_func_type->value.forall.bound_variable;  // x
-    Expression *expected_arg_type = get_expression_type(variable);       // A
-    Expression *actual_arg_type =
-        get_expression_type(arg);  // hopefully A, but we need to check.
-    Expression *return_type = weak_func_type->value.forall.body;  // B
+    Expression *variable = get_forall_bound_variable(weak_func_type);  // x
+    Expression *expected_arg_type = get_expression_type(variable);     // A
+    Expression *actual_arg_type = get_expression_type(arg);            // A?
+    Expression *return_type = get_forall_body(weak_func_type);         // B
 
     if (subtypes(actual_arg_type, expected_arg_type)) {
-        return subst(return_type, variable, arg);  // return B[x -> arg]
-    }
-
-    // We if need to, normalize the arguments
-    Expression *norm_actual_arg_ty = normalize(actual_arg_type);
-    Expression *norm_expected_arg_ty = normalize(expected_arg_type);
-    if (congruence(norm_actual_arg_ty, norm_expected_arg_ty)) {
-        return subst(return_type, variable, arg);  // return B[x -> arg]
+        return new_subst(return_type, variable, arg);  // B[x -> arg]
     }
 
     fprintf(stderr, ERROR "Application does not type check.\n" CRESET);
@@ -113,7 +106,7 @@ Expression *init_lambda_expression(Expression *bound_variable,
     expr->value.lambda.context =
         context_minus(get_expression_context(body), bound_variable);
     expr->value.lambda.bound_variable = bound_variable;
-    expr->value.lambda.type = constr_lambda_type(bound_variable, body);
+    expr->value.lambda.type = _construct_lambda_type(bound_variable, body);
     expr->value.lambda.body = body;
     add_to_parents(body, expr, LAMBDA_BODY);
     expr->value.lambda.uplinks = dll_create();
@@ -122,7 +115,7 @@ Expression *init_lambda_expression(Expression *bound_variable,
 }
 
 Expression *init_app_expression(Expression *func, Expression *arg) {
-    Expression *app_type = constr_app_type(func, arg);
+    Expression *app_type = _construct_app_type(func, arg);
     if (!app_type) {
         return NULL;
     }
@@ -199,8 +192,15 @@ Expression *init_hole_expression(char *name, Expression *type,
 }
 
 Expression *init_var_expression_wc(const char *name, Expression *type,
-                                   Context *defining_context) {
-    if (!valid_in_context(type, defining_context)) {
+                                   Context *gamma) {
+    if (!valid_in_context(type, gamma)) {
+        return NULL;
+    }
+
+    Expression *type_type = get_expression_type(type);
+    if (type_type->type != PROP_EXPRESSION &&
+        type_type->type != TYPE_EXPRESSION) {
+        fprintf(stderr, ERROR "Type is not a Prop or Type_i.\n" CRESET);
         return NULL;
     }
 
@@ -209,22 +209,29 @@ Expression *init_var_expression_wc(const char *name, Expression *type,
     expr->value.var.name = strdup(name);
     expr->value.var.type = type;
     expr->value.var.uplinks = dll_create();
-    // TODO: I won't lie, this feels a bit dirty, but I also don't know how to
-    // make this make sense. From the user perspective of
-    // init_var_expression_wc, they'd need to somehow possess a context with
-    // this variable in with BEFORE creating the variable itself. Obviously, we
-    // can't do that, so instead we'll assume that the user will provide a
-    // context without the variable in it, and we'll add it to the context after
-    // creating the variable.
-    expr->value.var.context = context_insert(defining_context, expr);
+    expr->value.var.context = gamma;
     expr->value.var.maybe_hole_free = true;
     return expr;
 }
 
 Expression *init_var_expression_wc_with_definition(const char *name,
                                                    Expression *definition,
-                                                   Context *defining_context) {
-    if (!valid_in_context(definition, defining_context)) {
+                                                   Context *gamma) {
+    if (!valid_in_context(definition, gamma)) {
+        fprintf(stderr, ERROR "Definition is not valid in context.\n" CRESET);
+        return NULL;
+    }
+
+    Expression *type = get_expression_type(definition);
+    if (!valid_in_context(type, gamma)) {
+        fprintf(stderr, ERROR "Type is not valid in context.\n" CRESET);
+        return NULL;
+    }
+
+    Expression *type_type = get_expression_type(type);
+    if (type_type->type != PROP_EXPRESSION &&
+        type_type->type != TYPE_EXPRESSION) {
+        fprintf(stderr, ERROR "Type is not a Prop or Type_i.\n" CRESET);
         return NULL;
     }
 
@@ -233,24 +240,34 @@ Expression *init_var_expression_wc_with_definition(const char *name,
     expr->value.var.name = strdup(name);
     expr->value.var.definition = definition;
     add_to_parents(definition, expr, VAR_BODY);
-    expr->value.var.type = get_expression_type(definition);
+    expr->value.var.type = type;
     expr->value.var.uplinks = dll_create();
-    expr->value.var.context = context_insert(defining_context, expr);
+    expr->value.var.context = gamma;
     expr->value.var.maybe_hole_free = true;
     return expr;
 }
 
 Expression *init_lambda_expression_wc(Expression *bound_variable,
-                                      Expression *body, Context *context) {
-    if (!valid_in_context(body, context)) {
+                                      Expression *body, Context *gamma) {
+    Context *extended_with_bound_variable =
+        context_insert(gamma, bound_variable);
+
+    if (!extended_with_bound_variable) {
+        fprintf(stderr,
+                ERROR "Failed to extend context with bound variable.\n" CRESET);
+        return NULL;
+    }
+
+    if (!valid_in_context(body, extended_with_bound_variable)) {
+        fprintf(stderr, ERROR "Body is not valid in context.\n" CRESET);
         return NULL;
     }
 
     Expression *expr = (Expression *)malloc(sizeof(Expression));
     expr->type = LAMBDA_EXPRESSION;
-    expr->value.lambda.context = context_minus(context, bound_variable);
+    expr->value.lambda.context = gamma;
     expr->value.lambda.bound_variable = bound_variable;
-    expr->value.lambda.type = constr_lambda_type(bound_variable, body);
+    expr->value.lambda.type = _construct_lambda_type(bound_variable, body);
     expr->value.lambda.body = body;
     add_to_parents(body, expr, LAMBDA_BODY);
     expr->value.lambda.uplinks = dll_create();
@@ -261,9 +278,25 @@ Expression *init_lambda_expression_wc(Expression *bound_variable,
 Expression *init_app_expression_wc(Expression *func, Expression *arg,
                                    Context *context) {
     if (!valid_in_context(func, context)) {
+        fprintf(stderr, ERROR "Function is not valid in context.\n" CRESET);
         return NULL;
     }
+
+    Expression *func_type = get_expression_type(func);
+    if (func_type->type != FORALL_EXPRESSION) {
+        fprintf(stderr, ERROR "Function is not a Forall expression.\n" CRESET);
+        return NULL;
+    }
+
     if (!valid_in_context(arg, context)) {
+        fprintf(stderr, ERROR "Argument is not valid in context.\n" CRESET);
+        return NULL;
+    }
+
+    // We perform the verification that type of the argument is a subtype of the
+    // function's bound variable type in the _construct_app_type helper.
+    Expression *type = _construct_app_type(func, arg);
+    if (!type) {
         return NULL;
     }
 
@@ -275,7 +308,7 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg,
     add_to_parents(func, expr, APP_FUNC);
     expr->value.app.arg = arg;
     add_to_parents(arg, expr, APP_ARG);
-    expr->value.app.type = constr_app_type(func, arg);
+    expr->value.app.type = type;
     expr->value.app.cache = NULL;
     expr->value.app.uplinks = dll_create();
     expr->value.app.maybe_hole_free =
@@ -284,16 +317,41 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg,
 }
 
 Expression *init_forall_expression_wc(Expression *bound_variable,
-                                      Expression *body, Context *context) {
-    if (!valid_in_context(body, context)) {
+                                      Expression *body, Context *gamma) {
+    Context *extended_with_bound_variable =
+        context_insert(gamma, bound_variable);
+
+    if (!extended_with_bound_variable) {
+        fprintf(stderr,
+                ERROR "Failed to extend context with bound variable.\n" CRESET);
+        return NULL;
+    }
+
+    if (!valid_in_context(body, extended_with_bound_variable)) {
+        fprintf(stderr, ERROR "Body is not valid in context.\n" CRESET);
+        return NULL;
+    }
+
+    Expression *body_type = get_expression_type(body);
+    if (body_type->type != PROP_EXPRESSION &&
+        body_type->type != TYPE_EXPRESSION) {
+        fprintf(stderr, ERROR "Body type is not a Prop or Type_i.\n" CRESET);
+        return NULL;
+    }
+
+    Expression *bound_variable_type = get_expression_type(bound_variable);
+    if (bound_variable_type->type == TYPE_EXPRESSION &&
+        !valid_in_context(bound_variable_type, gamma)) {
+        fprintf(stderr,
+                ERROR "Bound variable type is not valid in context.\n" CRESET);
         return NULL;
     }
 
     Expression *expr = (Expression *)malloc(sizeof(Expression));
     expr->type = FORALL_EXPRESSION;
-    expr->value.forall.context = context_minus(context, bound_variable);
+    expr->value.forall.context = gamma;
     expr->value.forall.bound_variable = bound_variable;
-    expr->value.forall.type = init_type_expression();
+    expr->value.forall.type = body_type;
     expr->value.forall.body = body;
     add_to_parents(body, expr, FORALL_BODY);
     expr->value.forall.uplinks = dll_create();
@@ -301,10 +359,11 @@ Expression *init_forall_expression_wc(Expression *bound_variable,
     return expr;
 }
 
-Expression *init_arrow_expression(Expression *lhs, Expression *rhs) {
+Expression *init_arrow_expression_wc(Expression *lhs, Expression *rhs,
+                                     Context *gamma) {
     // lhs -> rhs <-> Forall _: lhs, rhs
-    Expression *unnamed_variable = init_var_expression("_", lhs);
-    return init_forall_expression(unnamed_variable, rhs);
+    Expression *unnamed_variable = init_var_expression_wc("_", lhs, gamma);
+    return init_forall_expression_wc(unnamed_variable, rhs, gamma);
 }
 
 DoublyLinkedList *get_expression_uplinks(Expression *expression) {

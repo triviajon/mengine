@@ -130,7 +130,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context,
                 return NULL;
             }
 
-            return init_lambda_expression_wc(bound_var, body, extended_context);
+            return init_lambda_expression_wc(bound_var, body, context);
         }
 
         case AST_FORALL: {
@@ -169,7 +169,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context,
                 return NULL;
             }
 
-            return init_forall_expression_wc(bound_var, body, extended_context);
+            return init_forall_expression_wc(bound_var, body, context);
         }
 
         case AST_APP: {
@@ -260,6 +260,7 @@ Expression *parse_string_to_expression(const char *input, Context *context) {
         return NULL;
     }
 
+    // todo: refactor to argument
     MEngineOptions options = {.debug = false};
 
     Lexer lexer;
@@ -271,13 +272,6 @@ Expression *parse_string_to_expression(const char *input, Context *context) {
     AST *ast = parse_term(&parser);
     if (!ast) {
         return NULL;
-    }
-
-    // Debug print the complete AST (similar to lexer token printing)
-    if (options.debug && options.debug__print_ast) {
-        fprintf(stderr, MAG "[PARSE]" DIM " ");
-        fprint_ast(stderr, ast);
-        fprintf(stderr, CRESET "\n");
     }
 
     Expression *expr = ast_to_expression(ast, context);

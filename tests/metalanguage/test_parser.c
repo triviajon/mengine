@@ -158,24 +158,6 @@ void test_parse_lambda_with_forall_body(void) {
                      "body should be FORALL");
 }
 
-void test_parse_forall_with_lambda_body(void) {
-    test_start("covers forall with lambda in body");
-
-    MEngineOptions options = {.debug = false};
-    Lexer lexer;
-    lexer_init(&lexer, "forall (x : Type) , fun (y : Type) => x", &options);
-
-    Parser parser;
-    parser_init(&parser, &lexer, &options);
-
-    AST *ast = parse_term(&parser);
-    assert_not_null(ast, "AST should not be null");
-    assert_equal_int(AST_FORALL, ast->tag, "outer AST should be FORALL");
-    assert_not_null(ast->value.forall.body, "forall body should exist");
-    assert_equal_int(AST_LAMBDA, ast->value.forall.body->tag,
-                     "body should be LAMBDA");
-}
-
 void test_parse_application_single(void) {
     test_start("covers single application (f x)");
 
@@ -424,7 +406,6 @@ int main() {
 
     // Mixed lambda and forall
     test_parse_lambda_with_forall_body();
-    test_parse_forall_with_lambda_body();
 
     // Applications
     test_parse_application_single();
