@@ -64,7 +64,7 @@ Expression *_create_definition_body(MEngineRuntime *rt, Binder **params,
     *rendered_type_ctx = c;
     for (size_t i = param_count; i > 0; i--) {
         result = init_lambda_expression_wc(params_rendered[i - 1], result,
-                                           contexts[i]);
+                                           contexts[i - 1]);
     }
 
     free(params_rendered);
@@ -245,7 +245,7 @@ static Expression *_build_motive_type(Expression *ind_var,
         // No indices: motive is (ind params) -> Prop
         *index_vars_out = NULL;
         *index_count_out = 0;
-        return init_arrow_expression(ind_applied, init_prop_expression());
+        return init_arrow_expression_wc(ind_applied, init_prop_expression(), ctx);
     }
 
     // With indices: motive is forall (indices), (ind params indices) -> Prop
@@ -278,7 +278,7 @@ static Expression *_build_motive_type(Expression *ind_var,
 
     // Build forall (i0 : T0) ... (in : Tn), (ind params i0 ... in) -> Prop
     Expression *motive_type =
-        init_arrow_expression(ind_with_indices, init_prop_expression());
+        init_arrow_expression_wc(ind_with_indices, init_prop_expression(), motive_ctx);
     for (size_t i = index_count; i > 0; i--) {
         motive_type = init_forall_expression_wc(index_vars[i - 1], motive_type,
                                                 motive_ctx);
@@ -421,7 +421,7 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd,
     }
 
     Expression *result =
-        init_forall_expression_wc(target_var, target_applied, target_ctx);
+        init_forall_expression_wc(target_var, target_applied, final_ctx);
 
     // Wrap with foralls for conclusion indices
     for (size_t i = index_count; i > 0; i--) {
@@ -436,7 +436,7 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd,
 
     for (size_t i = ctor_count; i > 0; i--) {
         result = init_forall_expression_wc(case_vars[i - 1], result,
-                                           case_contexts[i]);
+                                           case_contexts[i - 1]);
         if (!result) {
             fprintf(stderr,
                     ERROR "Failed to wrap with constructor case %zu\n" CRESET,
@@ -447,7 +447,7 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd,
         }
     }
 
-    result = init_forall_expression_wc(motive_var, result, elim_ctx);
+    result = init_forall_expression_wc(motive_var, result, contexts[param_count]);
     if (!result) {
         fprintf(stderr, ERROR "Failed to wrap with motive P\n" CRESET);
         free(case_vars);
@@ -457,7 +457,7 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd,
 
     for (size_t i = param_count; i > 0; i--) {
         result =
-            init_forall_expression_wc(param_vars[i - 1], result, contexts[i]);
+            init_forall_expression_wc(param_vars[i - 1], result, contexts[i - 1]);
         if (!result) {
             fprintf(stderr, ERROR "Failed to wrap with parameter %zu\n" CRESET,
                     i - 1);
@@ -642,7 +642,7 @@ static void _handle_inductive_command(MEngineRuntime *rt,
     Expression *ind_type = ind_return_type;
     for (size_t i = param_count; i > 0; i--) {
         ind_type =
-            init_forall_expression_wc(param_vars[i - 1], ind_type, contexts[i]);
+            init_forall_expression_wc(param_vars[i - 1], ind_type, contexts[i - 1]);
     }
 
     Expression *ind_var = init_var_expression_wc(name, ind_type, rt->ctx);
@@ -673,7 +673,7 @@ static void _handle_inductive_command(MEngineRuntime *rt,
         Expression *ctor_type = ctor_core_type;
         for (size_t j = param_count; j > 0; j--) {
             ctor_type = init_forall_expression_wc(param_vars[j - 1], ctor_type,
-                                                  contexts[j]);
+                                                  contexts[j - 1]);
             if (!ctor_type) {
                 fprintf(stderr,
                         ERROR

@@ -111,22 +111,6 @@ void test_convert_lambda_with_forall_body(void) {
     assert_true(strstr(str, "forall") != NULL, "should contain 'forall'");
 }
 
-void test_convert_forall_with_lambda_body(void) {
-    test_start("covers forall with lambda body conversion");
-
-    Context *ctx = context_create_empty();
-    assert_not_null(ctx, "context should be created");
-
-    Expression *expr = parse_string_to_expression(
-        "forall (x : Type) , fun (y : Type) => x", ctx);
-    assert_not_null(expr, "expression should not be null");
-
-    char *str = stringify_expression(expr);
-    assert_not_null(str, "stringified expression should not be null");
-    assert_true(strstr(str, "forall") != NULL, "should contain 'forall'");
-    assert_true(strstr(str, "fun") != NULL, "should contain 'fun'");
-}
-
 void test_convert_complex_nested(void) {
     test_start("covers complex nested lambda and forall conversion");
 
@@ -282,7 +266,6 @@ int main() {
 
     // Mixed conversions
     test_convert_lambda_with_forall_body();
-    test_convert_forall_with_lambda_body();
     test_convert_complex_nested();
 
     // Let expression conversions

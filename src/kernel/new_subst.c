@@ -6,8 +6,10 @@
 
 Expression *new_subst(Expression *expression, Expression *old_e,
                       Expression *new_e) {
-    // Optimization: we only need to perform the substitution if the
-    // expression's context contains a reference to the old variable
+    if (expression == old_e) {
+        return new_e;
+    }
+
     Context *e_ctx = get_expression_context(expression);
     if (context_find(e_ctx, old_e) == NULL) {
         return expression;
@@ -16,7 +18,7 @@ Expression *new_subst(Expression *expression, Expression *old_e,
     switch (expression->type) {
         case (VAR_EXPRESSION):
         case (HOLE_EXPRESSION):
-            return (expression == old_e) ? new_e : expression;
+            return expression;
         case (LAMBDA_EXPRESSION): {
             // Assume the expression has form fun (x: A) => B
             Expression *x = expression->value.lambda.bound_variable;
@@ -50,7 +52,6 @@ Expression *new_subst(Expression *expression, Expression *old_e,
             dll_insert_at_tail(new_exprs, dll_new_node(x_prime));
 
             Expression *B_prime = new_p_subst(B, old_exprs, new_exprs);
-            Context *B_prime_ctx = get_expression_context(B_prime);
 
             dll_remove_tail(old_exprs);
             dll_remove_tail(old_exprs);
@@ -60,7 +61,7 @@ Expression *new_subst(Expression *expression, Expression *old_e,
             dll_remove_tail(new_exprs);
             dll_destroy(new_exprs);
 
-            return init_lambda_expression_wc(x_prime, B_prime, B_prime_ctx);
+            return init_lambda_expression_wc(x_prime, B_prime, x_prime_ctx);
         }
         case (APP_EXPRESSION): {
             Expression *app_func = expression->value.app.func;
@@ -110,7 +111,6 @@ Expression *new_subst(Expression *expression, Expression *old_e,
             dll_insert_at_tail(new_exprs, dll_new_node(x_prime));
 
             Expression *B_prime = new_p_subst(B, old_exprs, new_exprs);
-            Context *B_prime_ctx = get_expression_context(B_prime);
 
             dll_remove_tail(old_exprs);
             dll_remove_tail(old_exprs);
@@ -120,7 +120,7 @@ Expression *new_subst(Expression *expression, Expression *old_e,
             dll_remove_tail(new_exprs);
             dll_destroy(new_exprs);
 
-            return init_forall_expression_wc(x_prime, B_prime, B_prime_ctx);
+            return init_forall_expression_wc(x_prime, B_prime, x_prime_ctx);
         }
         default:
             return expression;
@@ -136,6 +136,16 @@ Expression *new_p_subst(Expression *expression, DoublyLinkedList *old_exprs,
 
     if (n == 0) {
         return expression;
+    }
+
+    DLLNode *curr_old = old_exprs->head;
+    DLLNode *curr_new = new_exprs->head;
+    while (curr_old != NULL) {
+        if (expression == curr_old->data) {
+            return curr_new->data;
+        }
+        curr_old = curr_old->next;
+        curr_new = curr_new->next;
     }
 
     Context *e_ctx = get_expression_context(expression);
@@ -157,16 +167,8 @@ Expression *new_p_subst(Expression *expression, DoublyLinkedList *old_exprs,
 
     switch (expression->type) {
         case (VAR_EXPRESSION):
-        case (HOLE_EXPRESSION): {
-            for (int i = 0; i < n; i++) {
-                Expression *old_e = dll_at(old_exprs, i)->data;
-                Expression *new_e = dll_at(new_exprs, i)->data;
-                if (expression == old_e) {
-                    return new_e;
-                }
-            }
+        case (HOLE_EXPRESSION):
             return expression;
-        }
         case (LAMBDA_EXPRESSION): {
             // Assume expression has form fun (x: A) => B
             Expression *x = expression->value.lambda.bound_variable;
@@ -186,12 +188,11 @@ Expression *new_p_subst(Expression *expression, DoublyLinkedList *old_exprs,
             dll_insert_at_tail(new_exprs, dll_new_node(x_prime));
 
             Expression *B_prime = new_p_subst(B, old_exprs, new_exprs);
-            Context *B_prime_ctx = get_expression_context(B_prime);
 
             dll_remove_tail(old_exprs);
             dll_remove_tail(new_exprs);
 
-            return init_lambda_expression_wc(x_prime, B_prime, B_prime_ctx);
+            return init_lambda_expression_wc(x_prime, B_prime, x_prime_ctx);
         }
         case (APP_EXPRESSION): {
             Expression *app_func = expression->value.app.func;
@@ -230,12 +231,11 @@ Expression *new_p_subst(Expression *expression, DoublyLinkedList *old_exprs,
             dll_insert_at_tail(new_exprs, dll_new_node(x_prime));
 
             Expression *B_prime = new_p_subst(B, old_exprs, new_exprs);
-            Context *B_prime_ctx = get_expression_context(B_prime);
 
             dll_remove_tail(old_exprs);
             dll_remove_tail(new_exprs);
 
-            return init_forall_expression_wc(x_prime, B_prime, B_prime_ctx);
+            return init_forall_expression_wc(x_prime, B_prime, x_prime_ctx);
         }
         default:
             return expression;

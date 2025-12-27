@@ -171,7 +171,13 @@ Expression *init_lambda_expression(Expression *bound_variable,
 Expression *init_app_expression(Expression *func, Expression *arg);
 Expression *init_forall_expression(Expression *bound_variable,
                                    Expression *body);
+
+// Todo: We should consider adding context arguments to these functions?
+
+// Create a new type expression.
 Expression *init_type_expression();
+
+// Create a new prop expression.
 Expression *init_prop_expression();
 
 // Initialize a new hole expression with a given name, return type, and defining
@@ -185,36 +191,68 @@ Expression *init_hole_expression(char *name, Expression *return_type,
 // mind for the expression, and you want to use that context to type the
 // expression.
 
-// Initialize a new variable expression with a given name, type, and defining
-// context. The variable's type must be valid in the defining context.
+// Create a new variable expression with a given name, type, and defining
+// context. Typing rule:
+//    gamma |- A : s
+//    s in {Prop, Type_i}
+// ------------------------------------------------
+//    gamma, x : A |-
+// In other words, if the type is valid in the input context, and the type(s) is
+// a Prop/Type_i, then this variable is valid in the extension of the context.
 Expression *init_var_expression_wc(const char *name, Expression *type,
-                                   Context *defining_context);
+                                   Context *gamma);
 
-// Create a variable expression with a definition body.
+// Create a new variable expression with a given name, definition, and context.
+// context. Typing rule:
+//    gamma |- definition : A
+//    gamma |- A : a
+//    s in {Prop, Type_i}
+// ------------------------------------------------
+//    gamma, x : A |-
+// In other words, if the type is valid in the input context, and the type(s) is
+// a Prop/Type_i, then this variable is valid in the extension of the context.
 Expression *init_var_expression_wc_with_definition(const char *name,
                                                    Expression *definition,
-                                                   Context *defining_context);
+                                                   Context *gamma);
 
-// Initialize a new lambda expression with a bound variable, body, and context.
-// The body must be valid in the given context.
+// Create a new lambda/abstraction expression with a bound variable, body, and
+// context.
+// Typing rule:
+//     gamma, bound_variable : A |- body : B
+// ------------------------------------------------
+//     gamma |- fun (bound_variable: A) => body : Forall (bound_variable: A), B
 Expression *init_lambda_expression_wc(Expression *bound_variable,
-                                      Expression *body, Context *context);
+                                      Expression *body, Context *gamma);
 
-// Initialize a new application expression with a function, argument, and
-// context. The function and argument must be valid in the given context.
+// Create a new application expression with a function, argument, and context.
+// Typing rule:
+//    gamma |- func : Forall bound_variable: A, B
+//    gamma |- arg : A
+// ------------------------------------------------
+//    gamma |- func arg : B[bound_variable -> arg]
 Expression *init_app_expression_wc(Expression *func, Expression *arg,
                                    Context *context);
 
-// Initialize a new forall expression with a bound variable, body, and context.
-// The body must be valid in the given context.
+// Create a new forall expression with a bound variable, body, and context.
+// Typing rule:
+//    gamma, bound_variable : A |- body : s, s in {Prop, Type_i}
+//    (if s = Type_i, then) gamma |- A : s
+// ------------------------------------------------
+//    gamma |- Forall bound_variable: A, body : s
 Expression *init_forall_expression_wc(Expression *bound_variable,
-                                      Expression *body, Context *context);
+                                      Expression *body, Context *gamma);
 
-// Initializes a new "arrow" expression.
-// The "arrow" expression is a shorthand for a forall expression with a bound
-// variable. init_arrow_expression(A, B) is equivalent to
-// init_forall_expression(init_var_expression("_", A), B).
-Expression *init_arrow_expression(Expression *lhs, Expression *rhs);
+// Create a new arrow expression with a left-hand side and right-hand side, and
+// a context. The typing rule is a special case of the forall expression typing
+// rule, writen out here for convenience. Setting (bound_variable := _: lhs)
+// (body := rhs) (gamma := gamma), we get the following.
+// Typing rule:
+//    gamma, _ : lhs |- rhs : s, s in {Prop, Type_i}
+//    (if s = Type_i, then) gamma |- lhs : s
+// ------------------------------------------------
+//    gamma |- Forall _: lhs, rhs : s (which is equivalent to "lhs -> rhs")
+Expression *init_arrow_expression_wc(Expression *lhs, Expression *rhs,
+                                     Context *gamma);
 
 // Returns the uplinks of an expression.
 DoublyLinkedList *get_expression_uplinks(Expression *expression);
