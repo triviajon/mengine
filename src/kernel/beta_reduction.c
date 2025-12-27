@@ -26,7 +26,8 @@ Expression *reduce(Expression *app_func, Expression *app_arg) {
     Expression *body = get_lambda_body(app_func);
     Expression *old = get_lambda_bound_variable(app_func);
     Expression *new = app_arg;
-    return new_subst(body, old, new);
+    // body is closed under context(old), which contains old
+    return new_subst(old, body, old, new);
 }
 
 Expression *weak_head_normalize(Expression *expression) {

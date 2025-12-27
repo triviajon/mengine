@@ -3,8 +3,6 @@
 
 #include "src/kernel/expression.h"
 
-typedef struct Context Context;
-
 typedef struct {
     bool print_prefix;  // Whether to print "Variable"
     int indent;         // Number of spaces between each entry

@@ -31,15 +31,13 @@ Uplink *new_uplink(void *ptr, Relation r) {
 
 // Helper to construct a lambda type from a bound variable and body.
 // Assumes all inputs are valid.
-Expression *_construct_lambda_type(Expression *bound_variable, Expression *body,
-                                   Context *gamma) {
-    return init_forall_expression_wc(bound_variable, get_expression_type(body),
-                                     gamma);
+Expression *_construct_lambda_type(Expression *bound_variable, Expression *body) {
+    return init_forall_expression_wc(bound_variable, get_expression_type(body));
 }
 
 // Helper to construct a app type from a function and argument.
 // Assumes all inputs are valid.
-Expression *_construct_app_type(Expression *func, Expression *arg) {
+Expression *_construct_app_type(Context *context, Expression *func, Expression *arg) {
     Expression *func_type = get_expression_type(func);  // Forall x: A, B
     Expression *weak_func_type = weak_head_normalize(func_type);
     if (weak_func_type->tag != FORALL_EXPRESSION) {
@@ -52,7 +50,9 @@ Expression *_construct_app_type(Expression *func, Expression *arg) {
     Expression *return_type = get_forall_body(weak_func_type);         // B
 
     if (subtypes(actual_arg_type, expected_arg_type)) {
-        return new_subst(return_type, variable, arg);  // B[x -> arg]
+        // return_type (B) is closed under context(variable) extended with variable
+        // context must include both variable and all of arg's dependencies
+        return new_subst(context, return_type, variable, arg);  // B[x -> arg]
     }
 
     fprintf(stderr, ERROR "Application does not type check.\n" CRESET);
@@ -65,6 +65,7 @@ Expression *init_prop_expression() {
         PROP->tag = PROP_EXPRESSION;
         PROP->uplinks = dll_create();
         PROP->context = context_create_empty();
+        PROP->ctx_size = 0;
         PROP->type = init_type_expression();
         PROP->maybe_hole_free = true;
     }
@@ -77,6 +78,7 @@ Expression *init_type_expression() {
         TYPE->tag = TYPE_EXPRESSION;
         TYPE->uplinks = dll_create();
         TYPE->context = context_create_empty();
+        TYPE->ctx_size = 0;
         TYPE->type = init_type_expression();
         TYPE->maybe_hole_free = true;
     }
@@ -89,8 +91,7 @@ Expression *init_hole_expression(char *name, Expression *type, Context *gamma) {
     }
 
     Expression *type_type = get_expression_type(type);
-    if (type_type->tag != PROP_EXPRESSION &&
-        type_type->tag != TYPE_EXPRESSION) {
+    if (type_type->tag != PROP_EXPRESSION && type_type->tag != TYPE_EXPRESSION) {
         fprintf(stderr, ERROR "Type is not a Prop or Type_i.\n" CRESET);
         return NULL;
     }
@@ -99,6 +100,7 @@ Expression *init_hole_expression(char *name, Expression *type, Context *gamma) {
     expr->tag = HOLE_EXPRESSION;
     expr->as.hole.name = name;
     expr->context = gamma;
+    expr->ctx_size = context_is_empty(gamma) ? 0 : gamma->ctx_size;
     expr->type = type;
     add_to_parents(type, expr, HOLE_TYPE);
     expr->uplinks = dll_create();
@@ -106,15 +108,14 @@ Expression *init_hole_expression(char *name, Expression *type, Context *gamma) {
     return expr;
 }
 
-Expression *init_var_expression_wc(const char *name, Expression *type,
-                                   Context *gamma) {
+Expression *init_var_expression_wc(const char *name, Expression *type, Context *gamma) {
     if (!valid_in_context(type, gamma)) {
+        fprintf(stderr, ERROR "Type is not valid in context.\n" CRESET);
         return NULL;
     }
 
     Expression *type_type = get_expression_type(type);
-    if (type_type->tag != PROP_EXPRESSION &&
-        type_type->tag != TYPE_EXPRESSION) {
+    if (type_type->tag != PROP_EXPRESSION && type_type->tag != TYPE_EXPRESSION) {
         fprintf(stderr, ERROR "Type is not a Prop or Type_i.\n" CRESET);
         return NULL;
     }
@@ -125,12 +126,12 @@ Expression *init_var_expression_wc(const char *name, Expression *type,
     expr->type = type;
     expr->uplinks = dll_create();
     expr->context = gamma;
+    expr->ctx_size = context_is_empty(gamma) ? 1 : gamma->ctx_size + 1;
     expr->maybe_hole_free = true;
     return expr;
 }
 
-Expression *init_var_expression_wc_with_definition(const char *name,
-                                                   Expression *definition,
+Expression *init_var_expression_wc_with_definition(const char *name, Expression *definition,
                                                    Context *gamma) {
     if (!valid_in_context(definition, gamma)) {
         fprintf(stderr, ERROR "Definition is not valid in context.\n" CRESET);
@@ -144,8 +145,7 @@ Expression *init_var_expression_wc_with_definition(const char *name,
     }
 
     Expression *type_type = get_expression_type(type);
-    if (type_type->tag != PROP_EXPRESSION &&
-        type_type->tag != TYPE_EXPRESSION) {
+    if (type_type->tag != PROP_EXPRESSION && type_type->tag != TYPE_EXPRESSION) {
         fprintf(stderr, ERROR "Type is not a Prop or Type_i.\n" CRESET);
         return NULL;
     }
@@ -158,20 +158,14 @@ Expression *init_var_expression_wc_with_definition(const char *name,
     expr->type = type;
     expr->uplinks = dll_create();
     expr->context = gamma;
+    expr->ctx_size = context_is_empty(gamma) ? 1 : gamma->ctx_size + 1;
     expr->maybe_hole_free = true;
     return expr;
 }
 
-Expression *init_lambda_expression_wc(Expression *bound_variable,
-                                      Expression *body, Context *gamma) {
-    Context *extended_with_bound_variable =
-        context_insert(gamma, bound_variable);
-
-    if (!extended_with_bound_variable) {
-        fprintf(stderr,
-                ERROR "Failed to extend context with bound variable.\n" CRESET);
-        return NULL;
-    }
+Expression *init_lambda_expression_wc(Expression *bound_variable, Expression *body) {
+    Context *gamma = get_expression_context(bound_variable);
+    Context *extended_with_bound_variable = bound_variable;
 
     if (!valid_in_context(body, extended_with_bound_variable)) {
         fprintf(stderr, ERROR "Body is not valid in context.\n" CRESET);
@@ -181,8 +175,9 @@ Expression *init_lambda_expression_wc(Expression *bound_variable,
     Expression *expr = (Expression *)malloc(sizeof(Expression));
     expr->tag = LAMBDA_EXPRESSION;
     expr->context = gamma;
+    expr->ctx_size = context_is_empty(gamma) ? 0 : gamma->ctx_size;
     expr->as.lambda.bound_variable = bound_variable;
-    expr->type = _construct_lambda_type(bound_variable, body, gamma);
+    expr->type = _construct_lambda_type(bound_variable, body);
     expr->as.lambda.body = body;
     add_to_parents(body, expr, LAMBDA_BODY);
     expr->uplinks = dll_create();
@@ -190,8 +185,7 @@ Expression *init_lambda_expression_wc(Expression *bound_variable,
     return expr;
 }
 
-Expression *init_app_expression_wc(Expression *func, Expression *arg,
-                                   Context *context) {
+Expression *init_app_expression_wc(Expression *func, Expression *arg, Context *context) {
     if (!valid_in_context(func, context)) {
         fprintf(stderr, ERROR "Function is not valid in context.\n" CRESET);
         return NULL;
@@ -210,15 +204,15 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg,
 
     // We perform the verification that type of the argument is a subtype of the
     // function's bound variable type in the _construct_app_type helper.
-    Expression *type = _construct_app_type(func, arg);
+    Expression *type = _construct_app_type(context, func, arg);
     if (!type) {
         return NULL;
     }
 
     Expression *expr = (Expression *)malloc(sizeof(Expression));
     expr->tag = APP_EXPRESSION;
-    Context *combined_ctx = context;
-    expr->context = combined_ctx;
+    expr->context = context;
+    expr->ctx_size = context_is_empty(context) ? 0 : context->ctx_size;
     expr->as.app.func = func;
     add_to_parents(func, expr, APP_FUNC);
     expr->as.app.arg = arg;
@@ -226,21 +220,13 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg,
     expr->type = type;
     expr->as.app.cache = NULL;
     expr->uplinks = dll_create();
-    expr->maybe_hole_free =
-        get_maybe_hole_free(func) && get_maybe_hole_free(arg);
+    expr->maybe_hole_free = get_maybe_hole_free(func) && get_maybe_hole_free(arg);
     return expr;
 }
 
-Expression *init_forall_expression_wc(Expression *bound_variable,
-                                      Expression *body, Context *gamma) {
-    Context *extended_with_bound_variable =
-        context_insert(gamma, bound_variable);
-
-    if (!extended_with_bound_variable) {
-        fprintf(stderr,
-                ERROR "Failed to extend context with bound variable.\n" CRESET);
-        return NULL;
-    }
+Expression *init_forall_expression_wc(Expression *bound_variable, Expression *body) {
+    Context *gamma = get_expression_context(bound_variable);
+    Context *extended_with_bound_variable = bound_variable;
 
     if (!valid_in_context(body, extended_with_bound_variable)) {
         fprintf(stderr, ERROR "Body is not valid in context.\n" CRESET);
@@ -248,23 +234,21 @@ Expression *init_forall_expression_wc(Expression *bound_variable,
     }
 
     Expression *body_type = get_expression_type(body);
-    if (body_type->tag != PROP_EXPRESSION &&
-        body_type->tag != TYPE_EXPRESSION) {
+    if (body_type->tag != PROP_EXPRESSION && body_type->tag != TYPE_EXPRESSION) {
         fprintf(stderr, ERROR "Body type is not a Prop or Type_i.\n" CRESET);
         return NULL;
     }
 
     Expression *bound_variable_type = get_expression_type(bound_variable);
-    if (bound_variable_type->tag == TYPE_EXPRESSION &&
-        !valid_in_context(bound_variable_type, gamma)) {
-        fprintf(stderr,
-                ERROR "Bound variable type is not valid in context.\n" CRESET);
+    if (body_type->tag == TYPE_EXPRESSION && !valid_in_context(bound_variable_type, gamma)) {
+        fprintf(stderr, ERROR "Bound variable type is not valid in context.\n" CRESET);
         return NULL;
     }
 
     Expression *expr = (Expression *)malloc(sizeof(Expression));
     expr->tag = FORALL_EXPRESSION;
     expr->context = gamma;
+    expr->ctx_size = context_is_empty(gamma) ? 0 : gamma->ctx_size;
     expr->as.forall.bound_variable = bound_variable;
     expr->type = body_type;
     expr->as.forall.body = body;
@@ -274,11 +258,10 @@ Expression *init_forall_expression_wc(Expression *bound_variable,
     return expr;
 }
 
-Expression *init_arrow_expression_wc(Expression *lhs, Expression *rhs,
-                                     Context *gamma) {
+Expression *init_arrow_expression_wc(Expression *lhs, Expression *rhs, Context *gamma) {
     // lhs -> rhs <-> Forall _: lhs, rhs
     Expression *unnamed_variable = init_var_expression_wc("_", lhs, gamma);
-    return init_forall_expression_wc(unnamed_variable, rhs, gamma);
+    return init_forall_expression_wc(unnamed_variable, rhs);
 }
 
 DoublyLinkedList *get_expression_uplinks(Expression *expression) {
@@ -298,16 +281,12 @@ DoublyLinkedList *get_expression_uplinks(Expression *expression) {
         case (HOLE_EXPRESSION):
             return expression->uplinks;
         default:
-            fprintf(
-                stderr, ERROR
-                "Unknown expression type in get_expression_uplinks.\n" CRESET);
+            fprintf(stderr, ERROR "Unknown expression type in get_expression_uplinks.\n" CRESET);
             exit(EXIT_FAILURE);
     }
 }
 
-Expression *get_expression_type(Expression *expression) {
-    return expression->type;
-}
+Expression *get_expression_type(Expression *expression) { return expression->type; }
 
 Expression *get_expression_body(Expression *expression) {
     if (expression->tag != VAR_EXPRESSION) {
@@ -317,9 +296,7 @@ Expression *get_expression_body(Expression *expression) {
     return expression->as.var.definition;
 }
 
-Context *get_expression_context(Expression *expression) {
-    return expression->context;
-}
+Context *get_expression_context(Expression *expression) { return expression->context; }
 
 Expression *get_innermost_body(Expression *e) {
     if (e->tag == LAMBDA_EXPRESSION) {
@@ -509,13 +486,11 @@ bool _congruence(Expression *a, Expression *b, Map *mapping) {
             return _congruence(a->as.app.func, b->as.app.func, mapping) &&
                    _congruence(a->as.app.arg, b->as.app.arg, mapping);
         case (FORALL_EXPRESSION): {
-            map_set(mapping, a->as.forall.bound_variable,
-                    b->as.forall.bound_variable);
+            map_set(mapping, a->as.forall.bound_variable, b->as.forall.bound_variable);
             return _congruence(a->as.forall.body, b->as.forall.body, mapping);
         }
         case (LAMBDA_EXPRESSION): {
-            map_set(mapping, a->as.lambda.bound_variable,
-                    b->as.lambda.bound_variable);
+            map_set(mapping, a->as.lambda.bound_variable, b->as.lambda.bound_variable);
             return _congruence(a->as.lambda.body, b->as.lambda.body, mapping);
         }
         case (VAR_EXPRESSION): {
@@ -561,14 +536,12 @@ void _match_and_subst(Expression *a, Expression *b, Map *mapping) {
             _match_and_subst(a->as.app.arg, b->as.app.arg, mapping);
             break;
         case (FORALL_EXPRESSION): {
-            map_set(mapping, a->as.forall.bound_variable,
-                    b->as.forall.bound_variable);
+            map_set(mapping, a->as.forall.bound_variable, b->as.forall.bound_variable);
             _match_and_subst(a->as.forall.body, b->as.forall.body, mapping);
             break;
         }
         case (LAMBDA_EXPRESSION): {
-            map_set(mapping, a->as.lambda.bound_variable,
-                    b->as.lambda.bound_variable);
+            map_set(mapping, a->as.lambda.bound_variable, b->as.lambda.bound_variable);
             _match_and_subst(a->as.lambda.body, b->as.lambda.body, mapping);
             break;
         }
@@ -587,8 +560,7 @@ void _match_and_subst(Expression *a, Expression *b, Map *mapping) {
     }
 }
 
-Expression *match_and_subst(Expression *a, Expression *b,
-                            Expression *to_subst) {
+Expression *match_and_subst(Expression *a, Expression *b, Expression *to_subst) {
     Map *mapping = map_new();
     _match_and_subst(a, b, mapping);
 
@@ -601,7 +573,8 @@ Expression *match_and_subst(Expression *a, Expression *b,
         dll_insert_at_tail(new_exprs, dll_new_node((mapping->items + i)->val));
     }
 
-    Expression *result = new_p_subst(to_subst, old_exprs, new_exprs);
+    Context *to_subst_ctx = get_expression_context(to_subst);
+    Expression *result = new_p_subst(to_subst_ctx, to_subst, old_exprs, new_exprs);
 
     dll_destroy(old_exprs);
     dll_destroy(new_exprs);
@@ -610,8 +583,8 @@ Expression *match_and_subst(Expression *a, Expression *b,
     return result;
 }
 
-bool _congruent_with_holes(Expression *a, Expression *b,
-                           Map *alpha_equivalences, Map *required_holes) {
+bool _congruent_with_holes(Expression *a, Expression *b, Map *alpha_equivalences,
+                           Map *required_holes) {
     if (a == b) {
         return true;
     }
@@ -646,28 +619,22 @@ bool _congruent_with_holes(Expression *a, Expression *b,
         case (PROP_EXPRESSION):
             return true;
         case (APP_EXPRESSION): {
-            bool result1 =
-                _congruent_with_holes(a->as.app.func, b->as.app.func,
-                                      alpha_equivalences, required_holes);
-            bool result2 =
-                _congruent_with_holes(a->as.app.arg, b->as.app.arg,
-                                      alpha_equivalences, required_holes);
+            bool result1 = _congruent_with_holes(a->as.app.func, b->as.app.func, alpha_equivalences,
+                                                 required_holes);
+            bool result2 = _congruent_with_holes(a->as.app.arg, b->as.app.arg, alpha_equivalences,
+                                                 required_holes);
             return result1 && result2;
         }
         case (FORALL_EXPRESSION): {
-            map_set(alpha_equivalences, a->as.forall.bound_variable,
-                    b->as.forall.bound_variable);
-            bool result =
-                _congruent_with_holes(a->as.forall.body, b->as.forall.body,
-                                      alpha_equivalences, required_holes);
+            map_set(alpha_equivalences, a->as.forall.bound_variable, b->as.forall.bound_variable);
+            bool result = _congruent_with_holes(a->as.forall.body, b->as.forall.body,
+                                                alpha_equivalences, required_holes);
             return result;
         }
         case (LAMBDA_EXPRESSION): {
-            map_set(alpha_equivalences, a->as.lambda.bound_variable,
-                    b->as.lambda.bound_variable);
-            bool result =
-                _congruent_with_holes(a->as.lambda.body, b->as.lambda.body,
-                                      alpha_equivalences, required_holes);
+            map_set(alpha_equivalences, a->as.lambda.bound_variable, b->as.lambda.bound_variable);
+            bool result = _congruent_with_holes(a->as.lambda.body, b->as.lambda.body,
+                                                alpha_equivalences, required_holes);
             return result;
         }
         case (VAR_EXPRESSION): {
@@ -681,8 +648,7 @@ bool _congruent_with_holes(Expression *a, Expression *b,
 bool congruent_with_holes(Expression *a, Expression *b) {
     Map *alpha_equivalences = map_new();
     Map *required_holes = map_new();
-    bool result =
-        _congruent_with_holes(a, b, alpha_equivalences, required_holes);
+    bool result = _congruent_with_holes(a, b, alpha_equivalences, required_holes);
     map_clear_free(alpha_equivalences);
     map_clear_free(required_holes);
     return result;
@@ -710,8 +676,7 @@ bool has_holes(Expression *expr) {
         case (VAR_EXPRESSION):
             return false;
         default:
-            fprintf(stderr,
-                    ERROR "Unknown expression type in has_holes.\n" CRESET);
+            fprintf(stderr, ERROR "Unknown expression type in has_holes.\n" CRESET);
             exit(EXIT_FAILURE);
     }
 }
@@ -725,15 +690,12 @@ bool is_hole(Expression *expr) { return expr->tag == HOLE_EXPRESSION; }
 //    3) Term does not itself contain the hole.
 // This does no modifications/creates no new objects.
 bool can_fill(Expression *hole, Expression *term) {
-    bool types_match = congruent_with_holes(get_expression_type(hole),
-                                            get_expression_type(term));
+    bool types_match = congruent_with_holes(get_expression_type(hole), get_expression_type(term));
     if (get_maybe_hole_free(term)) {
-        return types_match &&
-               valid_in_context(term, get_expression_context(hole));
+        return types_match && valid_in_context(term, get_expression_context(hole));
     }
     bool occurs = occurs_in(hole, term);
-    return types_match &&
-           valid_in_context(term, get_expression_context(hole)) && !occurs;
+    return types_match && valid_in_context(term, get_expression_context(hole)) && !occurs;
 }
 
 bool _occurs_in(Expression *var_or_hole, Expression *term, Map *visited) {
@@ -756,18 +718,15 @@ bool _occurs_in(Expression *var_or_hole, Expression *term, Map *visited) {
             return _occurs_in(var_or_hole, term->as.app.func, visited) ||
                    _occurs_in(var_or_hole, term->as.app.arg, visited);
         case LAMBDA_EXPRESSION:
-            return _occurs_in(var_or_hole, term->as.lambda.bound_variable,
-                              visited) ||
+            return _occurs_in(var_or_hole, term->as.lambda.bound_variable, visited) ||
                    _occurs_in(var_or_hole, term->as.lambda.body, visited);
         case FORALL_EXPRESSION:
-            return _occurs_in(var_or_hole, term->as.forall.bound_variable,
-                              visited) ||
+            return _occurs_in(var_or_hole, term->as.forall.bound_variable, visited) ||
                    _occurs_in(var_or_hole, term->as.forall.body, visited);
         case HOLE_EXPRESSION:
             return var_or_hole == term;
         default:
-            fprintf(stderr,
-                    ERROR "Unknown expression type in occurs_in.\n" CRESET);
+            fprintf(stderr, ERROR "Unknown expression type in occurs_in.\n" CRESET);
             exit(EXIT_FAILURE);
     }
 }
@@ -788,9 +747,8 @@ void fill_hole(Expression *hole, Expression *term) {
     // check if term satisfies hole type...
     Map *alpha_equivalences = map_new();
     Map *required_holes = map_new();
-    bool types_match = _congruent_with_holes(
-        get_expression_type(hole), get_expression_type(term),
-        alpha_equivalences, required_holes);
+    bool types_match = _congruent_with_holes(get_expression_type(hole), get_expression_type(term),
+                                             alpha_equivalences, required_holes);
     if (!types_match) {
         map_clear_free(alpha_equivalences);
         map_clear_free(required_holes);
@@ -826,11 +784,6 @@ void fill_hole(Expression *hole, Expression *term) {
             case (FORALL_BODY): {
                 Expression *ptr = (Expression *)uplink->ptr;
                 ptr->as.forall.body = term;
-                break;
-            }
-            case (CTX_VAR): {
-                Context *ptr = (Context *)uplink->ptr;
-                ptr->var_type = term;
                 break;
             }
             case (HOLE_TYPE): {
@@ -877,16 +830,12 @@ bool _congruence2(Expression *a, Expression *b, Map *mapping) {
                 return _congruence2(a->as.app.func, b->as.app.func, mapping) &&
                        _congruence2(a->as.app.arg, b->as.app.arg, mapping);
             case (FORALL_EXPRESSION): {
-                map_set(mapping, a->as.forall.bound_variable,
-                        b->as.forall.bound_variable);
-                return _congruence2(a->as.forall.body, b->as.forall.body,
-                                    mapping);
+                map_set(mapping, a->as.forall.bound_variable, b->as.forall.bound_variable);
+                return _congruence2(a->as.forall.body, b->as.forall.body, mapping);
             }
             case (LAMBDA_EXPRESSION): {
-                map_set(mapping, a->as.lambda.bound_variable,
-                        b->as.lambda.bound_variable);
-                return _congruence2(a->as.lambda.body, b->as.lambda.body,
-                                    mapping);
+                map_set(mapping, a->as.lambda.bound_variable, b->as.lambda.bound_variable);
+                return _congruence2(a->as.lambda.body, b->as.lambda.body, mapping);
             }
             case (VAR_EXPRESSION): {
                 return (a == b) || (map_get(mapping, a) == b);

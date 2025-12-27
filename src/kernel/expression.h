@@ -10,7 +10,7 @@
 
 // Forward declarations
 typedef struct Expression Expression;
-typedef struct Context Context;
+typedef struct Expression Context;
 
 // Supported expression types for the Expression struct.
 typedef enum {
@@ -101,6 +101,8 @@ struct Expression {
     DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced
     Context *context;      // The minimal context this expression is valid in
                            // NULL for TYPE and PROP
+    int ctx_size;          // Size of the context (0 for empty, 1+ for variables)
+                           // 0 for TYPE and PROP
     Expression *type;      // The type of this expression
                            // NULL for TYPE and PROP
     bool maybe_hole_free;  // True means term is hole-free, false means may
@@ -168,14 +170,14 @@ Expression *init_var_expression_wc_with_definition(const char *name,
                                                    Expression *definition,
                                                    Context *gamma);
 
-// Create a new lambda/abstraction expression with a bound variable, body, and
-// context.
+// Create a new lambda/abstraction expression with a bound variable and body.
 // Typing rule:
 //     gamma, bound_variable : A |- body : B
 // ------------------------------------------------
 //     gamma |- fun (bound_variable: A) => body : Forall (bound_variable: A), B
+// Where gamma = context(bound_variable).
 Expression *init_lambda_expression_wc(Expression *bound_variable,
-                                      Expression *body, Context *gamma);
+                                      Expression *body);
 
 // Create a new application expression with a function, argument, and context.
 // Typing rule:
@@ -183,27 +185,28 @@ Expression *init_lambda_expression_wc(Expression *bound_variable,
 //    gamma |- arg : A
 // ------------------------------------------------
 //    gamma |- func arg : B[bound_variable -> arg]
+// The context parameter should typically be the longer of context(func) and context(arg).
 Expression *init_app_expression_wc(Expression *func, Expression *arg,
                                    Context *context);
 
-// Create a new forall expression with a bound variable, body, and context.
+// Create a new forall expression with a bound variable and body.
 // Typing rule:
 //    gamma, bound_variable : A |- body : s, s in {Prop, Type_i}
 //    (if s = Type_i, then) gamma |- A : s
 // ------------------------------------------------
 //    gamma |- Forall bound_variable: A, body : s
+// Where gamma = context(bound_variable).
 Expression *init_forall_expression_wc(Expression *bound_variable,
-                                      Expression *body, Context *gamma);
+                                      Expression *body);
 
-// Create a new arrow expression with a left-hand side and right-hand side, and
-// a context. The typing rule is a special case of the forall expression typing
-// rule, writen out here for convenience. Setting (bound_variable := _: lhs)
-// (body := rhs) (gamma := gamma), we get the following.
+// Create a new arrow expression with a left-hand side, right-hand side, and context.
+// The typing rule is a special case of the forall expression typing rule.
 // Typing rule:
 //    gamma, _ : lhs |- rhs : s, s in {Prop, Type_i}
 //    (if s = Type_i, then) gamma |- lhs : s
 // ------------------------------------------------
 //    gamma |- Forall _: lhs, rhs : s (which is equivalent to "lhs -> rhs")
+// The context parameter should typically be the longer of context(lhs) and context(rhs).
 Expression *init_arrow_expression_wc(Expression *lhs, Expression *rhs,
                                      Context *gamma);
 

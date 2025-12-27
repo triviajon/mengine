@@ -4,6 +4,7 @@
 
 #include "src/kernel/context.h"
 #include "src/kernel/dyn_array_map.h"
+#include "src/kernel/expression.h"
 
 // Helper function to concatenate two strings
 char *str_concat(const char *s1, const char *s2) {
@@ -101,10 +102,10 @@ char *stringify_context(Context *context, ContextStringifyOptions opts) {
         return strdup("");
     }
 
-    char *var_str = stringify_expression(context->var_type);
-    char *type_str =
-        stringify_expression(get_expression_type(context->var_type));
-    char *parent_str = stringify_context(context->parent, opts);
+    Expression *var = context;
+    char *var_str = stringify_expression(var);
+    char *type_str = stringify_expression(get_expression_type(var));
+    char *parent_str = stringify_context(get_expression_context(var), opts);
 
     char *result = parent_str;
 
@@ -138,10 +139,11 @@ char *stringify_context_until(Context *context, Context *until,
         return strdup("");
     }
 
-    char *var_str = stringify_expression(context->var_type);
-    char *type_str =
-        stringify_expression(get_expression_type(context->var_type));
-    char *parent_str = stringify_context_until(context->parent, until, opts);
+    Expression *var = context;
+    char *var_str = stringify_expression(var);
+    char *type_str = stringify_expression(get_expression_type(var));
+    char *parent_str =
+        stringify_context_until(get_expression_context(var), until, opts);
 
     char *result = parent_str;
 
