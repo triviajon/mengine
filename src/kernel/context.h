@@ -5,21 +5,10 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "doubly_linked_list.h"
+#include "src/kernel/expression.h"
 
-// Forward declaration of Expression
-typedef struct Expression Expression;
-
-// A (var) expression can be re-used in multiple Context chains, as long as
-// the chain remains valid.
-typedef struct Context {
-    Expression *var_type;
-    struct Context
-        *parent;  // if Γ[variable: type] is this context, then Γ is our parent.
-    int length;
-} Context;
-
-// Singleton, initialized with first call to context_create_empty()
+// EMPTY_CONTEXT is a singleton, initialized with first call to
+// context_create_empty()
 static Context *EMPTY_CONTEXT = NULL;
 
 // Returns a pointer to the empty context.
@@ -59,22 +48,14 @@ DoublyLinkedList *context_ancestors(Context *context_A);
 // Finds least common ancestor of context_A and context_B
 Context *context_LCA(Context *context_A, Context *context_B);
 
-// Given two contexts, returns the "sum" of the contexts.
-// Specifically each variable binding in context_B, starting from the empty
-// context, will be inserted to the end of context_A if it is not already found
-// in context_A.
-Context *context_add(Context *context_A, Context *context_B);
+// Applies the cut rule: given a context = gamma, a: A, delta, returns the context gamma, delta[x ->
+// a], where delta[x -> a] is the context that results from substituting x with a in delta.
+Context *context_cut(Context *context, Expression *x, Expression *a);
 
-// If subtrahend is not a variable found in the given context, this function
-// returns context unchanged. Otherwise, this function removes the subtrahend
-// node (and its dependencies) from a context tree. It ensures that only the
-// minimal set of nodes is removed, preserving the context tree's integrity.
-Context *context_minus(Context *context, Expression *subtrahend);
-
-// Given a type expression and a list of old variables being substituted away,
-// returns the minimal context needed to define a binding with that type.
-// This is: context(type) with all old substituted variables removed.
-Context *context_for_binding(Expression *type, DoublyLinkedList *old_exprs);
+// Applies the context transformation from the substitution / cut rule.
+// Given context = gamma+[x:A]+delta, returns gamma+delta[x->a] where x is
+// eliminated and substituted through delta.
+Context *context_replace(Context *context, Expression *x, Expression *a);
 
 void context_free(Context *context);
 

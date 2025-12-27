@@ -11,7 +11,8 @@ Expression *instantiate_lemma_type(Context *context, Expression *lemma_ty) {
             Expression *hole = init_hole_expression(get_var_name(bound_var),
                                                     bound_var_ty, context);
             Expression *lemma_ty_body = lemma_ty->as.forall.body;
-            Expression *new_body = new_subst(lemma_ty_body, bound_var, hole);
+            // lemma_ty_body is closed under context(bound_var), which contains bound_var
+            Expression *new_body = new_subst(bound_var, lemma_ty_body, bound_var, hole);
             // The result of inner_inst should be the body of lemma with binding
             // variables substituted for holes
             Expression *inner_inst = instantiate_lemma_type(context, new_body);
@@ -122,12 +123,16 @@ Expression *instantiate_lemma_with_bindings(Expression *lemma,
     while (curr_forall->tag == FORALL_EXPRESSION) {
         Expression *binding_var = curr_forall->as.forall.bound_variable;
         Expression *binding_result = map_get(binders, binding_var);
-        Context *app_ctx = context_add(get_expression_context(final_expr),
-                                       get_expression_context(binding_result));
+        Context *final_expr_ctx = get_expression_context(final_expr);
+        Context *binding_result_ctx = get_expression_context(binding_result);
+        Context *app_ctx = (final_expr_ctx->ctx_size >= binding_result_ctx->ctx_size)
+                               ? final_expr_ctx
+                               : binding_result_ctx;
         final_expr =
             init_app_expression_wc(final_expr, binding_result, app_ctx);
         Expression *curr_forall_body = curr_forall->as.forall.body;
-        curr_forall = new_subst(curr_forall_body, binding_var, binding_result);
+        // curr_forall_body is closed under context(binding_var), which contains binding_var
+        curr_forall = new_subst(binding_var, curr_forall_body, binding_var, binding_result);
     }
     return final_expr;
 }

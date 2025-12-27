@@ -12,7 +12,7 @@ static Expression *_current_goal(MEngineRuntime *rt) {
 
 static bool _handle_admitted_tactic(MEngineRuntime *rt) {
     Expression *thm = rt->pending_theorem;
-    rt->ctx = context_insert(rt->ctx, thm);
+    rt->ctx = thm;
     mengine_runtime_command_mode(rt);
     return true;
 }
@@ -239,7 +239,7 @@ void mengine_execute_tactic(MEngineRuntime *rt, Tactic *tac) {
     if (!proof_state_next(rt->proof_state)) {
         // No more goals - proof is complete!
         Expression *thm = rt->pending_theorem;
-        rt->ctx = context_insert(rt->ctx, thm);
+        rt->ctx = thm;
 
         fprintf(stdout, SUCCESS "Proof complete." CRESET " %s declared.\n",
                 get_var_name(thm));

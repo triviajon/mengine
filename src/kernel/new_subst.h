@@ -2,22 +2,41 @@
 #define NEW_SUBST_H
 
 #include "src/kernel/doubly_linked_list.h"
-#include "src/kernel/context.h"
 #include "src/kernel/expression.h"
 
-// Kicks off a substitution in expression. Replaces all instances of old_e with
-// new_e.
-Expression *new_subst(Expression *expression, Expression *old_e, Expression *new_e);
+// Kicks off a substitution in t, replacing all instances of x with
+// a and forming a new expression. t, x, and a must all
+// be valid in the provided context.
+//
+// The context that the final expression is closed under is the context given by
+// the following rule:
+//  let gamma, a : A, delta := context
+//  gamma |- a : A
+//  gamma, a : A, delta |- t : T
+//  ------------------------------------------------
+//  gamma, delta[x -> a] |- t[x -> a] : T[x -> a]
+//
+// Proof of correctness follows from the "Substitution Lemma" (Theorem 5.11 of
+// Brandl, see link: https://hbr.github.io/Lambda-Calculus/cc-tex/cc.pdf)
+Expression *new_subst(Context *context, Expression *t, Expression *x, Expression *a);
 
-// Kicks of multiple substitutions to be performed at once in expression. If
-// old_exprs is a list of variables to be replaced, the new_exprs is a list of
+// Internal substitution function that assumes context has already been cut.
+// Only use this if you're managing context transformations manually.
+Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a);
+
+// Kicks off multiple substitutions to be performed at once in t. If
+// old_exprs is a list of variables to be replaced, then new_exprs is a list of
 // the same length with the replacements. I.e., old_exprs[i] will be replaced
 // with new_exprs[i].
 //
+// The context parameter should be the result context (analogous to
+// gamma+delta[x->a] in the single substitution case).
+//
 // Parallel substitution arises naturally when considering contexts. For
 // example, if the user kicks off a substitution of [A -> B] in "forall x: A, eq
-// A x x", then we must also simulatenously replace x with a fresh variable "x':
+// A x x", then we must also simultaneously replace x with a fresh variable "x':
 // B" in order for the expression to always remain type-checkable.
-Expression *new_p_subst(Expression *expression, DoublyLinkedList *old_exprs, DoublyLinkedList *new_exprs);
+Expression *new_p_subst(Context *context, Expression *t, DoublyLinkedList *old_exprs,
+                        DoublyLinkedList *new_exprs);
 
 #endif  // NEW_SUBST_H
