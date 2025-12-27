@@ -236,16 +236,17 @@ static Expression *_build_motive_type(Expression *ind_var,
     Expression *ind_applied_type = get_expression_type(ind_applied);
     Expression *current = ind_applied_type;
     size_t index_count = 0;
-    while (current->type == FORALL_EXPRESSION) {
+    while (current->tag == FORALL_EXPRESSION) {
         index_count++;
-        current = current->value.forall.body;
+        current = get_forall_body(current);
     }
 
     if (index_count == 0) {
         // No indices: motive is (ind params) -> Prop
         *index_vars_out = NULL;
         *index_count_out = 0;
-        return init_arrow_expression_wc(ind_applied, init_prop_expression(), ctx);
+        return init_arrow_expression_wc(ind_applied, init_prop_expression(),
+                                        ctx);
     }
 
     // With indices: motive is forall (indices), (ind params indices) -> Prop
@@ -255,14 +256,14 @@ static Expression *_build_motive_type(Expression *ind_var,
 
     for (size_t i = 0; i < index_count; i++) {
         Expression *index_type =
-            get_expression_type(current->value.forall.bound_variable);
+            get_expression_type(get_forall_bound_variable(current));
         char index_name[32];
         sprintf(index_name, "i%zu", i);
 
         index_vars[i] =
             init_var_expression_wc(index_name, index_type, motive_ctx);
         motive_ctx = context_insert(motive_ctx, index_vars[i]);
-        current = current->value.forall.body;
+        current = get_forall_body(current);
     }
 
     // Build (ind params index_0 ... index_n)
@@ -277,8 +278,8 @@ static Expression *_build_motive_type(Expression *ind_var,
     }
 
     // Build forall (i0 : T0) ... (in : Tn), (ind params i0 ... in) -> Prop
-    Expression *motive_type =
-        init_arrow_expression_wc(ind_with_indices, init_prop_expression(), motive_ctx);
+    Expression *motive_type = init_arrow_expression_wc(
+        ind_with_indices, init_prop_expression(), motive_ctx);
     for (size_t i = index_count; i > 0; i--) {
         motive_type = init_forall_expression_wc(index_vars[i - 1], motive_type,
                                                 motive_ctx);
@@ -447,7 +448,8 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd,
         }
     }
 
-    result = init_forall_expression_wc(motive_var, result, contexts[param_count]);
+    result =
+        init_forall_expression_wc(motive_var, result, contexts[param_count]);
     if (!result) {
         fprintf(stderr, ERROR "Failed to wrap with motive P\n" CRESET);
         free(case_vars);
@@ -456,8 +458,8 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd,
     }
 
     for (size_t i = param_count; i > 0; i--) {
-        result =
-            init_forall_expression_wc(param_vars[i - 1], result, contexts[i - 1]);
+        result = init_forall_expression_wc(param_vars[i - 1], result,
+                                           contexts[i - 1]);
         if (!result) {
             fprintf(stderr, ERROR "Failed to wrap with parameter %zu\n" CRESET,
                     i - 1);
@@ -481,18 +483,18 @@ static Expression *_build_constructor_case_type(
     Context *elim_ctx) {
     Expression *core_type = ctor_type;
     for (size_t i = 0; i < param_count; i++) {
-        if (core_type->type == FORALL_EXPRESSION) {
-            core_type = core_type->value.forall.body;
+        if (core_type->tag == FORALL_EXPRESSION) {
+            core_type = get_forall_body(core_type);
         }
     }
 
     DoublyLinkedList *arg_types = dll_create();
     Expression *current = core_type;
-    while (current->type == FORALL_EXPRESSION) {
+    while (current->tag == FORALL_EXPRESSION) {
         Expression *arg_type =
-            get_expression_type(current->value.forall.bound_variable);
+            get_expression_type(get_forall_bound_variable(current));
         dll_insert_at_tail(arg_types, dll_new_node(arg_type));
-        current = current->value.forall.body;
+        current = get_forall_body(current);
     }
 
     Expression *ctor_app = ctor_expr;
@@ -540,9 +542,9 @@ static Expression *_build_constructor_case_type(
         // trailing applications)
         DoublyLinkedList *spine = dll_create();
         Expression *head = current;
-        while (head->type == APP_EXPRESSION) {
-            dll_insert_at_head(spine, dll_new_node(head->value.app.arg));
-            head = head->value.app.func;
+        while (head->tag == APP_EXPRESSION) {
+            dll_insert_at_head(spine, dll_new_node(get_app_arg(head)));
+            head = get_app_func(head);
         }
 
         // The spine now has all the arguments. Skip param_count, take
@@ -641,8 +643,8 @@ static void _handle_inductive_command(MEngineRuntime *rt,
     Expression *ind_return_type = ast_to_expression(ind_cmd->type, c);
     Expression *ind_type = ind_return_type;
     for (size_t i = param_count; i > 0; i--) {
-        ind_type =
-            init_forall_expression_wc(param_vars[i - 1], ind_type, contexts[i - 1]);
+        ind_type = init_forall_expression_wc(param_vars[i - 1], ind_type,
+                                             contexts[i - 1]);
     }
 
     Expression *ind_var = init_var_expression_wc(name, ind_type, rt->ctx);

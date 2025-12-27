@@ -242,7 +242,7 @@ void mengine_execute_tactic(MEngineRuntime *rt, Tactic *tac) {
         rt->ctx = context_insert(rt->ctx, thm);
 
         fprintf(stdout, SUCCESS "Proof complete." CRESET " %s declared.\n",
-                thm->value.var.name);
+                get_var_name(thm));
 
         mengine_runtime_command_mode(rt);
     }

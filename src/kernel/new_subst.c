@@ -15,15 +15,15 @@ Expression *new_subst(Expression *expression, Expression *old_e,
         return expression;
     }
 
-    switch (expression->type) {
+    switch (expression->tag) {
         case (VAR_EXPRESSION):
         case (HOLE_EXPRESSION):
             return expression;
         case (LAMBDA_EXPRESSION): {
             // Assume the expression has form fun (x: A) => B
-            Expression *x = expression->value.lambda.bound_variable;
+            Expression *x = get_lambda_bound_variable(expression);
             Expression *A = get_expression_type(x);
-            Expression *B = expression->value.lambda.body;
+            Expression *B = get_lambda_body(expression);
 
             // We need to first create a new binding variable for the lambda.
             // If we had (x: A), we create (x': A') where A' := A[old_e ->
@@ -39,7 +39,7 @@ Expression *new_subst(Expression *expression, Expression *old_e,
             dll_destroy(old_list);
 
             Expression *x_prime =
-                init_var_expression_wc(x->value.var.name, A_prime, x_prime_ctx);
+                init_var_expression_wc(get_var_name(x), A_prime, x_prime_ctx);
 
             // Next, we need to create the new body B', where B' := B[x -> x',
             // old_e -> new_e]
@@ -64,8 +64,8 @@ Expression *new_subst(Expression *expression, Expression *old_e,
             return init_lambda_expression_wc(x_prime, B_prime, x_prime_ctx);
         }
         case (APP_EXPRESSION): {
-            Expression *app_func = expression->value.app.func;
-            Expression *app_arg = expression->value.app.arg;
+            Expression *app_func = get_app_func(expression);
+            Expression *app_arg = get_app_arg(expression);
             Expression *new_app_func = new_subst(app_func, old_e, new_e);
             Expression *new_app_arg = new_subst(app_arg, old_e, new_e);
 
@@ -80,9 +80,9 @@ Expression *new_subst(Expression *expression, Expression *old_e,
         }
         case (FORALL_EXPRESSION): {
             // Assume the expression has form forall (x: A), B
-            Expression *x = expression->value.forall.bound_variable;
+            Expression *x = get_forall_bound_variable(expression);
             Expression *A = get_expression_type(x);
-            Expression *B = expression->value.forall.body;
+            Expression *B = get_forall_body(expression);
 
             // We need to first create a new binding variable for the forall.
             // If we had (x: A), we create (x': A') where A' := A[old_e ->
@@ -98,7 +98,7 @@ Expression *new_subst(Expression *expression, Expression *old_e,
             dll_destroy(old_list);
 
             Expression *x_prime =
-                init_var_expression_wc(x->value.var.name, A_prime, x_prime_ctx);
+                init_var_expression_wc(get_var_name(x), A_prime, x_prime_ctx);
 
             // Next, we need to create the new body B', where B' := B[x -> x',
             // old_e -> new_e]
@@ -165,14 +165,14 @@ Expression *new_p_subst(Expression *expression, DoublyLinkedList *old_exprs,
         return expression;
     }
 
-    switch (expression->type) {
+    switch (expression->tag) {
         case (VAR_EXPRESSION):
         case (HOLE_EXPRESSION):
             return expression;
         case (LAMBDA_EXPRESSION): {
             // Assume expression has form fun (x: A) => B
-            Expression *x = expression->value.lambda.bound_variable;
-            Expression *B = expression->value.lambda.body;
+            Expression *x = get_lambda_bound_variable(expression);
+            Expression *B = get_lambda_body(expression);
 
             Expression *A_prime =
                 new_p_subst(get_expression_type(x), old_exprs, new_exprs);
@@ -182,7 +182,7 @@ Expression *new_p_subst(Expression *expression, DoublyLinkedList *old_exprs,
             Context *x_prime_ctx = context_for_binding(A_prime, old_exprs);
 
             Expression *x_prime =
-                init_var_expression_wc(x->value.var.name, A_prime, x_prime_ctx);
+                init_var_expression_wc(get_var_name(x), A_prime, x_prime_ctx);
 
             dll_insert_at_tail(old_exprs, dll_new_node(x));
             dll_insert_at_tail(new_exprs, dll_new_node(x_prime));
@@ -195,8 +195,8 @@ Expression *new_p_subst(Expression *expression, DoublyLinkedList *old_exprs,
             return init_lambda_expression_wc(x_prime, B_prime, x_prime_ctx);
         }
         case (APP_EXPRESSION): {
-            Expression *app_func = expression->value.app.func;
-            Expression *app_arg = expression->value.app.arg;
+            Expression *app_func = get_app_func(expression);
+            Expression *app_arg = get_app_arg(expression);
             Expression *new_app_func =
                 new_p_subst(app_func, old_exprs, new_exprs);
             Expression *new_app_arg =
@@ -214,8 +214,8 @@ Expression *new_p_subst(Expression *expression, DoublyLinkedList *old_exprs,
         }
         case (FORALL_EXPRESSION): {
             // Assume expression has form forall (x: A), B
-            Expression *x = expression->value.forall.bound_variable;
-            Expression *B = expression->value.forall.body;
+            Expression *x = get_forall_bound_variable(expression);
+            Expression *B = get_forall_body(expression);
 
             Expression *A_prime =
                 new_p_subst(get_expression_type(x), old_exprs, new_exprs);
@@ -225,7 +225,7 @@ Expression *new_p_subst(Expression *expression, DoublyLinkedList *old_exprs,
             Context *x_prime_ctx = context_for_binding(A_prime, old_exprs);
 
             Expression *x_prime =
-                init_var_expression_wc(x->value.var.name, A_prime, x_prime_ctx);
+                init_var_expression_wc(get_var_name(x), A_prime, x_prime_ctx);
 
             dll_insert_at_tail(old_exprs, dll_new_node(x));
             dll_insert_at_tail(new_exprs, dll_new_node(x_prime));

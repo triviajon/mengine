@@ -32,7 +32,7 @@ void free_tactic_result(TacticResult *result) {
 // Helper that performs a single intro step, returning the new goal on success
 // or NULL on failure.
 static Expression *intro_step(Expression *goal, char *name, char **error_out) {
-    if (goal->type != HOLE_EXPRESSION) {
+    if (goal->tag != HOLE_EXPRESSION) {
         if (error_out) {
             *error_out = "Goal is not a hole";
         }
@@ -40,16 +40,16 @@ static Expression *intro_step(Expression *goal, char *name, char **error_out) {
     }
 
     Expression *goal_ty = get_expression_type(goal);
-    if (goal_ty->type != FORALL_EXPRESSION) {
+    if (goal_ty->tag != FORALL_EXPRESSION) {
         if (error_out) {
             *error_out = "Goal is not a forall expression";
         }
         return NULL;
     }
 
-    Expression *x = goal_ty->value.forall.bound_variable;
+    Expression *x = get_forall_bound_variable(goal_ty);
     Expression *A = get_expression_type(x);
-    Expression *B = goal_ty->value.forall.body;
+    Expression *B = get_forall_body(goal_ty);
 
     Expression *x_prime =
         init_var_expression_wc(name, A, get_expression_context(goal));
@@ -108,7 +108,7 @@ TacticResult *intros_tactic(Expression *goal, char **names, size_t name_count) {
 }
 
 TacticResult *apply_tactic(Expression *goal, Expression *lemma) {
-    if (goal->type != HOLE_EXPRESSION) {
+    if (goal->tag != HOLE_EXPRESSION) {
         return init_tactic_result(false, NULL, "Goal is not a hole");
     }
 
@@ -146,7 +146,7 @@ TacticResult *apply_tactic(Expression *goal, Expression *lemma) {
 }
 
 TacticResult *eapply_tactic(Expression *goal, Expression *lemma) {
-    if (goal->type != HOLE_EXPRESSION) {
+    if (goal->tag != HOLE_EXPRESSION) {
         return init_tactic_result(false, NULL, "Goal is not a hole");
     }
 
@@ -177,7 +177,7 @@ TacticResult *eapply_tactic(Expression *goal, Expression *lemma) {
 }
 
 TacticResult *assumption_tactic(Expression *goal) {
-    if (goal->type != HOLE_EXPRESSION) {
+    if (goal->tag != HOLE_EXPRESSION) {
         return init_tactic_result(false, NULL, "Goal is not a hole");
     }
 
@@ -200,7 +200,7 @@ TacticResult *assumption_tactic(Expression *goal) {
 }
 
 TacticResult *exact_tactic(Expression *goal, Expression *proof_term) {
-    if (goal->type != HOLE_EXPRESSION) {
+    if (goal->tag != HOLE_EXPRESSION) {
         return init_tactic_result(false, NULL, "Goal is not a hole");
     }
 
@@ -420,7 +420,7 @@ RewriteResult *n_rewrite_var(Expression *expr, Expression *lemma,
 RewriteResult *n_rewrite(Expression *expr, Expression *lemma,
                          Context *context) {
     RewriteResult *result = NULL;
-    switch (expr->type) {
+    switch (expr->tag) {
         case (APP_EXPRESSION): {
             result = n_rewrite_app(expr, lemma, context);
             break;

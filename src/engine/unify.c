@@ -4,13 +4,13 @@
 #include "src/runtime/core.h"
 
 Expression *instantiate_lemma_type(Context *context, Expression *lemma_ty) {
-    switch (lemma_ty->type) {
+    switch (lemma_ty->tag) {
         case (FORALL_EXPRESSION): {
-            Expression *bound_var = lemma_ty->value.forall.bound_variable;
+            Expression *bound_var = lemma_ty->as.forall.bound_variable;
             Expression *bound_var_ty = get_expression_type(bound_var);
-            Expression *hole = init_hole_expression(bound_var->value.var.name,
+            Expression *hole = init_hole_expression(get_var_name(bound_var),
                                                     bound_var_ty, context);
-            Expression *lemma_ty_body = lemma_ty->value.forall.body;
+            Expression *lemma_ty_body = lemma_ty->as.forall.body;
             Expression *new_body = new_subst(lemma_ty_body, bound_var, hole);
             // The result of inner_inst should be the body of lemma with binding
             // variables substituted for holes
@@ -28,22 +28,22 @@ Expression *instantiate_lemma(Context *context, Expression *lemma) {
 }
 
 DoublyLinkedList *_list_holes(Expression *expr, DoublyLinkedList *curr) {
-    switch (expr->type) {
+    switch (expr->tag) {
         case (LAMBDA_EXPRESSION): {
             curr = _list_holes(
-                expr->value.lambda.bound_variable->value.var.type, curr);
-            curr = _list_holes(expr->value.lambda.body, curr);
+                get_expression_type(expr->as.lambda.bound_variable), curr);
+            curr = _list_holes(expr->as.lambda.body, curr);
             return curr;
         }
         case (FORALL_EXPRESSION): {
             curr = _list_holes(
-                expr->value.forall.bound_variable->value.var.type, curr);
-            curr = _list_holes(expr->value.forall.body, curr);
+                get_expression_type(expr->as.forall.bound_variable), curr);
+            curr = _list_holes(expr->as.forall.body, curr);
             return curr;
         }
         case (APP_EXPRESSION): {
-            curr = _list_holes(expr->value.app.func, curr);
-            curr = _list_holes(expr->value.app.arg, curr);
+            curr = _list_holes(expr->as.app.func, curr);
+            curr = _list_holes(expr->as.app.arg, curr);
             return curr;
         }
         case (HOLE_EXPRESSION): {
@@ -76,7 +76,7 @@ Expression *_unify2(Expression *exprA, Expression *exprB,
         return NULL;
     }
 
-    switch (exprA->type) {
+    switch (exprA->tag) {
         case VAR_EXPRESSION: {
             if (exprA != var_to_fill) {
                 // Don't care...
@@ -84,25 +84,25 @@ Expression *_unify2(Expression *exprA, Expression *exprB,
             }
 
             Expression *exprB_ty = get_expression_type(exprB);
-            Expression *expected_ty = var_to_fill->value.var.type;
+            Expression *expected_ty = get_expression_type(var_to_fill);
             if (congruence(exprB_ty, expected_ty)) {
                 return exprB;
             }
             return NULL;
         }
         case APP_EXPRESSION: {
-            if (exprB->type != APP_EXPRESSION) {
+            if (exprB->tag != APP_EXPRESSION) {
                 return NULL;
             }
 
-            Expression *new_func = _unify2(exprA->value.app.func,
-                                           exprB->value.app.func, var_to_fill);
-            if (new_func != NULL && new_func->type != HOLE_EXPRESSION) {
+            Expression *new_func =
+                _unify2(exprA->as.app.func, exprB->as.app.func, var_to_fill);
+            if (new_func != NULL && new_func->tag != HOLE_EXPRESSION) {
                 return new_func;
             }
 
-            Expression *new_arg = _unify2(exprA->value.app.arg,
-                                          exprB->value.app.arg, var_to_fill);
+            Expression *new_arg =
+                _unify2(exprA->as.app.arg, exprB->as.app.arg, var_to_fill);
             if (new_arg != NULL) {
                 return new_arg;
             }
@@ -119,13 +119,14 @@ Expression *instantiate_lemma_with_bindings(Expression *lemma,
                                             Map *binders) {
     Expression *final_expr = lemma;
     Expression *curr_forall = lemma_ty;
-    while (curr_forall->type == FORALL_EXPRESSION) {
-        Expression *binding_var = curr_forall->value.forall.bound_variable;
+    while (curr_forall->tag == FORALL_EXPRESSION) {
+        Expression *binding_var = curr_forall->as.forall.bound_variable;
         Expression *binding_result = map_get(binders, binding_var);
         Context *app_ctx = context_add(get_expression_context(final_expr),
                                        get_expression_context(binding_result));
-        final_expr = init_app_expression_wc(final_expr, binding_result, app_ctx);
-        Expression *curr_forall_body = curr_forall->value.forall.body;
+        final_expr =
+            init_app_expression_wc(final_expr, binding_result, app_ctx);
+        Expression *curr_forall_body = curr_forall->as.forall.body;
         curr_forall = new_subst(curr_forall_body, binding_var, binding_result);
     }
     return final_expr;
@@ -159,22 +160,22 @@ UnificationResult *eunify2(Expression *lemma, Expression *goal) {
     Expression *current_lemma_app = lemma;
     Expression *current_lemma_app_ty = get_expression_type(current_lemma_app);
     DoublyLinkedList *remaining_open = dll_create();
-    while (current_lemma_app_ty->type == FORALL_EXPRESSION) {
+    while (current_lemma_app_ty->tag == FORALL_EXPRESSION) {
         Expression *bound_variable =
-            current_lemma_app_ty->value.forall.bound_variable;
+            current_lemma_app_ty->as.forall.bound_variable;
         Expression *hole_subst = _unify2(
             get_innermost_body(current_lemma_app_ty), expr, bound_variable);
 
         if (hole_subst == NULL) {
             Expression *hole_to_fill = init_hole_expression(
-                bound_variable->value.var.name,
+                get_var_name(bound_variable),
                 get_expression_type(bound_variable), goal_context);
-            current_lemma_app =
-                init_app_expression_wc(current_lemma_app, hole_to_fill, goal_context);
+            current_lemma_app = init_app_expression_wc(
+                current_lemma_app, hole_to_fill, goal_context);
             dll_insert_at_tail(remaining_open, dll_new_node(hole_to_fill));
         } else {
-            current_lemma_app =
-                init_app_expression_wc(current_lemma_app, hole_subst, goal_context);
+            current_lemma_app = init_app_expression_wc(
+                current_lemma_app, hole_subst, goal_context);
         }
         current_lemma_app_ty = get_expression_type(current_lemma_app);
     }
@@ -186,24 +187,24 @@ UnificationResult *bad_unify_for_eq(Context *goal_context, Expression *lemma,
     Expression *current_lemma_app = lemma;
     Expression *current_lemma_app_ty = get_expression_type(current_lemma_app);
     DoublyLinkedList *remaining_open = dll_create();
-    while (current_lemma_app_ty->type == FORALL_EXPRESSION) {
+    while (current_lemma_app_ty->tag == FORALL_EXPRESSION) {
         Expression *current_lemma_ty_lhs =
             _get_lhs_eq(get_innermost_body(current_lemma_app_ty));
         Expression *bound_variable =
-            current_lemma_app_ty->value.forall.bound_variable;
+            current_lemma_app_ty->as.forall.bound_variable;
         Expression *hole_subst =
             _unify2(current_lemma_ty_lhs, expr, bound_variable);
 
         if (hole_subst == NULL) {
             Expression *hole_to_fill = init_hole_expression(
-                bound_variable->value.var.name,
+                get_var_name(bound_variable),
                 get_expression_type(bound_variable), goal_context);
-            current_lemma_app =
-                init_app_expression_wc(current_lemma_app, hole_to_fill, goal_context);
+            current_lemma_app = init_app_expression_wc(
+                current_lemma_app, hole_to_fill, goal_context);
             dll_insert_at_tail(remaining_open, dll_new_node(hole_to_fill));
         } else {
-            current_lemma_app =
-                init_app_expression_wc(current_lemma_app, hole_subst, goal_context);
+            current_lemma_app = init_app_expression_wc(
+                current_lemma_app, hole_subst, goal_context);
         }
         current_lemma_app_ty = get_expression_type(current_lemma_app);
     }
