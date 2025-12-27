@@ -23,15 +23,17 @@ typedef enum {
     HOLE_EXPRESSION,
 } ExpressionType;
 
-// Represents a parent-child relationship between expressions
+// Represents a parent-child relationship between expressions.
 typedef enum {
-    LAMBDA_BODY,
-    APP_FUNC,
-    APP_ARG,
-    FORALL_BODY,
-    CTX_VAR,
-    HOLE_TYPE,
-    VAR_BODY,
+    LAMBDA_BODY,       // expr->as.lambda.body
+    LAMBDA_BOUND_VAR,  // expr->as.lambda.bound_variable
+    APP_FUNC,          // expr->as.app.func
+    APP_ARG,           // expr->as.app.arg
+    FORALL_BODY,       // expr->as.forall.body
+    FORALL_BOUND_VAR,  // expr->as.forall.bound_variable
+    VAR_BODY,          // expr->as.var.body
+    EXPR_TYPE,         // expr->type
+    EXPR_CONTEXT,      // expr->context
 } Relation;
 
 /*
@@ -49,9 +51,9 @@ typedef struct {
 
 // A variable/type binding.
 typedef struct {
-    char *name;              // User-friendly name for the variable. Not used internally.
-    Expression *definition;  // If the variable is non-opaque, then this field
-                             // will be non-NULL with the definition body
+    char *name;        // User-friendly name for the variable. Not used internally.
+    Expression *body;  // If the variable is non-opaque, then this field
+                       // will be non-NULL with the body of the variable
 } VarExpression;
 
 // A lambda expression: fun (bound_variable) => body.
@@ -95,9 +97,8 @@ typedef struct {
 
 // Represents a generic expression.
 struct Expression {
-    ExpressionType tag;  // The kind of expression (VAR, LAMBDA, APP, etc.)
-
-    // Common fields across most expression types
+    // Common fields
+    ExpressionType tag;         // The kind of expression (VAR, LAMBDA, APP, etc.)
     DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced
     Context *context;           // The minimal context this expression is valid in
                                 // NULL for TYPE and PROP
@@ -129,6 +130,57 @@ void remove_tl_uplink(Expression *expression);
 // Create a new uplink describing how ptr relates.
 Uplink *new_uplink(void *ptr, Relation r);
 
+// Macros for setting Expression fields
+#define SET_EXPR_TAG(expr, value) (expr)->tag = (value);
+
+#define SET_EXPR_UPLINKS(expr, value) (expr)->uplinks = (value);
+
+#define SET_EXPR_CONTEXT(expr, value)                  \
+    (expr)->context = (value);                         \
+    if (!context_is_empty(value)) {                    \
+        add_to_parents((value), (expr), EXPR_CONTEXT); \
+    }
+
+#define SET_EXPR_CTX_SIZE(expr, value) (expr)->ctx_size = (value);
+
+#define SET_EXPR_TYPE(expr, value) \
+    (expr)->type = (value);        \
+    add_to_parents((value), (expr), EXPR_TYPE)
+
+#define SET_EXPR_MAYBE_HOLE_FREE(expr, value) (expr)->maybe_hole_free = (value);
+
+#define SET_HOLE_NAME(expr, value) (expr)->as.hole.name = (value);
+
+#define SET_VAR_NAME(expr, value) (expr)->as.var.name = (value);
+
+#define SET_VAR_BODY(expr, value)  \
+    (expr)->as.var.body = (value); \
+    add_to_parents((value), (expr), VAR_BODY)
+
+#define SET_LAMBDA_BODY(expr, value)  \
+    (expr)->as.lambda.body = (value); \
+    add_to_parents((value), (expr), LAMBDA_BODY)
+
+#define SET_LAMBDA_BOUND_VAR(expr, value)       \
+    (expr)->as.lambda.bound_variable = (value); \
+    add_to_parents((value), (expr), LAMBDA_BOUND_VAR)
+
+#define SET_APP_FUNC(expr, value)  \
+    (expr)->as.app.func = (value); \
+    add_to_parents((value), (expr), APP_FUNC)
+
+#define SET_APP_ARG(expr, value)  \
+    (expr)->as.app.arg = (value); \
+    add_to_parents((value), (expr), APP_ARG)
+
+#define SET_FORALL_BODY(expr, value)  \
+    (expr)->as.forall.body = (value); \
+    add_to_parents((value), (expr), FORALL_BODY)
+
+#define SET_FORALL_BOUND_VAR(expr, value)       \
+    (expr)->as.forall.bound_variable = (value); \
+    add_to_parents((value), (expr), FORALL_BOUND_VAR)
+
 // Todo: We should consider adding context arguments to these functions?
 
 // Create a new type expression.
@@ -157,15 +209,14 @@ Expression *init_var_expression_wc(const char *name, Expression *type, Context *
 
 // Create a new variable expression with a given name, definition, and context.
 // context. Typing rule:
-//    gamma |- definition : A
+//    gamma |- body : A
 //    gamma |- A : a
 //    s in {Prop, Type_i}
 // ------------------------------------------------
 //    gamma, x : A |-
 // In other words, if the type is valid in the input context, and the type(s) is
 // a Prop/Type_i, then this variable is valid in the extension of the context.
-Expression *init_var_expression_wc_with_definition(const char *name, Expression *definition,
-                                                   Context *gamma);
+Expression *init_var_expression_wc_with_body(const char *name, Expression *body, Context *gamma);
 
 // Create a new lambda/abstraction expression with a bound variable and body.
 // Typing rule:

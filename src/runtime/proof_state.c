@@ -27,17 +27,7 @@ void proof_state_free(ProofState *ps) {
         return;
     }
 
-    DLLNode *node = ps->goals->head;
-    while (node) {
-        Expression *goal = (Expression *)node->data;
-
-        remove_tl_uplink(goal);
-
-        node = node->next;
-    }
-
     dll_destroy(ps->goals);
-
     free(ps);
 }
 

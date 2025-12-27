@@ -94,7 +94,7 @@ static void _handle_definition_command(MEngineRuntime *rt, DefinitionCmd *defn_c
         return;
     }
 
-    Expression *defn_var = init_var_expression_wc_with_definition(defn_cmd->name, body, rt->ctx);
+    Expression *defn_var = init_var_expression_wc_with_body(defn_cmd->name, body, rt->ctx);
     rt->ctx = defn_var;
     fprintf(stdout, UI "Definition " CRESET "%s : %s defined.\n", name,
             stringify_expression(get_expression_type(defn_var)));
@@ -113,7 +113,7 @@ static void _handle_statement_command(MEngineRuntime *rt, StatementCmd *stmt_cmd
 
     Expression *initial_goal = init_hole_expression("Goal", statement_type, rt->ctx);
     Expression *pending_theorem =
-        init_var_expression_wc_with_definition(stmt_cmd->name, initial_goal, rt->ctx);
+        init_var_expression_wc_with_body(stmt_cmd->name, initial_goal, rt->ctx);
     mengine_runtime_proof_mode(rt, pending_theorem);
 
     fprintf(stdout, UI "%s " CRESET "%s : %s stated.\n", stmt_keyword_to_string(stmt_cmd->kw),
