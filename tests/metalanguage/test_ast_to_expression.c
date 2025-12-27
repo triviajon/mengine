@@ -57,8 +57,7 @@ void test_convert_lambda_nested(void) {
     Context *ctx = context_create_empty();
     assert_not_null(ctx, "context should be created");
 
-    Expression *expr = parse_string_to_expression(
-        "fun (f : Type) => fun (x : Type) => f", ctx);
+    Expression *expr = parse_string_to_expression("fun (f : Type) => fun (x : Type) => f", ctx);
     assert_not_null(expr, "expression should not be null");
 
     char *str = stringify_expression(expr);
@@ -86,8 +85,7 @@ void test_convert_forall_nested(void) {
     Context *ctx = context_create_empty();
     assert_not_null(ctx, "context should be created");
 
-    Expression *expr = parse_string_to_expression(
-        "forall (x : Type) , forall (y : Type) , x", ctx);
+    Expression *expr = parse_string_to_expression("forall (x : Type) , forall (y : Type) , x", ctx);
     assert_not_null(expr, "expression should not be null");
 
     char *str = stringify_expression(expr);
@@ -101,8 +99,7 @@ void test_convert_lambda_with_forall_body(void) {
     Context *ctx = context_create_empty();
     assert_not_null(ctx, "context should be created");
 
-    Expression *expr = parse_string_to_expression(
-        "fun (x : Type) => forall (y : Type) , x", ctx);
+    Expression *expr = parse_string_to_expression("fun (x : Type) => forall (y : Type) , x", ctx);
     assert_not_null(expr, "expression should not be null");
 
     char *str = stringify_expression(expr);
@@ -133,8 +130,7 @@ void test_convert_let_simple(void) {
     Context *ctx = context_create_empty();
     assert_not_null(ctx, "context should be created");
 
-    Expression *expr =
-        parse_string_to_expression("let x : Type := Type in x", ctx);
+    Expression *expr = parse_string_to_expression("let x : Type := Type in x", ctx);
     assert_not_null(expr, "expression should not be null");
 
     char *str = stringify_expression(expr);
@@ -149,8 +145,7 @@ void test_convert_let_with_prop(void) {
     Context *ctx = context_create_empty();
     assert_not_null(ctx, "context should be created");
 
-    Expression *expr =
-        parse_string_to_expression("let x : Type := Prop in x", ctx);
+    Expression *expr = parse_string_to_expression("let x : Type := Prop in x", ctx);
     assert_not_null(expr, "expression should not be null");
 
     char *str = stringify_expression(expr);
@@ -165,8 +160,7 @@ void test_convert_let_with_lambda(void) {
     Context *ctx = context_create_empty();
     assert_not_null(ctx, "context should be created");
 
-    Expression *expr = parse_string_to_expression(
-        "let f : Type := fun (x : Type) => x in f", ctx);
+    Expression *expr = parse_string_to_expression("let f : Type := fun (x : Type) => x in f", ctx);
     assert_not_null(expr, "expression should not be null");
 
     char *str = stringify_expression(expr);
@@ -207,8 +201,7 @@ void test_convert_const_lambda(void) {
     Context *ctx = context_create_empty();
     assert_not_null(ctx, "context should be created");
 
-    Expression *expr =
-        parse_string_to_expression("fun (x : Type) => Type", ctx);
+    Expression *expr = parse_string_to_expression("fun (x : Type) => Type", ctx);
     assert_not_null(expr, "expression should not be null");
 
     char *str = stringify_expression(expr);
@@ -223,8 +216,7 @@ void test_convert_variable_shadowing(void) {
     assert_not_null(ctx, "context should be created");
 
     // Inner x shadows outer x
-    Expression *expr = parse_string_to_expression(
-        "fun (x : Type) => fun (x : Type) => x", ctx);
+    Expression *expr = parse_string_to_expression("fun (x : Type) => fun (x : Type) => x", ctx);
     assert_not_null(expr, "expression should not be null with shadowing");
 
     char *str = stringify_expression(expr);
@@ -237,8 +229,7 @@ void test_convert_application(void) {
     Context *ctx = context_create_empty();
     assert_not_null(ctx, "context should be created");
 
-    Expression *expr = parse_string_to_expression(
-        "fun (x : Type) => fun (y : Type) => x", ctx);
+    Expression *expr = parse_string_to_expression("fun (x : Type) => fun (y : Type) => x", ctx);
     assert_not_null(expr, "expression should not be null");
 
     char *str = stringify_expression(expr);

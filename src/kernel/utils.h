@@ -36,8 +36,7 @@ char *stringify_context(Context *context, ContextStringifyOptions opts);
 // Stringify a context until a given context, effectively visualizing the
 // difference between the two contexts. This requires that until be an ancestor
 // of context. Returns NULL if until is not an ancestor of context.
-char *stringify_context_until(Context *context, Context *until,
-                              ContextStringifyOptions opts);
+char *stringify_context_until(Context *context, Context *until, ContextStringifyOptions opts);
 
 // Shorthand for stringify_expression.
 char *se(Expression *expression);

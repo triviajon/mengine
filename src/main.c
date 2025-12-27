@@ -14,8 +14,8 @@ static struct argp_option options[] = {
     {"debug", 'd', 0, 0, "Enable debug mode (default: false)", 0},
     {"print-tokens", OPT_PRINT_TOKENS, 0, 0,
      "Print tokens during parsing (default: true, requires --debug)", 0},
-    {"print-ast", OPT_PRINT_AST, 0, 0,
-     "Print AST during parsing (default: true, requires --debug)", 0},
+    {"print-ast", OPT_PRINT_AST, 0, 0, "Print AST during parsing (default: true, requires --debug)",
+     0},
     {"print-mode", OPT_PRINT_MODE, 0, 0,
      "Print mode during execution (default: true, requires --debug)", 0},
     {0}};

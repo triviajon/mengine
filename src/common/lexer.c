@@ -9,8 +9,7 @@
 static inline char peek_char(Lexer *lx) { return lx->src[lx->pos]; }
 
 static void debug_print_token(Lexer *lx, Token *t) {
-    if (!lx->options || !lx->options->debug ||
-        !lx->options->debug__print_tokens) {
+    if (!lx->options || !lx->options->debug || !lx->options->debug__print_tokens) {
         return;
     }
 
@@ -157,13 +156,13 @@ static void debug_print_token(Lexer *lx, Token *t) {
             name = "UNKNOWN";
     }
 
-    fprintf(stderr, YEL "[LEX]" DIM " %-12s at %-4d  %s" CRESET "\n", name,
-            t->pos, t->lexeme ? t->lexeme : "");
+    fprintf(stderr, YEL "[LEX]" DIM " %-12s at %-4d  %s" CRESET "\n", name, t->pos,
+            t->lexeme ? t->lexeme : "");
 }
 
 void skip_whitespace(Lexer *lx) {
-    while (lx->src[lx->pos] == ' ' || lx->src[lx->pos] == '\t' ||
-           lx->src[lx->pos] == '\n' || lx->src[lx->pos] == '\r') {
+    while (lx->src[lx->pos] == ' ' || lx->src[lx->pos] == '\t' || lx->src[lx->pos] == '\n' ||
+           lx->src[lx->pos] == '\r') {
         lx->pos++;
     }
 }
@@ -201,9 +200,7 @@ char *skip_comment(Lexer *lx) {
 
 char next_char(Lexer *lx) { return lx->src[lx->pos++]; }
 
-bool is_alpha(char c) {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
-}
+bool is_alpha(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); }
 
 bool is_digit(char c) { return (c >= '0' && c <= '9'); }
 

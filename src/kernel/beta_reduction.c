@@ -4,8 +4,7 @@
 #include "src/kernel/new_subst.h"
 
 bool forms_redex(Expression *app_func, Expression *app_arg) {
-    return app_func != NULL && (app_func->tag == LAMBDA_EXPRESSION) &&
-           app_arg != NULL;
+    return app_func != NULL && (app_func->tag == LAMBDA_EXPRESSION) && app_arg != NULL;
 }
 
 bool is_redex(Expression *app_expr) {
@@ -33,14 +32,13 @@ Expression *reduce(Expression *app_func, Expression *app_arg) {
 Expression *weak_head_normalize(Expression *expression) {
     switch (expression->tag) {
         case (APP_EXPRESSION): {
-            Expression *new_func =
-                weak_head_normalize(get_app_func(expression));
+            Expression *new_func = weak_head_normalize(get_app_func(expression));
             if (new_func->tag == LAMBDA_EXPRESSION) {
                 return reduce(new_func, get_app_arg(expression));
             }
             Context *app_context = get_expression_context(expression);
-            Expression *result = init_app_expression_wc(
-                new_func, get_app_arg(expression), app_context);
+            Expression *result =
+                init_app_expression_wc(new_func, get_app_arg(expression), app_context);
             if (!result) {
                 return NULL;
             }

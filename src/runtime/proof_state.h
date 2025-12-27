@@ -7,9 +7,8 @@
 
 typedef struct {
     Expression *pending_theorem;
-    DoublyLinkedList
-        *goals;         // list of Expression* representing proof obligations
-    size_t goal_index;  // current goal index
+    DoublyLinkedList *goals;  // list of Expression* representing proof obligations
+    size_t goal_index;        // current goal index
 } ProofState;
 
 /**

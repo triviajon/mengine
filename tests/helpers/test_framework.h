@@ -22,8 +22,7 @@ void test_start(const char *test_name);
 void assert_true(bool condition, const char *message);
 void assert_false(bool condition, const char *message);
 void assert_equal_int(int expected, int actual, const char *message);
-void assert_equal_str(const char *expected, const char *actual,
-                      const char *message);
+void assert_equal_str(const char *expected, const char *actual, const char *message);
 void assert_not_null(const void *ptr, const char *message);
 void assert_null(const void *ptr, const char *message);
 

@@ -60,9 +60,7 @@ void fprint_ast(FILE *stream, AST *ast) {
         case AST_MATCHBRANCH:
             fprintf(stream, "BRANCH(");
             fprintf(stream, "pattern=%s, ",
-                    ast->value.matchbranch.pattern
-                        ? ast->value.matchbranch.pattern->name
-                        : "_");
+                    ast->value.matchbranch.pattern ? ast->value.matchbranch.pattern->name : "_");
             fprint_ast(stream, ast->value.matchbranch.body);
             fprintf(stream, ")");
             return;
@@ -309,8 +307,8 @@ bool is_atomic_start(Token *t) {
     if (!t) {
         return false;
     }
-    return t->type == TOK_IDENT || t->type == TOK_LPAREN ||
-           t->type == TOK_TYPE || t->type == TOK_PROP;
+    return t->type == TOK_IDENT || t->type == TOK_LPAREN || t->type == TOK_TYPE ||
+           t->type == TOK_PROP;
 }
 
 AST *parse_application(Parser *p) {
