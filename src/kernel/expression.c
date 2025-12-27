@@ -105,13 +105,23 @@ Expression *init_type_expression() {
     return TYPE;
 }
 
-Expression *init_hole_expression(char *name, Expression *type,
-                                 Context *context) {
+Expression *init_hole_expression(char *name, Expression *type, Context *gamma) {
+    if (!valid_in_context(type, gamma)) {
+        return NULL;
+    }
+
+    Expression *type_type = get_expression_type(type);
+    if (type_type->type != PROP_EXPRESSION &&
+        type_type->type != TYPE_EXPRESSION) {
+        fprintf(stderr, ERROR "Type is not a Prop or Type_i.\n" CRESET);
+        return NULL;
+    }
+
     Expression *expr = (Expression *)malloc(sizeof(Expression));
     expr->type = HOLE_EXPRESSION;
     expr->value.hole.name = name;
-    expr->value.hole.defining_context = context;
-    expr->value.hole.return_type = type;
+    expr->value.hole.context = gamma;
+    expr->value.hole.type = type;
     add_to_parents(type, expr, HOLE_TYPE);
     expr->value.hole.uplinks = dll_create();
     expr->value.hole.maybe_hole_free = false;
@@ -333,7 +343,7 @@ Expression *get_expression_type(Expression *expression) {
         case (PROP_EXPRESSION):
             return init_type_expression();
         case (HOLE_EXPRESSION):
-            return expression->value.hole.return_type;
+            return expression->value.hole.type;
     }
 }
 
@@ -360,7 +370,7 @@ Context *get_expression_context(Expression *expression) {
         case (PROP_EXPRESSION):
             return context_create_empty();
         case (HOLE_EXPRESSION):
-            return expression->value.hole.defining_context;
+            return expression->value.hole.context;
     }
 }
 
@@ -539,8 +549,8 @@ void free_prop_expression(Expression *expr) {
 void free_hole_expression(Expression *expr) {
     if (expr && expr->type == HOLE_EXPRESSION) {
         free(expr->value.hole.name);
-        free_expression(expr->value.hole.return_type);
-        context_free(expr->value.hole.defining_context);
+        free_expression(expr->value.hole.type);
+        context_free(expr->value.hole.context);
         dll_destroy(expr->value.forall.uplinks);
         free(expr);
     }
@@ -913,7 +923,7 @@ void fill_hole(Expression *hole, Expression *term) {
             }
             case (HOLE_TYPE): {
                 Expression *ptr = (Expression *)uplink->ptr;
-                ptr->value.hole.return_type = term;
+                ptr->value.hole.type = term;
                 break;
             }
             case (VAR_BODY): {

@@ -124,8 +124,8 @@ static Expression *PROP = NULL;
 // A typed hole to be filled later.
 typedef struct {
     char *name;  // A user-friendly name for the hole. Not used internally.
-    Expression *return_type;    // The required type for the hole.
-    Context *defining_context;  // The context which this hole was defined in.
+    Expression *type;           // The required type for the hole.
+    Context *context;           // The context which this hole was defined in.
     DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced.
     bool maybe_hole_free;  // A value of true means that the term is hole-free,
                            // false means that it may contain holes.
@@ -163,23 +163,21 @@ Expression *init_type_expression();
 // Create a new prop expression.
 Expression *init_prop_expression();
 
-// Initialize a new hole expression with a given name, return type, and defining
-// context. To fill the hole using `fill_hole(hole, term)`, the term used to
-// fill the hole must be valid in the hole's defining context.
+// Create a new hole expression with a given name, return type, and context.
+// Typing rule:
+//    gamma |- return_type : s
+//    s in {Prop, Type_i}
+// ------------------------------------------------
+//    gamma, name : return_type |-
 Expression *init_hole_expression(char *name, Expression *return_type,
-                                 Context *defining_context);
-
-// The following functions are helper functions to initialize new expressions,
-// with explicit contexts. These are useful when you have a specific context in
-// mind for the expression, and you want to use that context to type the
-// expression.
+                                 Context *gamma);
 
 // Create a new variable expression with a given name, type, and defining
 // context. Typing rule:
-//    gamma |- A : s
+//    gamma |- type : s
 //    s in {Prop, Type_i}
 // ------------------------------------------------
-//    gamma, x : A |-
+//    gamma, name : type |-
 // In other words, if the type is valid in the input context, and the type(s) is
 // a Prop/Type_i, then this variable is valid in the extension of the context.
 Expression *init_var_expression_wc(const char *name, Expression *type,
