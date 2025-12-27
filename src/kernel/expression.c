@@ -7,7 +7,6 @@
 #include "src/kernel/context.h"
 #include "src/kernel/dyn_array_map.h"
 #include "src/kernel/new_subst.h"
-#include "src/kernel/subst.h"
 
 void add_to_parents(Expression *expression, void *ptr, Relation r) {
     Uplink *uplink = new_uplink(ptr, r);
@@ -60,9 +59,10 @@ Uplink *new_uplink(void *ptr, Relation r) {
 
 // Helper to construct a lambda type from a bound variable and body.
 // Assumes all inputs are valid.
-Expression *_construct_lambda_type(Expression *bound_variable,
-                                   Expression *body) {
-    return init_forall_expression(bound_variable, get_expression_type(body));
+Expression *_construct_lambda_type(Expression *bound_variable, Expression *body,
+                                   Context *gamma) {
+    return init_forall_expression_wc(bound_variable, get_expression_type(body),
+                                     gamma);
 }
 
 // Helper to construct a app type from a function and argument.
@@ -85,79 +85,6 @@ Expression *_construct_app_type(Expression *func, Expression *arg) {
 
     fprintf(stderr, ERROR "Application does not type check.\n" CRESET);
     return NULL;
-}
-
-Expression *init_var_expression(const char *name, Expression *type) {
-    Expression *expr = (Expression *)malloc(sizeof(Expression));
-    expr->type = VAR_EXPRESSION;
-    expr->value.var.name = strdup(name);
-    expr->value.var.type = type;
-    expr->value.var.uplinks = dll_create();
-    expr->value.var.context =
-        context_insert(get_expression_context(type), expr);
-    expr->value.var.maybe_hole_free = true;
-    return expr;
-}
-
-Expression *init_lambda_expression(Expression *bound_variable,
-                                   Expression *body) {
-    Expression *expr = (Expression *)malloc(sizeof(Expression));
-    expr->type = LAMBDA_EXPRESSION;
-    expr->value.lambda.context =
-        context_minus(get_expression_context(body), bound_variable);
-    expr->value.lambda.bound_variable = bound_variable;
-    expr->value.lambda.type = _construct_lambda_type(bound_variable, body);
-    expr->value.lambda.body = body;
-    add_to_parents(body, expr, LAMBDA_BODY);
-    expr->value.lambda.uplinks = dll_create();
-    expr->value.lambda.maybe_hole_free = get_maybe_hole_free(body);
-    return expr;
-}
-
-Expression *init_app_expression(Expression *func, Expression *arg) {
-    Expression *app_type = _construct_app_type(func, arg);
-    if (!app_type) {
-        return NULL;
-    }
-
-    Expression *expr = (Expression *)malloc(sizeof(Expression));
-    expr->type = APP_EXPRESSION;
-    Context *combined_ctx =
-        context_add(get_expression_context(func), get_expression_context(arg));
-    expr->value.app.context = combined_ctx;
-    expr->value.app.func = func;
-    add_to_parents(func, expr, APP_FUNC);
-    expr->value.app.arg = arg;
-    add_to_parents(arg, expr, APP_ARG);
-    expr->value.app.type = app_type;
-    expr->value.app.cache = NULL;
-    expr->value.app.uplinks = dll_create();
-    expr->value.app.maybe_hole_free =
-        get_maybe_hole_free(func) && get_maybe_hole_free(arg);
-    return expr;
-}
-
-Expression *init_forall_expression(Expression *bound_variable,
-                                   Expression *body) {
-    Expression *expr = (Expression *)malloc(sizeof(Expression));
-    expr->type = FORALL_EXPRESSION;
-    expr->value.forall.context =
-        context_minus(context_add(get_expression_context(bound_variable),
-                                  get_expression_context(body)),
-                      bound_variable);
-    expr->value.forall.bound_variable = bound_variable;
-    // Set the type of the forall expression based on the type of its body
-    Expression *body_type = get_expression_type(body);
-    if (body_type == init_prop_expression()) {
-        expr->value.forall.type = init_prop_expression();
-    } else {
-        expr->value.forall.type = init_type_expression();
-    }
-    expr->value.forall.body = body;
-    add_to_parents(body, expr, FORALL_BODY);
-    expr->value.forall.uplinks = dll_create();
-    expr->value.forall.maybe_hole_free = get_maybe_hole_free(body);
-    return expr;
 }
 
 Expression *init_prop_expression() {
@@ -267,7 +194,8 @@ Expression *init_lambda_expression_wc(Expression *bound_variable,
     expr->type = LAMBDA_EXPRESSION;
     expr->value.lambda.context = gamma;
     expr->value.lambda.bound_variable = bound_variable;
-    expr->value.lambda.type = _construct_lambda_type(bound_variable, body);
+    expr->value.lambda.type =
+        _construct_lambda_type(bound_variable, body, gamma);
     expr->value.lambda.body = body;
     add_to_parents(body, expr, LAMBDA_BODY);
     expr->value.lambda.uplinks = dll_create();
@@ -733,7 +661,7 @@ Expression *match_and_subst(Expression *a, Expression *b,
         dll_insert_at_tail(new_exprs, dll_new_node((mapping->items + i)->val));
     }
 
-    Expression *result = p_subst(to_subst, old_exprs, new_exprs);
+    Expression *result = new_p_subst(to_subst, old_exprs, new_exprs);
 
     dll_destroy(old_exprs);
     dll_destroy(new_exprs);
@@ -1009,32 +937,6 @@ char *get_char() {
         c_counter = 'a';
     }
     return strdup(temp);
-}
-
-Expression *refresh(Expression *expr) {
-    if (expr->type == LAMBDA_EXPRESSION) {
-        Expression *x = expr->value.lambda.bound_variable;
-        char *x_name = x->value.var.name;
-        Expression *T = get_expression_type(x);
-        Expression *B = expr->value.lambda.body;
-
-        // char *xp_name = strcat(strdup(x_name), get_char());
-        char *xp_name = strcat(strdup(x_name), "'");
-        Expression *xp = init_var_expression(xp_name, T);
-        return init_lambda_expression(xp, subst(B, x, xp));
-    }
-    if (expr->type == FORALL_EXPRESSION) {
-        Expression *x = expr->value.forall.bound_variable;
-        char *x_name = x->value.var.name;
-        Expression *T = get_expression_type(x);
-        Expression *B = expr->value.forall.body;
-
-        char *xp_name = strcat(strdup(x_name), get_char());
-
-        Expression *xp = init_var_expression(xp_name, T);
-        return init_forall_expression(xp, subst(B, x, xp));
-    }
-    return NULL;
 }
 
 bool _congruence2(Expression *a, Expression *b, Map *mapping) {

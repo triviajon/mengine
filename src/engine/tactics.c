@@ -381,7 +381,9 @@ RewriteResult *n_rewrite_app(Expression *expr, Expression *lemma,
                                       _build_reflexivity_proof(expr, context));
     } else {
         mid_rwr = init_rewrite_result(
-            expr, init_app_expression(rwr_func->rewritten, rwr_arg->rewritten),
+            expr,
+            init_app_expression_wc(rwr_func->rewritten, rwr_arg->rewritten,
+                                   context),
             dll_merge(rwr_func->new_goals, rwr_arg->new_goals),
             _build_app_congruence_proof(rwr_func, rwr_arg, context));
     }
