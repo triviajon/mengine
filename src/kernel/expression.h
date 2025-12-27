@@ -127,6 +127,13 @@ void add_to_parents(Expression *expression, void *ptr, Relation r);
 // expression's uplinks.
 void remove_tl_uplink(Expression *expression);
 
+// Remove a specific uplink from an expression's uplinks list.
+void remove_uplink(Expression *expr, void *parent_ptr, Relation rel);
+
+// Free an expression and recursively free children if they become unreachable.
+// Never frees TYPE, PROP, or EMPTY_CONTEXT globals.
+void free_expression(Expression *expr);
+
 // Create a new uplink describing how ptr relates.
 Uplink *new_uplink(void *ptr, Relation r);
 
@@ -329,9 +336,6 @@ void fill_hole(Expression *hole, Expression *term);
 
 // Returns true if var_or_hole appears as a subterm in term
 bool occurs_in(Expression *var_or_hole, Expression *term);
-
-// Frees an expression and all its children.
-void free_expression(Expression *expr);
 
 // Returns true if the expressions are alpha-congruent.
 bool congruence(Expression *a, Expression *b);

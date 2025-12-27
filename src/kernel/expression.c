@@ -24,6 +24,101 @@ Uplink *new_uplink(void *ptr, Relation r) {
     return new_uplink;
 }
 
+void remove_uplink(Expression *expr, void *parent_ptr, Relation rel) {
+    if (expr == NULL || expr->uplinks == NULL) {
+        return;
+    }
+
+    DLLNode *current = expr->uplinks->head;
+    DLLNode *prev = NULL;
+
+    while (current != NULL) {
+        Uplink *uplink = (Uplink *)current->data;
+        if (uplink->ptr == parent_ptr && uplink->relation == rel) {
+            if (prev == NULL) {
+                expr->uplinks->head = current->next;
+                if (current->next != NULL) {
+                    current->next->prev = NULL;
+                } else {
+                    expr->uplinks->tail = NULL;
+                }
+            } else {
+                prev->next = current->next;
+                if (current->next != NULL) {
+                    current->next->prev = prev;
+                } else {
+                    expr->uplinks->tail = prev;
+                }
+            }
+
+            free(uplink);
+            free(current);
+            return;
+        }
+        prev = current;
+        current = current->next;
+    }
+}
+
+// Forward declaration
+static void free_expression_field(Expression *parent, Expression *child, Relation rel);
+
+void free_expression(Expression *expr) {
+    // Never free globals
+    if (expr == NULL || expr == TYPE || expr == PROP || expr == EMPTY_CONTEXT) {
+        return;
+    }
+
+    // Remove this expression from all its children's uplink lists
+    free_expression_field(expr, expr->type, EXPR_TYPE);
+    free_expression_field(expr, expr->context, EXPR_CONTEXT);
+
+    // Handle expression-specific fields
+    switch (expr->tag) {
+        case VAR_EXPRESSION:
+            if (expr->as.var.body != NULL) {
+                free_expression_field(expr, expr->as.var.body, VAR_BODY);
+            }
+            free(expr->as.var.name);
+            break;
+        case LAMBDA_EXPRESSION:
+            free_expression_field(expr, expr->as.lambda.bound_variable, LAMBDA_BOUND_VAR);
+            free_expression_field(expr, expr->as.lambda.body, LAMBDA_BODY);
+            break;
+        case APP_EXPRESSION:
+            free_expression_field(expr, expr->as.app.func, APP_FUNC);
+            free_expression_field(expr, expr->as.app.arg, APP_ARG);
+            break;
+        case FORALL_EXPRESSION:
+            free_expression_field(expr, expr->as.forall.bound_variable, FORALL_BOUND_VAR);
+            free_expression_field(expr, expr->as.forall.body, FORALL_BODY);
+            break;
+        case HOLE_EXPRESSION:
+            free(expr->as.hole.name);
+            break;
+        case TYPE_EXPRESSION:
+        case PROP_EXPRESSION:
+            break;
+    }
+
+    dll_destroy(expr->uplinks);
+    free(expr);
+}
+
+static void free_expression_field(Expression *parent, Expression *child, Relation rel) {
+    if (child == NULL) {
+        return;
+    }
+
+    // Remove parent from child's uplinks
+    remove_uplink(child, parent, rel);
+
+    // Check if child is now unreachable (no more uplinks)
+    if (dll_len(child->uplinks) == 0) {
+        free_expression(child);
+    }
+}
+
 // Helper to construct a lambda type from a bound variable and body.
 // Assumes all inputs are valid.
 Expression *_construct_lambda_type(Expression *bound_variable, Expression *body) {
@@ -100,6 +195,7 @@ Expression *init_type_expression() {
 
 Expression *init_hole_expression(char *name, Expression *type, Context *gamma) {
     if (!valid_in_context(type, gamma)) {
+        fprintf(stderr, ERROR "Type is not valid in context.\n" CRESET);
         return NULL;
     }
 
@@ -114,7 +210,7 @@ Expression *init_hole_expression(char *name, Expression *type, Context *gamma) {
                                              /* type */ type,
                                              /* maybe_hole_free */ false);
 
-    SET_HOLE_NAME(expr, name);
+    SET_HOLE_NAME(expr, strdup(name));
     return expr;
 }
 
@@ -395,78 +491,6 @@ Expression *get_arrow_rhs(Expression *expr) {
 }
 
 // Forward declarations. No need to expose them in expression.h.
-void free_var_expression(Expression *expr);
-void free_lambda_expression(Expression *expr);
-void free_app_expression(Expression *expr);
-void free_forall_expression(Expression *expr);
-void free_type_expression(Expression *expr);
-void free_prop_expression(Expression *expr);
-void free_hole_expression(Expression *expr);
-
-void free_expression(Expression *expr) {
-    switch (expr->tag) {
-        case (VAR_EXPRESSION):
-            free_var_expression(expr);
-            break;
-        case (LAMBDA_EXPRESSION):
-            free_lambda_expression(expr);
-            break;
-        case (APP_EXPRESSION):
-            free_app_expression(expr);
-            break;
-        case (FORALL_EXPRESSION):
-            free_forall_expression(expr);
-            break;
-        case (TYPE_EXPRESSION):
-            free_type_expression(expr);
-            break;
-        case (PROP_EXPRESSION):
-            free_prop_expression(expr);
-            break;
-        case (HOLE_EXPRESSION):
-            free_hole_expression(expr);
-            break;
-        default:
-            fprintf(stderr, ERROR "Unknown expression type in free_expression.\n" CRESET);
-            exit(EXIT_FAILURE);
-    }
-}
-
-void free_var_expression(Expression *expr) {
-    (void)expr;
-    // todo: implement me!
-}
-
-void free_lambda_expression(Expression *expr) {
-    (void)expr;
-    // todo: implement me!
-}
-
-void free_app_expression(Expression *expr) {
-    (void)expr;
-    // todo: implement me!
-}
-
-void free_forall_expression(Expression *expr) {
-    (void)expr;
-    // todo: implement me!
-}
-
-void free_type_expression(Expression *expr) {
-    (void)expr;
-    // todo: implement me!
-}
-
-void free_prop_expression(Expression *expr) {
-    (void)expr;
-    // todo: implement me!
-}
-
-void free_hole_expression(Expression *expr) {
-    (void)expr;
-    // todo: implement me!
-}
-
 bool _congruence(Expression *a, Expression *b, Map *mapping) {
     // Mapping is a map from variables in a to variables in b.
     if (a == b) {
