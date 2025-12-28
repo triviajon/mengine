@@ -4,6 +4,7 @@
 #include "src/common/color.h"
 #include "src/kernel/context.h"
 #include "src/kernel/expression.h"
+#include "src/kernel/inductive.h"
 #include "src/kernel/utils.h"
 #include "src/metalanguage/ast_to_expression.h"
 #include "src/runtime/proof_state.h"
@@ -582,6 +583,15 @@ static void _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd)
             stringify_expression(ind_type));
 
     size_t ctor_count = ind_cmd->constructor_count;
+
+    Expression **ctor_vars = malloc(ctor_count * sizeof(Expression *));
+    if (!ctor_vars) {
+        fprintf(stderr, ERROR "Failed to allocate constructor array.\n" CRESET);
+        free(param_vars);
+        free(contexts);
+        return;
+    }
+
     for (size_t i = 0; i < ctor_count; i++) {
         InductiveConstructor *ctor = ind_cmd->constructors[i];
 
@@ -612,10 +622,13 @@ static void _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd)
         if (!ctor_var) {
             fprintf(stderr, ERROR "Failed to create constructor variable for %s\n" CRESET,
                     ctor->name);
+            free(ctor_vars);
             free(param_vars);
             free(contexts);
             return;
         }
+
+        ctor_vars[i] = ctor_var;
 
         rt->ctx = ctor_var;
         c = ctor_var;
@@ -634,15 +647,24 @@ static void _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd)
     Expression *ind_principle_type =
         _build_induction_principle_type(ind_cmd, ind_var, param_vars, param_count, contexts);
 
+    Expression *ind_principle_var = NULL;
     if (ind_principle_type) {
-        Expression *ind_principle_var =
-            init_var_expression_wc(ind_principle_name, ind_principle_type, rt->ctx);
+        ind_principle_var = init_var_expression_wc(ind_principle_name, ind_principle_type, rt->ctx);
         rt->ctx = ind_principle_var;
 
         fprintf(stdout, UI "Induction principle " CRESET "%s : %s generated.\n", ind_principle_name,
                 stringify_expression(ind_principle_type));
     }
 
+    // Register the inductive type
+    if (!register_inductive(ind_var, ctor_vars, ctor_count, ind_principle_var)) {
+        fprintf(stderr, ERROR "Failed to register inductive type %s.\n" CRESET, name);
+    } else {
+        fprintf(stdout, UI "Registered " CRESET "inductive %s with %zu constructor(s).\n", name,
+                ctor_count);
+    }
+
+    free(ctor_vars);
     free(ind_principle_name);
     free(param_vars);
     free(contexts);

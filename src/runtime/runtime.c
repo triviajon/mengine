@@ -8,6 +8,7 @@
 #include "src/common/color.h"
 #include "src/common/options.h"
 #include "src/kernel/expression.h"
+#include "src/kernel/inductive.h"
 #include "src/kernel/utils.h"
 #include "src/runtime/core.h"
 #include "src/runtime/proof_state.h"
@@ -59,6 +60,9 @@ MEngineRuntime *mengine_runtime_new(MEngineOptions *options) {
         free(rt);
         return NULL;
     }
+
+    // Initialize inductive type registry
+    inductive_registry_init();
 
     init_core(&rt->ctx);
     mengine_runtime_command_mode(rt);

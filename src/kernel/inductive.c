@@ -1,0 +1,102 @@
+#include "src/kernel/inductive.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "src/common/color.h"
+#include "src/kernel/dyn_array_map.h"
+
+// Global registry mapping Expression* -> InductiveDefinition*
+static Map *inductive_registry = NULL;
+
+void inductive_registry_init(void) {
+    if (inductive_registry == NULL) {
+        inductive_registry = map_new();
+    }
+}
+
+bool register_inductive(Expression *inductive_var, Expression **constructors, int constructor_count,
+                        Expression *eliminator) {
+    if (inductive_var == NULL || constructors == NULL || constructor_count < 1) {
+        fprintf(stderr, ERROR "Invalid arguments to register_inductive.\n" CRESET);
+        return false;
+    }
+
+    if (inductive_registry == NULL) {
+        inductive_registry_init();
+    }
+
+    if (map_get(inductive_registry, inductive_var) != NULL) {
+        fprintf(stderr, ERROR "Inductive type already registered.\n" CRESET);
+        return false;
+    }
+
+    InductiveDefinition *def = malloc(sizeof(InductiveDefinition));
+    if (!def) {
+        fprintf(stderr, ERROR "Failed to allocate InductiveDefinition.\n" CRESET);
+        return false;
+    }
+
+    // Make a copy of the constructors array (clean boundaries - no ownership transfer)
+    Expression **ctor_copy = malloc(constructor_count * sizeof(Expression *));
+    if (!ctor_copy) {
+        fprintf(stderr, ERROR "Failed to allocate constructor array copy.\n" CRESET);
+        free(def);
+        return false;
+    }
+
+    for (int i = 0; i < constructor_count; i++) {
+        ctor_copy[i] = constructors[i];
+    }
+
+    def->inductive_var = inductive_var;
+    def->constructors = ctor_copy;
+    def->constructor_count = constructor_count;
+    def->eliminator = eliminator;
+
+    map_set(inductive_registry, inductive_var, def);
+
+    return true;
+}
+
+bool is_inductive(Expression *expr) {
+    if (expr == NULL || inductive_registry == NULL) {
+        return false;
+    }
+
+    return map_get(inductive_registry, expr) != NULL;
+}
+
+Expression **get_constructors(Expression *inductive_var, int *out_count) {
+    if (out_count != NULL) {
+        *out_count = 0;
+    }
+
+    InductiveDefinition *def = get_inductive_definition(inductive_var);
+    if (def == NULL) {
+        return NULL;
+    }
+
+    if (out_count != NULL) {
+        *out_count = def->constructor_count;
+    }
+
+    return def->constructors;
+}
+
+Expression *get_eliminator(Expression *inductive_var) {
+    InductiveDefinition *def = get_inductive_definition(inductive_var);
+    if (def == NULL) {
+        return NULL;
+    }
+
+    return def->eliminator;
+}
+
+InductiveDefinition *get_inductive_definition(Expression *inductive_var) {
+    if (inductive_var == NULL || inductive_registry == NULL) {
+        return NULL;
+    }
+
+    return (InductiveDefinition *)map_get(inductive_registry, inductive_var);
+}
