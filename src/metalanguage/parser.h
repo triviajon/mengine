@@ -10,12 +10,14 @@
 typedef struct AST AST;
 
 typedef struct {
-    char *name;  // identifier name (malloc'ed)
+    char *name;  // identifier name
     AST *type;   // AST node representing the type
 } Binder;
 
 typedef struct {
-    char *name;  // identifier name (malloc'ed)
+    char *constructor_name;  // Constructor name
+    char **argument_names;   // Array of argument names
+    int argument_count;      // Number of arguments
 } Pattern;
 
 typedef enum {

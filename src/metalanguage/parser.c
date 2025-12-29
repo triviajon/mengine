@@ -59,8 +59,15 @@ void fprint_ast(FILE *stream, AST *ast) {
 
         case AST_MATCHBRANCH:
             fprintf(stream, "BRANCH(");
-            fprintf(stream, "pattern=%s, ",
-                    ast->value.matchbranch.pattern ? ast->value.matchbranch.pattern->name : "_");
+            if (ast->value.matchbranch.pattern) {
+                fprintf(stream, "pattern=%s", ast->value.matchbranch.pattern->constructor_name);
+                for (int i = 0; i < ast->value.matchbranch.pattern->argument_count; i++) {
+                    fprintf(stream, " %s", ast->value.matchbranch.pattern->argument_names[i]);
+                }
+                fprintf(stream, ", ");
+            } else {
+                fprintf(stream, "pattern=_, ");
+            }
             fprint_ast(stream, ast->value.matchbranch.body);
             fprintf(stream, ")");
             return;
@@ -286,19 +293,41 @@ AST *parse_match_branch(Parser *p) {
 
 Pattern *parse_pattern(Parser *p) {
     if (!parser_expect_no_consume(p, TOK_IDENT)) {
-        parser_error(p, "Expected identifier in pattern");
+        parser_error(p, "Expected constructor name in pattern");
     }
-    Token *ident_token = parser_next(p);
+    Token *ctor_token = parser_next(p);
 
     Pattern *pattern = malloc(sizeof(Pattern));
     if (!pattern) {
         parser_error(p, "Memory allocation failed for pattern");
     }
-    pattern->name = strdup(ident_token->lexeme);
-    if (!pattern->name) {
-        parser_error(p, "Memory allocation failed for pattern name");
+
+    pattern->constructor_name = strdup(ctor_token->lexeme);
+    if (!pattern->constructor_name) {
+        parser_error(p, "Memory allocation failed for constructor name");
     }
-    lexer_free_token(ident_token);
+    lexer_free_token(ctor_token);
+
+    pattern->argument_names = NULL;
+    pattern->argument_count = 0;
+
+    while (parser_expect_no_consume(p, TOK_IDENT)) {
+        Token *arg_token = parser_next(p);
+
+        pattern->argument_names =
+            realloc(pattern->argument_names, sizeof(char *) * (pattern->argument_count + 1));
+        if (!pattern->argument_names) {
+            parser_error(p, "Memory allocation failed for pattern arguments");
+        }
+
+        pattern->argument_names[pattern->argument_count] = strdup(arg_token->lexeme);
+        if (!pattern->argument_names[pattern->argument_count]) {
+            parser_error(p, "Memory allocation failed for pattern argument name");
+        }
+
+        lexer_free_token(arg_token);
+        pattern->argument_count++;
+    }
 
     return pattern;
 }
