@@ -76,6 +76,37 @@ char *stringify_expression(Expression *expression) {
             break;
         }
 
+        case MATCH_EXPRESSION: {
+            char *scrutinee_str = stringify_expression(expression->as.match.scrutinee);
+            result = str_concat("match ", scrutinee_str);
+            result = str_concat(result, " with");
+            free(scrutinee_str);
+
+            for (int i = 0; i < expression->as.match.branch_count; i++) {
+                MatchBranch *branch = expression->as.match.branches[i];
+                result = str_concat(result, " | ");
+
+                char *ctor_str = stringify_expression(branch->constructor);
+                result = str_concat(result, ctor_str);
+                free(ctor_str);
+
+                for (int j = 0; j < branch->pattern_var_count; j++) {
+                    result = str_concat(result, " ");
+                    char *var_str = stringify_expression(branch->pattern_variables[j]);
+                    result = str_concat(result, var_str);
+                    free(var_str);
+                }
+
+                result = str_concat(result, " => ");
+                char *body_str = stringify_expression(branch->body);
+                result = str_concat(result, body_str);
+                free(body_str);
+            }
+
+            result = str_concat(result, " end");
+            break;
+        }
+
         case TYPE_EXPRESSION:
             result = strdup("Type");
             break;

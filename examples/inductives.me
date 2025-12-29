@@ -1,0 +1,32 @@
+(* inductives.me *)
+(* This is a display of using inductive types. *)
+
+Inductive nat : Type := | O : nat | S : forall (_: nat), nat.
+
+Check nat.
+Check (S O).
+Check nat_ind.
+
+(* Pattern matching with match expressions *)
+Definition pred : forall (_: nat), nat :=
+  fun (n : nat) =>
+    match n with
+    | O => O
+    | S m => m
+    end.
+
+Definition is_zero : forall (_: nat), nat :=
+  fun (n : nat) =>
+    match n with
+    | O => S O
+    | S m => O
+    end.
+
+Inductive bool : Type := | true : bool | false : bool.
+
+Definition not : forall (_: bool), bool :=
+  fun (b : bool) =>
+    match b with
+    | true => false
+    | false => true
+    end.

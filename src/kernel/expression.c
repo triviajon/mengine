@@ -1,11 +1,14 @@
 #include "src/kernel/expression.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "src/common/color.h"
 #include "src/kernel/beta_reduction.h"
 #include "src/kernel/context.h"
 #include "src/kernel/dyn_array_map.h"
+#include "src/kernel/inductive.h"
 #include "src/kernel/new_subst.h"
 
 void add_to_parents(Expression *expression, void *ptr, Relation r) {
@@ -92,6 +95,21 @@ void free_expression(Expression *expr) {
         case FORALL_EXPRESSION:
             free_expression_field(expr, expr->as.forall.bound_variable, FORALL_BOUND_VAR);
             free_expression_field(expr, expr->as.forall.body, FORALL_BODY);
+            break;
+        case MATCH_EXPRESSION:
+            free_expression_field(expr, expr->as.match.scrutinee, MATCH_SCRUTINEE);
+            for (int i = 0; i < expr->as.match.branch_count; i++) {
+                MatchBranch *branch = expr->as.match.branches[i];
+                free_expression_field(expr, branch->constructor, MATCH_BRANCH_CONSTRUCTOR);
+                free_expression_field(expr, branch->body, MATCH_BRANCH_BODY);
+                for (int j = 0; j < branch->pattern_var_count; j++) {
+                    free_expression_field(expr, branch->pattern_variables[j],
+                                          MATCH_BRANCH_PATTERN_VAR);
+                }
+                free(branch->pattern_variables);
+                free(branch);
+            }
+            free(expr->as.match.branches);
             break;
         case HOLE_EXPRESSION:
             free(expr->as.hole.name);
@@ -359,6 +377,131 @@ Expression *init_arrow_expression_wc(Expression *lhs, Expression *rhs, Context *
     return init_forall_expression_wc(unnamed_variable, rhs);
 }
 
+Expression *init_match_expression_wc(Expression *scrutinee, MatchBranch **branches,
+                                     int branch_count, Context *context) {
+    // gamma |- scrutinee : I
+    if (!valid_in_context(scrutinee, context)) {
+        fprintf(stderr, ERROR "Match scrutinee is not valid in context.\n" CRESET);
+        return NULL;
+    }
+
+    Expression *scrutinee_type = get_expression_type(scrutinee);
+    if (!is_inductive(scrutinee_type)) {
+        fprintf(stderr, ERROR "Match scrutinee must have an inductive type.\n" CRESET);
+        return NULL;
+    }
+
+    // For each branch i: gamma, pattern_vars[i] : type(pattern_vars[i]) |- body_i : T
+    int expected_ctor_count;
+    Expression **expected_ctors = get_constructors(scrutinee_type, &expected_ctor_count);
+    if (!expected_ctors || expected_ctor_count == 0) {
+        fprintf(stderr, ERROR "Failed to get constructors for inductive type.\n" CRESET);
+        return NULL;
+    }
+
+    if (branch_count != expected_ctor_count) {
+        fprintf(stderr, ERROR "Non-exhaustive match: expected %d branches, got %d.\n" CRESET,
+                expected_ctor_count, branch_count);
+        return NULL;
+    }
+
+    // We combine two check here: 1) use a bool array to track which constructors have been covered,
+    // and 2) verify gamma, pattern_vars[i] : type(pattern_vars[i]) |- body_i : T
+    bool *constructor_covered = calloc(expected_ctor_count, sizeof(bool));
+    Expression *match_type = NULL;
+
+    for (int i = 0; i < branch_count; i++) {
+        MatchBranch *branch = branches[i];
+
+        // Find which constructor this branch matches
+        int ctor_idx = -1;
+        for (int j = 0; j < expected_ctor_count; j++) {
+            if (congruence(branch->constructor, expected_ctors[j])) {
+                ctor_idx = j;
+                break;
+            }
+        }
+
+        if (ctor_idx == -1) {
+            fprintf(stderr, ERROR "Branch constructor not found in inductive type.\n" CRESET);
+            free(constructor_covered);
+            return NULL;
+        }
+
+        if (constructor_covered[ctor_idx]) {
+            fprintf(stderr, ERROR "Duplicate pattern for constructor.\n" CRESET);
+            free(constructor_covered);
+            return NULL;
+        }
+        constructor_covered[ctor_idx] = true;
+
+        // Verify gamma, pattern_vars[i] : type(pattern_vars[i]) |- body[i] : T
+        Expression *ctor_type = get_expression_type(branch->constructor);
+        int expected_args = 0;
+        Expression *temp_type = ctor_type;
+        while (temp_type->tag == FORALL_EXPRESSION) {
+            expected_args++;
+            temp_type = get_forall_body(temp_type);
+        }
+
+        if (branch->pattern_var_count != expected_args) {
+            fprintf(stderr, ERROR "Pattern variable count mismatch: expected %d, got %d.\n" CRESET,
+                    expected_args, branch->pattern_var_count);
+            free(constructor_covered);
+            return NULL;
+        }
+
+        Expression *branch_body_type = get_expression_type(branch->body);
+        if (!branch_body_type) {
+            fprintf(stderr, ERROR "Branch body has no type.\n" CRESET);
+            free(constructor_covered);
+            return NULL;
+        }
+
+        // All branches must have the same type
+        if (match_type == NULL) {
+            match_type = branch_body_type;
+        } else if (!congruence(branch_body_type, match_type)) {
+            fprintf(stderr, ERROR "Branch body types do not match.\n" CRESET);
+            free(constructor_covered);
+            return NULL;
+        }
+    }
+
+    free(constructor_covered);
+
+    if (!match_type) {
+        fprintf(stderr, ERROR "Match expression has no type (no branches).\n" CRESET);
+        return NULL;
+    }
+
+    Expression *expr = _init_expression_base(
+        /* tag */ MATCH_EXPRESSION, /* context */ context,
+        /* ctx_size */ context->ctx_size,
+        /* type */ match_type,
+        /* maybe_hole_free */ get_maybe_hole_free(scrutinee));
+
+    expr->as.match.branches = malloc(branch_count * sizeof(MatchBranch *));
+    expr->as.match.branch_count = branch_count;
+
+    for (int i = 0; i < branch_count; i++) {
+        expr->as.match.branches[i] = branches[i];
+    }
+
+    SET_MATCH_SCRUTINEE(expr, scrutinee);
+
+    for (int i = 0; i < branch_count; i++) {
+        MatchBranch *branch = branches[i];
+        add_to_parents(branch->constructor, expr, MATCH_BRANCH_CONSTRUCTOR);
+        add_to_parents(branch->body, expr, MATCH_BRANCH_BODY);
+        for (int j = 0; j < branch->pattern_var_count; j++) {
+            add_to_parents(branch->pattern_variables[j], expr, MATCH_BRANCH_PATTERN_VAR);
+        }
+    }
+
+    return expr;
+}
+
 DoublyLinkedList *get_expression_uplinks(Expression *expression) {
     switch (expression->tag) {
         case (VAR_EXPRESSION):
@@ -523,6 +666,36 @@ bool _congruence(Expression *a, Expression *b, Map *mapping) {
         case (HOLE_EXPRESSION): {
             return (a == b) || (map_get(mapping, a) == b);
         }
+        case (MATCH_EXPRESSION): {
+            if (!_congruence(a->as.match.scrutinee, b->as.match.scrutinee, mapping)) {
+                return false;
+            }
+            if (a->as.match.branch_count != b->as.match.branch_count) {
+                return false;
+            }
+            for (int i = 0; i < a->as.match.branch_count; i++) {
+                MatchBranch *branch_a = a->as.match.branches[i];
+                MatchBranch *branch_b = b->as.match.branches[i];
+
+                if (!_congruence(branch_a->constructor, branch_b->constructor, mapping)) {
+                    return false;
+                }
+                if (branch_a->pattern_var_count != branch_b->pattern_var_count) {
+                    return false;
+                }
+
+                // Map pattern variables
+                for (int j = 0; j < branch_a->pattern_var_count; j++) {
+                    map_set(mapping, branch_a->pattern_variables[j],
+                            branch_b->pattern_variables[j]);
+                }
+
+                if (!_congruence(branch_a->body, branch_b->body, mapping)) {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 }
 
@@ -581,6 +754,9 @@ void _match_and_subst(Expression *a, Expression *b, Map *mapping) {
             }
             break;
         }
+        default:
+            fprintf(stderr, ERROR "Unsupported expression type in _match_and_subst.\n" CRESET);
+            exit(EXIT_FAILURE);
     }
 }
 
@@ -836,6 +1012,10 @@ void fill_hole(Expression *hole, Expression *term) {
                 ptr->context = term;
                 break;
             }
+            default:
+                fprintf(stderr, WARNING "todo: fill_hole for relation %d.\n" CRESET,
+                        uplink->relation);
+                break;
         }
     }
 
@@ -882,6 +1062,12 @@ bool _congruence2(Expression *a, Expression *b, Map *mapping) {
             case (HOLE_EXPRESSION): {
                 return (a == b) || (map_get(mapping, a) == b);
             }
+            case (MATCH_EXPRESSION): {
+                return (a == b) || (map_get(mapping, a) == b);
+            }
+            default:
+                fprintf(stderr, ERROR "Unknown expression type in _congruence2.\n" CRESET);
+                return false;
         }
     } else {
         if (a->tag == HOLE_EXPRESSION || b->tag == HOLE_EXPRESSION) {

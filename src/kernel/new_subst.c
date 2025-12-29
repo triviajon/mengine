@@ -192,6 +192,58 @@ Expression *_p_subst(Context *context, Expression *t, DoublyLinkedList *old_expr
 
             return init_forall_expression_wc(x_bv_prime, body_prime);
         }
+        case (MATCH_EXPRESSION): {
+            // Substitute in scrutinee
+            Expression *scrutinee = t->as.match.scrutinee;
+            Expression *scrutinee_prime = _p_subst(context, scrutinee, old_exprs, new_exprs);
+
+            // Create new branches with substituted components
+            int branch_count = t->as.match.branch_count;
+            MatchBranch **branches_prime = malloc(branch_count * sizeof(MatchBranch *));
+
+            for (int i = 0; i < branch_count; i++) {
+                MatchBranch *branch = t->as.match.branches[i];
+                MatchBranch *branch_prime = malloc(sizeof(MatchBranch));
+
+                // Substitute constructor
+                branch_prime->constructor = _p_subst(context, branch->constructor, old_exprs, new_exprs);
+                branch_prime->pattern_var_count = branch->pattern_var_count;
+
+                // Create new pattern variables with substituted types
+                branch_prime->pattern_variables =
+                    malloc(branch->pattern_var_count * sizeof(Expression *));
+
+                for (int j = 0; j < branch->pattern_var_count; j++) {
+                    Expression *old_var = branch->pattern_variables[j];
+                    Expression *old_var_type = get_expression_type(old_var);
+                    Expression *new_var_type = _p_subst(context, old_var_type, old_exprs, new_exprs);
+                    Expression *new_var =
+                        init_var_expression_wc(get_var_name(old_var), new_var_type, context);
+
+                    branch_prime->pattern_variables[j] = new_var;
+
+                    // Add to substitution lists for body substitution
+                    dll_insert_at_tail(old_exprs, dll_new_node(old_var));
+                    dll_insert_at_tail(new_exprs, dll_new_node(new_var));
+
+                    // Update context for next variable
+                    context = new_var;
+                }
+
+                // Substitute in branch body with extended context
+                branch_prime->body = _p_subst(context, branch->body, old_exprs, new_exprs);
+
+                // Remove pattern variables from substitution lists
+                for (int j = 0; j < branch->pattern_var_count; j++) {
+                    dll_remove_tail(old_exprs);
+                    dll_remove_tail(new_exprs);
+                }
+
+                branches_prime[i] = branch_prime;
+            }
+
+            return init_match_expression_wc(scrutinee_prime, branches_prime, branch_count, context);
+        }
         default:
             return t;
     }

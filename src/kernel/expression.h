@@ -21,19 +21,24 @@ typedef enum {
     TYPE_EXPRESSION,
     PROP_EXPRESSION,
     HOLE_EXPRESSION,
+    MATCH_EXPRESSION,
 } ExpressionType;
 
 // Represents a parent-child relationship between expressions.
 typedef enum {
-    LAMBDA_BODY,       // expr->as.lambda.body
-    LAMBDA_BOUND_VAR,  // expr->as.lambda.bound_variable
-    APP_FUNC,          // expr->as.app.func
-    APP_ARG,           // expr->as.app.arg
-    FORALL_BODY,       // expr->as.forall.body
-    FORALL_BOUND_VAR,  // expr->as.forall.bound_variable
-    VAR_BODY,          // expr->as.var.body
-    EXPR_TYPE,         // expr->type
-    EXPR_CONTEXT,      // expr->context
+    LAMBDA_BODY,               // expr->as.lambda.body
+    LAMBDA_BOUND_VAR,          // expr->as.lambda.bound_variable
+    APP_FUNC,                  // expr->as.app.func
+    APP_ARG,                   // expr->as.app.arg
+    FORALL_BODY,               // expr->as.forall.body
+    FORALL_BOUND_VAR,          // expr->as.forall.bound_variable
+    VAR_BODY,                  // expr->as.var.body
+    EXPR_TYPE,                 // expr->type
+    EXPR_CONTEXT,              // expr->context
+    MATCH_SCRUTINEE,           // expr->as.match.scrutinee
+    MATCH_BRANCH_BODY,         // expr->as.match.branches[i]->body
+    MATCH_BRANCH_PATTERN_VAR,  // expr->as.match.branches[i]->pattern_variables[j]
+    MATCH_BRANCH_CONSTRUCTOR,  // expr->as.match.branches[i]->constructor
 } Relation;
 
 /*
@@ -95,6 +100,21 @@ typedef struct {
     char *name;  // A user-friendly name for the hole. Not used internally.
 } HoleExpression;
 
+// A single branch in a match expression.
+typedef struct {
+    Expression *constructor;         // The constructor to match against
+    Expression **pattern_variables;  // Bound variables from the pattern
+    int pattern_var_count;           // Number of pattern variables
+    Expression *body;                // Expression to evaluate if this branch matches
+} MatchBranch;
+
+// A match expression for pattern matching on inductive types.
+typedef struct {
+    Expression *scrutinee;   // Expression being matched on
+    MatchBranch **branches;  // Array of match branches
+    int branch_count;        // Number of branches
+} MatchExpression;
+
 // Represents a generic expression.
 struct Expression {
     // Common fields
@@ -117,6 +137,7 @@ struct Expression {
         TypeExpression type_expr;
         PropExpression prop_expr;
         HoleExpression hole;
+        MatchExpression match;
     } as;
 };
 
@@ -187,6 +208,10 @@ Uplink *new_uplink(void *ptr, Relation r);
 #define SET_FORALL_BOUND_VAR(expr, value)       \
     (expr)->as.forall.bound_variable = (value); \
     add_to_parents((value), (expr), FORALL_BOUND_VAR)
+
+#define SET_MATCH_SCRUTINEE(expr, value)  \
+    (expr)->as.match.scrutinee = (value); \
+    add_to_parents((value), (expr), MATCH_SCRUTINEE)
 
 // Todo: We should consider adding context arguments to these functions?
 
@@ -260,6 +285,16 @@ Expression *init_forall_expression_wc(Expression *bound_variable, Expression *bo
 //    gamma |- Forall _: lhs, rhs : s (which is equivalent to "lhs -> rhs")
 // The context parameter should typically be the longer of context(lhs) and context(rhs).
 Expression *init_arrow_expression_wc(Expression *lhs, Expression *rhs, Context *gamma);
+
+// Creates a match expression that pattern matches on an inductive type.
+// Typing rule:
+//    gamma |- scrutinee : I
+//    For each branch i:
+//      gamma, pattern_vars[i] : type(pattern_vars[i]) |- body[i] : T
+// ------------------------------------------------
+//    gamma |- match scrutinee with branches end : T
+Expression *init_match_expression_wc(Expression *scrutinee, MatchBranch **branches,
+                                     int branch_count, Context *context);
 
 // Returns the uplinks of an expression.
 DoublyLinkedList *get_expression_uplinks(Expression *expression);
