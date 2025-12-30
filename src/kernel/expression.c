@@ -111,6 +111,14 @@ void free_expression(Expression *expr) {
             }
             free(expr->as.match.branches);
             break;
+        case FIX_EXPRESSION:
+            free_expression_field(expr, expr->as.fix.recursive_var, FIX_RECURSIVE_VAR);
+            for (int i = 0; i < expr->as.fix.arg_count; i++) {
+                free_expression_field(expr, expr->as.fix.args[i], FIX_ARG);
+            }
+            free(expr->as.fix.args);
+            free_expression_field(expr, expr->as.fix.body, FIX_BODY);
+            break;
         case HOLE_EXPRESSION:
             free(expr->as.hole.name);
             break;
@@ -481,24 +489,44 @@ Expression *init_match_expression_wc(Expression *scrutinee, MatchBranch **branch
         /* type */ match_type,
         /* maybe_hole_free */ get_maybe_hole_free(scrutinee));
 
-    expr->as.match.branches = malloc(branch_count * sizeof(MatchBranch *));
-    expr->as.match.branch_count = branch_count;
-
-    for (int i = 0; i < branch_count; i++) {
-        expr->as.match.branches[i] = branches[i];
-    }
-
     SET_MATCH_SCRUTINEE(expr, scrutinee);
+    SET_MATCH_BRANCHES(expr, branches);
 
-    for (int i = 0; i < branch_count; i++) {
-        MatchBranch *branch = branches[i];
-        add_to_parents(branch->constructor, expr, MATCH_BRANCH_CONSTRUCTOR);
-        add_to_parents(branch->body, expr, MATCH_BRANCH_BODY);
-        for (int j = 0; j < branch->pattern_var_count; j++) {
-            add_to_parents(branch->pattern_variables[j], expr, MATCH_BRANCH_PATTERN_VAR);
-        }
+    return expr;
+}
+
+Expression *init_fix_expression_wc(Expression *recursive_var, Expression **args, int arg_count,
+                                   int decreasing_arg_index, Expression *body) {
+    Context *gamma = get_expression_context(recursive_var);
+    Context *extended = gamma;
+    int expected_args = 0;
+    Expression *temp_type = get_expression_type(recursive_var);
+    while (temp_type->tag == FORALL_EXPRESSION) {
+        expected_args++;
+        temp_type = get_forall_body(temp_type);
     }
 
+    if (arg_count != expected_args) {
+        fprintf(stderr, ERROR "Argument count mismatch: expected %d, got %d.\n" CRESET,
+                expected_args, arg_count);
+        return NULL;
+    }
+
+    if (!valid_in_context(body, extended)) {
+        fprintf(stderr, ERROR "Body is not valid in context.\n" CRESET);
+        return NULL;
+    }
+
+    Expression *expr = _init_expression_base(/* tag */ FIX_EXPRESSION, /* context */ gamma,
+                                             /* ctx_size */ gamma->ctx_size,
+                                             /* type */ get_expression_type(body),
+                                             /* maybe_hole_free */ get_maybe_hole_free(body));
+
+    SET_FIX_RECURSIVE_VAR(expr, recursive_var);
+    SET_FIX_ARGS(expr, args);
+    SET_FIX_ARG_COUNT(expr, arg_count);
+    SET_FIX_DECREASING_ARG_INDEX(expr, decreasing_arg_index);
+    SET_FIX_BODY(expr, body);
     return expr;
 }
 
@@ -517,6 +545,10 @@ DoublyLinkedList *get_expression_uplinks(Expression *expression) {
         case (PROP_EXPRESSION):
             return expression->uplinks;
         case (HOLE_EXPRESSION):
+            return expression->uplinks;
+        case (MATCH_EXPRESSION):
+            return expression->uplinks;
+        case (FIX_EXPRESSION):
             return expression->uplinks;
         default:
             fprintf(stderr, ERROR "Unknown expression type in get_expression_uplinks.\n" CRESET);
@@ -696,6 +728,28 @@ bool _congruence(Expression *a, Expression *b, Map *mapping) {
             }
             return true;
         }
+        case (FIX_EXPRESSION): {
+            // Map recursive variable
+            map_set(mapping, a->as.fix.recursive_var, b->as.fix.recursive_var);
+
+            // Check arg counts match
+            if (a->as.fix.arg_count != b->as.fix.arg_count) {
+                return false;
+            }
+
+            // Check decreasing arg index matches
+            if (a->as.fix.decreasing_arg_index != b->as.fix.decreasing_arg_index) {
+                return false;
+            }
+
+            // Map all args and check congruence
+            for (int i = 0; i < a->as.fix.arg_count; i++) {
+                map_set(mapping, a->as.fix.args[i], b->as.fix.args[i]);
+            }
+
+            // Check body congruence
+            return _congruence(a->as.fix.body, b->as.fix.body, mapping);
+        }
     }
 }
 
@@ -752,6 +806,27 @@ void _match_and_subst(Expression *a, Expression *b, Map *mapping) {
             if (a != b) {
                 (map_set(mapping, a, b));
             }
+            break;
+        }
+        case (MATCH_EXPRESSION): {
+            _match_and_subst(a->as.match.scrutinee, b->as.match.scrutinee, mapping);
+            for (int i = 0; i < a->as.match.branch_count; i++) {
+                MatchBranch *branch_a = a->as.match.branches[i];
+                MatchBranch *branch_b = b->as.match.branches[i];
+                _match_and_subst(branch_a->constructor, branch_b->constructor, mapping);
+                for (int j = 0; j < branch_a->pattern_var_count; j++) {
+                    map_set(mapping, branch_a->pattern_variables[j], branch_b->pattern_variables[j]);
+                }
+                _match_and_subst(branch_a->body, branch_b->body, mapping);
+            }
+            break;
+        }
+        case (FIX_EXPRESSION): {
+            map_set(mapping, a->as.fix.recursive_var, b->as.fix.recursive_var);
+            for (int i = 0; i < a->as.fix.arg_count; i++) {
+                map_set(mapping, a->as.fix.args[i], b->as.fix.args[i]);
+            }
+            _match_and_subst(a->as.fix.body, b->as.fix.body, mapping);
             break;
         }
         default:
@@ -840,6 +915,49 @@ bool _congruent_with_holes(Expression *a, Expression *b, Map *alpha_equivalences
         case (VAR_EXPRESSION): {
             return (a == b) || map_get(alpha_equivalences, a) == b;
         }
+        case (MATCH_EXPRESSION): {
+            if (!_congruent_with_holes(a->as.match.scrutinee, b->as.match.scrutinee,
+                                       alpha_equivalences, required_holes)) {
+                return false;
+            }
+            if (a->as.match.branch_count != b->as.match.branch_count) {
+                return false;
+            }
+            for (int i = 0; i < a->as.match.branch_count; i++) {
+                MatchBranch *branch_a = a->as.match.branches[i];
+                MatchBranch *branch_b = b->as.match.branches[i];
+                if (!_congruent_with_holes(branch_a->constructor, branch_b->constructor,
+                                          alpha_equivalences, required_holes)) {
+                    return false;
+                }
+                if (branch_a->pattern_var_count != branch_b->pattern_var_count) {
+                    return false;
+                }
+                for (int j = 0; j < branch_a->pattern_var_count; j++) {
+                    map_set(alpha_equivalences, branch_a->pattern_variables[j],
+                           branch_b->pattern_variables[j]);
+                }
+                if (!_congruent_with_holes(branch_a->body, branch_b->body,
+                                          alpha_equivalences, required_holes)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        case (FIX_EXPRESSION): {
+            map_set(alpha_equivalences, a->as.fix.recursive_var, b->as.fix.recursive_var);
+            if (a->as.fix.arg_count != b->as.fix.arg_count) {
+                return false;
+            }
+            if (a->as.fix.decreasing_arg_index != b->as.fix.decreasing_arg_index) {
+                return false;
+            }
+            for (int i = 0; i < a->as.fix.arg_count; i++) {
+                map_set(alpha_equivalences, a->as.fix.args[i], b->as.fix.args[i]);
+            }
+            return _congruent_with_holes(a->as.fix.body, b->as.fix.body,
+                                        alpha_equivalences, required_holes);
+        }
         default:
             fprintf(stderr, ERROR "Unknown expression type in _congruent_with_holes.\n" CRESET);
             return false;
@@ -876,6 +994,19 @@ bool has_holes(Expression *expr) {
             return has_holes(expr->as.lambda.body);
         case (VAR_EXPRESSION):
             return false;
+        case (MATCH_EXPRESSION): {
+            if (has_holes(expr->as.match.scrutinee)) {
+                return true;
+            }
+            for (int i = 0; i < expr->as.match.branch_count; i++) {
+                if (has_holes(expr->as.match.branches[i]->body)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        case (FIX_EXPRESSION):
+            return has_holes(expr->as.fix.body);
         default:
             fprintf(stderr, ERROR "Unknown expression type in has_holes.\n" CRESET);
             exit(EXIT_FAILURE);
@@ -926,6 +1057,36 @@ bool _occurs_in(Expression *var_or_hole, Expression *term, Map *visited) {
                    _occurs_in(var_or_hole, term->as.forall.body, visited);
         case HOLE_EXPRESSION:
             return var_or_hole == term;
+        case MATCH_EXPRESSION: {
+            if (_occurs_in(var_or_hole, term->as.match.scrutinee, visited)) {
+                return true;
+            }
+            for (int i = 0; i < term->as.match.branch_count; i++) {
+                MatchBranch *branch = term->as.match.branches[i];
+                if (_occurs_in(var_or_hole, branch->constructor, visited)) {
+                    return true;
+                }
+                for (int j = 0; j < branch->pattern_var_count; j++) {
+                    if (_occurs_in(var_or_hole, branch->pattern_variables[j], visited)) {
+                        return true;
+                    }
+                }
+                if (_occurs_in(var_or_hole, branch->body, visited)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        case FIX_EXPRESSION:
+            if (_occurs_in(var_or_hole, term->as.fix.recursive_var, visited)) {
+                return true;
+            }
+            for (int i = 0; i < term->as.fix.arg_count; i++) {
+                if (_occurs_in(var_or_hole, term->as.fix.args[i], visited)) {
+                    return true;
+                }
+            }
+            return _occurs_in(var_or_hole, term->as.fix.body, visited);
         default:
             fprintf(stderr, ERROR "Unknown expression type in occurs_in.\n" CRESET);
             exit(EXIT_FAILURE);
@@ -1063,7 +1224,42 @@ bool _congruence2(Expression *a, Expression *b, Map *mapping) {
                 return (a == b) || (map_get(mapping, a) == b);
             }
             case (MATCH_EXPRESSION): {
-                return (a == b) || (map_get(mapping, a) == b);
+                if (!_congruence2(a->as.match.scrutinee, b->as.match.scrutinee, mapping)) {
+                    return false;
+                }
+                if (a->as.match.branch_count != b->as.match.branch_count) {
+                    return false;
+                }
+                for (int i = 0; i < a->as.match.branch_count; i++) {
+                    MatchBranch *branch_a = a->as.match.branches[i];
+                    MatchBranch *branch_b = b->as.match.branches[i];
+                    if (!_congruence2(branch_a->constructor, branch_b->constructor, mapping)) {
+                        return false;
+                    }
+                    if (branch_a->pattern_var_count != branch_b->pattern_var_count) {
+                        return false;
+                    }
+                    for (int j = 0; j < branch_a->pattern_var_count; j++) {
+                        map_set(mapping, branch_a->pattern_variables[j], branch_b->pattern_variables[j]);
+                    }
+                    if (!_congruence2(branch_a->body, branch_b->body, mapping)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            case (FIX_EXPRESSION): {
+                map_set(mapping, a->as.fix.recursive_var, b->as.fix.recursive_var);
+                if (a->as.fix.arg_count != b->as.fix.arg_count) {
+                    return false;
+                }
+                if (a->as.fix.decreasing_arg_index != b->as.fix.decreasing_arg_index) {
+                    return false;
+                }
+                for (int i = 0; i < a->as.fix.arg_count; i++) {
+                    map_set(mapping, a->as.fix.args[i], b->as.fix.args[i]);
+                }
+                return _congruence2(a->as.fix.body, b->as.fix.body, mapping);
             }
             default:
                 fprintf(stderr, ERROR "Unknown expression type in _congruence2.\n" CRESET);

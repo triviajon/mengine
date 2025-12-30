@@ -98,6 +98,94 @@ Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a
 
             return init_forall_expression_wc(x_bv_prime, body_prime);
         }
+        case (MATCH_EXPRESSION): {
+            // Substitute in scrutinee
+            Expression *scrutinee_prime = _subst(context, t->as.match.scrutinee, x, a);
+
+            // Create new branches with substitution
+            int branch_count = t->as.match.branch_count;
+            MatchBranch **branches_prime = malloc(branch_count * sizeof(MatchBranch *));
+
+            for (int i = 0; i < branch_count; i++) {
+                MatchBranch *branch = t->as.match.branches[i];
+                MatchBranch *branch_prime = malloc(sizeof(MatchBranch));
+
+                // Substitute constructor
+                branch_prime->constructor = _subst(context, branch->constructor, x, a);
+                branch_prime->pattern_var_count = branch->pattern_var_count;
+
+                // Create new pattern variables with substituted types
+                branch_prime->pattern_variables = malloc(branch->pattern_var_count * sizeof(Expression *));
+
+                DoublyLinkedList *old_exprs = dll_create();
+                DoublyLinkedList *new_exprs = dll_create();
+                dll_insert_at_tail(old_exprs, dll_new_node(x));
+                dll_insert_at_tail(new_exprs, dll_new_node(a));
+
+                Context *extended_context = context;
+                for (int j = 0; j < branch->pattern_var_count; j++) {
+                    Expression *old_var = branch->pattern_variables[j];
+                    Expression *old_var_type = get_expression_type(old_var);
+                    Expression *new_var_type = new_p_subst(extended_context, old_var_type, old_exprs, new_exprs);
+                    Expression *new_var = init_var_expression_wc(get_var_name(old_var), new_var_type, extended_context);
+
+                    branch_prime->pattern_variables[j] = new_var;
+
+                    dll_insert_at_tail(old_exprs, dll_new_node(old_var));
+                    dll_insert_at_tail(new_exprs, dll_new_node(new_var));
+                    extended_context = new_var;
+                }
+
+                // Substitute in branch body
+                branch_prime->body = new_p_subst(extended_context, branch->body, old_exprs, new_exprs);
+
+                dll_destroy(old_exprs);
+                dll_destroy(new_exprs);
+                branches_prime[i] = branch_prime;
+            }
+
+            return init_match_expression_wc(scrutinee_prime, branches_prime, branch_count, context);
+        }
+        case (FIX_EXPRESSION): {
+            // Substitute in recursive var type
+            Expression *rec_var = t->as.fix.recursive_var;
+            Expression *rec_var_type = get_expression_type(rec_var);
+            Expression *rec_var_type_prime = _subst(context, rec_var_type, x, a);
+            Expression *rec_var_prime = init_var_expression_wc(get_var_name(rec_var), rec_var_type_prime, context);
+
+            // Create new args with substituted types
+            Expression **args_prime = malloc(t->as.fix.arg_count * sizeof(Expression *));
+
+            DoublyLinkedList *old_exprs = dll_create();
+            DoublyLinkedList *new_exprs = dll_create();
+            dll_insert_at_tail(old_exprs, dll_new_node(x));
+            dll_insert_at_tail(old_exprs, dll_new_node(rec_var));
+            dll_insert_at_tail(new_exprs, dll_new_node(a));
+            dll_insert_at_tail(new_exprs, dll_new_node(rec_var_prime));
+
+            Context *extended_context = context;
+            for (int i = 0; i < t->as.fix.arg_count; i++) {
+                Expression *old_arg = t->as.fix.args[i];
+                Expression *old_arg_type = get_expression_type(old_arg);
+                Expression *new_arg_type = new_p_subst(extended_context, old_arg_type, old_exprs, new_exprs);
+                Expression *new_arg = init_var_expression_wc(get_var_name(old_arg), new_arg_type, extended_context);
+
+                args_prime[i] = new_arg;
+
+                dll_insert_at_tail(old_exprs, dll_new_node(old_arg));
+                dll_insert_at_tail(new_exprs, dll_new_node(new_arg));
+                extended_context = new_arg;
+            }
+
+            // Substitute in body
+            Expression *body_prime = new_p_subst(extended_context, t->as.fix.body, old_exprs, new_exprs);
+
+            dll_destroy(old_exprs);
+            dll_destroy(new_exprs);
+
+            return init_fix_expression_wc(rec_var_prime, args_prime, t->as.fix.arg_count,
+                                         t->as.fix.decreasing_arg_index, body_prime);
+        }
         default:
             return t;
     }
