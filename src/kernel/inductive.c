@@ -84,6 +84,21 @@ Expression **get_constructors(Expression *inductive_var, int *out_count) {
     return def->constructors;
 }
 
+bool is_constructor(Expression *expr) {
+    if (expr->tag != VAR_EXPRESSION) {
+        return false;
+    }
+
+    Expression *type = get_expression_type(expr);
+    Expression *result_type = get_innermost_body(type);
+    Expression *inductive_var = get_innermost_func(result_type);
+
+    if (!is_inductive(inductive_var)) {
+        return false;
+    }
+
+    return is_constructor_of(expr, inductive_var);
+}
 Expression *get_eliminator(Expression *inductive_var) {
     InductiveDefinition *def = get_inductive_definition(inductive_var);
     if (def == NULL) {
@@ -99,4 +114,24 @@ InductiveDefinition *get_inductive_definition(Expression *inductive_var) {
     }
 
     return (InductiveDefinition *)map_get(inductive_registry, inductive_var);
+}
+
+bool is_constructor_of(Expression *expr, Expression *inductive_var) {
+    if (expr == NULL || inductive_var == NULL) {
+        return false;
+    }
+
+    InductiveDefinition *def = get_inductive_definition(inductive_var);
+    if (def == NULL) {
+        return false;
+    }
+
+    // Check if expr is one of this inductive type's constructors
+    for (int i = 0; i < def->constructor_count; i++) {
+        if (def->constructors[i] == expr) {
+            return true;
+        }
+    }
+
+    return false;
 }

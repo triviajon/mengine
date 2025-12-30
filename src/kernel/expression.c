@@ -10,6 +10,7 @@
 #include "src/kernel/dyn_array_map.h"
 #include "src/kernel/inductive.h"
 #include "src/kernel/new_subst.h"
+#include "src/kernel/structural.h"
 
 void add_to_parents(Expression *expression, void *ptr, Relation r) {
     Uplink *uplink = new_uplink(ptr, r);
@@ -495,6 +496,81 @@ Expression *init_match_expression_wc(Expression *scrutinee, MatchBranch **branch
     return expr;
 }
 
+// Helper to extract the nth argument from an application chain
+Expression *get_nth_app_arg(Expression *app, int n) {
+    DoublyLinkedList *args = dll_create();
+    Expression *curr = app;
+
+    while (curr->tag == APP_EXPRESSION) {
+        dll_insert_at_head(args, dll_new_node(get_app_arg(curr)));
+        curr = get_app_func(curr);
+    }
+
+    if (n >= dll_len(args)) {
+        dll_destroy(args);
+        return NULL;
+    }
+
+    Expression *result = dll_at(args, n)->data;
+    dll_destroy(args);
+    return result;
+}
+
+static bool check_all_recursive_calls(Expression *body, Expression *rec_var,
+                                      Expression *decreasing_arg, int decreasing_idx) {
+    switch (body->tag) {
+        case VAR_EXPRESSION:
+        case TYPE_EXPRESSION:
+        case PROP_EXPRESSION:
+        case HOLE_EXPRESSION:
+            return true;
+
+        case APP_EXPRESSION: {
+            Expression *head = get_innermost_func(body);
+            if (congruence(head, rec_var)) {
+                Expression *actual_arg = get_nth_app_arg(body, decreasing_idx);
+                return term_structurally_smaller_than_arg(actual_arg, decreasing_arg);
+            }
+
+            // Recursively check subexpressions
+            return check_all_recursive_calls(get_app_func(body), rec_var, decreasing_arg,
+                                             decreasing_idx) &&
+                   check_all_recursive_calls(get_app_arg(body), rec_var, decreasing_arg,
+                                             decreasing_idx);
+        }
+
+        case LAMBDA_EXPRESSION:
+            return check_all_recursive_calls(get_lambda_body(body), rec_var, decreasing_arg,
+                                             decreasing_idx);
+
+        case FORALL_EXPRESSION:
+            return check_all_recursive_calls(get_forall_body(body), rec_var, decreasing_arg,
+                                             decreasing_idx);
+
+        case MATCH_EXPRESSION: {
+            if (!check_all_recursive_calls(body->as.match.scrutinee, rec_var, decreasing_arg,
+                                           decreasing_idx)) {
+                return false;
+            }
+
+            for (int i = 0; i < body->as.match.branch_count; i++) {
+                if (!check_all_recursive_calls(body->as.match.branches[i]->body, rec_var,
+                                               decreasing_arg, decreasing_idx)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        case FIX_EXPRESSION:
+            return check_all_recursive_calls(body->as.fix.body, rec_var, decreasing_arg,
+                                             decreasing_idx);
+
+        default:
+            return true;
+    }
+}
+
 Expression *init_fix_expression_wc(Expression *recursive_var, Expression **args, int arg_count,
                                    int decreasing_arg_index, Expression *body) {
     Context *gamma = get_expression_context(recursive_var);
@@ -515,6 +591,15 @@ Expression *init_fix_expression_wc(Expression *recursive_var, Expression **args,
     if (!valid_in_context(body, extended)) {
         fprintf(stderr, ERROR "Body is not valid in context.\n" CRESET);
         return NULL;
+    }
+
+    // Check all recursive calls satisfy structural recursion
+    if (decreasing_arg_index >= 0 && decreasing_arg_index < arg_count) {
+        Expression *decreasing_arg = args[decreasing_arg_index];
+        if (!check_all_recursive_calls(body, recursive_var, decreasing_arg, decreasing_arg_index)) {
+            fprintf(stderr, ERROR "Structural recursion check failed.\n" CRESET);
+            return NULL;
+        }
     }
 
     Expression *expr = _init_expression_base(/* tag */ FIX_EXPRESSION, /* context */ gamma,
@@ -631,6 +716,18 @@ Expression *get_lambda_bound_variable(Expression *expr) {
     }
 
     return expr->as.lambda.bound_variable;
+}
+
+int get_arity(Expression *expr) {
+    Expression *type = get_expression_type(expr);
+    int arity = 0;
+
+    while (type->tag == FORALL_EXPRESSION) {
+        arity++;
+        type = get_forall_body(type);
+    }
+
+    return arity;
 }
 
 Expression *get_forall_body(Expression *expr) {
@@ -815,7 +912,8 @@ void _match_and_subst(Expression *a, Expression *b, Map *mapping) {
                 MatchBranch *branch_b = b->as.match.branches[i];
                 _match_and_subst(branch_a->constructor, branch_b->constructor, mapping);
                 for (int j = 0; j < branch_a->pattern_var_count; j++) {
-                    map_set(mapping, branch_a->pattern_variables[j], branch_b->pattern_variables[j]);
+                    map_set(mapping, branch_a->pattern_variables[j],
+                            branch_b->pattern_variables[j]);
                 }
                 _match_and_subst(branch_a->body, branch_b->body, mapping);
             }
@@ -927,7 +1025,7 @@ bool _congruent_with_holes(Expression *a, Expression *b, Map *alpha_equivalences
                 MatchBranch *branch_a = a->as.match.branches[i];
                 MatchBranch *branch_b = b->as.match.branches[i];
                 if (!_congruent_with_holes(branch_a->constructor, branch_b->constructor,
-                                          alpha_equivalences, required_holes)) {
+                                           alpha_equivalences, required_holes)) {
                     return false;
                 }
                 if (branch_a->pattern_var_count != branch_b->pattern_var_count) {
@@ -935,10 +1033,10 @@ bool _congruent_with_holes(Expression *a, Expression *b, Map *alpha_equivalences
                 }
                 for (int j = 0; j < branch_a->pattern_var_count; j++) {
                     map_set(alpha_equivalences, branch_a->pattern_variables[j],
-                           branch_b->pattern_variables[j]);
+                            branch_b->pattern_variables[j]);
                 }
-                if (!_congruent_with_holes(branch_a->body, branch_b->body,
-                                          alpha_equivalences, required_holes)) {
+                if (!_congruent_with_holes(branch_a->body, branch_b->body, alpha_equivalences,
+                                           required_holes)) {
                     return false;
                 }
             }
@@ -955,8 +1053,8 @@ bool _congruent_with_holes(Expression *a, Expression *b, Map *alpha_equivalences
             for (int i = 0; i < a->as.fix.arg_count; i++) {
                 map_set(alpha_equivalences, a->as.fix.args[i], b->as.fix.args[i]);
             }
-            return _congruent_with_holes(a->as.fix.body, b->as.fix.body,
-                                        alpha_equivalences, required_holes);
+            return _congruent_with_holes(a->as.fix.body, b->as.fix.body, alpha_equivalences,
+                                         required_holes);
         }
         default:
             fprintf(stderr, ERROR "Unknown expression type in _congruent_with_holes.\n" CRESET);
@@ -1240,7 +1338,8 @@ bool _congruence2(Expression *a, Expression *b, Map *mapping) {
                         return false;
                     }
                     for (int j = 0; j < branch_a->pattern_var_count; j++) {
-                        map_set(mapping, branch_a->pattern_variables[j], branch_b->pattern_variables[j]);
+                        map_set(mapping, branch_a->pattern_variables[j],
+                                branch_b->pattern_variables[j]);
                     }
                     if (!_congruence2(branch_a->body, branch_b->body, mapping)) {
                         return false;
