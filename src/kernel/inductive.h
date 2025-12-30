@@ -25,6 +25,9 @@ bool register_inductive(Expression *inductive_var, Expression **constructors, in
 // Check if an expression is a registered inductive type
 bool is_inductive(Expression *expr);
 
+// Check if an expression is a constructor
+bool is_constructor(Expression *expr);
+
 // Get the constructors of an inductive type
 // Returns NULL if not an inductive type
 // Sets out_count to the number of constructors
@@ -37,5 +40,9 @@ Expression *get_eliminator(Expression *inductive_var);
 // Get the full inductive definition
 // Returns NULL if not an inductive type
 InductiveDefinition *get_inductive_definition(Expression *inductive_var);
+
+// Check if an expression is a constructor of the specified inductive type
+// Returns false if inductive_var is not a registered inductive type
+bool is_constructor_of(Expression *expr, Expression *inductive_var);
 
 #endif  // INDUCTIVE_H

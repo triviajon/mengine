@@ -397,6 +397,9 @@ Expression *get_forall_bound_variable(Expression *expr);
 
 Expression *get_lambda_bound_variable(Expression *expr);
 
+// Returns the arity of an expression.
+int get_arity(Expression *expr);
+
 Expression *get_forall_body(Expression *expr);
 
 Expression *get_lambda_body(Expression *expr);
