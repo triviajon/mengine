@@ -107,6 +107,31 @@ char *stringify_expression(Expression *expression) {
             break;
         }
 
+        case FIX_EXPRESSION: {
+            char *rec_var_str = stringify_expression(expression->as.fix.recursive_var);
+            result = str_concat("fix ", rec_var_str);
+            free(rec_var_str);
+
+            for (int i = 0; i < expression->as.fix.arg_count; i++) {
+                result = str_concat(result, " (");
+                char *arg_str = stringify_expression(expression->as.fix.args[i]);
+                result = str_concat(result, arg_str);
+                result = str_concat(result, ": ");
+                char *arg_type_str =
+                    stringify_expression(get_expression_type(expression->as.fix.args[i]));
+                result = str_concat(result, arg_type_str);
+                result = str_concat(result, ")");
+                free(arg_str);
+                free(arg_type_str);
+            }
+
+            result = str_concat(result, " := ");
+            char *body_str = stringify_expression(expression->as.fix.body);
+            result = str_concat(result, body_str);
+            free(body_str);
+            break;
+        }
+
         case TYPE_EXPRESSION:
             result = strdup("Type");
             break;

@@ -22,6 +22,7 @@ typedef enum {
     PROP_EXPRESSION,
     HOLE_EXPRESSION,
     MATCH_EXPRESSION,
+    FIX_EXPRESSION,
 } ExpressionType;
 
 // Represents a parent-child relationship between expressions.
@@ -39,6 +40,9 @@ typedef enum {
     MATCH_BRANCH_BODY,         // expr->as.match.branches[i]->body
     MATCH_BRANCH_PATTERN_VAR,  // expr->as.match.branches[i]->pattern_variables[j]
     MATCH_BRANCH_CONSTRUCTOR,  // expr->as.match.branches[i]->constructor
+    FIX_RECURSIVE_VAR,         // expr->as.fix.recursive_var
+    FIX_ARG,                   // expr->as.fix.args[i]
+    FIX_BODY,                  // expr->as.fix.body
 } Relation;
 
 /*
@@ -115,6 +119,15 @@ typedef struct {
     int branch_count;        // Number of branches
 } MatchExpression;
 
+// A fix expression: fix (x1: A1) (x2: A2) ... (xn: An) {struct xi} := body.
+typedef struct {
+    Expression *recursive_var;  // recursive_var : forall x1:A1, ..., xn:An, B
+    Expression **args;          // Arguments of the fix expression
+    int arg_count;              // Number of arguments
+    int decreasing_arg_index;   // Index of the argument that is structurally decreasing
+    Expression *body;           // The body of the fix expression
+} FixExpression;
+
 // Represents a generic expression.
 struct Expression {
     // Common fields
@@ -138,6 +151,7 @@ struct Expression {
         PropExpression prop_expr;
         HoleExpression hole;
         MatchExpression match;
+        FixExpression fix;
     } as;
 };
 
@@ -212,6 +226,41 @@ Uplink *new_uplink(void *ptr, Relation r);
 #define SET_MATCH_SCRUTINEE(expr, value)  \
     (expr)->as.match.scrutinee = (value); \
     add_to_parents((value), (expr), MATCH_SCRUTINEE)
+
+#define SET_MATCH_BRANCHES(expr, value)                                                        \
+    (expr)->as.match.branches = malloc((expr)->as.match.branch_count * sizeof(MatchBranch *)); \
+    (expr)->as.match.branch_count = (expr)->as.match.branch_count;                             \
+    (expr)->as.match.branches = (value);                                                       \
+    for (int __i = 0; __i < (expr)->as.match.branch_count; __i++) {                            \
+        MatchBranch *branch = (expr)->as.match.branches[__i];                                  \
+        (expr)->as.match.branches[__i] = branch;                                               \
+        add_to_parents(branch->constructor, (expr), MATCH_BRANCH_CONSTRUCTOR);                 \
+        add_to_parents(branch->body, (expr), MATCH_BRANCH_BODY);                               \
+        for (int __j = 0; __j < branch->pattern_var_count; __j++) {                            \
+            add_to_parents(branch->pattern_variables[__j], (expr), MATCH_BRANCH_PATTERN_VAR);  \
+        }                                                                                      \
+    }
+
+#define SET_FIX_RECURSIVE_VAR(expr, value)  \
+    (expr)->as.fix.recursive_var = (value); \
+    add_to_parents((value), (expr), FIX_RECURSIVE_VAR)
+
+#define SET_FIX_ARGS(expr, value)                                                  \
+    (expr)->as.fix.args = malloc((expr)->as.fix.arg_count * sizeof(Expression *)); \
+    (expr)->as.fix.arg_count = (expr)->as.fix.arg_count;                           \
+    (expr)->as.fix.args = (value);                                                 \
+    for (int __i = 0; __i < (expr)->as.fix.arg_count; __i++) {                     \
+        (expr)->as.fix.args[__i] = (value)[__i];                                   \
+        add_to_parents((value)[__i], (expr), FIX_ARG);                             \
+    }
+
+#define SET_FIX_ARG_COUNT(expr, value) (expr)->as.fix.arg_count = (value);
+
+#define SET_FIX_DECREASING_ARG_INDEX(expr, value) (expr)->as.fix.decreasing_arg_index = (value);
+
+#define SET_FIX_BODY(expr, value)  \
+    (expr)->as.fix.body = (value); \
+    add_to_parents((value), (expr), FIX_BODY)
 
 // Todo: We should consider adding context arguments to these functions?
 
@@ -295,6 +344,18 @@ Expression *init_arrow_expression_wc(Expression *lhs, Expression *rhs, Context *
 //    gamma |- match scrutinee with branches end : T
 Expression *init_match_expression_wc(Expression *scrutinee, MatchBranch **branches,
                                      int branch_count, Context *context);
+
+// Create a new fix expression with a given arguments, struct argument, and body.
+// Typing rule:
+//    gamma, recursive_var : forall x1:A1, ..., xn:An, B, x1:A1, ..., xn:An |- body : T
+// ------------------------------------------------
+//    gamma |- fix recursive_var (arg1: A1) (arg2: A2) ... (argn: An) {arg_decreasing} := body : T
+// Where gamma is the context which recursive_var is well-typed in.
+//
+// Additionally: all recursive calls recursive_var u1 ... un satisfy: u_decreasing_arg_index is
+// structurally smaller than args[decreasing_arg_index].
+Expression *init_fix_expression_wc(Expression *recursive_var, Expression **args, int arg_count,
+                                   int decreasing_arg_index, Expression *body);
 
 // Returns the uplinks of an expression.
 DoublyLinkedList *get_expression_uplinks(Expression *expression);
