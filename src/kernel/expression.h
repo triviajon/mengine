@@ -384,6 +384,9 @@ Expression *get_innermost_func(Expression *expression);
 // Returns the name of a variable expression.
 char *get_var_name(Expression *expr);
 
+// Returns the body of a variable expression.
+Expression *get_var_body(Expression *expr);
+
 // Returns the name of a hole expression.
 char *get_hole_name(Expression *expr);
 

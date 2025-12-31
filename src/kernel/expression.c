@@ -742,6 +742,14 @@ char *get_var_name(Expression *expr) {
     return expr->as.var.name;
 }
 
+Expression *get_var_body(Expression *expr) {
+    if (expr->tag != VAR_EXPRESSION) {
+        return NULL;
+    }
+
+    return expr->as.var.body;
+}
+
 char *get_hole_name(Expression *expr) {
     if (expr->tag != HOLE_EXPRESSION) {
         return NULL;
