@@ -6,6 +6,7 @@
 
 #include "src/common/lexer.h"
 #include "src/common/parser_base.h"
+#include "src/metalanguage/parser.h"
 
 char *decl_keyword_to_string(DeclKeyword kw) {
     switch (kw) {
@@ -215,6 +216,68 @@ StmtKeyword command_parse_statement_keyword(Parser *p) {
     // Unreachable, but avoids compiler warning.
     // TODO: refactor error handling
     return STMT_KW_LEMMA;
+}
+
+Command *command_parse_fixpoint(Parser *p) {
+    if (!parser_expect_consume(p, TOK_FIXPOINT)) {
+        parser_error(p, "expected 'Fixpoint'");
+    }
+
+    if (!parser_expect_no_consume(p, TOK_IDENT)) {
+        parser_error(p, "expected identifier after 'Fixpoint'");
+    }
+
+    Token *ident_token = parser_next(p);
+    char *name = strdup(ident_token->lexeme);
+    lexer_free_token(ident_token);
+
+    Binder **binders = NULL;
+    size_t binder_count = 0;
+
+    while (parser_expect_consume(p, TOK_LPAREN)) {
+        Binder *b = parse_binder(p);
+
+        if (!parser_expect_consume(p, TOK_RPAREN)) {
+            parser_error(p, "expected ')' after binder");
+        }
+
+        binders = realloc(binders, sizeof(Binder *) * (binder_count + 1));
+        if (!binders) {
+            parser_error(p, "Memory allocation failed for binders");
+        }
+        binders[binder_count] = b;
+        binder_count++;
+    }
+
+    char *decreasing_arg_name = parse_decreasing_arg_annotation(p);
+
+    if (!parser_expect_consume(p, TOK_COLON)) {
+        parser_error(p, "expected ':' after decreasing arg annotation");
+    }
+
+    AST *return_type = parse_term(p);
+    debug_print_ast(p, return_type);
+
+    if (!parser_expect_consume(p, TOK_COLON_EQ)) {
+        parser_error(p, "expected ':=' after return type");
+    }
+
+    AST *body = parse_term(p);
+    debug_print_ast(p, body);
+
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "expected '.' after fixpoint definition");
+    }
+
+    Command *cmd = malloc(sizeof(Command));
+    cmd->tag = CMD_FIXPOINT;
+    cmd->as.fixpoint.name = name;
+    cmd->as.fixpoint.binders = binders;
+    cmd->as.fixpoint.binder_count = binder_count;
+    cmd->as.fixpoint.decreasing_arg_name = decreasing_arg_name;
+    cmd->as.fixpoint.return_type = return_type;
+    cmd->as.fixpoint.body = body;
+    return cmd;
 }
 
 Command *command_parse_check(Parser *p) {

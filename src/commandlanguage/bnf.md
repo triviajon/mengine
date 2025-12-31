@@ -5,7 +5,7 @@ Similar to Rocq's Vernacular:
             | <definition>
             | <statement>
             | <inductive>
-       <!-- | <fixpoint> -->
+            | <fixpoint>
             | <check>
             | <print>
             | <show>
@@ -28,6 +28,10 @@ Similar to Rocq's Vernacular:
 
 <constructor> ::= "|" <identifier> ":" <term>
 
+<fixpoint> ::= "Fixpoint" <identifier> { "(" <binder> ")" } <decreasing_arg_annotation>
+                ":" <term>
+                ":=" <term> "."
+
 <check> ::= "Check" <term> "."
 
 <print> ::= "Print" <identifer> "."
@@ -36,6 +40,7 @@ Similar to Rocq's Vernacular:
 <show_keyword> ::= "Context" | "Proof" | "Goal" | "State"
 
 <!-- The following are defined in src/metalanguage/bnf.md -->
+<decreasing_arg_annotation> ::= ...
 <binder> ::= ...
 <identifier> ::= ...
 <term> ::= ...
