@@ -22,7 +22,9 @@ Definition is_zero : forall (_: nat), nat :=
     | S m => O
     end.
 
-Check fix add (n : nat) (m : nat) {struct n} : nat := match n with | O => m | S n' => S (add n' m) end.
+Fixpoint add (n : nat) (m : nat) {struct n} : nat := match n with | O => m | S n' => S (add n' m) end.
+
+Print add.
 
 Inductive bool : Type := | true : bool | false : bool.
 

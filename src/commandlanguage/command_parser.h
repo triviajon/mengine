@@ -11,6 +11,7 @@ typedef enum {
     CMD_CHECK,
     CMD_PRINT,
     CMD_INDUCTIVE,
+    CMD_FIXPOINT,
     CMD_SHOW
 } CommandTag;
 
@@ -77,6 +78,15 @@ typedef struct {
     size_t constructor_count;
 } InductiveCmd;
 
+typedef struct {
+    char *name;
+    Binder **binders;
+    size_t binder_count;
+    char *decreasing_arg_name;
+    AST *return_type;
+    AST *body;
+} FixpointCmd;
+
 typedef struct Command {
     CommandTag tag;
     union {
@@ -87,6 +97,7 @@ typedef struct Command {
         DefinitionCmd defn;
         StatementCmd stmt;
         InductiveCmd inductive;
+        FixpointCmd fixpoint;
     } as;
 } Command;
 
@@ -150,6 +161,16 @@ Command *command_parse_statement(Parser *p);
 StmtKeyword command_parse_statement_keyword(Parser *p);
 
 /**
+ * <fixpoint> ::= "Fixpoint" <identifier> { "(" <binder> ")" } <decreasing_arg_annotation>
+ *                ":" <term>
+ *                ":=" <term> "."
+ *
+ * @param p Pointer to the Parser.
+ * @return Command structure representing the parsed fixpoint command.
+ */
+Command *command_parse_fixpoint(Parser *p);
+
+/**
  * <check> ::= "Check" <term> "."
  *
  * @param p Pointer to the Parser.
@@ -206,15 +227,12 @@ typedef struct {
     CommandParseFunc parse_func;
 } CommandDispatchEntry;
 
-static CommandDispatchEntry command_dispatch_table[] = {{TOK_AXIOM, command_parse_declaration},
-                                                        {TOK_VARIABLE, command_parse_declaration},
-                                                        {TOK_DEFINITION, command_parse_definition},
-                                                        {TOK_THEOREM, command_parse_statement},
-                                                        {TOK_LEMMA, command_parse_statement},
-                                                        {TOK_CHECK, command_parse_check},
-                                                        {TOK_PRINT, command_parse_print},
-                                                        {TOK_INDUCTIVE, command_parse_inductive},
-                                                        {TOK_SHOW, command_parse_show}};
+static CommandDispatchEntry command_dispatch_table[] = {
+    {TOK_AXIOM, command_parse_declaration},     {TOK_VARIABLE, command_parse_declaration},
+    {TOK_DEFINITION, command_parse_definition}, {TOK_THEOREM, command_parse_statement},
+    {TOK_LEMMA, command_parse_statement},       {TOK_CHECK, command_parse_check},
+    {TOK_PRINT, command_parse_print},           {TOK_INDUCTIVE, command_parse_inductive},
+    {TOK_FIXPOINT, command_parse_fixpoint},     {TOK_SHOW, command_parse_show}};
 
 #define CMD_DISPATCH_TABLE (command_dispatch_table)
 #define CMD_DISPATCH_TABLE_SIZE (sizeof(command_dispatch_table) / sizeof(command_dispatch_table[0]))

@@ -89,6 +89,10 @@ static void debug_print_token(Lexer *lx, Token *t) {
             break;
         case TOK_PRINT:
             name = "PRINT";
+            break;
+        case TOK_FIXPOINT:
+            name = "FIXPOINT";
+            break;
         case TOK_SHOW:
             name = "SHOW";
             break;

@@ -676,6 +676,43 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
     return 0;
 }
 
+static int _handle_fixpoint_command(MEngineRuntime *rt, FixpointCmd *fix_cmd) {
+    if (!rt || !fix_cmd) {
+        return 1;
+    }
+
+    // Convert the fixpoint AST to a fix expression
+    AST *fix_ast = malloc(sizeof(AST));
+    fix_ast->tag = AST_FIX;
+    fix_ast->value.fix.name = fix_cmd->name;
+    fix_ast->value.fix.binders = fix_cmd->binders;
+    fix_ast->value.fix.binder_count = fix_cmd->binder_count;
+    fix_ast->value.fix.decreasing_arg_name = fix_cmd->decreasing_arg_name;
+    fix_ast->value.fix.return_type = fix_cmd->return_type;
+    fix_ast->value.fix.body = fix_cmd->body;
+
+    Expression *fix_expr = ast_to_expression(fix_ast, rt->ctx);
+    free(fix_ast);
+
+    if (!fix_expr) {
+        fprintf(stderr, ERROR "Failed to convert fixpoint '%s' to expression.\n" CRESET,
+                fix_cmd->name);
+        return 1;
+    }
+
+    Expression *fixpoint_var = init_var_expression_wc_with_body(fix_cmd->name, fix_expr, rt->ctx);
+    if (!fixpoint_var) {
+        fprintf(stderr, ERROR "Failed to create fixpoint variable '%s'.\n" CRESET, fix_cmd->name);
+        return 1;
+    }
+
+    rt->ctx = fixpoint_var;
+
+    fprintf(stdout, UI "Fixpoint " CRESET "%s : %s defined.\n", fix_cmd->name,
+            stringify_expression(get_expression_type(fixpoint_var)));
+    return 0;
+}
+
 static int _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
     if (!rt || !show_cmd) {
         return 1;
@@ -812,6 +849,9 @@ int mengine_execute_command(MEngineRuntime *rt, Command *cmd) {
         }
         case CMD_INDUCTIVE: {
             return _handle_inductive_command(rt, &cmd->as.inductive);
+        }
+        case CMD_FIXPOINT: {
+            return _handle_fixpoint_command(rt, &cmd->as.fixpoint);
         }
         case CMD_SHOW: {
             return _handle_show_command(rt, &cmd->as.show);

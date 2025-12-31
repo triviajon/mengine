@@ -39,6 +39,7 @@ typedef enum {
     TOK_DEFINITION,  // Definition
     TOK_THEOREM,     // Theorem
     TOK_LEMMA,       // Lemma
+    TOK_FIXPOINT,    // Fixpoint
     TOK_CHECK,       // Check
     TOK_PRINT,       // Print
     TOK_SHOW,        // Show
@@ -106,6 +107,7 @@ static const Keyword keywords[] = {
         KEYWORD("Definition", TOK_DEFINITION)
         KEYWORD("Theorem", TOK_THEOREM)
         KEYWORD("Lemma", TOK_LEMMA)
+        KEYWORD("Fixpoint", TOK_FIXPOINT)
         KEYWORD("Check", TOK_CHECK)
         KEYWORD("Print", TOK_PRINT)
         KEYWORD("Show", TOK_SHOW)
