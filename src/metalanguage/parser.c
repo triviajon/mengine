@@ -72,6 +72,25 @@ void fprint_ast(FILE *stream, AST *ast) {
             fprintf(stream, ")");
             return;
 
+        case AST_FIX:
+            fprintf(stream, "FIX(%s, binders=%zu, struct=%s, return_type=", ast->value.fix.name,
+                    ast->value.fix.binder_count, ast->value.fix.decreasing_arg_name);
+            fprint_ast(stream, ast->value.fix.return_type);
+            fprintf(stream, ", body=");
+            fprint_ast(stream, ast->value.fix.body);
+            fprintf(stream, ")");
+            return;
+
+        case AST_LET:
+            fprintf(stream, "LET(%s : ", ast->value.let.name);
+            fprint_ast(stream, ast->value.let.type);
+            fprintf(stream, " := ");
+            fprint_ast(stream, ast->value.let.value);
+            fprintf(stream, " in ");
+            fprint_ast(stream, ast->value.let.body);
+            fprintf(stream, ")");
+            return;
+
         default:
             fprintf(stream, "UNKNOWN");
             return;
@@ -108,6 +127,9 @@ AST *parse_prefix_term(Parser *p) {
     if (parser_expect_no_consume(p, TOK_LET)) {
         return parse_let(p);
     }
+    if (parser_expect_no_consume(p, TOK_FIX)) {
+        return parse_fix(p);
+    }
     return parse_application(p);
 }
 
@@ -120,7 +142,7 @@ AST *parse_lambda(Parser *p) {
         parser_error(p, "Expected '(' after 'fun'");
     }
 
-    Binder binder = parse_binder(p);
+    Binder *binder = parse_binder(p);
 
     if (!parser_expect_consume(p, TOK_RPAREN)) {
         parser_error(p, "Expected ')' after lambda binder");
@@ -134,8 +156,10 @@ AST *parse_lambda(Parser *p) {
 
     AST *lambda_ast = malloc(sizeof(AST));
     lambda_ast->tag = AST_LAMBDA;
-    lambda_ast->value.lambda.binder = binder;
+    lambda_ast->value.lambda.binder = *binder;
     lambda_ast->value.lambda.body = body;
+
+    free(binder);
 
     return lambda_ast;
 }
@@ -149,7 +173,7 @@ AST *parse_forall(Parser *p) {
         parser_error(p, "Expected '(' after 'forall'");
     }
 
-    Binder binder = parse_binder(p);
+    Binder *binder = parse_binder(p);
 
     if (!parser_expect_consume(p, TOK_RPAREN)) {
         parser_error(p, "Expected ')' after forall binder");
@@ -163,13 +187,89 @@ AST *parse_forall(Parser *p) {
 
     AST *forall_ast = malloc(sizeof(AST));
     forall_ast->tag = AST_FORALL;
-    forall_ast->value.forall.binder = binder;
+    forall_ast->value.forall.binder = *binder;
     forall_ast->value.forall.body = body;
+
+    free(binder);
 
     return forall_ast;
 }
 
-Binder parse_binder(Parser *p) {
+AST *parse_fix(Parser *p) {
+    if (!parser_expect_consume(p, TOK_FIX)) {
+        parser_error(p, "Expected 'fix' at start of fix expression");
+    }
+
+    if (!parser_expect_no_consume(p, TOK_IDENT)) {
+        parser_error(p, "Expected identifier in fix expression");
+    }
+
+    Token *ident_token = parser_next(p);
+
+    Binder **binders = NULL;
+    size_t binder_count = 0;
+    while (parser_expect_consume(p, TOK_LPAREN)) {
+        Binder *binder = parse_binder(p);
+        if (!parser_expect_consume(p, TOK_RPAREN)) {
+            parser_error(p, "Expected ')' after binder");
+        }
+        binders = realloc(binders, sizeof(Binder *) * (binder_count + 1));
+        if (!binders) {
+            parser_error(p, "Memory allocation failed for binders");
+        }
+        binders[binder_count++] = binder;
+    }
+
+    char *decreasing_arg_name = parse_decreasing_arg_annotation(p);
+
+    if (!parser_expect_consume(p, TOK_COLON)) {
+        parser_error(p, "Expected ':' after decreasing arg annotation");
+    }
+
+    AST *return_type = parse_term(p);
+    debug_print_ast(p, return_type);
+
+    if (!parser_expect_consume(p, TOK_COLON_EQ)) {
+        parser_error(p, "Expected ':=' after return type");
+    }
+
+    AST *body = parse_term(p);
+    debug_print_ast(p, body);
+
+    AST *fix_ast = malloc(sizeof(AST));
+    fix_ast->tag = AST_FIX;
+    fix_ast->value.fix.name = strdup(ident_token->lexeme);
+    fix_ast->value.fix.binders = binders;
+    fix_ast->value.fix.binder_count = binder_count;
+    fix_ast->value.fix.decreasing_arg_name = decreasing_arg_name;
+    fix_ast->value.fix.return_type = return_type;
+    fix_ast->value.fix.body = body;
+    return fix_ast;
+}
+
+char *parse_decreasing_arg_annotation(Parser *p) {
+    if (!parser_expect_consume(p, TOK_LBRACE)) {
+        parser_error(p, "Expected '{' at start of decreasing arg annotation");
+    }
+
+    if (!parser_expect_consume(p, TOK_STRUCT)) {
+        parser_error(p, "Expected 'struct' at start of decreasing arg annotation");
+    }
+
+    if (!parser_expect_no_consume(p, TOK_IDENT)) {
+        parser_error(p, "Expected identifier in decreasing arg annotation");
+    }
+    Token *ident_token = parser_next(p);
+
+    if (!parser_expect_consume(p, TOK_RBRACE)) {
+        parser_error(p, "Expected '}' after decreasing arg annotation");
+    }
+    char *decreasing_arg_name = strdup(ident_token->lexeme);
+    lexer_free_token(ident_token);
+    return decreasing_arg_name;
+}
+
+Binder *parse_binder(Parser *p) {
     if (!parser_expect_no_consume(p, TOK_IDENT)) {
         parser_error(p, "Expected identifier in binder");
     }
@@ -182,13 +282,13 @@ Binder parse_binder(Parser *p) {
     AST *type = parse_term(p);
     debug_print_ast(p, type);
 
-    Binder binder;
-    binder.name = strdup(ident_token->lexeme);
-    if (!binder.name) {
+    Binder *binder = malloc(sizeof(Binder));
+    binder->name = strdup(ident_token->lexeme);
+    if (!binder->name) {
         parser_error(p, "Memory allocation failed for binder name");
     }
     lexer_free_token(ident_token);
-    binder.type = type;
+    binder->type = type;
 
     return binder;
 }

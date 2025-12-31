@@ -110,7 +110,11 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
                     rc = 1;
                     break;
                 }
-                mengine_execute_command(rt, cmd);
+                rc = mengine_execute_command(rt, cmd);
+                if (rc != 0) {
+                    fprintf(stderr, ERROR "Command execution error.\n" CRESET);
+                    break;
+                }
                 // TODO: free Command
                 break;
             }
@@ -128,7 +132,11 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
                         rc = 1;
                         break;
                     }
-                    mengine_execute_command(rt, cmd);
+                    rc = mengine_execute_command(rt, cmd);
+                    if (rc != 0) {
+                        fprintf(stderr, ERROR "Command execution error.\n" CRESET);
+                        break;
+                    }
                     // TODO: free Command
                     break;
                 }
@@ -140,7 +148,11 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
                     rc = 1;
                     break;
                 }
-                mengine_execute_tactic(rt, tactic);
+                rc = mengine_execute_tactic(rt, tactic);
+                if (rc != 0) {
+                    fprintf(stderr, ERROR "Tactic execution error.\n" CRESET);
+                    break;
+                }
                 // TODO: free Tactic
                 break;
             }

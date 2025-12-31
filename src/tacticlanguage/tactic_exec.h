@@ -12,7 +12,8 @@
  *
  * @param rt Pointer to the runtime. Must not be NULL.
  * @param tac Pointer to the Tactic to execute. Must not be NULL.
+ * @return 0 on success, non-zero on error.
  */
-void mengine_execute_tactic(MEngineRuntime *rt, Tactic *tac);
+int mengine_execute_tactic(MEngineRuntime *rt, Tactic *tac);
 
 #endif  // TACTIC_EXEC_H

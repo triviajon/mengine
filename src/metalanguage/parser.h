@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 
-#include "src/common/lexer.h"
 #include "src/common/parser_base.h"
 
 // Forward declaration of the AST.
@@ -27,6 +26,7 @@ typedef enum {
     AST_LAMBDA,
     AST_FORALL,
     AST_LET,
+    AST_FIX,
     AST_MATCHBRANCH,
     AST_MATCH,
     AST_APP
@@ -58,6 +58,15 @@ typedef struct {
 } LetAST;
 
 typedef struct {
+    char *name;
+    Binder **binders;
+    size_t binder_count;
+    char *decreasing_arg_name;
+    AST *return_type;
+    AST *body;
+} FixAST;
+
+typedef struct {
     Pattern *pattern;
     AST *body;
 } MatchBranchAST;
@@ -84,6 +93,7 @@ struct AST {
         AppAST app;
         MatchBranchAST matchbranch;
         MatchAST match;
+        FixAST fix;
     } value;
 };
 
@@ -128,12 +138,28 @@ AST *parse_lambda(Parser *p);
 AST *parse_forall(Parser *p);
 
 /**
+ * <fix_expr> ::= "fix" <identifier> { "(" <binder> ")" } <decreasing_arg_annotation> ":" <term> ":=" <term>
+ *
+ * @param p Pointer to the Parser.
+ * @return AST node representing the parsed fix expression.
+ */
+AST *parse_fix(Parser *p);
+
+/**
+ * <decreasing_arg_annotation> ::= "{" "struct" <identifier> "}"
+ *
+ * @param p Pointer to the Parser.
+ * @return Name of the decreasing argument.
+ */
+char *parse_decreasing_arg_annotation(Parser *p);
+
+/**
  * <binder> ::= <ident> ":" <term>
  *
  * @param p Pointer to the Parser.
- * @return Binder structure containing identifier and type.
+ * @return Pointer to a Binder structure containing identifier and type.
  */
-Binder parse_binder(Parser *p);
+Binder *parse_binder(Parser *p);
 
 /**
  * <let_expr>     ::= "let" <ident> ":" <term> ":=" <term> "in" <term>
