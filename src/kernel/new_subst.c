@@ -56,8 +56,8 @@ Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a
             Expression *new_app_func = _subst(context, app_func, x, a);
             Expression *new_app_arg = _subst(context, app_arg, x, a);
 
-            if (forms_redex(new_app_func, new_app_arg)) {
-                return reduce(new_app_func, new_app_arg);
+            if (forms_beta_redex(new_app_func, new_app_arg)) {
+                return beta_reduce(context, new_app_func, new_app_arg);
             }
 
             return init_app_expression_wc(new_app_func, new_app_arg, context);
@@ -115,7 +115,8 @@ Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a
                 branch_prime->pattern_var_count = branch->pattern_var_count;
 
                 // Create new pattern variables with substituted types
-                branch_prime->pattern_variables = malloc(branch->pattern_var_count * sizeof(Expression *));
+                branch_prime->pattern_variables =
+                    malloc(branch->pattern_var_count * sizeof(Expression *));
 
                 DoublyLinkedList *old_exprs = dll_create();
                 DoublyLinkedList *new_exprs = dll_create();
@@ -126,8 +127,10 @@ Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a
                 for (int j = 0; j < branch->pattern_var_count; j++) {
                     Expression *old_var = branch->pattern_variables[j];
                     Expression *old_var_type = get_expression_type(old_var);
-                    Expression *new_var_type = new_p_subst(extended_context, old_var_type, old_exprs, new_exprs);
-                    Expression *new_var = init_var_expression_wc(get_var_name(old_var), new_var_type, extended_context);
+                    Expression *new_var_type =
+                        new_p_subst(extended_context, old_var_type, old_exprs, new_exprs);
+                    Expression *new_var = init_var_expression_wc(get_var_name(old_var),
+                                                                 new_var_type, extended_context);
 
                     branch_prime->pattern_variables[j] = new_var;
 
@@ -137,7 +140,8 @@ Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a
                 }
 
                 // Substitute in branch body
-                branch_prime->body = new_p_subst(extended_context, branch->body, old_exprs, new_exprs);
+                branch_prime->body =
+                    new_p_subst(extended_context, branch->body, old_exprs, new_exprs);
 
                 dll_destroy(old_exprs);
                 dll_destroy(new_exprs);
@@ -151,7 +155,8 @@ Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a
             Expression *rec_var = t->as.fix.recursive_var;
             Expression *rec_var_type = get_expression_type(rec_var);
             Expression *rec_var_type_prime = _subst(context, rec_var_type, x, a);
-            Expression *rec_var_prime = init_var_expression_wc(get_var_name(rec_var), rec_var_type_prime, context);
+            Expression *rec_var_prime =
+                init_var_expression_wc(get_var_name(rec_var), rec_var_type_prime, context);
 
             // Create new args with substituted types
             Expression **args_prime = malloc(t->as.fix.arg_count * sizeof(Expression *));
@@ -167,8 +172,10 @@ Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a
             for (int i = 0; i < t->as.fix.arg_count; i++) {
                 Expression *old_arg = t->as.fix.args[i];
                 Expression *old_arg_type = get_expression_type(old_arg);
-                Expression *new_arg_type = new_p_subst(extended_context, old_arg_type, old_exprs, new_exprs);
-                Expression *new_arg = init_var_expression_wc(get_var_name(old_arg), new_arg_type, extended_context);
+                Expression *new_arg_type =
+                    new_p_subst(extended_context, old_arg_type, old_exprs, new_exprs);
+                Expression *new_arg =
+                    init_var_expression_wc(get_var_name(old_arg), new_arg_type, extended_context);
 
                 args_prime[i] = new_arg;
 
@@ -178,13 +185,14 @@ Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a
             }
 
             // Substitute in body
-            Expression *body_prime = new_p_subst(extended_context, t->as.fix.body, old_exprs, new_exprs);
+            Expression *body_prime =
+                new_p_subst(extended_context, t->as.fix.body, old_exprs, new_exprs);
 
             dll_destroy(old_exprs);
             dll_destroy(new_exprs);
 
             return init_fix_expression_wc(rec_var_prime, args_prime, t->as.fix.arg_count,
-                                         t->as.fix.decreasing_arg_index, body_prime);
+                                          t->as.fix.decreasing_arg_index, body_prime);
         }
         default:
             return t;
@@ -248,8 +256,8 @@ Expression *_p_subst(Context *context, Expression *t, DoublyLinkedList *old_expr
             Expression *new_app_func = _p_subst(context, app_func, old_exprs, new_exprs);
             Expression *new_app_arg = _p_subst(context, app_arg, old_exprs, new_exprs);
 
-            if (forms_redex(new_app_func, new_app_arg)) {
-                return reduce(new_app_func, new_app_arg);
+            if (forms_beta_redex(new_app_func, new_app_arg)) {
+                return beta_reduce(context, new_app_func, new_app_arg);
             }
 
             return init_app_expression_wc(new_app_func, new_app_arg, context);
@@ -294,7 +302,8 @@ Expression *_p_subst(Context *context, Expression *t, DoublyLinkedList *old_expr
                 MatchBranch *branch_prime = malloc(sizeof(MatchBranch));
 
                 // Substitute constructor
-                branch_prime->constructor = _p_subst(context, branch->constructor, old_exprs, new_exprs);
+                branch_prime->constructor =
+                    _p_subst(context, branch->constructor, old_exprs, new_exprs);
                 branch_prime->pattern_var_count = branch->pattern_var_count;
 
                 // Create new pattern variables with substituted types
@@ -304,7 +313,8 @@ Expression *_p_subst(Context *context, Expression *t, DoublyLinkedList *old_expr
                 for (int j = 0; j < branch->pattern_var_count; j++) {
                     Expression *old_var = branch->pattern_variables[j];
                     Expression *old_var_type = get_expression_type(old_var);
-                    Expression *new_var_type = _p_subst(context, old_var_type, old_exprs, new_exprs);
+                    Expression *new_var_type =
+                        _p_subst(context, old_var_type, old_exprs, new_exprs);
                     Expression *new_var =
                         init_var_expression_wc(get_var_name(old_var), new_var_type, context);
 
