@@ -118,9 +118,9 @@ DeclKeyword command_parse_declaration_keyword(Parser *p);
  * <assumption> ::= <binder>
  *
  * @param p Pointer to the Parser.
- * @return Binder structure representing the parsed assumption.
+ * @return Pointer to a Binder structure representing the parsed assumption.
  */
-Binder command_parse_assumption(Parser *p);
+Binder *command_parse_assumption(Parser *p);
 
 /**
  * <definition> ::= "Definition" <identifier> { "(" <binder> ")" }

@@ -218,20 +218,20 @@ bool _mengine_dispatch_tactic(MEngineRuntime *rt, Tactic *tac) {
     return false;
 }
 
-void mengine_execute_tactic(MEngineRuntime *rt, Tactic *tac) {
+int mengine_execute_tactic(MEngineRuntime *rt, Tactic *tac) {
     if (!rt || !rt->proof_state || !tac) {
-        return;
+        return 1;
     }
 
     bool success = _mengine_dispatch_tactic(rt, tac);
 
     // Only proceed if the tactic succeeded
     if (!success) {
-        return;
+        return 1;
     }
 
     if (tac->tag == TACTIC_ADMITTED) {
-        return;
+        return 0;
     }
 
     // Each tactic handler will take care of adding new goals. We just need to
@@ -245,4 +245,5 @@ void mengine_execute_tactic(MEngineRuntime *rt, Tactic *tac) {
 
         mengine_runtime_command_mode(rt);
     }
+    return 0;
 }

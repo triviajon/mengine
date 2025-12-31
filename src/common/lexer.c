@@ -24,6 +24,12 @@ static void debug_print_token(Lexer *lx, Token *t) {
         case TOK_RPAREN:
             name = "RPAREN";
             break;
+        case TOK_LBRACE:
+            name = "LBRACE";
+            break;
+        case TOK_RBRACE:
+            name = "RBRACE";
+            break;
         case TOK_COLON:
             name = "COLON";
             break;
@@ -255,6 +261,14 @@ Token *lexer_next_token(Lexer *lx) {
         }
         case ')': {
             token = make_token(TOK_RPAREN, lx->pos - 1, NULL);
+            break;
+        }
+        case '{': {
+            token = make_token(TOK_LBRACE, lx->pos - 1, NULL);
+            break;
+        }
+        case '}': {
+            token = make_token(TOK_RBRACE, lx->pos - 1, NULL);
             break;
         }
         case ':': {

@@ -11,6 +11,8 @@ typedef enum {
     TOK_IDENT,
     TOK_LPAREN,    // (
     TOK_RPAREN,    // )
+    TOK_LBRACE,    // {
+    TOK_RBRACE,    // }
     TOK_COLON,     // :
     TOK_COLON_EQ,  // :=
     TOK_COMMA,     // ,
@@ -22,6 +24,8 @@ typedef enum {
     TOK_FORALL,  // forall
     TOK_TYPE,    // Type
     TOK_PROP,    // Prop
+    TOK_FIX,     // fix
+    TOK_STRUCT,  // struct
     TOK_LET,     // let
     TOK_IN,      // in
     TOK_MATCH,   // match
@@ -90,6 +94,8 @@ static const Keyword keywords[] = {
         KEYWORD("forall", TOK_FORALL)
         KEYWORD("Type", TOK_TYPE)
         KEYWORD("Prop", TOK_PROP)
+        KEYWORD("fix", TOK_FIX)
+        KEYWORD("struct", TOK_STRUCT)
         KEYWORD("let", TOK_LET)
         KEYWORD("in", TOK_IN)
         KEYWORD("match", TOK_MATCH)

@@ -125,6 +125,19 @@ char *stringify_expression(Expression *expression) {
                 free(arg_type_str);
             }
 
+            result = str_concat(result, " {struct ");
+            char *decreasing_arg_str = stringify_expression(
+                expression->as.fix.args[expression->as.fix.decreasing_arg_index]);
+            result = str_concat(result, decreasing_arg_str);
+            result = str_concat(result, "}");
+            free(decreasing_arg_str);
+
+            result = str_concat(result, " : ");
+            char *return_type_str =
+                stringify_expression(get_expression_type(expression->as.fix.body));
+            result = str_concat(result, return_type_str);
+            free(return_type_str);
+
             result = str_concat(result, " := ");
             char *body_str = stringify_expression(expression->as.fix.body);
             result = str_concat(result, body_str);

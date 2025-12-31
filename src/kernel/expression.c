@@ -490,6 +490,7 @@ Expression *init_match_expression_wc(Expression *scrutinee, MatchBranch **branch
         /* type */ match_type,
         /* maybe_hole_free */ get_maybe_hole_free(scrutinee));
 
+    expr->as.match.branch_count = branch_count;  // Set branch_count BEFORE calling macros
     SET_MATCH_SCRUTINEE(expr, scrutinee);
     SET_MATCH_BRANCHES(expr, branches);
 
@@ -516,8 +517,24 @@ Expression *get_nth_app_arg(Expression *app, int n) {
     return result;
 }
 
+// Map from pattern variables to their scrutinee
+// Records: "pattern_var is directly structurally smaller than scrutinee"
+static bool check_all_recursive_calls_with_context(Expression *body, Expression *rec_var,
+                                                   Expression *decreasing_arg, int decreasing_idx,
+                                                   Map *pattern_to_scrutinee);
+
 static bool check_all_recursive_calls(Expression *body, Expression *rec_var,
                                       Expression *decreasing_arg, int decreasing_idx) {
+    Map *empty_map = map_new();
+    bool result = check_all_recursive_calls_with_context(body, rec_var, decreasing_arg,
+                                                         decreasing_idx, empty_map);
+    map_free(empty_map);
+    return result;
+}
+
+static bool check_all_recursive_calls_with_context(Expression *body, Expression *rec_var,
+                                                   Expression *decreasing_arg, int decreasing_idx,
+                                                   Map *pattern_to_scrutinee) {
     switch (body->tag) {
         case VAR_EXPRESSION:
         case TYPE_EXPRESSION:
@@ -529,33 +546,75 @@ static bool check_all_recursive_calls(Expression *body, Expression *rec_var,
             Expression *head = get_innermost_func(body);
             if (congruence(head, rec_var)) {
                 Expression *actual_arg = get_nth_app_arg(body, decreasing_idx);
+
+                // Check if actual_arg is a pattern variable
+                Expression *scrutinee_of_pattern = map_get(pattern_to_scrutinee, actual_arg);
+                if (scrutinee_of_pattern) {
+                    // actual_arg is directly structurally smaller than scrutinee_of_pattern
+                    // Check if scrutinee_of_pattern is the decreasing_arg or smaller
+                    if (congruence(scrutinee_of_pattern, decreasing_arg)) {
+                        return true;
+                    }
+                    return term_structurally_smaller_than_arg(scrutinee_of_pattern, decreasing_arg);
+                }
+
                 return term_structurally_smaller_than_arg(actual_arg, decreasing_arg);
             }
 
             // Recursively check subexpressions
-            return check_all_recursive_calls(get_app_func(body), rec_var, decreasing_arg,
-                                             decreasing_idx) &&
-                   check_all_recursive_calls(get_app_arg(body), rec_var, decreasing_arg,
-                                             decreasing_idx);
+            return check_all_recursive_calls_with_context(get_app_func(body), rec_var,
+                                                          decreasing_arg, decreasing_idx,
+                                                          pattern_to_scrutinee) &&
+                   check_all_recursive_calls_with_context(get_app_arg(body), rec_var,
+                                                          decreasing_arg, decreasing_idx,
+                                                          pattern_to_scrutinee);
         }
 
         case LAMBDA_EXPRESSION:
-            return check_all_recursive_calls(get_lambda_body(body), rec_var, decreasing_arg,
-                                             decreasing_idx);
+            return check_all_recursive_calls_with_context(get_lambda_body(body), rec_var,
+                                                          decreasing_arg, decreasing_idx,
+                                                          pattern_to_scrutinee);
 
         case FORALL_EXPRESSION:
-            return check_all_recursive_calls(get_forall_body(body), rec_var, decreasing_arg,
-                                             decreasing_idx);
+            return check_all_recursive_calls_with_context(get_forall_body(body), rec_var,
+                                                          decreasing_arg, decreasing_idx,
+                                                          pattern_to_scrutinee);
 
         case MATCH_EXPRESSION: {
-            if (!check_all_recursive_calls(body->as.match.scrutinee, rec_var, decreasing_arg,
-                                           decreasing_idx)) {
+            if (!check_all_recursive_calls_with_context(body->as.match.scrutinee, rec_var,
+                                                        decreasing_arg, decreasing_idx,
+                                                        pattern_to_scrutinee)) {
                 return false;
             }
 
+            Expression *scrutinee = body->as.match.scrutinee;
+
             for (int i = 0; i < body->as.match.branch_count; i++) {
-                if (!check_all_recursive_calls(body->as.match.branches[i]->body, rec_var,
-                                               decreasing_arg, decreasing_idx)) {
+                MatchBranch *branch = body->as.match.branches[i];
+
+                // Create extended map for this branch
+                Map *branch_map = map_new();
+
+                // Copy existing mappings
+                for (int j = 0; j < pattern_to_scrutinee->size; j++) {
+                    MapItem *item = &pattern_to_scrutinee->items[j];
+                    if (item->key) {
+                        map_set(branch_map, item->key, item->val);
+                    }
+                }
+
+                // Add new mappings: each pattern variable is directly structurally smaller than
+                // scrutinee
+                for (int j = 0; j < branch->pattern_var_count; j++) {
+                    map_set(branch_map, branch->pattern_variables[j], scrutinee);
+                }
+
+                bool branch_ok = check_all_recursive_calls_with_context(
+                    branch->body, rec_var, decreasing_arg, decreasing_idx, branch_map);
+
+                map_clear_free(branch_map);
+
+                if (!branch_ok) {
                     return false;
                 }
             }
@@ -563,8 +622,8 @@ static bool check_all_recursive_calls(Expression *body, Expression *rec_var,
         }
 
         case FIX_EXPRESSION:
-            return check_all_recursive_calls(body->as.fix.body, rec_var, decreasing_arg,
-                                             decreasing_idx);
+            return check_all_recursive_calls_with_context(
+                body->as.fix.body, rec_var, decreasing_arg, decreasing_idx, pattern_to_scrutinee);
 
         default:
             return true;
@@ -574,7 +633,6 @@ static bool check_all_recursive_calls(Expression *body, Expression *rec_var,
 Expression *init_fix_expression_wc(Expression *recursive_var, Expression **args, int arg_count,
                                    int decreasing_arg_index, Expression *body) {
     Context *gamma = get_expression_context(recursive_var);
-    Context *extended = gamma;
     int expected_args = 0;
     Expression *temp_type = get_expression_type(recursive_var);
     while (temp_type->tag == FORALL_EXPRESSION) {
@@ -586,6 +644,12 @@ Expression *init_fix_expression_wc(Expression *recursive_var, Expression **args,
         fprintf(stderr, ERROR "Argument count mismatch: expected %d, got %d.\n" CRESET,
                 expected_args, arg_count);
         return NULL;
+    }
+
+    // Build extended context: gamma -> recursive_var -> args[0] -> ... -> args[n-1]
+    Context *extended = recursive_var;
+    for (int i = 0; i < arg_count; i++) {
+        extended = args[i];
     }
 
     if (!valid_in_context(body, extended)) {
@@ -604,7 +668,7 @@ Expression *init_fix_expression_wc(Expression *recursive_var, Expression **args,
 
     Expression *expr = _init_expression_base(/* tag */ FIX_EXPRESSION, /* context */ gamma,
                                              /* ctx_size */ gamma->ctx_size,
-                                             /* type */ get_expression_type(body),
+                                             /* type */ get_expression_type(recursive_var),
                                              /* maybe_hole_free */ get_maybe_hole_free(body));
 
     SET_FIX_RECURSIVE_VAR(expr, recursive_var);

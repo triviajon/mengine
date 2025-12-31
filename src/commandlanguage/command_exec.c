@@ -10,12 +10,12 @@
 #include "src/runtime/proof_state.h"
 #include "src/runtime/runtime.h"
 
-static void _handle_declaration_command(MEngineRuntime *rt, DeclarationCmd *decl_cmd) {
+static int _handle_declaration_command(MEngineRuntime *rt, DeclarationCmd *decl_cmd) {
     Expression *var_type = ast_to_expression(decl_cmd->binder.type, rt->ctx);
     if (!var_type) {
         fprintf(stderr, ERROR "Failed to convert type for declaration '%s'.\n" CRESET,
                 decl_cmd->binder.name);
-        return;
+        return 1;
     }
     Expression *new_var = init_var_expression_wc(decl_cmd->binder.name, var_type, rt->ctx);
     if (!new_var) {
@@ -24,12 +24,13 @@ static void _handle_declaration_command(MEngineRuntime *rt, DeclarationCmd *decl
                 "Failed to create variable '%s' (invalid type or "
                 "context).\n" CRESET,
                 decl_cmd->binder.name);
-        return;
+        return 1;
     }
     rt->ctx = new_var;
 
     fprintf(stdout, UI "%s " CRESET "%s : %s declared.\n", decl_keyword_to_string(decl_cmd->kw),
             decl_cmd->binder.name, stringify_expression(var_type));
+    return 0;
 }
 
 Expression *_create_definition_body(MEngineRuntime *rt, Binder **params, size_t param_count,
@@ -67,9 +68,9 @@ Expression *_create_definition_body(MEngineRuntime *rt, Binder **params, size_t 
     return result;
 }
 
-static void _handle_definition_command(MEngineRuntime *rt, DefinitionCmd *defn_cmd) {
+static int _handle_definition_command(MEngineRuntime *rt, DefinitionCmd *defn_cmd) {
     if (!rt || !defn_cmd) {
-        return;
+        return 1;
     }
 
     const char *name = defn_cmd->name;
@@ -92,24 +93,25 @@ static void _handle_definition_command(MEngineRuntime *rt, DefinitionCmd *defn_c
                 name);
         fprintf(stderr, "  Declared type: %s\n", stringify_expression(expected_type_def_body));
         fprintf(stderr, "  Inferred type: %s\n", stringify_expression(inferred_type_def_body));
-        return;
+        return 1;
     }
 
     Expression *defn_var = init_var_expression_wc_with_body(defn_cmd->name, body, rt->ctx);
     rt->ctx = defn_var;
     fprintf(stdout, UI "Definition " CRESET "%s : %s defined.\n", name,
             stringify_expression(get_expression_type(defn_var)));
+    return 0;
 }
 
-static void _handle_statement_command(MEngineRuntime *rt, StatementCmd *stmt_cmd) {
+static int _handle_statement_command(MEngineRuntime *rt, StatementCmd *stmt_cmd) {
     if (!rt || !stmt_cmd) {
-        return;
+        return 1;
     }
 
     Expression *statement_type = ast_to_expression(stmt_cmd->type, rt->ctx);
     if (!statement_type) {
         fprintf(stderr, ERROR "Failed to convert type for Statement %s\n" CRESET, stmt_cmd->name);
-        return;
+        return 1;
     }
 
     Expression *initial_goal = init_hole_expression("Goal", statement_type, rt->ctx);
@@ -121,11 +123,12 @@ static void _handle_statement_command(MEngineRuntime *rt, StatementCmd *stmt_cmd
             stmt_cmd->name, stringify_expression(statement_type));
 
     debug_print_mode(rt);
+    return 0;
 }
 
-static void _handle_check_command(MEngineRuntime *rt, CheckCmd *check_cmd) {
+static int _handle_check_command(MEngineRuntime *rt, CheckCmd *check_cmd) {
     if (!rt || !check_cmd) {
-        return;
+        return 1;
     }
 
     // If we're in proof mode, we should render this Expression against the
@@ -136,22 +139,23 @@ static void _handle_check_command(MEngineRuntime *rt, CheckCmd *check_cmd) {
     Expression *expr = ast_to_expression(check_cmd->term, ctx);
     if (!expr) {
         fprintf(stderr, ERROR "Failed to convert term in Check command.\n" CRESET);
-        return;
+        return 1;
     }
 
     Expression *expr_type = get_expression_type(expr);
     if (!expr_type) {
         fprintf(stderr, ERROR "Failed to get type of expression in Check command.\n" CRESET);
-        return;
+        return 1;
     }
 
     fprintf(stdout, DIMTEXT "%s\n\t: %s\n" CRESET, stringify_expression(expr),
             stringify_expression(expr_type));
+    return 0;
 }
 
-static void _handle_print_command(MEngineRuntime *rt, PrintCmd *print_cmd) {
+static int _handle_print_command(MEngineRuntime *rt, PrintCmd *print_cmd) {
     if (!rt || !print_cmd) {
-        return;
+        return 1;
     }
 
     // If we're in proof mode, we should render this Expression against the
@@ -162,13 +166,13 @@ static void _handle_print_command(MEngineRuntime *rt, PrintCmd *print_cmd) {
     Expression *expr = context_lookup_by_name(ctx, print_cmd->name);
     if (!expr) {
         fprintf(stderr, ERROR "Failed to convert term in Print command.\n" CRESET);
-        return;
+        return 1;
     }
 
     Expression *expr_type = get_expression_type(expr);
     if (!expr_type) {
         fprintf(stderr, ERROR "Failed to get type of expression in Print command.\n" CRESET);
-        return;
+        return 1;
     }
 
     // Attempt to get the variable's body
@@ -176,11 +180,12 @@ static void _handle_print_command(MEngineRuntime *rt, PrintCmd *print_cmd) {
     if (!expr_body) {
         fprintf(stderr, ERROR "%s is an opaque variable.\n" CRESET,
                 stringify_expression(expr_body));
-        return;
+        return 1;
     }
 
     fprintf(stdout, DIMTEXT "%s := %s\n\t: %s\n" CRESET, stringify_expression(expr),
             stringify_expression(expr_body), stringify_expression(expr_type));
+    return 0;
 }
 
 static Expression *_build_constructor_case_type(Expression *ctor_expr, Expression *ctor_type,
@@ -541,9 +546,9 @@ static Expression *_build_constructor_case_type(Expression *ctor_expr, Expressio
     return case_type;
 }
 
-static void _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) {
+static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) {
     if (!rt || !ind_cmd) {
-        return;
+        return 1;
     }
 
     const char *name = ind_cmd->name;
@@ -589,7 +594,7 @@ static void _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd)
         fprintf(stderr, ERROR "Failed to allocate constructor array.\n" CRESET);
         free(param_vars);
         free(contexts);
-        return;
+        return 1;
     }
 
     for (size_t i = 0; i < ctor_count; i++) {
@@ -600,7 +605,7 @@ static void _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd)
             fprintf(stderr, ERROR "Failed to convert constructor type for %s\n" CRESET, ctor->name);
             free(param_vars);
             free(contexts);
-            return;
+            return 1;
         }
 
         Expression *ctor_type = ctor_core_type;
@@ -614,7 +619,7 @@ static void _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd)
                         j - 1);
                 free(param_vars);
                 free(contexts);
-                return;
+                return 1;
             }
         }
 
@@ -625,7 +630,7 @@ static void _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd)
             free(ctor_vars);
             free(param_vars);
             free(contexts);
-            return;
+            return 1;
         }
 
         ctor_vars[i] = ctor_var;
@@ -668,11 +673,12 @@ static void _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd)
     free(ind_principle_name);
     free(param_vars);
     free(contexts);
+    return 0;
 }
 
-static void _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
+static int _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
     if (!rt || !show_cmd) {
-        return;
+        return 1;
     }
 
     switch (show_cmd->kw) {
@@ -687,18 +693,18 @@ static void _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
                 fprintf(stderr, RED
                         "Error: 'Show Proof' can only be used in Proof "
                         "Mode.\n" CRESET);
-                break;
+                return 1;
             }
 
             if (!rt->proof_state) {
                 fprintf(stderr, ERROR " No active proof state.\n" CRESET);
-                break;
+                return 1;
             }
 
             Expression *current_goal = proof_state_current(rt->proof_state);
             if (!current_goal) {
                 fprintf(stderr, ERROR " No current goal.\n" CRESET);
-                break;
+                return 1;
             }
 
             // Show proof term
@@ -706,25 +712,25 @@ static void _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
             Expression *pending_theorem_body = get_expression_body(pending_theorem);
             fprintf(stdout, HEADER "Proof Term:" CRESET "\n%s\n",
                     stringify_expression(pending_theorem_body));
-            break;
+            return 0;
         }
         case SHOW_KW_GOAL: {
             if (rt->mode == MENGINE_RUNTIME_COMMAND_MODE) {
                 fprintf(stderr, RED
                         "Error: 'Show Goal' can only be used in Proof "
                         "Mode.\n" CRESET);
-                break;
+                return 1;
             }
 
             if (!rt->proof_state) {
                 fprintf(stderr, ERROR " No active proof state.\n" CRESET);
-                break;
+                return 1;
             }
 
             Expression *current_goal = proof_state_current(rt->proof_state);
             if (!current_goal) {
                 fprintf(stderr, ERROR " No current goal.\n" CRESET);
-                break;
+                return 1;
             }
 
             Context *goal_ctx = get_expression_context(current_goal);
@@ -737,25 +743,25 @@ static void _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
             }
             fprintf(stdout, HEADER "Goal:" CRESET "\n%s\n",
                     stringify_expression(get_expression_type(current_goal)));
-            break;
+            return 0;
         }
         case SHOW_KW_STATE: {
             if (rt->mode == MENGINE_RUNTIME_COMMAND_MODE) {
                 fprintf(stderr, RED
                         "Error: 'Show State' can only be used in Proof "
                         "Mode.\n" CRESET);
-                break;
+                return 1;
             }
 
             if (!rt->proof_state) {
                 fprintf(stderr, ERROR " No active proof state.\n" CRESET);
-                break;
+                return 1;
             }
 
             Expression *current_goal = proof_state_current(rt->proof_state);
             if (!current_goal) {
                 fprintf(stderr, ERROR " No current goal.\n" CRESET);
-                break;
+                return 1;
             }
 
             // Show proof term
@@ -777,14 +783,15 @@ static void _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
             // Show goal
             fprintf(stdout, CYN "Goal:" CRESET "\n%s\n",
                     stringify_expression(get_expression_type(current_goal)));
-            break;
+            return 0;
         }
     }
+    return 0;
 }
 
-void mengine_execute_command(MEngineRuntime *rt, Command *cmd) {
+int mengine_execute_command(MEngineRuntime *rt, Command *cmd) {
     if (!rt || !cmd) {
-        return;
+        return 1;
     }
 
     switch (cmd->tag) {
@@ -810,6 +817,6 @@ void mengine_execute_command(MEngineRuntime *rt, Command *cmd) {
             return _handle_show_command(rt, &cmd->as.show);
         }
         default:
-            return;
+            return 1;
     }
 }

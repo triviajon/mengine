@@ -50,7 +50,7 @@ Command *command_parse_command(Parser *p) {
 
 Command *command_parse_declaration(Parser *p) {
     DeclKeyword kw = command_parse_declaration_keyword(p);
-    Binder assumption = command_parse_assumption(p);
+    Binder *binder = command_parse_assumption(p);
 
     if (!parser_expect_consume(p, TOK_DOT)) {
         parser_error(p, "Expected '.' at end of declaration");
@@ -58,8 +58,10 @@ Command *command_parse_declaration(Parser *p) {
 
     Command *cmd = malloc(sizeof(Command));
     cmd->tag = CMD_DECLARATION;
-    cmd->as.decl.binder = assumption;
+    cmd->as.decl.binder = *binder;
     cmd->as.decl.kw = kw;
+
+    free(binder);
 
     return cmd;
 }
@@ -78,7 +80,7 @@ DeclKeyword command_parse_declaration_keyword(Parser *p) {
     return DECL_KW_VARIABLE;
 }
 
-Binder command_parse_assumption(Parser *p) { return parse_binder(p); }
+Binder *command_parse_assumption(Parser *p) { return parse_binder(p); }
 
 /**
  * <constructor> ::= "|" <identifier> ":" <term>
@@ -130,15 +132,14 @@ Command *command_parse_definition(Parser *p) {
     size_t param_count = 0;
 
     while (parser_expect_consume(p, TOK_LPAREN)) {
-        Binder b = command_parse_assumption(p);
+        Binder *b = command_parse_assumption(p);
 
         if (!parser_expect_consume(p, TOK_RPAREN)) {
             parser_error(p, "expected ')' after parameter");
         }
 
         params = realloc(params, sizeof(Binder *) * (param_count + 1));
-        params[param_count] = malloc(sizeof(Binder));
-        *(params[param_count]) = b;
+        params[param_count] = b;
         param_count++;
     }
 
@@ -316,15 +317,14 @@ Command *command_parse_inductive(Parser *p) {
     size_t param_count = 0;
 
     while (parser_expect_consume(p, TOK_LPAREN)) {
-        Binder b = parse_binder(p);
+        Binder *b = parse_binder(p);
 
         if (!parser_expect_consume(p, TOK_RPAREN)) {
             parser_error(p, "expected ')' after parameter");
         }
 
         params = realloc(params, sizeof(Binder *) * (param_count + 1));
-        params[param_count] = malloc(sizeof(Binder));
-        *(params[param_count]) = b;
+        params[param_count] = b;
         param_count++;
     }
 

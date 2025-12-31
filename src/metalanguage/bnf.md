@@ -8,12 +8,17 @@ This file documents the core grammar for the metalanguage's term language.
 <prefix_term>  ::=  <lambda_expr>
                   | <forall_expr>
 				  | <match_expr>
+				  | <fix_expr>
                   | <let_expr>
                   | <application>
 
 <lambda_expr>  ::= "fun" "(" <binder> ")" "=>" <term>
 
 <forall_expr>  ::= "forall" "(" <binder> ")" "," <term>
+
+<fix_expr>     ::= "fix" <identifier> { "(" <binder> ")" } <decreasing_arg_annotation> ":" <term> ":=" <term>
+
+<decreasing_arg_annotation> ::= "{" "struct" <identifier> "}"
 
 <let_expr>     ::= "let" <identifier> ":" <term> ":=" <term> "in" <term>
 

@@ -13,7 +13,8 @@
  *
  * @param rt Pointer to the runtime. Must not be NULL.
  * @param cmd Pointer to the Command to execute. Must not be NULL.
+ * @return 0 on success, non-zero on error.
  */
-void mengine_execute_command(MEngineRuntime *rt, Command *cmd);
+int mengine_execute_command(MEngineRuntime *rt, Command *cmd);
 
 #endif  // COMMAND_EXEC_H
