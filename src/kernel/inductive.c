@@ -37,7 +37,6 @@ bool register_inductive(Expression *inductive_var, Expression **constructors, in
         return false;
     }
 
-    // Make a copy of the constructors array (clean boundaries - no ownership transfer)
     Expression **ctor_copy = malloc(constructor_count * sizeof(Expression *));
     if (!ctor_copy) {
         fprintf(stderr, ERROR "Failed to allocate constructor array copy.\n" CRESET);
@@ -91,7 +90,7 @@ bool is_constructor(Expression *expr) {
 
     Expression *type = get_expression_type(expr);
     Expression *result_type = get_innermost_body(type);
-    Expression *inductive_var = get_innermost_func(result_type);
+    Expression *inductive_var = get_head(result_type);
 
     if (!is_inductive(inductive_var)) {
         return false;

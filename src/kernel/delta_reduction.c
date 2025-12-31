@@ -1,4 +1,4 @@
-#include "src/kernel/expression.h"
+#include "src/kernel/delta_reduction.h"
 
 bool is_delta_reducible(Expression *expression) {
     return expression->tag == VAR_EXPRESSION && expression->as.var.body != NULL;

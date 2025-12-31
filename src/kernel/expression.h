@@ -378,8 +378,8 @@ Expression *get_innermost_body(Expression *expression);
 // Returns the innermost function of an expression. For example, if the
 // expression is
 //     (((f x3) x1) x0)
-// then get_innermost_func(expression) will return f.
-Expression *get_innermost_func(Expression *expression);
+// then get_head(expression) will return f.
+Expression *get_head(Expression *expression);
 
 // Returns the name of a variable expression.
 char *get_var_name(Expression *expr);
@@ -399,6 +399,14 @@ Expression *get_app_arg(Expression *expr);
 Expression *get_forall_bound_variable(Expression *expr);
 
 Expression *get_lambda_bound_variable(Expression *expr);
+
+Expression *get_match_scrutinee(Expression *expr);
+
+Expression *get_match_branch_body(Expression *expr, int index);
+
+Expression **get_match_branch_pattern_variables(Expression *expr, int index);
+
+int get_match_branch_pattern_var_count(Expression *expr, int index);
 
 // Returns the arity of an expression.
 int get_arity(Expression *expr);

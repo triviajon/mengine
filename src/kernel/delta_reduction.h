@@ -13,7 +13,7 @@ bool is_delta_reducible(Expression *expression);
 // gamma |-
 // [x := t : T] is in gamma
 // ------------------------------------------------
-// gamma |- x ->delta t
+// gamma |- x is delta-reducible to t
 Expression *delta_reduce(Expression *expression);
 
 #endif  // DELTA_REDUCTION_H

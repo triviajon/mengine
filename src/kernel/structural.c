@@ -8,7 +8,7 @@
 
 // Check if a term is in constructor form
 static bool is_constructor_form(Expression *expr) {
-    Expression *head = get_innermost_func(expr);
+    Expression *head = get_head(expr);
     return is_constructor(head);
 }
 
@@ -41,7 +41,7 @@ static Expression **get_constructor_args(Expression *expr, int *arg_count) {
 
 // Check if expr is an instance of base (i.e., expr = base v1 ... vm)
 static bool is_instance_of(Expression *expr, Expression *base) {
-    Expression *expr_head = get_innermost_func(expr);
+    Expression *expr_head = get_head(expr);
 
     return congruence(expr_head, base);
 }
