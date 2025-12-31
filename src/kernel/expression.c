@@ -543,7 +543,7 @@ static bool check_all_recursive_calls_with_context(Expression *body, Expression 
             return true;
 
         case APP_EXPRESSION: {
-            Expression *head = get_innermost_func(body);
+            Expression *head = get_head(body);
             if (congruence(head, rec_var)) {
                 Expression *actual_arg = get_nth_app_arg(body, decreasing_idx);
 
@@ -727,9 +727,9 @@ Expression *get_innermost_body(Expression *e) {
     return e;
 }
 
-Expression *get_innermost_func(Expression *e) {
+Expression *get_head(Expression *e) {
     if (e->tag == APP_EXPRESSION) {
-        return get_innermost_func(e->as.app.func);
+        return get_head(e->as.app.func);
     }
     return e;
 }
@@ -788,6 +788,38 @@ Expression *get_lambda_bound_variable(Expression *expr) {
     }
 
     return expr->as.lambda.bound_variable;
+}
+
+Expression *get_match_scrutinee(Expression *expr) {
+    if (expr->tag != MATCH_EXPRESSION) {
+        return NULL;
+    }
+
+    return expr->as.match.scrutinee;
+}
+
+Expression *get_match_branch_body(Expression *expr, int index) {
+    if (expr->tag != MATCH_EXPRESSION) {
+        return NULL;
+    }
+
+    return expr->as.match.branches[index]->body;
+}
+
+Expression **get_match_branch_pattern_variables(Expression *expr, int index) {
+    if (expr->tag != MATCH_EXPRESSION) {
+        return NULL;
+    }
+
+    return expr->as.match.branches[index]->pattern_variables;
+}
+
+int get_match_branch_pattern_var_count(Expression *expr, int index) {
+    if (expr->tag != MATCH_EXPRESSION) {
+        return -1;
+    }
+
+    return expr->as.match.branches[index]->pattern_var_count;
 }
 
 int get_arity(Expression *expr) {
