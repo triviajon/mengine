@@ -347,7 +347,8 @@ Expression *init_match_expression_wc(Expression *scrutinee, MatchBranch **branch
 
 // Create a new fix expression with a given arguments, struct argument, and body.
 // Typing rule:
-//    gamma, recursive_var : forall x1:A1, ..., xn:An, B, x1:A1, ..., xn:An |- body : T
+//    gamma, recursive_var : forall (arg1: A1) (arg2: A2) ... (argn: An), B, [arg1: A1], ... [argn:
+//    An] |- body : T
 // ------------------------------------------------
 //    gamma |- fix recursive_var (arg1: A1) (arg2: A2) ... (argn: An) {arg_decreasing} := body : T
 // Where gamma is the context which recursive_var is well-typed in.
@@ -407,6 +408,16 @@ Expression *get_match_branch_body(Expression *expr, int index);
 Expression **get_match_branch_pattern_variables(Expression *expr, int index);
 
 int get_match_branch_pattern_var_count(Expression *expr, int index);
+
+Expression *get_fix_recursive_var(Expression *expr);
+
+Expression **get_fix_args(Expression *expr);
+
+int get_fix_arg_count(Expression *expr);
+
+int get_fix_decreasing_arg_index(Expression *expr);
+
+Expression *get_fix_body(Expression *expr);
 
 // Returns the arity of an expression.
 int get_arity(Expression *expr);

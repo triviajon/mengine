@@ -822,6 +822,46 @@ int get_match_branch_pattern_var_count(Expression *expr, int index) {
     return expr->as.match.branches[index]->pattern_var_count;
 }
 
+Expression *get_fix_recursive_var(Expression *expr) {
+    if (expr->tag != FIX_EXPRESSION) {
+        return NULL;
+    }
+
+    return expr->as.fix.recursive_var;
+}
+
+Expression **get_fix_args(Expression *expr) {
+    if (expr->tag != FIX_EXPRESSION) {
+        return NULL;
+    }
+
+    return expr->as.fix.args;
+}
+
+int get_fix_arg_count(Expression *expr) {
+    if (expr->tag != FIX_EXPRESSION) {
+        return -1;
+    }
+
+    return expr->as.fix.arg_count;
+}
+
+int get_fix_decreasing_arg_index(Expression *expr) {
+    if (expr->tag != FIX_EXPRESSION) {
+        return -1;
+    }
+
+    return expr->as.fix.decreasing_arg_index;
+}
+
+Expression *get_fix_body(Expression *expr) {
+    if (expr->tag != FIX_EXPRESSION) {
+        return NULL;
+    }
+
+    return expr->as.fix.body;
+}
+
 int get_arity(Expression *expr) {
     Expression *type = get_expression_type(expr);
     int arity = 0;
