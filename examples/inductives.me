@@ -34,3 +34,11 @@ Definition not : forall (_: bool), bool :=
     | true => false
     | false => true
     end.
+
+Fixpoint add2 (n : nat) (m : nat) {struct m} : nat := match m with | O => n | S m' => S (add n m') end.
+
+Print add2.
+
+Fixpoint test (n : nat) (b : bool) {struct b} : nat := match b with | true => n | false => is_zero n end.
+
+Check test O.
