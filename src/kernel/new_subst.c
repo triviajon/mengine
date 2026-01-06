@@ -203,8 +203,31 @@ Expression *new_subst(Context *context, Expression *t, Expression *x, Expression
     // First, we need to decompose context into gamma, a : A, delta. We final expression will be
     // closed under gamma, delta[x -> a]:
     Context *final_context = context_cut(context, x, a);
-    Expression *final_expression = _subst(final_context, t, x, a);
-    return final_expression;
+
+    // Now we have two contexts:
+    // original := *[x0: A0] ... [xn: An] [x: A] [d0 : D0 ] ... [dm : Dm ]
+    // final    := *[x0: A0] ... [xn: An]        [d0': D0'] ... [dm': Dm']
+    // in addition to kicking off the x -> a substitution, we need to start a parallel substitution
+    // with [d0 -> d0'] ... [dm -> dm']
+
+    DoublyLinkedList *old_exprs = dll_create();
+    DoublyLinkedList *new_exprs = dll_create();
+
+    dll_insert_at_tail(old_exprs, dll_new_node(x));
+    dll_insert_at_tail(new_exprs, dll_new_node(a));
+
+    Context *original_context_c = context;
+    Context *final_context_c = final_context;
+    // The two contexts are the same again at [xn: An], so that's our stopping condition
+    while (original_context_c != final_context_c && original_context_c != x) {
+        dll_insert_at_head(old_exprs, dll_new_node(original_context_c));
+        dll_insert_at_head(new_exprs, dll_new_node(final_context_c));
+
+        original_context_c = get_expression_context(original_context_c);
+        final_context_c = get_expression_context(final_context_c);
+    }
+
+    return new_p_subst(final_context, t, old_exprs, new_exprs);
 }
 
 Expression *_p_subst(Context *context, Expression *t, DoublyLinkedList *old_exprs,
@@ -310,13 +333,15 @@ Expression *_p_subst(Context *context, Expression *t, DoublyLinkedList *old_expr
                 branch_prime->pattern_variables =
                     malloc(branch->pattern_var_count * sizeof(Expression *));
 
+                Context *extended_context = context;
+
                 for (int j = 0; j < branch->pattern_var_count; j++) {
                     Expression *old_var = branch->pattern_variables[j];
                     Expression *old_var_type = get_expression_type(old_var);
                     Expression *new_var_type =
-                        _p_subst(context, old_var_type, old_exprs, new_exprs);
-                    Expression *new_var =
-                        init_var_expression_wc(get_var_name(old_var), new_var_type, context);
+                        _p_subst(extended_context, old_var_type, old_exprs, new_exprs);
+                    Expression *new_var = init_var_expression_wc(get_var_name(old_var),
+                                                                 new_var_type, extended_context);
 
                     branch_prime->pattern_variables[j] = new_var;
 
@@ -325,11 +350,11 @@ Expression *_p_subst(Context *context, Expression *t, DoublyLinkedList *old_expr
                     dll_insert_at_tail(new_exprs, dll_new_node(new_var));
 
                     // Update context for next variable
-                    context = new_var;
+                    extended_context = new_var;
                 }
 
                 // Substitute in branch body with extended context
-                branch_prime->body = _p_subst(context, branch->body, old_exprs, new_exprs);
+                branch_prime->body = _p_subst(extended_context, branch->body, old_exprs, new_exprs);
 
                 // Remove pattern variables from substitution lists
                 for (int j = 0; j < branch->pattern_var_count; j++) {
