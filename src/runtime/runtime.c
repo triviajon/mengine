@@ -115,6 +115,7 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
                     fprintf(stderr, ERROR "Command execution error.\n" CRESET);
                     break;
                 }
+                parser_flush_comments(&parser);
                 // TODO: free Command
                 break;
             }
@@ -137,6 +138,8 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
                         fprintf(stderr, ERROR "Command execution error.\n" CRESET);
                         break;
                     }
+                    // Print any comments that came after this command
+                    parser_flush_comments(&parser);
                     // TODO: free Command
                     break;
                 }
@@ -153,6 +156,7 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
                     fprintf(stderr, ERROR "Tactic execution error.\n" CRESET);
                     break;
                 }
+                parser_flush_comments(&parser);
                 // TODO: free Tactic
                 break;
             }

@@ -14,6 +14,9 @@ typedef struct {
     MEngineOptions *options;  // Parser options
     jmp_buf error_jmp;        // Jump buffer for error recovery
     bool error_recovery_set;  // Whether error recovery is active
+    char **pending_comments;  // Buffer of comments to print after command execution
+    int pending_comment_count;
+    int pending_comment_capacity;
 } Parser;
 
 /**
@@ -77,5 +80,12 @@ bool parser_expect_no_consume(Parser *p, TokenType type);
  * @param msg The error message to report.
  */
 void parser_error(Parser *p, const char *msg);
+
+/**
+ * Flush and print any pending comments to stdout.
+ *
+ * @param p Pointer to the Parser.
+ */
+void parser_flush_comments(Parser *p);
 
 #endif  // PARSER_BASE_H
