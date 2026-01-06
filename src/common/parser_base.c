@@ -3,29 +3,49 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "src/common/color.h"
 
 void parser_init(Parser *p, Lexer *lx, MEngineOptions *options) {
     p->lx = lx;
     p->current = lexer_next_token(lx);
-    // Skip any leading comment tokens
-    while (p->current && p->current->type == TOK_COMMENT) {
-        Token *comment = p->current;
-        p->current = lexer_next_token(lx);
-        lexer_free_token(comment);
-    }
     p->source = lx->src;
     p->options = options;
     p->error_recovery_set = false;
+    p->pending_comments = NULL;
+    p->pending_comment_count = 0;
+    p->pending_comment_capacity = 0;
+
+    // Print leading comments
+    while (p->current && p->current->type == TOK_COMMENT) {
+        Token *comment = p->current;
+        if (comment->lexeme) {
+            fprintf(stdout, DIMTEXT "%s\n" CRESET, comment->lexeme);
+        }
+        p->current = lexer_next_token(p->lx);
+        lexer_free_token(comment);
+    }
+}
+
+static void add_pending_comment(Parser *p, const char *comment) {
+    if (p->pending_comment_count >= p->pending_comment_capacity) {
+        p->pending_comment_capacity =
+            (p->pending_comment_capacity == 0) ? 4 : p->pending_comment_capacity * 2;
+        p->pending_comments =
+            realloc(p->pending_comments, p->pending_comment_capacity * sizeof(char *));
+    }
+    p->pending_comments[p->pending_comment_count++] = strdup(comment);
 }
 
 Token *parser_next(Parser *p) {
     Token *old_current = p->current;
     p->current = lexer_next_token(p->lx);
-    // Skip any comment tokens
     while (p->current && p->current->type == TOK_COMMENT) {
         Token *comment = p->current;
+        if (comment->lexeme) {
+            add_pending_comment(p, comment->lexeme);
+        }
         p->current = lexer_next_token(p->lx);
         lexer_free_token(comment);
     }
@@ -115,4 +135,12 @@ void parser_error(Parser *p, const char *msg) {
     }
 
     exit(EXIT_FAILURE);
+}
+
+void parser_flush_comments(Parser *p) {
+    for (int i = 0; i < p->pending_comment_count; i++) {
+        fprintf(stdout, DIMTEXT "%s\n" CRESET, p->pending_comments[i]);
+        free(p->pending_comments[i]);
+    }
+    p->pending_comment_count = 0;
 }
