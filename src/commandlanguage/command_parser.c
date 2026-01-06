@@ -6,7 +6,7 @@
 
 #include "src/common/lexer.h"
 #include "src/common/parser_base.h"
-#include "src/metalanguage/parser.h"
+#include "src/termlanguage/parser.h"
 
 char *decl_keyword_to_string(DeclKeyword kw) {
     switch (kw) {

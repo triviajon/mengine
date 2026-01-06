@@ -7,9 +7,9 @@
 #include "src/kernel/inductive.h"
 #include "src/kernel/normalize.h"
 #include "src/kernel/utils.h"
-#include "src/metalanguage/ast_to_expression.h"
 #include "src/runtime/proof_state.h"
 #include "src/runtime/runtime.h"
+#include "src/termlanguage/ast_to_expression.h"
 
 static int _handle_declaration_command(MEngineRuntime *rt, DeclarationCmd *decl_cmd) {
     Expression *var_type = ast_to_expression(decl_cmd->binder.type, rt->ctx);

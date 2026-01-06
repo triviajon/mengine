@@ -3,7 +3,7 @@
 #include "src/kernel/context.h"
 #include "src/kernel/expression.h"
 #include "src/kernel/utils.h"
-#include "src/metalanguage/ast_to_expression.h"
+#include "src/termlanguage/ast_to_expression.h"
 #include "tests/helpers/test_framework.h"
 
 void test_convert_type(void) {

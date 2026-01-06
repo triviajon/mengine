@@ -8,7 +8,7 @@
 #include "src/common/lexer.h"
 #include "src/kernel/doubly_linked_list.h"
 #include "src/kernel/expression.h"
-#include "src/metalanguage/parser.h"
+#include "src/termlanguage/parser.h"
 
 /**
  * Simple linked list node for storing let bindings with string keys.

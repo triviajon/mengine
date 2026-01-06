@@ -3,8 +3,8 @@
 #include "src/common/color.h"
 #include "src/engine/tactics.h"
 #include "src/kernel/utils.h"
-#include "src/metalanguage/ast_to_expression.h"
 #include "src/runtime/proof_state.h"
+#include "src/termlanguage/ast_to_expression.h"
 
 static Expression *_current_goal(MEngineRuntime *rt) {
     return proof_state_current(rt->proof_state);
