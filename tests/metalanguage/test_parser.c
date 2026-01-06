@@ -1,5 +1,5 @@
 #include "src/common/lexer.h"
-#include "src/metalanguage/parser.h"
+#include "src/termlanguage/parser.h"
 #include "tests/helpers/test_framework.h"
 
 void test_parse_variable(void) {

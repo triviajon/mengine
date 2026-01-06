@@ -4,7 +4,7 @@
 #include "src/common/options.h"
 #include "src/kernel/context.h"
 #include "src/kernel/expression.h"
-#include "src/metalanguage/parser.h"
+#include "src/termlanguage/parser.h"
 
 /**
  * Convert an AST node to a kernel Expression.

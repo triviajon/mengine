@@ -1,7 +1,7 @@
 #ifndef TACTIC_PARSER_H
 #define TACTIC_PARSER_H
 
-#include "src/metalanguage/parser.h"
+#include "src/termlanguage/parser.h"
 
 typedef enum {
     TACTIC_ADMITTED,

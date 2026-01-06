@@ -1,7 +1,7 @@
 #include "src/commandlanguage/command_parser.h"
 #include "src/common/lexer.h"
 #include "src/common/options.h"
-#include "src/metalanguage/parser.h"
+#include "src/termlanguage/parser.h"
 #include "tests/helpers/test_framework.h"
 
 void test_parse_axiom_simple(void) {

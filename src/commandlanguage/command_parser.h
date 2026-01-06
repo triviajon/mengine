@@ -2,7 +2,7 @@
 #define COMMAND_PARSER_H
 
 #include "src/common/lexer.h"
-#include "src/metalanguage/parser.h"
+#include "src/termlanguage/parser.h"
 
 typedef enum {
     CMD_DECLARATION,

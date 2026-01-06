@@ -1,6 +1,6 @@
 # Metalanguage grammar (BNF)
 
-This file documents the core grammar for the metalanguage's term language.
+This file documents the core grammar for the termlanguage's term language.
 
 ```bnf
 <term>         ::=  <prefix_term>
