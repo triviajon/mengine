@@ -1,4 +1,4 @@
-#include "lexer.h"
+#include "src/common/lexer.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,166 +8,36 @@
 
 static inline char peek_char(Lexer *lx) { return lx->src[lx->pos]; }
 
+static const char *token_type_name(TokenType t) {
+    static const char *names[NUM_TOKEN_TYPES] = {
+        [TOK_IDENT] = "IDENT",           [TOK_LPAREN] = "LPAREN", [TOK_RPAREN] = "RPAREN",
+        [TOK_LBRACE] = "LBRACE",         [TOK_RBRACE] = "RBRACE", [TOK_COLON] = "COLON",
+        [TOK_COLON_EQ] = "COLON_EQ",     [TOK_COMMA] = "COMMA",   [TOK_DOT] = "DOT",
+
+        [TOK_DARROW] = "DARROW",         [TOK_PIPE] = "PIPE",
+
+#define X(lexeme, tok, dbg) [tok] = dbg,
+#include "src/common/token_keywords.def"
+#undef X
+
+        [TOK_LEFT_ARROW] = "LEFT_ARROW",
+
+        [TOK_COMMENT] = "COMMENT",       [TOK_EOF] = "EOF",       [TOK_ERROR] = "ERROR",
+    };
+
+    if ((unsigned)t >= (unsigned)NUM_TOKEN_TYPES || names[t] == NULL) {
+        return "UNKNOWN";
+    }
+    return names[t];
+}
+
 static void debug_print_token(Lexer *lx, Token *t) {
     if (!lx->options || !lx->options->debug || !lx->options->debug__print_tokens) {
         return;
     }
 
-    char *name;
-    switch (t->type) {
-        case TOK_IDENT:
-            name = "IDENT";
-            break;
-        case TOK_LPAREN:
-            name = "LPAREN";
-            break;
-        case TOK_RPAREN:
-            name = "RPAREN";
-            break;
-        case TOK_LBRACE:
-            name = "LBRACE";
-            break;
-        case TOK_RBRACE:
-            name = "RBRACE";
-            break;
-        case TOK_COLON:
-            name = "COLON";
-            break;
-        case TOK_COLON_EQ:
-            name = "COLON_EQ";
-            break;
-        case TOK_COMMA:
-            name = "COMMA";
-            break;
-        case TOK_DOT:
-            name = "DOT";
-            break;
-        case TOK_DARROW:
-            name = "DARROW";
-            break;
-        case TOK_FUN:
-            name = "FUN";
-            break;
-        case TOK_FORALL:
-            name = "FORALL";
-            break;
-        case TOK_TYPE:
-            name = "TYPE";
-            break;
-        case TOK_PROP:
-            name = "PROP";
-            break;
-        case TOK_MATCH:
-            name = "MATCH";
-            break;
-        case TOK_WITH:
-            name = "WITH";
-            break;
-        case TOK_PIPE:
-            name = "PIPE";
-            break;
-        case TOK_END:
-            name = "END";
-            break;
-        case TOK_AXIOM:
-            name = "AXIOM";
-            break;
-        case TOK_VARIABLE:
-            name = "VARIABLE";
-            break;
-        case TOK_DEFINITION:
-            name = "DEFINITION";
-            break;
-        case TOK_THEOREM:
-            name = "THEOREM";
-            break;
-        case TOK_LEMMA:
-            name = "LEMMA";
-            break;
-        case TOK_CHECK:
-            name = "CHECK";
-            break;
-        case TOK_PRINT:
-            name = "PRINT";
-            break;
-        case TOK_FIXPOINT:
-            name = "FIXPOINT";
-            break;
-        case TOK_SHOW:
-            name = "SHOW";
-            break;
-        case TOK_CONTEXT:
-            name = "CONTEXT";
-            break;
-        case TOK_PROOF:
-            name = "PROOF";
-            break;
-        case TOK_GOAL:
-            name = "GOAL";
-            break;
-        case TOK_STATE:
-            name = "STATE";
-            break;
-        case TOK_INDUCTIVE:
-            name = "INDUCTIVE";
-            break;
-        case TOK_ADMITTED:
-            name = "ADMITTED";
-            break;
-        case TOK_INTRO:
-            name = "INTRO";
-            break;
-        case TOK_INTROS:
-            name = "INTROS";
-            break;
-        case TOK_APPLY:
-            name = "APPLY";
-            break;
-        case TOK_EAPPLY:
-            name = "EAPPLY";
-            break;
-        case TOK_EXACT:
-            name = "EXACT";
-            break;
-        case TOK_REWRITE:
-            name = "REWRITE";
-            break;
-        case TOK_LEFT_ARROW:
-            name = "LEFT_ARROW";
-            break;
-        case TOK_REFLEXIVITY:
-            name = "REFLEXIVITY";
-            break;
-        case TOK_ASSUMPTION:
-            name = "ASSUMPTION";
-            break;
-        case TOK_SPLIT:
-            name = "SPLIT";
-            break;
-        case TOK_LEFT:
-            name = "LEFT";
-            break;
-        case TOK_RIGHT:
-            name = "RIGHT";
-            break;
-        case TOK_EXISTS:
-            name = "EXISTS";
-            break;
-        case TOK_COMMENT:
-            name = "COMMENT";
-            break;
-        case TOK_EOF:
-            name = "EOF";
-            break;
-        case TOK_ERROR:
-            name = "ERROR";
-            break;
-        default:
-            name = "UNKNOWN";
-    }
-
-    fprintf(stderr, YEL "[LEX]" DIM " %-12s at %-4d  %s" CRESET "\n", name, t->pos,
-            t->lexeme ? t->lexeme : "");
+    fprintf(stderr, YEL "[LEX]" DIM " %-12s at %-4d  %s" CRESET "\n", token_type_name(t->type),
+            t->pos, t->lexeme ? t->lexeme : "");
 }
 
 void skip_whitespace(Lexer *lx) {
