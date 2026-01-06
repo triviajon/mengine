@@ -111,10 +111,7 @@ Context *context_replace(Context *context, Expression *x, Expression *a) {
     char *old_var_name = get_var_name(context);
     Expression *old_var_type = get_expression_type(context);
 
-    char *new_var_name = malloc(strlen(old_var_name) + 2);
-    strcpy(new_var_name, old_var_name);
-    strcat(new_var_name, "'");
-
+    char *new_var_name = strdup(old_var_name);
     // new_parent is already the "cut" context, so call _subst directly
     Expression *new_var_type = _subst(new_parent, old_var_type, x, a);
 

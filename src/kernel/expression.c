@@ -12,6 +12,40 @@
 #include "src/kernel/new_subst.h"
 #include "src/kernel/structural.h"
 
+// Register a body to a recursive variable expression. WARNING: Mutator function, modifies the
+// expression in place and returns true if successful, false otherwise.
+bool register_fix_body_to_expression(Context *recursive_var, Expression *body) {
+    if (recursive_var == NULL || body == NULL) {
+        return false;
+    }
+
+    if (recursive_var->tag != VAR_EXPRESSION) {
+        fprintf(stderr, ERROR "Expression is not a variable expression.\n" CRESET);
+        return false;
+    }
+
+    if (recursive_var->as.var.body != NULL) {
+        fprintf(stderr, ERROR "Variable already has a body.\n" CRESET);
+        return false;
+    }
+
+    if (!valid_in_context(body, recursive_var)) {
+        fprintf(stderr, ERROR "Body is not valid in context.\n" CRESET);
+        return false;
+    }
+
+    Expression *body_type = get_expression_type(body);
+    Expression *expression_type = get_expression_type(recursive_var);
+    if (!(congruence(body_type, expression_type))) {
+        fprintf(stderr, ERROR "Body type is not congruent to expression type.\n" CRESET);
+        return false;
+    }
+
+    SET_VAR_BODY(recursive_var, body);
+
+    return true;
+}
+
 void add_to_parents(Expression *expression, void *ptr, Relation r) {
     Uplink *uplink = new_uplink(ptr, r);
     dll_insert_at_head(expression->uplinks, dll_new_node(uplink));
@@ -445,6 +479,7 @@ Expression *init_match_expression_wc(Expression *scrutinee, MatchBranch **branch
         constructor_covered[ctor_idx] = true;
 
         // Verify gamma, pattern_vars[i] : type(pattern_vars[i]) |- body[i] : T
+        // TODO: rethink how match expression contexts should be handled
         Expression *ctor_type = get_expression_type(branch->constructor);
         int expected_args = 0;
         Expression *temp_type = ctor_type;
@@ -460,14 +495,25 @@ Expression *init_match_expression_wc(Expression *scrutinee, MatchBranch **branch
             return NULL;
         }
 
-        Expression *branch_body_type = get_expression_type(branch->body);
-        if (!branch_body_type) {
-            fprintf(stderr, ERROR "Branch body has no type.\n" CRESET);
+        Expression *branch_body_bound = branch->body;
+        for (int j = branch->pattern_var_count - 1; j >= 0; j--) {
+            branch_body_bound =
+                init_lambda_expression_wc(branch->pattern_variables[j], branch_body_bound);
+            if (!branch_body_bound) {
+                fprintf(stderr, ERROR "Failed to create branch body bound.\n" CRESET);
+                free(constructor_covered);
+                return NULL;
+            }
+        }
+
+        if (!valid_in_context(branch_body_bound, context)) {
+            fprintf(stderr, ERROR "Branch body is not valid in context.\n" CRESET);
             free(constructor_covered);
             return NULL;
         }
 
         // All branches must have the same type
+        Expression *branch_body_type = get_expression_type(branch->body);
         if (match_type == NULL) {
             match_type = branch_body_type;
         } else if (!congruence(branch_body_type, match_type)) {
@@ -666,6 +712,15 @@ Expression *init_fix_expression_wc(Expression *recursive_var, Expression **args,
         }
     }
 
+    Expression *body_bound = body;
+    for (int i = arg_count - 1; i >= 0; i--) {
+        body_bound = init_lambda_expression_wc(args[i], body_bound);
+        if (!body_bound) {
+            fprintf(stderr, ERROR "Failed to create body bound.\n" CRESET);
+            return NULL;
+        }
+    }
+
     Expression *expr = _init_expression_base(/* tag */ FIX_EXPRESSION, /* context */ gamma,
                                              /* ctx_size */ gamma->ctx_size,
                                              /* type */ get_expression_type(recursive_var),
@@ -676,6 +731,13 @@ Expression *init_fix_expression_wc(Expression *recursive_var, Expression **args,
     SET_FIX_ARG_COUNT(expr, arg_count);
     SET_FIX_DECREASING_ARG_INDEX(expr, decreasing_arg_index);
     SET_FIX_BODY(expr, body);
+
+    if (!register_fix_body_to_expression(recursive_var, body_bound)) {
+        fprintf(stderr, ERROR "Failed to register body to recursive variable.\n" CRESET);
+        free_expression(expr);
+        return NULL;
+    }
+
     return expr;
 }
 
