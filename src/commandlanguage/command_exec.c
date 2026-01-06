@@ -5,6 +5,7 @@
 #include "src/kernel/context.h"
 #include "src/kernel/expression.h"
 #include "src/kernel/inductive.h"
+#include "src/kernel/normalize.h"
 #include "src/kernel/utils.h"
 #include "src/metalanguage/ast_to_expression.h"
 #include "src/runtime/proof_state.h"
@@ -691,18 +692,10 @@ static int _handle_fixpoint_command(MEngineRuntime *rt, FixpointCmd *fix_cmd) {
     fix_ast->value.fix.return_type = fix_cmd->return_type;
     fix_ast->value.fix.body = fix_cmd->body;
 
-    Expression *fix_expr = ast_to_expression(fix_ast, rt->ctx);
-    free(fix_ast);
-
-    if (!fix_expr) {
+    Expression *fixpoint_var = ast_to_expression(fix_ast, rt->ctx);
+    if (!fixpoint_var) {
         fprintf(stderr, ERROR "Failed to convert fixpoint '%s' to expression.\n" CRESET,
                 fix_cmd->name);
-        return 1;
-    }
-
-    Expression *fixpoint_var = init_var_expression_wc_with_body(fix_cmd->name, fix_expr, rt->ctx);
-    if (!fixpoint_var) {
-        fprintf(stderr, ERROR "Failed to create fixpoint variable '%s'.\n" CRESET, fix_cmd->name);
         return 1;
     }
 
@@ -710,6 +703,67 @@ static int _handle_fixpoint_command(MEngineRuntime *rt, FixpointCmd *fix_cmd) {
 
     fprintf(stdout, UI "Fixpoint " CRESET "%s : %s defined.\n", fix_cmd->name,
             stringify_expression(get_expression_type(fixpoint_var)));
+    return 0;
+}
+
+static int _handle_eval_command(MEngineRuntime *rt, EvalCmd *eval_cmd) {
+    if (!rt || !eval_cmd) {
+        return 1;
+    }
+
+    // Convert AST to expression
+    Context *ctx = (rt->mode == MENGINE_RUNTIME_PROOF_MODE)
+                       ? get_expression_context(proof_state_current(rt->proof_state))
+                       : rt->ctx;
+    Expression *expr = ast_to_expression(eval_cmd->term, ctx);
+    if (!expr) {
+        fprintf(stderr, ERROR "Failed to convert term in Eval command.\n" CRESET);
+        return 1;
+    }
+
+    // Determine reduction flags based on strategy and flags
+    ReductionFlags flags = 0;
+    Expression *result = NULL;
+
+    switch (eval_cmd->strategy) {
+        case EVAL_STRATEGY_CBV:
+            // For cbv, use the flags if specified, otherwise use all reductions
+            if (eval_cmd->beta_flag || eval_cmd->delta_flag || eval_cmd->iota_flag ||
+                eval_cmd->fix_flag) {
+                if (eval_cmd->beta_flag) {
+                    flags |= REDUCE_BETA;
+                }
+                if (eval_cmd->delta_flag) {
+                    flags |= REDUCE_DELTA;
+                }
+                if (eval_cmd->iota_flag) {
+                    flags |= REDUCE_IOTA;
+                }
+                if (eval_cmd->fix_flag) {
+                    flags |= REDUCE_FIX;
+                }
+            } else {
+                flags = REDUCE_ALL;
+            }
+            result = normalize_cbv(expr, flags);
+            break;
+
+        case EVAL_STRATEGY_COMPUTE:
+            result = normalize_compute(expr);
+            break;
+
+        default:
+            fprintf(stderr, ERROR "Unknown evaluation strategy.\n" CRESET);
+            return 1;
+    }
+
+    if (!result) {
+        fprintf(stderr, ERROR "Normalization failed.\n" CRESET);
+        return 1;
+    }
+
+    fprintf(stdout, DIMTEXT "\t= %s\n\t: %s\n" CRESET, stringify_expression(result),
+            stringify_expression(get_expression_type(result)));
     return 0;
 }
 
@@ -846,6 +900,9 @@ int mengine_execute_command(MEngineRuntime *rt, Command *cmd) {
         }
         case CMD_PRINT: {
             return _handle_print_command(rt, &cmd->as.print);
+        }
+        case CMD_EVAL: {
+            return _handle_eval_command(rt, &cmd->as.eval);
         }
         case CMD_INDUCTIVE: {
             return _handle_inductive_command(rt, &cmd->as.inductive);
