@@ -79,7 +79,13 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                 return letbinding;
             }
 
-            return context_lookup_by_name(context, ast->value.var.name);
+            Expression *val = context_lookup_by_name(context, ast->value.var.name);
+            if (!val) {
+                fprintf(stderr, ERROR "Variable %s not found in context.\n" CRESET,
+                        ast->value.var.name);
+                return NULL;
+            }
+            return val;
         }
 
         case AST_TYPE:
@@ -92,6 +98,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
             Expression *binder_type =
                 _ast_to_expression(ast->value.lambda.binder.type, context, letbindings);
             if (!binder_type) {
+                fprintf(stderr, ERROR "Failed to create lambda binder type.\n" CRESET);
                 return NULL;
             }
 
@@ -99,17 +106,20 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
 
             Expression *bound_var = init_var_expression_wc(name, binder_type, context);
             if (!bound_var) {
+                fprintf(stderr, ERROR "Failed to create lambda bound var.\n" CRESET);
                 return NULL;
             }
 
             Context *extended_context = bound_var;
             if (!extended_context) {
+                fprintf(stderr, ERROR "Failed to create lambda extended context.\n" CRESET);
                 return NULL;
             }
 
             Expression *body =
                 _ast_to_expression(ast->value.lambda.body, extended_context, letbindings);
             if (!body) {
+                fprintf(stderr, ERROR "Failed to create lambda body.\n" CRESET);
                 return NULL;
             }
 
@@ -120,6 +130,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
             Expression *binder_type =
                 _ast_to_expression(ast->value.forall.binder.type, context, letbindings);
             if (!binder_type) {
+                fprintf(stderr, ERROR "Failed to create forall binder type.\n" CRESET);
                 return NULL;
             }
 
@@ -127,17 +138,20 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
 
             Expression *bound_var = init_var_expression_wc(name, binder_type, context);
             if (!bound_var) {
+                fprintf(stderr, ERROR "Failed to create forall bound var.\n" CRESET);
                 return NULL;
             }
 
             Context *extended_context = bound_var;
             if (!extended_context) {
+                fprintf(stderr, ERROR "Failed to create forall extended context.\n" CRESET);
                 return NULL;
             }
 
             Expression *body =
                 _ast_to_expression(ast->value.forall.body, extended_context, letbindings);
             if (!body) {
+                fprintf(stderr, ERROR "Failed to create forall body.\n" CRESET);
                 return NULL;
             }
 
@@ -147,11 +161,13 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
         case AST_APP: {
             Expression *func = _ast_to_expression(ast->value.app.func, context, letbindings);
             if (!func) {
+                fprintf(stderr, ERROR "Failed to create app func.\n" CRESET);
                 return NULL;
             }
 
             Expression *arg = _ast_to_expression(ast->value.app.arg, context, letbindings);
             if (!arg) {
+                fprintf(stderr, ERROR "Failed to create app arg.\n" CRESET);
                 return NULL;
             }
 
@@ -161,11 +177,13 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
         case AST_LET: {
             Expression *type = _ast_to_expression(ast->value.let.type, context, letbindings);
             if (!type) {
+                fprintf(stderr, ERROR "Failed to create let type.\n" CRESET);
                 return NULL;
             }
 
             Expression *value = _ast_to_expression(ast->value.let.value, context, letbindings);
             if (!value) {
+                fprintf(stderr, ERROR "Failed to create let value.\n" CRESET);
                 return NULL;
             }
 
@@ -201,7 +219,8 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
 
                 MatchBranch *branch = malloc(sizeof(MatchBranch));
                 if (!branch) {
-                    // TODO: cleanup
+                    fprintf(stderr, ERROR "Failed to create match branch.\n" CRESET);
+                    free(branches);
                     return NULL;
                 }
 
@@ -211,6 +230,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                     fprintf(stderr, ERROR "Constructor %s not found in context.\n" CRESET,
                             pattern->constructor_name);
                     free(branch);
+                    free(branches);
                     return NULL;
                 }
                 branch->constructor = constructor;
@@ -232,6 +252,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                                     "Constructor has fewer parameters than pattern.\n" CRESET);
                             free(branch->pattern_variables);
                             free(branch);
+                            free(branches);
                             return NULL;
                         }
 
@@ -256,8 +277,10 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                 }
 
                 if (!branch->body) {
+                    fprintf(stderr, ERROR "Failed to create match branch body.\n" CRESET);
                     free(branch->pattern_variables);
                     free(branch);
+                    free(branches);
                     return NULL;
                 }
 
@@ -267,6 +290,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
             Expression *match_expr =
                 init_match_expression_wc(scrutinee, branches, branch_count, context);
             if (!match_expr) {
+                fprintf(stderr, ERROR "Failed to create match expression.\n" CRESET);
                 for (int i = 0; i < branch_count; i++) {
                     if (branches[i]) {
                         free(branches[i]->pattern_variables);
@@ -282,134 +306,143 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
 
         case AST_FIX: {
             int binder_count = ast->value.fix.binder_count;
-            Context **temp_contexts = malloc((binder_count + 1) * sizeof(Context *));
-            if (!temp_contexts) {
-                fprintf(stderr, ERROR "Memory allocation failed for temp contexts.\n" CRESET);
-                return NULL;
-            }
+            Expression *recursive_var = NULL;
+            {
+                Context **contexts = malloc((binder_count + 1) * sizeof(Context *));
+                if (!contexts) {
+                    fprintf(stderr, ERROR "Memory allocation failed for contexts.\n" CRESET);
+                    return NULL;
+                }
 
-            temp_contexts[0] = context;
-            for (int i = 0; i < binder_count; i++) {
-                Expression *binder_type = _ast_to_expression(ast->value.fix.binders[i]->type,
-                                                             temp_contexts[i], letbindings);
-                if (!binder_type) {
+                contexts[0] = context;
+                for (int i = 0; i < binder_count; i++) {
+                    Expression *binder_type = _ast_to_expression(ast->value.fix.binders[i]->type,
+                                                                 contexts[i], letbindings);
+                    if (!binder_type) {
+                        fprintf(stderr,
+                                ERROR "Failed to convert binder type in fix expression.\n" CRESET);
+                        free(contexts);
+                        return NULL;
+                    }
+
+                    Expression *binder = init_var_expression_wc(ast->value.fix.binders[i]->name,
+                                                                binder_type, contexts[i]);
+                    if (!binder) {
+                        fprintf(stderr,
+                                ERROR "Failed to create binder in fix expression.\n" CRESET);
+                        free(contexts);
+                        return NULL;
+                    }
+
+                    contexts[i + 1] = binder;
+                }
+
+                Expression *return_type = _ast_to_expression(ast->value.fix.return_type,
+                                                             contexts[binder_count], letbindings);
+                if (!return_type) {
                     fprintf(stderr,
-                            ERROR "Failed to convert binder type in fix expression.\n" CRESET);
-                    free(temp_contexts);
+                            ERROR "Failed to convert return type in fix expression.\n" CRESET);
+                    free(contexts);
                     return NULL;
                 }
 
-                Expression *temp_binder = init_var_expression_wc(ast->value.fix.binders[i]->name,
-                                                                 binder_type, temp_contexts[i]);
-                if (!temp_binder) {
+                // recursive var type: forall (x1 : A1) ... (xn : An), return_type
+                Expression *rec_var_type = return_type;
+                for (int i = binder_count - 1; i >= 0; i--) {
+                    rec_var_type = init_forall_expression_wc(contexts[i + 1], rec_var_type);
+                    if (!rec_var_type) {
+                        fprintf(stderr, ERROR "Failed to create forall type.\n" CRESET);
+                        free(contexts);
+                        return NULL;
+                    }
+                }
+
+                recursive_var = init_var_expression_wc(ast->value.fix.name, rec_var_type, context);
+                if (!recursive_var) {
                     fprintf(stderr,
-                            ERROR "Failed to create temp binder in fix expression.\n" CRESET);
-                    free(temp_contexts);
-                    return NULL;
-                }
-
-                temp_contexts[i + 1] = temp_binder;
-            }
-
-            Expression *return_type = _ast_to_expression(ast->value.fix.return_type,
-                                                         temp_contexts[binder_count], letbindings);
-            if (!return_type) {
-                fprintf(stderr, ERROR "Failed to convert return type in fix expression.\n" CRESET);
-                free(temp_contexts);
-                return NULL;
-            }
-
-            // recursive var type: forall (x1 : A1) ... (xn : An), return_type
-            Expression *rec_var_type = return_type;
-            for (int i = binder_count - 1; i >= 0; i--) {
-                rec_var_type = init_forall_expression_wc(temp_contexts[i + 1], rec_var_type);
-                if (!rec_var_type) {
-                    fprintf(stderr, ERROR "Failed to create forall type.\n" CRESET);
-                    free(temp_contexts);
+                            ERROR "Failed to create recursive var in fix expression.\n" CRESET);
+                    free(contexts);
                     return NULL;
                 }
             }
+            // Next, make the fix expression
 
-            free(temp_contexts);
-
-            Expression *recursive_var =
-                init_var_expression_wc(ast->value.fix.name, rec_var_type, context);
-            if (!recursive_var) {
-                fprintf(stderr, ERROR "Failed to create recursive var in fix expression.\n" CRESET);
-                return NULL;
-            }
-
-            Expression **args = malloc(binder_count * sizeof(Expression *));
-            if (!args) {
-                fprintf(stderr, ERROR "Memory allocation failed for args.\n" CRESET);
-                return NULL;
-            }
-
-            Context *param_context = recursive_var;
-            for (int i = 0; i < binder_count; i++) {
-                Expression *param_type =
-                    _ast_to_expression(ast->value.fix.binders[i]->type, param_context, letbindings);
-                if (!param_type) {
-                    fprintf(stderr,
-                            ERROR "Failed to convert param type in fix expression.\n" CRESET);
-                    free(args);
+            Expression *fix_expr = NULL;
+            {
+                Context **contexts = malloc((binder_count + 1) * sizeof(Context *));
+                if (!contexts) {
+                    fprintf(stderr, ERROR "Memory allocation failed for contexts.\n" CRESET);
                     return NULL;
                 }
 
-                args[i] = init_var_expression_wc(ast->value.fix.binders[i]->name, param_type,
-                                                 param_context);
-                if (!args[i]) {
-                    fprintf(stderr, ERROR "Failed to create parameter variable.\n" CRESET);
-                    free(args);
+                contexts[0] = recursive_var;
+                for (int i = 0; i < binder_count; i++) {
+                    Expression *binder_type = _ast_to_expression(ast->value.fix.binders[i]->type,
+                                                                 contexts[i], letbindings);
+                    if (!binder_type) {
+                        fprintf(stderr,
+                                ERROR "Failed to convert binder type in fix expression.\n" CRESET);
+                        free(contexts);
+                        return NULL;
+                    }
+
+                    Expression *binder = init_var_expression_wc(ast->value.fix.binders[i]->name,
+                                                                binder_type, contexts[i]);
+                    if (!binder) {
+                        fprintf(stderr,
+                                ERROR "Failed to create binder in fix expression.\n" CRESET);
+                        free(contexts);
+                        return NULL;
+                    }
+
+                    contexts[i + 1] = binder;
+                }
+
+                Expression *body =
+                    _ast_to_expression(ast->value.fix.body, contexts[binder_count], letbindings);
+                if (!body) {
+                    fprintf(stderr, ERROR "Failed to convert body in fix expression.\n" CRESET);
+                    free(contexts);
                     return NULL;
                 }
 
-                param_context = args[i];
-            }
+                Expression *decreasing_arg = context_lookup_by_name(
+                    contexts[binder_count], ast->value.fix.decreasing_arg_name);
+                if (!decreasing_arg) {
+                    fprintf(stderr, ERROR "Decreasing argument '%s' not found in context.\n" CRESET,
+                            ast->value.fix.decreasing_arg_name);
+                    free(contexts);
+                    return NULL;
+                }
 
-            Expression *body = _ast_to_expression(ast->value.fix.body, param_context, letbindings);
-            if (!body) {
-                fprintf(stderr, ERROR "Failed to convert body in fix expression.\n" CRESET);
-                free(args);
-                return NULL;
-            }
+                int decreasing_arg_index = -1;
+                for (int i = 0; i < binder_count; i++) {
+                    if (decreasing_arg == contexts[i + 1]) {
+                        decreasing_arg_index = i;
+                        break;
+                    }
+                }
 
-            Expression *decreasing_arg =
-                context_lookup_by_name(param_context, ast->value.fix.decreasing_arg_name);
+                if (decreasing_arg_index == -1) {
+                    fprintf(stderr, ERROR "Decreasing argument '%s' not found in binders.\n" CRESET,
+                            ast->value.fix.decreasing_arg_name);
+                    free(contexts);
+                    return NULL;
+                }
 
-            if (!decreasing_arg) {
-                fprintf(stderr, ERROR "Decreasing argument '%s' not found in context.\n" CRESET,
-                        ast->value.fix.decreasing_arg_name);
-                free(args);
-                return NULL;
-            }
-
-            int decreasing_arg_index = -1;
-            for (int i = 0; i < binder_count; i++) {
-                if (decreasing_arg == args[i]) {
-                    decreasing_arg_index = i;
-                    break;
+                fix_expr = init_fix_expression_wc(recursive_var, contexts + 1, binder_count,
+                                                  decreasing_arg_index, body);
+                if (!fix_expr) {
+                    fprintf(stderr, ERROR "Failed to create fix expression.\n" CRESET);
+                    free(contexts);
+                    return NULL;
                 }
             }
 
-            if (decreasing_arg_index == -1) {
-                fprintf(stderr, ERROR "Decreasing argument '%s' not found in binders.\n" CRESET,
-                        ast->value.fix.decreasing_arg_name);
-                free(args);
-                return NULL;
-            }
-
-            Expression *fix_expr = init_fix_expression_wc(recursive_var, args, binder_count,
-                                                          decreasing_arg_index, body);
-            if (!fix_expr) {
-                fprintf(stderr, ERROR "Failed to create fix expression.\n" CRESET);
-                free(args);
-                return NULL;
-            }
-
-            return fix_expr;
+            // return the recursive variable here-- the fix expression will be registered as the
+            // body of the recursive variable
+            return recursive_var;
         }
-
         default:
             return NULL;
     }
