@@ -1,0 +1,29 @@
+(* Test Fixpoint with Eval command *)
+
+Inductive nat : Type := | O : nat | S : forall (_: nat), nat.
+
+Fixpoint add (n : nat) (m : nat) {struct n} : nat := match n with | O => m | S n' => S (add n' m) end.
+
+(* Test 1: Eval compute on fixpoint - reduces the fixpoint and performs iota reduction *)
+Eval compute in (add O O).
+
+(* Test 2: Eval compute on S O + O *)
+Eval compute in (add (S O) O).
+
+(* Test 3: Eval compute with nested S *)
+Eval compute in (add (S (S O)) (S O)).
+
+(* Test 4: Eval cbv with all flags *)
+Eval cbv in (add O O).
+
+(* Test 5: Eval cbv with only fix reduction *)
+Eval cbv fix in add.
+
+(* Test 6: Eval cbv with fix and iota *)
+Eval cbv fix iota in (add O O).
+
+(* Test 7: Eval cbv with beta, delta, fix, and iota *)
+Eval cbv beta delta fix iota in (add O O).
+
+(* Test 8: Eval cbv delta to see the fixpoint unfold *)
+Eval cbv delta in add.

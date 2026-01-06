@@ -431,3 +431,67 @@ Command *command_parse_inductive(Parser *p) {
 
     return cmd;
 }
+
+Command *command_parse_eval(Parser *p) {
+    if (!parser_expect_consume(p, TOK_EVAL)) {
+        parser_error(p, "expected 'Eval'");
+    }
+
+    // Parse strategy
+    EvalStrategy strategy;
+    if (parser_expect_consume(p, TOK_CBV)) {
+        strategy = EVAL_STRATEGY_CBV;
+    } else if (parser_expect_consume(p, TOK_COMPUTE)) {
+        strategy = EVAL_STRATEGY_COMPUTE;
+    } else {
+        parser_error(p, "expected reduction strategy: 'cbv', 'compute', or 'hnf'");
+    }
+
+    // Parse optional flags
+    bool beta_flag = false;
+    bool delta_flag = false;
+    bool iota_flag = false;
+    bool fix_flag = false;
+
+    // For cbv, we can optionally specify which reductions to apply
+    if (strategy == EVAL_STRATEGY_CBV) {
+        bool found_flag = true;
+        while (found_flag) {
+            if (parser_expect_consume(p, TOK_BETA)) {
+                beta_flag = true;
+            } else if (parser_expect_consume(p, TOK_DELTA)) {
+                delta_flag = true;
+            } else if (parser_expect_consume(p, TOK_IOTA)) {
+                iota_flag = true;
+            } else if (parser_expect_consume(p, TOK_FIX)) {
+                fix_flag = true;
+            } else {
+                found_flag = false;
+            }
+        }
+    }
+
+    // Expect 'in' keyword
+    if (!parser_expect_consume(p, TOK_IN)) {
+        parser_error(p, "expected 'in' after reduction strategy");
+    }
+
+    // Parse the term to evaluate
+    AST *term = parse_term(p);
+    debug_print_ast(p, term);
+
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "expected '.' at end of eval command");
+    }
+
+    Command *cmd = malloc(sizeof(Command));
+    cmd->tag = CMD_EVAL;
+    cmd->as.eval.strategy = strategy;
+    cmd->as.eval.beta_flag = beta_flag;
+    cmd->as.eval.delta_flag = delta_flag;
+    cmd->as.eval.iota_flag = iota_flag;
+    cmd->as.eval.fix_flag = fix_flag;
+    cmd->as.eval.term = term;
+
+    return cmd;
+}
