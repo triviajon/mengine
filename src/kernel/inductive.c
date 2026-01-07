@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 #include "src/common/color.h"
-#include "src/kernel/dyn_array_map.h"
+#include "src/common/dyn_array_map.h"
 
 // Global registry mapping Expression* -> InductiveDefinition*
 static Map *inductive_registry = NULL;
