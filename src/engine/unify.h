@@ -2,8 +2,7 @@
 #define UNIFY_H
 
 #include "src/common/doubly_linked_list.h"
-#include "src/common/dyn_array_map.h"
-#include "src/kernel/context.h"
+#include "src/common/linear_map.h"
 #include "src/kernel/expression.h"
 
 // Given a lemma of the form "Forall x1: T1, ..., Forall xn: Tn, ..., B",
@@ -22,7 +21,8 @@ typedef struct {
 UnificationResult *unify_and_instantiate(Context *goal_context, Expression *lemma,
                                          Expression *lemma_ty, Expression *expr);
 
-Expression *instantiate_lemma_with_bindings(Expression *lemma, Expression *lemma_ty, Map *binders);
+Expression *instantiate_lemma_with_bindings(Expression *lemma, Expression *lemma_ty,
+                                            LinearMap *binders);
 
 UnificationResult *init_unification_result(Expression *lemma_instantiation,
                                            DoublyLinkedList *new_goals);

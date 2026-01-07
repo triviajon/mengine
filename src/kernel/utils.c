@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-#include "src/common/dyn_array_map.h"
+#include "src/common/linear_map.h"
 #include "src/kernel/context.h"
 #include "src/kernel/expression.h"
 
@@ -270,8 +270,8 @@ char *_top_level_stringify_to_address(Expression *expression) {
     return result;
 }
 
-void _count_subexpression(Expression *expression, Map *visited, Map *counts) {
-    if (map_get(visited, expression)) {
+void _count_subexpression(Expression *expression, LinearMap *visited, LinearMap *counts) {
+    if (linear_map_get(visited, expression)) {
         return;
     }
     bool *have_visited = malloc(sizeof(bool));
@@ -280,26 +280,26 @@ void _count_subexpression(Expression *expression, Map *visited, Map *counts) {
 
     // make this a set
 
-    map_set(visited, expression, have_visited);
+    linear_map_set(visited, expression, have_visited);
 
     switch (expression->tag) {
         case VAR_EXPRESSION:
             break;
         case APP_EXPRESSION: {
-            int *func_lookup_value = map_get(counts, get_app_func(expression));
+            int *func_lookup_value = linear_map_get(counts, get_app_func(expression));
             if (!func_lookup_value) {
                 int *value = malloc(sizeof(int));
                 *value = 1;
-                map_set(counts, (void *)get_app_func(expression), value);
+                linear_map_set(counts, (void *)get_app_func(expression), value);
             } else {
                 (*func_lookup_value)++;
             }
 
-            int *arg_lookup_value = map_get(counts, get_app_arg(expression));
+            int *arg_lookup_value = linear_map_get(counts, get_app_arg(expression));
             if (!arg_lookup_value) {
                 int *value = malloc(sizeof(int));
                 *value = 1;
-                map_set(counts, (void *)get_app_arg(expression), value);
+                linear_map_set(counts, (void *)get_app_arg(expression), value);
             } else {
                 (*arg_lookup_value)++;
             }
@@ -314,7 +314,7 @@ void _count_subexpression(Expression *expression, Map *visited, Map *counts) {
     }
 }
 
-DoublyLinkedList *topo_order(Expression *top_expr, Map *expr_counts) {
+DoublyLinkedList *topo_order(Expression *top_expr, LinearMap *expr_counts) {
     // We assume top_expr is NOT in expr_counts, since it should always have
     // in-degree 0.
 
@@ -334,11 +334,11 @@ DoublyLinkedList *topo_order(Expression *top_expr, Map *expr_counts) {
                 break;
             case (APP_EXPRESSION): {
                 Expression *func = get_app_func(expr);
-                int *func_count = map_get(expr_counts, func);
+                int *func_count = linear_map_get(expr_counts, func);
                 (*func_count)--;
 
                 Expression *arg = get_app_arg(expr);
-                int *arg_count = map_get(expr_counts, arg);
+                int *arg_count = linear_map_get(expr_counts, arg);
                 (*arg_count)--;
                 break;
             }
@@ -353,12 +353,12 @@ DoublyLinkedList *topo_order(Expression *top_expr, Map *expr_counts) {
                 break;
             case (APP_EXPRESSION): {
                 Expression *func = get_app_func(expr);
-                int *func_count = map_get(expr_counts, func);
+                int *func_count = linear_map_get(expr_counts, func);
                 if (*func_count == 0) {
                     dll_insert_at_tail(S, dll_new_node(func));
                 }
                 Expression *arg = get_app_arg(expr);
-                int *arg_count = map_get(expr_counts, arg);
+                int *arg_count = linear_map_get(expr_counts, arg);
                 if (*arg_count == 0) {
                     dll_insert_at_tail(S, dll_new_node(arg));
                 }
@@ -587,8 +587,8 @@ char *_top_level_stringify_expression_with_let(Expression *expression) {
 }
 
 char *stringify_expression_with_let(Expression *expression) {
-    Map *visited = map_new();  // maps addresses to visited bool
-    Map *counts = map_new();   // maps addresses to counts
+    LinearMap *visited = linear_map_new();  // maps addresses to visited bool
+    LinearMap *counts = linear_map_new();   // maps addresses to counts
     _count_subexpression(expression, visited, counts);
     DoublyLinkedList *ordering = topo_order(expression, counts);
 

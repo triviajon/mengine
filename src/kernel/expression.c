@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "src/common/color.h"
-#include "src/common/dyn_array_map.h"
+#include "src/common/linear_map.h"
 #include "src/kernel/beta_reduction.h"
 #include "src/kernel/context.h"
 #include "src/kernel/inductive.h"
@@ -567,20 +567,20 @@ Expression *get_nth_app_arg(Expression *app, int n) {
 // Records: "pattern_var is directly structurally smaller than scrutinee"
 static bool check_all_recursive_calls_with_context(Expression *body, Expression *rec_var,
                                                    Expression *decreasing_arg, int decreasing_idx,
-                                                   Map *pattern_to_scrutinee);
+                                                   LinearMap *pattern_to_scrutinee);
 
 static bool check_all_recursive_calls(Expression *body, Expression *rec_var,
                                       Expression *decreasing_arg, int decreasing_idx) {
-    Map *empty_map = map_new();
+    LinearMap *empty_map = linear_map_new();
     bool result = check_all_recursive_calls_with_context(body, rec_var, decreasing_arg,
                                                          decreasing_idx, empty_map);
-    map_free(empty_map);
+    linear_map_free(empty_map);
     return result;
 }
 
 static bool check_all_recursive_calls_with_context(Expression *body, Expression *rec_var,
                                                    Expression *decreasing_arg, int decreasing_idx,
-                                                   Map *pattern_to_scrutinee) {
+                                                   LinearMap *pattern_to_scrutinee) {
     switch (body->tag) {
         case VAR_EXPRESSION:
         case TYPE_EXPRESSION:
@@ -594,7 +594,7 @@ static bool check_all_recursive_calls_with_context(Expression *body, Expression 
                 Expression *actual_arg = get_nth_app_arg(body, decreasing_idx);
 
                 // Check if actual_arg is a pattern variable
-                Expression *scrutinee_of_pattern = map_get(pattern_to_scrutinee, actual_arg);
+                Expression *scrutinee_of_pattern = linear_map_get(pattern_to_scrutinee, actual_arg);
                 if (scrutinee_of_pattern) {
                     // actual_arg is directly structurally smaller than scrutinee_of_pattern
                     // Check if scrutinee_of_pattern is the decreasing_arg or smaller
@@ -639,26 +639,26 @@ static bool check_all_recursive_calls_with_context(Expression *body, Expression 
                 MatchBranch *branch = body->as.match.branches[i];
 
                 // Create extended map for this branch
-                Map *branch_map = map_new();
+                LinearMap *branch_map = linear_map_new();
 
                 // Copy existing mappings
                 for (int j = 0; j < pattern_to_scrutinee->size; j++) {
-                    MapItem *item = &pattern_to_scrutinee->items[j];
+                    LinearMapItem *item = &pattern_to_scrutinee->items[j];
                     if (item->key) {
-                        map_set(branch_map, item->key, item->val);
+                        linear_map_set(branch_map, item->key, item->val);
                     }
                 }
 
                 // Add new mappings: each pattern variable is directly structurally smaller than
                 // scrutinee
                 for (int j = 0; j < branch->pattern_var_count; j++) {
-                    map_set(branch_map, branch->pattern_variables[j], scrutinee);
+                    linear_map_set(branch_map, branch->pattern_variables[j], scrutinee);
                 }
 
                 bool branch_ok = check_all_recursive_calls_with_context(
                     branch->body, rec_var, decreasing_arg, decreasing_idx, branch_map);
 
-                map_clear_free(branch_map);
+                linear_map_clear_free(branch_map);
 
                 if (!branch_ok) {
                     return false;
@@ -969,7 +969,7 @@ Expression *get_arrow_rhs(Expression *expr) {
 }
 
 // Forward declarations. No need to expose them in expression.h.
-bool _congruence(Expression *a, Expression *b, Map *mapping) {
+bool _congruence(Expression *a, Expression *b, LinearMap *mapping) {
     // Mapping is a map from variables in a to variables in b.
     if (a == b) {
         return true;
@@ -988,18 +988,18 @@ bool _congruence(Expression *a, Expression *b, Map *mapping) {
             return _congruence(a->as.app.func, b->as.app.func, mapping) &&
                    _congruence(a->as.app.arg, b->as.app.arg, mapping);
         case (FORALL_EXPRESSION): {
-            map_set(mapping, a->as.forall.bound_variable, b->as.forall.bound_variable);
+            linear_map_set(mapping, a->as.forall.bound_variable, b->as.forall.bound_variable);
             return _congruence(a->as.forall.body, b->as.forall.body, mapping);
         }
         case (LAMBDA_EXPRESSION): {
-            map_set(mapping, a->as.lambda.bound_variable, b->as.lambda.bound_variable);
+            linear_map_set(mapping, a->as.lambda.bound_variable, b->as.lambda.bound_variable);
             return _congruence(a->as.lambda.body, b->as.lambda.body, mapping);
         }
         case (VAR_EXPRESSION): {
-            return (a == b) || (map_get(mapping, a) == b);
+            return (a == b) || (linear_map_get(mapping, a) == b);
         }
         case (HOLE_EXPRESSION): {
-            return (a == b) || (map_get(mapping, a) == b);
+            return (a == b) || (linear_map_get(mapping, a) == b);
         }
         case (MATCH_EXPRESSION): {
             if (!_congruence(a->as.match.scrutinee, b->as.match.scrutinee, mapping)) {
@@ -1021,8 +1021,8 @@ bool _congruence(Expression *a, Expression *b, Map *mapping) {
 
                 // Map pattern variables
                 for (int j = 0; j < branch_a->pattern_var_count; j++) {
-                    map_set(mapping, branch_a->pattern_variables[j],
-                            branch_b->pattern_variables[j]);
+                    linear_map_set(mapping, branch_a->pattern_variables[j],
+                                   branch_b->pattern_variables[j]);
                 }
 
                 if (!_congruence(branch_a->body, branch_b->body, mapping)) {
@@ -1033,7 +1033,7 @@ bool _congruence(Expression *a, Expression *b, Map *mapping) {
         }
         case (FIX_EXPRESSION): {
             // Map recursive variable
-            map_set(mapping, a->as.fix.recursive_var, b->as.fix.recursive_var);
+            linear_map_set(mapping, a->as.fix.recursive_var, b->as.fix.recursive_var);
 
             // Check arg counts match
             if (a->as.fix.arg_count != b->as.fix.arg_count) {
@@ -1047,7 +1047,7 @@ bool _congruence(Expression *a, Expression *b, Map *mapping) {
 
             // Map all args and check congruence
             for (int i = 0; i < a->as.fix.arg_count; i++) {
-                map_set(mapping, a->as.fix.args[i], b->as.fix.args[i]);
+                linear_map_set(mapping, a->as.fix.args[i], b->as.fix.args[i]);
             }
 
             // Check body congruence
@@ -1057,7 +1057,7 @@ bool _congruence(Expression *a, Expression *b, Map *mapping) {
 }
 
 bool congruence(Expression *a, Expression *b) {
-    Map *mapping = map_new();
+    LinearMap *mapping = linear_map_new();
     bool result = _congruence(a, b, mapping);
     free(mapping->items);
     free(mapping);
@@ -1074,7 +1074,7 @@ bool subtypes(Expression *a, Expression *b) {
     return congruence(a, b);
 }
 
-void _match_and_subst(Expression *a, Expression *b, Map *mapping) {
+void _match_and_subst(Expression *a, Expression *b, LinearMap *mapping) {
     // Mapping is a map from variables in a to variables in b.
     if (a == b) {
         return;
@@ -1090,24 +1090,24 @@ void _match_and_subst(Expression *a, Expression *b, Map *mapping) {
             _match_and_subst(a->as.app.arg, b->as.app.arg, mapping);
             break;
         case (FORALL_EXPRESSION): {
-            map_set(mapping, a->as.forall.bound_variable, b->as.forall.bound_variable);
+            linear_map_set(mapping, a->as.forall.bound_variable, b->as.forall.bound_variable);
             _match_and_subst(a->as.forall.body, b->as.forall.body, mapping);
             break;
         }
         case (LAMBDA_EXPRESSION): {
-            map_set(mapping, a->as.lambda.bound_variable, b->as.lambda.bound_variable);
+            linear_map_set(mapping, a->as.lambda.bound_variable, b->as.lambda.bound_variable);
             _match_and_subst(a->as.lambda.body, b->as.lambda.body, mapping);
             break;
         }
         case (VAR_EXPRESSION): {
             if (a != b) {
-                (map_set(mapping, a, b));
+                (linear_map_set(mapping, a, b));
             }
             break;
         }
         case (HOLE_EXPRESSION): {
             if (a != b) {
-                (map_set(mapping, a, b));
+                (linear_map_set(mapping, a, b));
             }
             break;
         }
@@ -1118,17 +1118,17 @@ void _match_and_subst(Expression *a, Expression *b, Map *mapping) {
                 MatchBranch *branch_b = b->as.match.branches[i];
                 _match_and_subst(branch_a->constructor, branch_b->constructor, mapping);
                 for (int j = 0; j < branch_a->pattern_var_count; j++) {
-                    map_set(mapping, branch_a->pattern_variables[j],
-                            branch_b->pattern_variables[j]);
+                    linear_map_set(mapping, branch_a->pattern_variables[j],
+                                   branch_b->pattern_variables[j]);
                 }
                 _match_and_subst(branch_a->body, branch_b->body, mapping);
             }
             break;
         }
         case (FIX_EXPRESSION): {
-            map_set(mapping, a->as.fix.recursive_var, b->as.fix.recursive_var);
+            linear_map_set(mapping, a->as.fix.recursive_var, b->as.fix.recursive_var);
             for (int i = 0; i < a->as.fix.arg_count; i++) {
-                map_set(mapping, a->as.fix.args[i], b->as.fix.args[i]);
+                linear_map_set(mapping, a->as.fix.args[i], b->as.fix.args[i]);
             }
             _match_and_subst(a->as.fix.body, b->as.fix.body, mapping);
             break;
@@ -1140,7 +1140,7 @@ void _match_and_subst(Expression *a, Expression *b, Map *mapping) {
 }
 
 Expression *match_and_subst(Expression *a, Expression *b, Expression *to_subst) {
-    Map *mapping = map_new();
+    LinearMap *mapping = linear_map_new();
     _match_and_subst(a, b, mapping);
 
     DoublyLinkedList *old_exprs = dll_create();
@@ -1162,8 +1162,8 @@ Expression *match_and_subst(Expression *a, Expression *b, Expression *to_subst) 
     return result;
 }
 
-bool _congruent_with_holes(Expression *a, Expression *b, Map *alpha_equivalences,
-                           Map *required_holes) {
+bool _congruent_with_holes(Expression *a, Expression *b, LinearMap *alpha_equivalences,
+                           LinearMap *required_holes) {
     if (a == b) {
         return true;
     }
@@ -1174,7 +1174,7 @@ bool _congruent_with_holes(Expression *a, Expression *b, Map *alpha_equivalences
     if (a->tag == HOLE_EXPRESSION) {
         bool b_can_fill = can_fill(a, b);
         if (b_can_fill) {
-            map_set(required_holes, a, b);
+            linear_map_set(required_holes, a, b);
             return true;
         }
         return false;
@@ -1182,7 +1182,7 @@ bool _congruent_with_holes(Expression *a, Expression *b, Map *alpha_equivalences
     if (b->tag == HOLE_EXPRESSION) {
         bool a_can_fill = can_fill(b, a);
         if (a_can_fill) {
-            map_set(required_holes, b, a);
+            linear_map_set(required_holes, b, a);
             return true;
         }
         return false;
@@ -1205,19 +1205,21 @@ bool _congruent_with_holes(Expression *a, Expression *b, Map *alpha_equivalences
             return result1 && result2;
         }
         case (FORALL_EXPRESSION): {
-            map_set(alpha_equivalences, a->as.forall.bound_variable, b->as.forall.bound_variable);
+            linear_map_set(alpha_equivalences, a->as.forall.bound_variable,
+                           b->as.forall.bound_variable);
             bool result = _congruent_with_holes(a->as.forall.body, b->as.forall.body,
                                                 alpha_equivalences, required_holes);
             return result;
         }
         case (LAMBDA_EXPRESSION): {
-            map_set(alpha_equivalences, a->as.lambda.bound_variable, b->as.lambda.bound_variable);
+            linear_map_set(alpha_equivalences, a->as.lambda.bound_variable,
+                           b->as.lambda.bound_variable);
             bool result = _congruent_with_holes(a->as.lambda.body, b->as.lambda.body,
                                                 alpha_equivalences, required_holes);
             return result;
         }
         case (VAR_EXPRESSION): {
-            return (a == b) || map_get(alpha_equivalences, a) == b;
+            return (a == b) || linear_map_get(alpha_equivalences, a) == b;
         }
         case (MATCH_EXPRESSION): {
             if (!_congruent_with_holes(a->as.match.scrutinee, b->as.match.scrutinee,
@@ -1238,8 +1240,8 @@ bool _congruent_with_holes(Expression *a, Expression *b, Map *alpha_equivalences
                     return false;
                 }
                 for (int j = 0; j < branch_a->pattern_var_count; j++) {
-                    map_set(alpha_equivalences, branch_a->pattern_variables[j],
-                            branch_b->pattern_variables[j]);
+                    linear_map_set(alpha_equivalences, branch_a->pattern_variables[j],
+                                   branch_b->pattern_variables[j]);
                 }
                 if (!_congruent_with_holes(branch_a->body, branch_b->body, alpha_equivalences,
                                            required_holes)) {
@@ -1249,7 +1251,7 @@ bool _congruent_with_holes(Expression *a, Expression *b, Map *alpha_equivalences
             return true;
         }
         case (FIX_EXPRESSION): {
-            map_set(alpha_equivalences, a->as.fix.recursive_var, b->as.fix.recursive_var);
+            linear_map_set(alpha_equivalences, a->as.fix.recursive_var, b->as.fix.recursive_var);
             if (a->as.fix.arg_count != b->as.fix.arg_count) {
                 return false;
             }
@@ -1257,7 +1259,7 @@ bool _congruent_with_holes(Expression *a, Expression *b, Map *alpha_equivalences
                 return false;
             }
             for (int i = 0; i < a->as.fix.arg_count; i++) {
-                map_set(alpha_equivalences, a->as.fix.args[i], b->as.fix.args[i]);
+                linear_map_set(alpha_equivalences, a->as.fix.args[i], b->as.fix.args[i]);
             }
             return _congruent_with_holes(a->as.fix.body, b->as.fix.body, alpha_equivalences,
                                          required_holes);
@@ -1269,11 +1271,11 @@ bool _congruent_with_holes(Expression *a, Expression *b, Map *alpha_equivalences
 }
 
 bool congruent_with_holes(Expression *a, Expression *b) {
-    Map *alpha_equivalences = map_new();
-    Map *required_holes = map_new();
+    LinearMap *alpha_equivalences = linear_map_new();
+    LinearMap *required_holes = linear_map_new();
     bool result = _congruent_with_holes(a, b, alpha_equivalences, required_holes);
-    map_clear_free(alpha_equivalences);
-    map_clear_free(required_holes);
+    linear_map_clear_free(alpha_equivalences);
+    linear_map_clear_free(required_holes);
     return result;
 }
 
@@ -1334,11 +1336,11 @@ bool can_fill(Expression *hole, Expression *term) {
     return types_match && valid_in_context(term, get_expression_context(hole)) && !occurs;
 }
 
-bool _occurs_in(Expression *var_or_hole, Expression *term, Map *visited) {
-    if (map_get(visited, term) != NULL) {
+bool _occurs_in(Expression *var_or_hole, Expression *term, LinearMap *visited) {
+    if (linear_map_get(visited, term) != NULL) {
         return false;
     }
-    map_set(visited, term, term);
+    linear_map_set(visited, term, term);
 
     if (var_or_hole == term) {
         return true;
@@ -1398,7 +1400,7 @@ bool _occurs_in(Expression *var_or_hole, Expression *term, Map *visited) {
 }
 
 bool occurs_in(Expression *var_or_hole, Expression *term) {
-    return _occurs_in(var_or_hole, term, map_new());
+    return _occurs_in(var_or_hole, term, linear_map_new());
 }
 
 void fill_hole(Expression *hole, Expression *term) {
@@ -1411,13 +1413,13 @@ void fill_hole(Expression *hole, Expression *term) {
     }
 
     // check if term satisfies hole type...
-    Map *alpha_equivalences = map_new();
-    Map *required_holes = map_new();
+    LinearMap *alpha_equivalences = linear_map_new();
+    LinearMap *required_holes = linear_map_new();
     bool types_match = _congruent_with_holes(get_expression_type(hole), get_expression_type(term),
                                              alpha_equivalences, required_holes);
     if (!types_match) {
-        map_clear_free(alpha_equivalences);
-        map_clear_free(required_holes);
+        linear_map_clear_free(alpha_equivalences);
+        linear_map_clear_free(required_holes);
         return;  // Todo: signal that this has failed?
     }
 
@@ -1484,8 +1486,8 @@ void fill_hole(Expression *hole, Expression *term) {
         }
     }
 
-    map_clear_free(alpha_equivalences);
-    map_clear_free(required_holes);
+    linear_map_clear_free(alpha_equivalences);
+    linear_map_clear_free(required_holes);
 }
 
 char c_counter = 'a';
@@ -1498,7 +1500,7 @@ char *get_char() {
     return strdup(temp);
 }
 
-bool _congruence2(Expression *a, Expression *b, Map *mapping) {
+bool _congruence2(Expression *a, Expression *b, LinearMap *mapping) {
     // Mapping is a map from variables in a to variables in b.
     if (a == b) {
         return true;
@@ -1514,18 +1516,18 @@ bool _congruence2(Expression *a, Expression *b, Map *mapping) {
                 return _congruence2(a->as.app.func, b->as.app.func, mapping) &&
                        _congruence2(a->as.app.arg, b->as.app.arg, mapping);
             case (FORALL_EXPRESSION): {
-                map_set(mapping, a->as.forall.bound_variable, b->as.forall.bound_variable);
+                linear_map_set(mapping, a->as.forall.bound_variable, b->as.forall.bound_variable);
                 return _congruence2(a->as.forall.body, b->as.forall.body, mapping);
             }
             case (LAMBDA_EXPRESSION): {
-                map_set(mapping, a->as.lambda.bound_variable, b->as.lambda.bound_variable);
+                linear_map_set(mapping, a->as.lambda.bound_variable, b->as.lambda.bound_variable);
                 return _congruence2(a->as.lambda.body, b->as.lambda.body, mapping);
             }
             case (VAR_EXPRESSION): {
-                return (a == b) || (map_get(mapping, a) == b);
+                return (a == b) || (linear_map_get(mapping, a) == b);
             }
             case (HOLE_EXPRESSION): {
-                return (a == b) || (map_get(mapping, a) == b);
+                return (a == b) || (linear_map_get(mapping, a) == b);
             }
             case (MATCH_EXPRESSION): {
                 if (!_congruence2(a->as.match.scrutinee, b->as.match.scrutinee, mapping)) {
@@ -1544,8 +1546,8 @@ bool _congruence2(Expression *a, Expression *b, Map *mapping) {
                         return false;
                     }
                     for (int j = 0; j < branch_a->pattern_var_count; j++) {
-                        map_set(mapping, branch_a->pattern_variables[j],
-                                branch_b->pattern_variables[j]);
+                        linear_map_set(mapping, branch_a->pattern_variables[j],
+                                       branch_b->pattern_variables[j]);
                     }
                     if (!_congruence2(branch_a->body, branch_b->body, mapping)) {
                         return false;
@@ -1554,7 +1556,7 @@ bool _congruence2(Expression *a, Expression *b, Map *mapping) {
                 return true;
             }
             case (FIX_EXPRESSION): {
-                map_set(mapping, a->as.fix.recursive_var, b->as.fix.recursive_var);
+                linear_map_set(mapping, a->as.fix.recursive_var, b->as.fix.recursive_var);
                 if (a->as.fix.arg_count != b->as.fix.arg_count) {
                     return false;
                 }
@@ -1562,7 +1564,7 @@ bool _congruence2(Expression *a, Expression *b, Map *mapping) {
                     return false;
                 }
                 for (int i = 0; i < a->as.fix.arg_count; i++) {
-                    map_set(mapping, a->as.fix.args[i], b->as.fix.args[i]);
+                    linear_map_set(mapping, a->as.fix.args[i], b->as.fix.args[i]);
                 }
                 return _congruence2(a->as.fix.body, b->as.fix.body, mapping);
             }
@@ -1572,7 +1574,7 @@ bool _congruence2(Expression *a, Expression *b, Map *mapping) {
         }
     } else {
         if (a->tag == HOLE_EXPRESSION || b->tag == HOLE_EXPRESSION) {
-            map_set(mapping, a, b);
+            linear_map_set(mapping, a, b);
             return true;
         }
     }
@@ -1581,7 +1583,7 @@ bool _congruence2(Expression *a, Expression *b, Map *mapping) {
 }
 
 bool congruence2(Expression *a, Expression *b) {
-    Map *mapping = map_new();
+    LinearMap *mapping = linear_map_new();
     bool result = _congruence2(a, b, mapping);
     free(mapping->items);
     free(mapping);
