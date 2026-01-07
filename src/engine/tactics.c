@@ -203,9 +203,9 @@ TacticResult *exact_tactic(Expression *goal, Expression *proof_term) {
 
 // === Rewriting section ===
 // Forward declaration
-RewriteResult *n_rewrite(Expression *expr, Expression *lemma, Context *context);
+RewriteResult *rewrite(Expression *expr, Expression *lemma, Context *context);
 
-bool n_rewrite_is_noop(RewriteResult *rwr) { return rwr->original == rwr->rewritten; }
+bool rewrite_is_noop(RewriteResult *rwr) { return rwr->original == rwr->rewritten; }
 
 Expression *_build_reflexivity_proof(Expression *expr, Context *ctx) {
     // The goal is to build a proof of eq type(expr) expr expr.
@@ -309,7 +309,7 @@ void free_rewrite_result(RewriteResult *rwr) {
     free(rwr);
 }
 
-RewriteResult *n_rewrite_head(Expression *mid, Expression *lemma, Context *context) {
+RewriteResult *rewrite_head(Expression *mid, Expression *lemma, Context *context) {
     // This part of rewriting is literally just a call to the apply tactic.
     // We're creating a hole with expected return type `mid` and defining
     // context `context`, and attempting to apply the lemma to it. Expression
@@ -347,15 +347,15 @@ RewriteResult *n_rewrite_head(Expression *mid, Expression *lemma, Context *conte
     return init_rewrite_result(mid, _get_rhs_eq(proof_type), dll_create(), proof);
 }
 
-RewriteResult *n_rewrite_app(Expression *expr, Expression *lemma, Context *context) {
+RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context) {
     Expression *func = get_app_func(expr);
     Expression *arg = get_app_arg(expr);
 
-    RewriteResult *rwr_func = n_rewrite(func, lemma, context);
-    RewriteResult *rwr_arg = n_rewrite(arg, lemma, context);
+    RewriteResult *rwr_func = rewrite(func, lemma, context);
+    RewriteResult *rwr_arg = rewrite(arg, lemma, context);
 
     RewriteResult *mid_rwr = NULL;
-    if (n_rewrite_is_noop(rwr_func) && n_rewrite_is_noop(rwr_arg)) {
+    if (rewrite_is_noop(rwr_func) && rewrite_is_noop(rwr_arg)) {
         mid_rwr =
             init_rewrite_result(expr, expr, dll_create(), _build_reflexivity_proof(expr, context));
     } else {
@@ -365,10 +365,10 @@ RewriteResult *n_rewrite_app(Expression *expr, Expression *lemma, Context *conte
             _build_app_congruence_proof(rwr_func, rwr_arg, context));
     }
 
-    RewriteResult *mid_result = n_rewrite_head(mid_rwr->rewritten, lemma, context);
+    RewriteResult *mid_result = rewrite_head(mid_rwr->rewritten, lemma, context);
 
     RewriteResult *final_rwr;
-    if (n_rewrite_is_noop(mid_result)) {
+    if (rewrite_is_noop(mid_result)) {
         final_rwr = init_rewrite_result(expr, mid_rwr->rewritten, mid_rwr->new_goals,
                                         mid_rwr->original_to_rewritten_proof);
     } else {
@@ -385,20 +385,20 @@ RewriteResult *n_rewrite_app(Expression *expr, Expression *lemma, Context *conte
     return final_rwr;
 }
 
-RewriteResult *n_rewrite_var(Expression *expr, Expression *lemma, Context *context) {
-    RewriteResult *head_rwr = n_rewrite_head(expr, lemma, context);
+RewriteResult *rewrite_var(Expression *expr, Expression *lemma, Context *context) {
+    RewriteResult *head_rwr = rewrite_head(expr, lemma, context);
     return head_rwr;
 }
 
-RewriteResult *n_rewrite(Expression *expr, Expression *lemma, Context *context) {
+RewriteResult *rewrite(Expression *expr, Expression *lemma, Context *context) {
     RewriteResult *result = NULL;
     switch (expr->tag) {
         case (APP_EXPRESSION): {
-            result = n_rewrite_app(expr, lemma, context);
+            result = rewrite_app(expr, lemma, context);
             break;
         }
         case (VAR_EXPRESSION): {
-            result = n_rewrite_var(expr, lemma, context);
+            result = rewrite_var(expr, lemma, context);
             break;
         }
         default:
@@ -438,7 +438,7 @@ TacticResult *rewrite_tactic(Expression *goal, Expression *lemma) {
 
     // Once that's confirmed, we can begin attempting to rewrite. Start with the
     // lhs and try to apply the lemma.
-    RewriteResult *rwr = n_rewrite(relation_left_hand, lemma, operating_ctx);
+    RewriteResult *rwr = rewrite(relation_left_hand, lemma, operating_ctx);
     if (!rwr) {
         return init_tactic_result(false, NULL, "Rewriting failed");
     }
