@@ -12,6 +12,7 @@ static char doc[] = "MEngine - A theorem prover";
 static char args_doc[] = "[FILENAME]";
 static struct argp_option options[] = {
     {"debug", 'd', 0, 0, "Enable debug mode (default: false)", 0},
+    {"load", 'l', "FILE", 0, "Load and execute FILE, then enter REPL", 0},
     {"print-tokens", OPT_PRINT_TOKENS, 0, 0,
      "Print tokens during parsing (default: true, requires --debug)", 0},
     {"print-ast", OPT_PRINT_AST, 0, 0, "Print AST during parsing (default: true, requires --debug)",
@@ -20,7 +21,8 @@ static struct argp_option options[] = {
      "Print mode during execution (default: true, requires --debug)", 0},
     {0}};
 struct arguments {
-    char *filename;  // [FILENAME]
+    char *filename;   // [FILENAME]
+    char *load_file;  // -l/--load FILE
     bool debug, debug__print_tokens, debug__print_ast, debug__print_mode;
 };
 static struct argp_child children[] = {{0}};
@@ -31,6 +33,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
     switch (key) {
         case 'd':
             arguments->debug = true;
+            break;
+        case 'l':
+            arguments->load_file = arg;
             break;
         case OPT_PRINT_TOKENS:
             arguments->debug__print_tokens = true;
@@ -93,6 +98,25 @@ int file_mode(MEngineOptions options, char *filename) {
     return r;
 }
 
+int load_and_repl_mode(MEngineOptions options, char *filename) {
+    MEngineRuntime *rt = mengine_runtime_new(&options);
+    if (!rt) {
+        fprintf(stderr, ERROR "Failed to initialize MEngine runtime.\n" CRESET);
+        return 1;
+    }
+
+    int r = mengine_runtime_exec_file(rt, filename);
+    if (r != 0) {
+        mengine_runtime_free(rt);
+        return r;
+    }
+
+    mengine_repl(rt);
+    mengine_runtime_free(rt);
+
+    return 0;
+}
+
 int main(int argc, char **argv) {
     struct arguments arguments;
 
@@ -102,9 +126,14 @@ int main(int argc, char **argv) {
     arguments.debug__print_ast = true;
     arguments.debug__print_mode = true;
     arguments.filename = NULL;
+    arguments.load_file = NULL;
 
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
     MEngineOptions options = build_options(&arguments);
+
+    if (arguments.load_file) {
+        return load_and_repl_mode(options, arguments.load_file);
+    }
 
     if (!arguments.filename) {
         return interactive_mode(options);
