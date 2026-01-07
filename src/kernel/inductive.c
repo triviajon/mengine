@@ -4,14 +4,14 @@
 #include <stdlib.h>
 
 #include "src/common/color.h"
-#include "src/common/dyn_array_map.h"
+#include "src/common/linear_map.h"
 
 // Global registry mapping Expression* -> InductiveDefinition*
-static Map *inductive_registry = NULL;
+static LinearMap *inductive_registry = NULL;
 
 void inductive_registry_init(void) {
     if (inductive_registry == NULL) {
-        inductive_registry = map_new();
+        inductive_registry = linear_map_new();
     }
 }
 
@@ -26,7 +26,7 @@ bool register_inductive(Expression *inductive_var, Expression **constructors, in
         inductive_registry_init();
     }
 
-    if (map_get(inductive_registry, inductive_var) != NULL) {
+    if (linear_map_get(inductive_registry, inductive_var) != NULL) {
         fprintf(stderr, ERROR "Inductive type already registered.\n" CRESET);
         return false;
     }
@@ -53,7 +53,7 @@ bool register_inductive(Expression *inductive_var, Expression **constructors, in
     def->constructor_count = constructor_count;
     def->eliminator = eliminator;
 
-    map_set(inductive_registry, inductive_var, def);
+    linear_map_set(inductive_registry, inductive_var, def);
 
     return true;
 }
@@ -63,7 +63,7 @@ bool is_inductive(Expression *expr) {
         return false;
     }
 
-    return map_get(inductive_registry, expr) != NULL;
+    return linear_map_get(inductive_registry, expr) != NULL;
 }
 
 Expression **get_constructors(Expression *inductive_var, int *out_count) {
@@ -112,7 +112,7 @@ InductiveDefinition *get_inductive_definition(Expression *inductive_var) {
         return NULL;
     }
 
-    return (InductiveDefinition *)map_get(inductive_registry, inductive_var);
+    return (InductiveDefinition *)linear_map_get(inductive_registry, inductive_var);
 }
 
 bool is_constructor_of(Expression *expr, Expression *inductive_var) {

@@ -109,12 +109,13 @@ Expression *_unify2(Expression *exprA, Expression *exprB, Expression *var_to_fil
     }
 }
 
-Expression *instantiate_lemma_with_bindings(Expression *lemma, Expression *lemma_ty, Map *binders) {
+Expression *instantiate_lemma_with_bindings(Expression *lemma, Expression *lemma_ty,
+                                            LinearMap *binders) {
     Expression *final_expr = lemma;
     Expression *curr_forall = lemma_ty;
     while (curr_forall->tag == FORALL_EXPRESSION) {
         Expression *binding_var = curr_forall->as.forall.bound_variable;
-        Expression *binding_result = map_get(binders, binding_var);
+        Expression *binding_result = linear_map_get(binders, binding_var);
         Context *final_expr_ctx = get_expression_context(final_expr);
         Context *binding_result_ctx = get_expression_context(binding_result);
         Context *app_ctx = (final_expr_ctx->ctx_size >= binding_result_ctx->ctx_size)

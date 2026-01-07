@@ -2,7 +2,7 @@
 
 #include <stdlib.h>
 
-#include "src/common/dyn_array_map.h"
+#include "src/common/linear_map.h"
 #include "src/kernel/expression.h"
 #include "src/kernel/inductive.h"
 
@@ -46,14 +46,14 @@ static bool is_instance_of(Expression *expr, Expression *base) {
     return congruence(expr_head, base);
 }
 
-static bool _structurally_smaller_than_arg(Expression *term, Expression *arg, Map *visited) {
-    if (map_get(visited, arg)) {
+static bool _structurally_smaller_than_arg(Expression *term, Expression *arg, LinearMap *visited) {
+    if (linear_map_get(visited, arg)) {
         return false;
     }
 
     bool *marker = malloc(sizeof(bool));
     *marker = true;
-    map_set(visited, arg, marker);
+    linear_map_set(visited, arg, marker);
 
     if (term_directly_structurally_smaller_than_arg(term, arg)) {
         return true;
@@ -114,10 +114,10 @@ bool term_directly_structurally_smaller_than_arg(Expression *term, Expression *a
 }
 
 bool term_structurally_smaller_than_arg(Expression *term, Expression *arg) {
-    Map *visited = map_new();
+    LinearMap *visited = linear_map_new();
     bool result = _structurally_smaller_than_arg(term, arg, visited);
 
-    map_clear_free(visited);
+    linear_map_clear_free(visited);
 
     return result;
 }
