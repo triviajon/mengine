@@ -5,9 +5,9 @@
 #include <string.h>
 
 #include "src/common/color.h"
+#include "src/common/dyn_array_map.h"
 #include "src/kernel/beta_reduction.h"
 #include "src/kernel/context.h"
-#include "src/kernel/dyn_array_map.h"
 #include "src/kernel/inductive.h"
 #include "src/kernel/new_subst.h"
 #include "src/kernel/structural.h"

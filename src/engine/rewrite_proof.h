@@ -1,7 +1,7 @@
 #ifndef REWRITE_PROOF_H
 #define REWRITE_PROOF_H
 
-#include "src/kernel/doubly_linked_list.h"
+#include "src/common/doubly_linked_list.h"
 
 typedef struct Expression Expression;
 

@@ -1,9 +1,9 @@
 #ifndef UNIFY_H
 #define UNIFY_H
 
+#include "src/common/doubly_linked_list.h"
+#include "src/common/dyn_array_map.h"
 #include "src/kernel/context.h"
-#include "src/kernel/doubly_linked_list.h"
-#include "src/kernel/dyn_array_map.h"
 #include "src/kernel/expression.h"
 
 // Given a lemma of the form "Forall x1: T1, ..., Forall xn: Tn, ..., B",

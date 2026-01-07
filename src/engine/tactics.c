@@ -2,8 +2,8 @@
 
 #include <stdlib.h>
 
+#include "src/common/doubly_linked_list.h"
 #include "src/engine/unify.h"
-#include "src/kernel/doubly_linked_list.h"
 #include "src/kernel/expression.h"
 #include "src/kernel/new_subst.h"
 #include "src/runtime/core.h"

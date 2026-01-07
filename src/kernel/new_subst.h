@@ -1,7 +1,7 @@
 #ifndef NEW_SUBST_H
 #define NEW_SUBST_H
 
-#include "src/kernel/doubly_linked_list.h"
+#include "src/common/doubly_linked_list.h"
 #include "src/kernel/expression.h"
 
 // Kicks off a substitution in t, replacing all instances of x with

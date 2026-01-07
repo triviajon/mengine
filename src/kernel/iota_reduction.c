@@ -2,7 +2,7 @@
 
 #include <stdlib.h>
 
-#include "src/kernel/doubly_linked_list.h"
+#include "src/common/doubly_linked_list.h"
 #include "src/kernel/inductive.h"
 #include "src/kernel/new_subst.h"
 

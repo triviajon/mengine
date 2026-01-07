@@ -2,8 +2,8 @@
 
 #include <stdio.h>
 
+#include "src/common/dyn_array_map.h"
 #include "src/kernel/context.h"
-#include "src/kernel/dyn_array_map.h"
 #include "src/kernel/expression.h"
 
 // Helper function to concatenate two strings
