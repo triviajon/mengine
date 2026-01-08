@@ -9,8 +9,8 @@
 #include "src/kernel/beta_reduction.h"
 #include "src/kernel/context.h"
 #include "src/kernel/inductive.h"
-#include "src/kernel/new_subst.h"
 #include "src/kernel/structural.h"
+#include "src/kernel/subst.h"
 
 // Register a body to a recursive variable expression. WARNING: Mutator function, modifies the
 // expression in place and returns true if successful, false otherwise.

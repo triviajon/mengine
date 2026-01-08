@@ -4,7 +4,7 @@
 
 #include "src/common/doubly_linked_list.h"
 #include "src/kernel/inductive.h"
-#include "src/kernel/new_subst.h"
+#include "src/kernel/subst.h"
 
 bool is_iota_reducible(Expression *expression) {
     if (expression->tag != MATCH_EXPRESSION) {
