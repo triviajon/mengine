@@ -61,6 +61,14 @@ check: tests
 	done
 	@echo "=== All tests passed ==="
 
+install: $(MENGINE_BIN)
+	@echo "Installing mengine..."
+	sudo install -m 755 $(MENGINE_BIN) /usr/bin/$(MENGINE_BIN)
+
+uninstall:
+	@echo "Uninstalling mengine..."
+	sudo rm -f /usr/bin/$(MENGINE_BIN)
+
 $(TEST_BINARIES): %: %.c $(HELPERS_OBJ) $(ENGINE_LIB)
 	$(CC) $(CFLAGS) -o $@ $< $(HELPERS_OBJ) $(ENGINE_LIB)
 
@@ -73,6 +81,6 @@ clean:
 		find . -name "*.dSYM" -type d -exec rm -rf {} +; \
 	fi
 
-.PHONY: all clean tests check clangd
-
 clangd: .clangd
+
+.PHONY: all clean tests check install uninstall clangd
