@@ -2,6 +2,7 @@
 
 #include "src/commandlanguage/command_parser.h"
 #include "src/common/color.h"
+#include "src/common/options.h"
 #include "src/kernel/context.h"
 #include "src/kernel/expression.h"
 #include "src/kernel/inductive.h"
@@ -156,6 +157,28 @@ static int _handle_check_command(MEngineRuntime *rt, CheckCmd *check_cmd) {
     return 0;
 }
 
+void _print_inductive_definition(MEngineRuntime *rt, Expression *expr) {
+    if (!expr) {
+        return;
+    }
+
+    // Inductive <name> : <type> :=
+    MPRINT(rt->options->quiet, stdout,
+           DIMTEXT "Inductive " CRESET "%s : %s := ", stringify_expression(expr),
+           stringify_expression(expr->type));
+
+    // | cons : type
+    int constructor_count;
+    Expression **constructors = get_constructors(expr, &constructor_count);
+    for (int i = 0; i < constructor_count; i++) {
+        Expression *ctor = constructors[i];
+        MPRINT(rt->options->quiet, stdout, "\n\t| %s : %s", stringify_expression(ctor),
+               stringify_expression(ctor->type));
+    }
+
+    MPRINT(rt->options->quiet, stdout, ".\n")
+}
+
 static int _handle_print_command(MEngineRuntime *rt, PrintCmd *print_cmd) {
     if (!rt || !print_cmd) {
         return 1;
@@ -178,11 +201,16 @@ static int _handle_print_command(MEngineRuntime *rt, PrintCmd *print_cmd) {
         return 1;
     }
 
+    // Check if it's an inductive type
+    if (is_inductive(expr)) {
+        _print_inductive_definition(rt, expr);
+        return 0;
+    }
+
     // Attempt to get the variable's body
     Expression *expr_body = get_expression_body(expr);
     if (!expr_body) {
-        fprintf(stderr, ERROR "%s is an opaque variable.\n" CRESET,
-                stringify_expression(expr_body));
+        fprintf(stderr, ERROR "%s is an opaque variable.\n" CRESET, stringify_expression(expr));
         return 1;
     }
 
