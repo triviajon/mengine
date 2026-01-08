@@ -150,6 +150,35 @@ bool map_set(Map *m, void *key, void *value) {
     }
 }
 
+bool map_del(Map *m, void *key) {
+    if (!m) {
+        return false;
+    }
+
+    uint32_t hash = map_hash_key(key);
+    size_t idx = hash & (m->capacity - 1);
+
+    while (true) {
+        MapEntry *e = &m->entries[idx];
+
+        if (!e->in_use) {
+            return false;  // we didn't find it
+        }
+
+        if (e->hash == hash && e->key == key) {
+            // found it
+            e->key = 0;
+            e->value = 0;
+            e->hash = 0;
+            e->in_use = 0;
+            m->size--;
+            return true;
+        }
+
+        idx = (idx + 1) & (m->capacity - 1);
+    }
+}
+
 void map_free(Map *m) {
     if (!m) {
         return;
@@ -159,7 +188,22 @@ void map_free(Map *m) {
     free(m);
 }
 
-void map_clear_free(Map *m) {
+void map_clear_free_values(Map *m) {
+    if (!m) {
+        return;
+    }
+
+    for (size_t i = 0; i < m->capacity; i++) {
+        MapEntry *e = &m->entries[i];
+        if (e->in_use) {
+            free(e->value);
+        }
+    }
+
+    map_free(m);
+}
+
+void map_clear_free_all(Map *m) {
     if (!m) {
         return;
     }
