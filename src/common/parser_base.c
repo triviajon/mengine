@@ -21,7 +21,7 @@ void parser_init(Parser *p, Lexer *lx, MEngineOptions *options) {
     while (p->current && p->current->type == TOK_COMMENT) {
         Token *comment = p->current;
         if (comment->lexeme) {
-            fprintf(stdout, DIMTEXT "%s\n" CRESET, comment->lexeme);
+            MPRINT(p->options->quiet, stdout, DIMTEXT "%s\n" CRESET, comment->lexeme);
         }
         p->current = lexer_next_token(p->lx);
         lexer_free_token(comment);
@@ -139,7 +139,7 @@ void parser_error(Parser *p, const char *msg) {
 
 void parser_flush_comments(Parser *p) {
     for (int i = 0; i < p->pending_comment_count; i++) {
-        fprintf(stdout, DIMTEXT "%s\n" CRESET, p->pending_comments[i]);
+        MPRINT(p->options->quiet, stdout, DIMTEXT "%s\n" CRESET, p->pending_comments[i]);
         free(p->pending_comments[i]);
     }
     p->pending_comment_count = 0;
