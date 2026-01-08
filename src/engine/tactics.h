@@ -1,7 +1,6 @@
 #ifndef NEW_TACTICS_H
 #define NEW_TACTICS_H
 
-#include "src/kernel/context.h"
 #include "src/kernel/expression.h"
 
 typedef struct {

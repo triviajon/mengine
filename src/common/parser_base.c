@@ -12,7 +12,7 @@ void parser_init(Parser *p, Lexer *lx, MEngineOptions *options) {
     p->current = lexer_next_token(lx);
     p->source = lx->src;
     p->options = options;
-    p->error_recovery_set = false;
+    p->error_recovery = (options->execution_type == MENGINE_EXECUTION_TYPE_REPL);
     p->pending_comments = NULL;
     p->pending_comment_count = 0;
     p->pending_comment_capacity = 0;
@@ -130,7 +130,7 @@ void parser_error(Parser *p, const char *msg) {
     }
     fprintf(stderr, ERROR BOLD "Parse Error: " CRESET "%s\n", msg);
 
-    if (p->error_recovery_set) {
+    if (p->error_recovery) {
         longjmp(p->error_jmp, 1);
     }
 

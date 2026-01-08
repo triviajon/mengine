@@ -2,8 +2,6 @@
 #define RUNTIME_H
 
 #include "src/common/options.h"
-#include "src/kernel/context.h"
-#include "src/kernel/utils.h"
 #include "src/runtime/proof_state.h"
 
 typedef enum {
