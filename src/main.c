@@ -11,8 +11,9 @@ enum { OPT_PRINT_TOKENS = 256, OPT_PRINT_AST, OPT_PRINT_MODE };
 static char doc[] = "MEngine - A theorem prover";
 static char args_doc[] = "[FILENAME]";
 static struct argp_option options[] = {
-    {"debug", 'd', 0, 0, "Enable debug mode (default: false)", 0},
     {"load", 'l', "FILE", 0, "Load and execute FILE, then enter REPL", 0},
+    {"quiet", 'q', 0, 0, "Suppress text output", 0},
+    {"debug", 'd', 0, 0, "Enable debug mode (default: false)", 0},
     {"print-tokens", OPT_PRINT_TOKENS, 0, 0,
      "Print tokens during parsing (default: true, requires --debug)", 0},
     {"print-ast", OPT_PRINT_AST, 0, 0, "Print AST during parsing (default: true, requires --debug)",
@@ -23,7 +24,7 @@ static struct argp_option options[] = {
 struct arguments {
     char *filename;   // [FILENAME]
     char *load_file;  // -l/--load FILE
-    bool debug, debug__print_tokens, debug__print_ast, debug__print_mode;
+    bool quiet, debug, debug__print_tokens, debug__print_ast, debug__print_mode;
 };
 static struct argp_child children[] = {{0}};
 
@@ -36,6 +37,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
             break;
         case 'l':
             arguments->load_file = arg;
+            break;
+        case 'q':
+            arguments->quiet = true;
             break;
         case OPT_PRINT_TOKENS:
             arguments->debug__print_tokens = true;
@@ -69,6 +73,7 @@ MEngineOptions build_options(struct arguments *args) {
     options.debug__print_tokens = args->debug__print_tokens;
     options.debug__print_ast = args->debug__print_ast;
     options.debug__print_mode = args->debug__print_mode;
+    options.quiet = args->quiet;
     return options;
 }
 
@@ -121,6 +126,7 @@ int main(int argc, char **argv) {
     struct arguments arguments;
 
     // Default values
+    arguments.quiet = false;
     arguments.debug = false;
     arguments.debug__print_tokens = true;
     arguments.debug__print_ast = true;

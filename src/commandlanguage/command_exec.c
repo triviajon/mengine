@@ -29,8 +29,9 @@ static int _handle_declaration_command(MEngineRuntime *rt, DeclarationCmd *decl_
     }
     rt->ctx = new_var;
 
-    fprintf(stdout, UI "%s " CRESET "%s : %s declared.\n", decl_keyword_to_string(decl_cmd->kw),
-            decl_cmd->binder.name, stringify_expression(var_type));
+    MPRINT(rt->options->quiet, stdout, UI "%s " CRESET "%s : %s declared.\n",
+           decl_keyword_to_string(decl_cmd->kw), decl_cmd->binder.name,
+           stringify_expression(var_type));
     return 0;
 }
 
@@ -99,8 +100,8 @@ static int _handle_definition_command(MEngineRuntime *rt, DefinitionCmd *defn_cm
 
     Expression *defn_var = init_var_expression_wc_with_body(defn_cmd->name, body, rt->ctx);
     rt->ctx = defn_var;
-    fprintf(stdout, UI "Definition " CRESET "%s : %s defined.\n", name,
-            stringify_expression(get_expression_type(defn_var)));
+    MPRINT(rt->options->quiet, stdout, UI "Definition " CRESET "%s : %s defined.\n", name,
+           stringify_expression(get_expression_type(defn_var)));
     return 0;
 }
 
@@ -120,8 +121,9 @@ static int _handle_statement_command(MEngineRuntime *rt, StatementCmd *stmt_cmd)
         init_var_expression_wc_with_body(stmt_cmd->name, initial_goal, rt->ctx);
     mengine_runtime_proof_mode(rt, pending_theorem);
 
-    fprintf(stdout, UI "%s " CRESET "%s : %s stated.\n", stmt_keyword_to_string(stmt_cmd->kw),
-            stmt_cmd->name, stringify_expression(statement_type));
+    MPRINT(rt->options->quiet, stdout, UI "%s " CRESET "%s : %s stated.\n",
+           stmt_keyword_to_string(stmt_cmd->kw), stmt_cmd->name,
+           stringify_expression(statement_type));
 
     debug_print_mode(rt);
     return 0;
@@ -149,8 +151,8 @@ static int _handle_check_command(MEngineRuntime *rt, CheckCmd *check_cmd) {
         return 1;
     }
 
-    fprintf(stdout, DIMTEXT "%s\n\t: %s\n" CRESET, stringify_expression(expr),
-            stringify_expression(expr_type));
+    MPRINT(rt->options->quiet, stdout, DIMTEXT "%s\n\t: %s\n" CRESET, stringify_expression(expr),
+           stringify_expression(expr_type));
     return 0;
 }
 
@@ -184,8 +186,9 @@ static int _handle_print_command(MEngineRuntime *rt, PrintCmd *print_cmd) {
         return 1;
     }
 
-    fprintf(stdout, DIMTEXT "%s := %s\n\t: %s\n" CRESET, stringify_expression(expr),
-            stringify_expression(expr_body), stringify_expression(expr_type));
+    MPRINT(rt->options->quiet, stdout, DIMTEXT "%s := %s\n\t: %s\n" CRESET,
+           stringify_expression(expr), stringify_expression(expr_body),
+           stringify_expression(expr_type));
     return 0;
 }
 
@@ -585,8 +588,8 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
         contexts[i] = ind_var;
     }
 
-    fprintf(stdout, UI "Inductive " CRESET "%s : %s defined.\n", name,
-            stringify_expression(ind_type));
+    MPRINT(rt->options->quiet, stdout, UI "Inductive " CRESET "%s : %s defined.\n", name,
+           stringify_expression(ind_type));
 
     size_t ctor_count = ind_cmd->constructor_count;
 
@@ -643,8 +646,8 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
             contexts[j] = ctor_var;
         }
 
-        fprintf(stdout, UI "Constructor " CRESET "%s : %s defined.\n", ctor->name,
-                stringify_expression(ctor_type));
+        MPRINT(rt->options->quiet, stdout, UI "Constructor " CRESET "%s : %s defined.\n",
+               ctor->name, stringify_expression(ctor_type));
     }
 
     char *ind_principle_name = malloc(strlen(name) + 5);
@@ -658,16 +661,16 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
         ind_principle_var = init_var_expression_wc(ind_principle_name, ind_principle_type, rt->ctx);
         rt->ctx = ind_principle_var;
 
-        fprintf(stdout, UI "Induction principle " CRESET "%s : %s generated.\n", ind_principle_name,
-                stringify_expression(ind_principle_type));
+        MPRINT(rt->options->quiet, stdout, UI "Induction principle " CRESET "%s : %s generated.\n",
+               ind_principle_name, stringify_expression(ind_principle_type));
     }
 
     // Register the inductive type
     if (!register_inductive(ind_var, ctor_vars, ctor_count, ind_principle_var)) {
         fprintf(stderr, ERROR "Failed to register inductive type %s.\n" CRESET, name);
     } else {
-        fprintf(stdout, UI "Registered " CRESET "inductive %s with %zu constructor(s).\n", name,
-                ctor_count);
+        MPRINT(rt->options->quiet, stdout,
+               UI "Registered " CRESET "inductive %s with %zu constructor(s).\n", name, ctor_count);
     }
 
     free(ctor_vars);
@@ -701,8 +704,8 @@ static int _handle_fixpoint_command(MEngineRuntime *rt, FixpointCmd *fix_cmd) {
 
     rt->ctx = fixpoint_var;
 
-    fprintf(stdout, UI "Fixpoint " CRESET "%s : %s defined.\n", fix_cmd->name,
-            stringify_expression(get_expression_type(fixpoint_var)));
+    MPRINT(rt->options->quiet, stdout, UI "Fixpoint " CRESET "%s : %s defined.\n", fix_cmd->name,
+           stringify_expression(get_expression_type(fixpoint_var)));
     return 0;
 }
 
@@ -762,8 +765,8 @@ static int _handle_eval_command(MEngineRuntime *rt, EvalCmd *eval_cmd) {
         return 1;
     }
 
-    fprintf(stdout, DIMTEXT "\t= %s\n\t: %s\n" CRESET, stringify_expression(result),
-            stringify_expression(get_expression_type(result)));
+    MPRINT(rt->options->quiet, stdout, DIMTEXT "\t= %s\n\t: %s\n" CRESET,
+           stringify_expression(result), stringify_expression(get_expression_type(result)));
     return 0;
 }
 
@@ -775,8 +778,8 @@ static int _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
     switch (show_cmd->kw) {
         case SHOW_KW_CONTEXT: {
             Context *ctx = mengine_runtime_context(rt);
-            fprintf(stdout, HEADER "Context:" CRESET "\n%s\n",
-                    stringify_context(ctx, CTX_STRINGIFY_PRETTY_IND0));
+            MPRINT(rt->options->quiet, stdout, HEADER "Context:" CRESET "\n%s\n",
+                   stringify_context(ctx, CTX_STRINGIFY_PRETTY_IND0));
             break;
         }
         case SHOW_KW_PROOF: {
@@ -801,8 +804,8 @@ static int _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
             // Show proof term
             Expression *pending_theorem = proof_state_pending_theorem(rt->proof_state);
             Expression *pending_theorem_body = get_expression_body(pending_theorem);
-            fprintf(stdout, HEADER "Proof Term:" CRESET "\n%s\n",
-                    stringify_expression(pending_theorem_body));
+            MPRINT(rt->options->quiet, stdout, HEADER "Proof Term:" CRESET "\n%s\n",
+                   stringify_expression(pending_theorem_body));
             return 0;
         }
         case SHOW_KW_GOAL: {
@@ -829,11 +832,11 @@ static int _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
             if (goal_ctx && runtime_ctx) {
                 char *ctx_str =
                     stringify_context_until(goal_ctx, runtime_ctx, CTX_STRINGIFY_PRETTY_IND0);
-                fprintf(stdout, HEADER "Goal Context:" CRESET "\n%s\n", ctx_str);
+                MPRINT(rt->options->quiet, stdout, HEADER "Goal Context:" CRESET "\n%s\n", ctx_str);
                 free(ctx_str);
             }
-            fprintf(stdout, HEADER "Goal:" CRESET "\n%s\n",
-                    stringify_expression(get_expression_type(current_goal)));
+            MPRINT(rt->options->quiet, stdout, HEADER "Goal:" CRESET "\n%s\n",
+                   stringify_expression(get_expression_type(current_goal)));
             return 0;
         }
         case SHOW_KW_STATE: {
@@ -858,8 +861,8 @@ static int _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
             // Show proof term
             Expression *pending_theorem = proof_state_pending_theorem(rt->proof_state);
             Expression *pending_theorem_body = get_expression_body(pending_theorem);
-            fprintf(stdout, HEADER "Proof Term:" CRESET "\n%s\n",
-                    stringify_expression(pending_theorem_body));
+            MPRINT(rt->options->quiet, stdout, HEADER "Proof Term:" CRESET "\n%s\n",
+                   stringify_expression(pending_theorem_body));
 
             // Show current goal context
             Context *goal_ctx = get_expression_context(current_goal);
@@ -867,13 +870,13 @@ static int _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
             if (goal_ctx && runtime_ctx) {
                 char *ctx_str =
                     stringify_context_until(goal_ctx, runtime_ctx, CTX_STRINGIFY_PRETTY_IND0);
-                fprintf(stdout, CYN "Goal Context:" CRESET "\n%s\n", ctx_str);
+                MPRINT(rt->options->quiet, stdout, CYN "Goal Context:" CRESET "\n%s\n", ctx_str);
                 free(ctx_str);
             }
 
             // Show goal
-            fprintf(stdout, CYN "Goal:" CRESET "\n%s\n",
-                    stringify_expression(get_expression_type(current_goal)));
+            MPRINT(rt->options->quiet, stdout, CYN "Goal:" CRESET "\n%s\n",
+                   stringify_expression(get_expression_type(current_goal)));
             return 0;
         }
     }

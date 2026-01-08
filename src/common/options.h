@@ -3,6 +3,11 @@
 
 #include <stdbool.h>
 
+#define MPRINT(quiet, stream, fmt, ...)      \
+    if (!quiet) {                            \
+        fprintf(stream, fmt, ##__VA_ARGS__); \
+    }
+
 typedef enum {
     MENGINE_EXECUTION_TYPE_FILE,
     MENGINE_EXECUTION_TYPE_REPL,
@@ -14,6 +19,7 @@ typedef struct {
     bool debug__print_ast;     // Print AST after parsing
     bool debug__print_mode;    // Print the current runtime mode and relevant info
                                // after each update to the mode.
+    bool quiet;                // If true, suppresses all printing to stdout
     MEngineExecutionType execution_type;
 } MEngineOptions;
 
