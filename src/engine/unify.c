@@ -1,6 +1,6 @@
 #include "unify.h"
 
-#include "src/kernel/new_subst.h"
+#include "src/kernel/subst.h"
 #include "src/runtime/core.h"
 
 Expression *instantiate_lemma_type(Context *context, Expression *lemma_ty) {

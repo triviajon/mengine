@@ -1,7 +1,7 @@
 #include "src/kernel/context.h"
 
 #include "src/kernel/expression.h"
-#include "src/kernel/new_subst.h"
+#include "src/kernel/subst.h"
 
 Context *context_create_empty() {
     if (EMPTY_CONTEXT == NULL) {

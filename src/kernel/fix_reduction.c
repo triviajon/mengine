@@ -1,9 +1,8 @@
 #include "src/kernel/fix_reduction.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 
-#include "new_subst.h"
+#include "src/kernel/subst.h"
 
 bool is_fix_reducible(Expression *expression) { return expression->tag == FIX_EXPRESSION; }
 

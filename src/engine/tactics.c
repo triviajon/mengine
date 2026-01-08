@@ -6,7 +6,7 @@
 #include "src/common/map.h"
 #include "src/engine/unify.h"
 #include "src/kernel/expression.h"
-#include "src/kernel/new_subst.h"
+#include "src/kernel/subst.h"
 #include "src/runtime/core.h"
 
 TacticResult *init_tactic_result(bool success, DoublyLinkedList *new_goals, char *error_message) {

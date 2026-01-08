@@ -1,4 +1,4 @@
-#include "src/kernel/new_subst.h"
+#include "src/kernel/subst.h"
 
 #include "src/engine/rewrite_proof.h"
 #include "src/kernel/beta_reduction.h"
@@ -233,14 +233,27 @@ Expression *new_subst(Context *context, Expression *t, Expression *x, Expression
 Expression *_p_subst(Context *context, Expression *t, DoublyLinkedList *old_exprs,
                      DoublyLinkedList *new_exprs) {
     // Check if t is one of the expressions to be replaced
+    // We also check that at least one of the old_exprs occurs in the context.
+    // This is a very important optimization!
     DLLNode *curr_old = old_exprs->head;
     DLLNode *curr_new = new_exprs->head;
+    bool gt_0_occured = false;
+    Context *t_ctx = get_expression_context(t);
     while (curr_old != NULL) {
         if (t == curr_old->data) {
             return curr_new->data;
         }
+
+        if (!gt_0_occured && context_find(t_ctx, curr_old->data) != NULL) {
+            gt_0_occured = true;
+        }
+
         curr_old = curr_old->next;
         curr_new = curr_new->next;
+    }
+
+    if (!gt_0_occured) {
+        return t;
     }
 
     switch (t->tag) {
