@@ -13,7 +13,7 @@ typedef struct {
     const char *source;       // Source string being parsed
     MEngineOptions *options;  // Parser options
     jmp_buf error_jmp;        // Jump buffer for error recovery
-    bool error_recovery_set;  // Whether error recovery is active
+    bool error_recovery;      // Whether error recovery is active
     char **pending_comments;  // Buffer of comments to print after command execution
     int pending_comment_count;
     int pending_comment_capacity;

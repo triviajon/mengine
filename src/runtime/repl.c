@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "src/common/color.h"
+#include "src/common/options.h"
 #include "src/kernel/expression.h"
 #include "src/kernel/utils.h"
 #include "src/runtime/proof_state.h"
@@ -85,6 +86,8 @@ void mengine_repl(MEngineRuntime *rt) {
     if (!rt) {
         return;
     }
+
+    rt->options->execution_type = MENGINE_EXECUTION_TYPE_REPL;
 
     char buffer[REPL_LINE_CAP];
 

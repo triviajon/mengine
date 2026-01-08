@@ -93,8 +93,6 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
 
     int rc = 0;
 
-    parser.error_recovery_set = true;
-
     while (!parser_eof(&parser)) {
         if (setjmp(parser.error_jmp) != 0) {
             // Parse error occurred
@@ -171,6 +169,13 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
 }
 
 int mengine_runtime_exec_file(MEngineRuntime *rt, const char *filename) {
+    if (!rt) {
+        fprintf(stderr, ERROR "Failed to initialize MEngine runtime.\n" CRESET);
+        return 1;
+    }
+
+    rt->options->execution_type = MENGINE_EXECUTION_TYPE_FILE;
+
     FILE *f = fopen(filename, "rb");
     if (!f) {
         fprintf(stderr, ERROR "Could not open file: %s\n" CRESET, filename);
