@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "src/common/doubly_linked_list.h"
+#include "src/common/map.h"
 #include "src/engine/unify.h"
 #include "src/kernel/expression.h"
 #include "src/kernel/new_subst.h"
@@ -202,8 +203,6 @@ TacticResult *exact_tactic(Expression *goal, Expression *proof_term) {
 }
 
 // === Rewriting section ===
-// Forward declaration
-RewriteResult *rewrite(Expression *expr, Expression *lemma, Context *context);
 
 bool rewrite_is_noop(RewriteResult *rwr) { return rwr->original == rwr->rewritten; }
 
@@ -347,12 +346,14 @@ RewriteResult *rewrite_head(Expression *mid, Expression *lemma, Context *context
     return init_rewrite_result(mid, _get_rhs_eq(proof_type), dll_create(), proof);
 }
 
-RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context) {
+RewriteResult *_rewrite(Expression *expr, Expression *lemma, Context *context, Map *cached_rwr);
+
+RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context, Map *cached_rwr) {
     Expression *func = get_app_func(expr);
     Expression *arg = get_app_arg(expr);
 
-    RewriteResult *rwr_func = rewrite(func, lemma, context);
-    RewriteResult *rwr_arg = rewrite(arg, lemma, context);
+    RewriteResult *rwr_func = _rewrite(func, lemma, context, cached_rwr);
+    RewriteResult *rwr_arg = _rewrite(arg, lemma, context, cached_rwr);
 
     RewriteResult *mid_rwr = NULL;
     if (rewrite_is_noop(rwr_func) && rewrite_is_noop(rwr_arg)) {
@@ -377,33 +378,45 @@ RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context
                                         _build_transitivity_proof(mid_rwr, mid_result, context));
     }
 
-    free_rewrite_result(rwr_func);
-    free_rewrite_result(rwr_arg);
-    free_rewrite_result(mid_rwr);
-    free_rewrite_result(mid_result);
-
     return final_rwr;
 }
 
-RewriteResult *rewrite_var(Expression *expr, Expression *lemma, Context *context) {
+RewriteResult *rewrite_var(Expression *expr, Expression *lemma, Context *context, Map *_) {
     RewriteResult *head_rwr = rewrite_head(expr, lemma, context);
     return head_rwr;
 }
 
-RewriteResult *rewrite(Expression *expr, Expression *lemma, Context *context) {
-    RewriteResult *result = NULL;
+RewriteResult *_rewrite(Expression *expr, Expression *lemma, Context *context, Map *cached_rwr) {
+    RewriteResult *result = (RewriteResult *)map_get(cached_rwr, (void *)expr);
+
+    if (result) {
+        return result;
+    }
+
     switch (expr->tag) {
         case (APP_EXPRESSION): {
-            result = rewrite_app(expr, lemma, context);
+            result = rewrite_app(expr, lemma, context, cached_rwr);
             break;
         }
         case (VAR_EXPRESSION): {
-            result = rewrite_var(expr, lemma, context);
+            result = rewrite_var(expr, lemma, context, cached_rwr);
             break;
         }
         default:
             return NULL;
     }
+
+    map_set(cached_rwr, (void *)expr, result);
+
+    return result;
+}
+
+RewriteResult *rewrite(Expression *expr, Expression *lemma, Context *context) {
+    Map *cached_rwr = map_new();
+    RewriteResult *result = _rewrite(expr, lemma, context, cached_rwr);
+    map_del(cached_rwr,
+            (void *)expr);  // remove it from the map so we don't accidently free the rwr
+    map_clear_free_values(cached_rwr);
     return result;
 }
 
