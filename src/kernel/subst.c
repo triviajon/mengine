@@ -1,6 +1,5 @@
 #include "src/kernel/subst.h"
 
-#include "src/engine/rewrite_proof.h"
 #include "src/kernel/beta_reduction.h"
 #include "src/kernel/context.h"
 #include "src/kernel/expression.h"

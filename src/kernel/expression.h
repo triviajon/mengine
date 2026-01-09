@@ -6,7 +6,6 @@
 #include <string.h>
 
 #include "src/common/doubly_linked_list.h"
-#include "src/engine/rewrite_proof.h"
 
 // Forward declarations
 typedef struct Expression Expression;
