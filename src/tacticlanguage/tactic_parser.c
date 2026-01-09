@@ -240,6 +240,42 @@ Tactic *tactic_parse_rewrite(Parser *p) {
     return tactic;
 }
 
+Tactic *tactic_parse_erewrite(Parser *p) {
+    if (!parser_expect_consume(p, TOK_EREWRITE)) {
+        parser_error(p, "expected 'erewrite'");
+    }
+
+    bool backward = false;
+
+    // Check for optional "<-"
+    if (parser_expect_consume(p, TOK_LEFT_ARROW)) {
+        backward = true;
+    }
+
+    AST *lemma = parse_term(p);
+    debug_print_ast(p, lemma);
+
+    // Expect "with"
+    if (!parser_expect_consume(p, TOK_WITH)) {
+        parser_error(p, "Expected 'with' after rewrite lemma");
+    }
+
+    AST *equiv_proof = parse_term(p);
+    debug_print_ast(p, equiv_proof);
+
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "Expected '.' at end of rewrite");
+    }
+
+    Tactic *tactic = malloc(sizeof(Tactic));
+    tactic->tag = backward ? TACTIC_EREWRITE_BACKWARD : TACTIC_EREWRITE;
+    tactic->as.rewrite.lemma = lemma;
+    tactic->as.rewrite.equiv_proof = equiv_proof;
+    tactic->as.rewrite.backward = backward;
+
+    return tactic;
+}
+
 Tactic *tactic_parse_reflexivity(Parser *p) {
     if (!parser_expect_consume(p, TOK_REFLEXIVITY)) {
         parser_error(p, "expected 'reflexivity'");

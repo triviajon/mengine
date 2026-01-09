@@ -37,4 +37,7 @@ TacticResult *exact_tactic(Expression *goal, Expression *proof_term);
 // https://sozeau.gitlabpages.inria.fr/www/research/publications/A_New_Look_at_Generalized_Rewriting_in_Type_Theory.pdf
 TacticResult *rewrite_tactic(Expression *goal, Expression *lemma);
 
+// Same as rewrite_tactic, but allows unresolved binders to be added as goals to the proof state.
+TacticResult *erewrite_tactic(Expression *goal, Expression *lemma);
+
 #endif  // NEW_TACTICS

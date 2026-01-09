@@ -1,0 +1,24 @@
+(* open.me *)
+(* Using erewrite tactic. *)
+
+Inductive nat : Type := | O : nat | S : forall (_: nat), nat.
+
+Check nat.
+Check (S O).
+Check nat_ind.
+
+Fixpoint add (n : nat) (m : nat) {struct n} : nat := match n with | O => m | S n' => S (add n' m) end.
+
+Axiom nonsense : forall (n: nat), forall (m: nat), eq nat n (add O n).
+
+Theorem theorem_with_nonsense : eq nat (S O)  ((add O) (S ((add O) O))).
+(* todo: the 'with eq' notation is a placeholder for when rewriting is fuilly generalized to equivalence relations *)
+erewrite nonsense with eq.
+apply eq_refl.
+Show Proof.
+(* 
+    our rewrite uses a bottom-up recursive algorithm that applies at every node, 
+    in this case, it ended up applying twice so we need to prove `nat` twice
+*)
+exact O.
+exact (S O). 
