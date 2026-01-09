@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 
+#include "src/common/doubly_linked_list.h"
 #include "src/common/map.h"
 #include "src/engine/unify.h"
 #include "src/runtime/core.h"
@@ -110,7 +111,8 @@ void free_rewrite_result(RewriteResult *rwr) {
     free(rwr);
 }
 
-RewriteResult *rewrite_head(Expression *mid, Expression *lemma, Context *context) {
+RewriteResult *rewrite_head(Expression *mid, Expression *lemma, Context *context,
+                            bool allow_unresolved_bindings) {
     // This part of rewriting is literally just a call to the apply tactic.
     // We're creating a hole with expected return type `mid` and defining
     // context `context`, and attempting to apply the lemma to it. Expression
@@ -129,9 +131,7 @@ RewriteResult *rewrite_head(Expression *mid, Expression *lemma, Context *context
         return init_rewrite_result(mid, mid, dll_create(), _build_reflexivity_proof(mid, context));
     }
 
-    // For rewriting, we do not allow the unification result to have any
-    // remaining open holes.
-    if (dll_len(unif_result->new_goals) > 0) {
+    if (!allow_unresolved_bindings && dll_len(unif_result->new_goals) > 0) {
         free_unification_result(unif_result);
         return init_rewrite_result(mid, mid, dll_create(), _build_reflexivity_proof(mid, context));
     }
@@ -143,19 +143,22 @@ RewriteResult *rewrite_head(Expression *mid, Expression *lemma, Context *context
         return init_rewrite_result(mid, mid, dll_create(), _build_reflexivity_proof(mid, context));
     }
 
+    DoublyLinkedList *goals = unif_result->new_goals;
     free_unification_result(unif_result);
 
-    return init_rewrite_result(mid, _get_rhs_eq(proof_type), dll_create(), proof);
+    return init_rewrite_result(mid, _get_rhs_eq(proof_type), goals, proof);
 }
 
-RewriteResult *_rewrite(Expression *expr, Expression *lemma, Context *context, Map *cached_rwr);
+RewriteResult *_rewrite(Expression *expr, Expression *lemma, Context *context, Map *cached_rwr,
+                        bool allow_unresolved_bindings);
 
-RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context, Map *cached_rwr) {
+RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context, Map *cached_rwr,
+                           bool allow_unresolved_bindings) {
     Expression *func = get_app_func(expr);
     Expression *arg = get_app_arg(expr);
 
-    RewriteResult *rwr_func = _rewrite(func, lemma, context, cached_rwr);
-    RewriteResult *rwr_arg = _rewrite(arg, lemma, context, cached_rwr);
+    RewriteResult *rwr_func = _rewrite(func, lemma, context, cached_rwr, allow_unresolved_bindings);
+    RewriteResult *rwr_arg = _rewrite(arg, lemma, context, cached_rwr, allow_unresolved_bindings);
 
     RewriteResult *mid_rwr = NULL;
     if (rewrite_is_noop(rwr_func) && rewrite_is_noop(rwr_arg)) {
@@ -168,7 +171,8 @@ RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context
             _build_app_congruence_proof(rwr_func, rwr_arg, context));
     }
 
-    RewriteResult *mid_result = rewrite_head(mid_rwr->rewritten, lemma, context);
+    RewriteResult *mid_result =
+        rewrite_head(mid_rwr->rewritten, lemma, context, allow_unresolved_bindings);
 
     RewriteResult *final_rwr;
     if (rewrite_is_noop(mid_result)) {
@@ -183,12 +187,14 @@ RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context
     return final_rwr;
 }
 
-RewriteResult *rewrite_var(Expression *expr, Expression *lemma, Context *context, Map *_) {
-    RewriteResult *head_rwr = rewrite_head(expr, lemma, context);
+RewriteResult *rewrite_var(Expression *expr, Expression *lemma, Context *context, Map *_,
+                           bool allow_unresolved_bindings) {
+    RewriteResult *head_rwr = rewrite_head(expr, lemma, context, allow_unresolved_bindings);
     return head_rwr;
 }
 
-RewriteResult *_rewrite(Expression *expr, Expression *lemma, Context *context, Map *cached_rwr) {
+RewriteResult *_rewrite(Expression *expr, Expression *lemma, Context *context, Map *cached_rwr,
+                        bool allow_unresolved_bindings) {
     RewriteResult *result = (RewriteResult *)map_get(cached_rwr, (void *)expr);
 
     if (result) {
@@ -197,11 +203,11 @@ RewriteResult *_rewrite(Expression *expr, Expression *lemma, Context *context, M
 
     switch (expr->tag) {
         case (APP_EXPRESSION): {
-            result = rewrite_app(expr, lemma, context, cached_rwr);
+            result = rewrite_app(expr, lemma, context, cached_rwr, allow_unresolved_bindings);
             break;
         }
         case (VAR_EXPRESSION): {
-            result = rewrite_var(expr, lemma, context, cached_rwr);
+            result = rewrite_var(expr, lemma, context, cached_rwr, allow_unresolved_bindings);
             break;
         }
         default:
@@ -215,7 +221,16 @@ RewriteResult *_rewrite(Expression *expr, Expression *lemma, Context *context, M
 
 RewriteResult *rewrite(Expression *expr, Expression *lemma, Context *context) {
     Map *cached_rwr = map_new();
-    RewriteResult *rwr = _rewrite(expr, lemma, context, cached_rwr);
+    RewriteResult *rwr = _rewrite(expr, lemma, context, cached_rwr, false);
+    map_del(cached_rwr,
+            (void *)expr);  // remove it from the map so we don't accidently free the rwr
+    map_clear_free_values(cached_rwr);
+    return rwr;
+}
+
+RewriteResult *erewrite(Expression *expr, Expression *lemma, Context *context) {
+    Map *cached_rwr = map_new();
+    RewriteResult *rwr = _rewrite(expr, lemma, context, cached_rwr, true);
     map_del(cached_rwr,
             (void *)expr);  // remove it from the map so we don't accidently free the rwr
     map_clear_free_values(cached_rwr);

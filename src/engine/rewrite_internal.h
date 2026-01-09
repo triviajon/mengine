@@ -16,5 +16,6 @@ RewriteResult *init_rewrite_result(Expression *original, Expression *rewritten,
 void free_rewrite_result(RewriteResult *rwr);
 
 RewriteResult *rewrite(Expression *expr, Expression *lemma, Context *context);
+RewriteResult *erewrite(Expression *expr, Expression *lemma, Context *context);
 
 #endif  // REWRITE_INTERNAL_H

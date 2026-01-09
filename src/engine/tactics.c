@@ -254,3 +254,76 @@ TacticResult *rewrite_tactic(Expression *goal, Expression *lemma) {
     free_rewrite_result(rwr);
     return tac_result;
 }
+
+TacticResult *erewrite_tactic(Expression *goal, Expression *lemma) {
+    // Assume return_type has form R lhs rhs, so that R is the relation and the
+    // type of lhs/rhs are what the relation are over.
+    Expression *return_type = get_expression_type(goal);
+    Context *operating_ctx = get_expression_context(goal);
+
+    Expression *func1 = get_app_func(return_type);
+    if (!func1) {
+        return init_tactic_result(false, NULL, "Goal type is not an application");
+    }
+    Expression *relation_left_hand = get_app_arg(func1);
+    Expression *relation_right_hand = get_app_arg(return_type);
+    if (!relation_left_hand || !relation_right_hand) {
+        return init_tactic_result(false, NULL, "Goal type malformed");
+    }
+    Expression *func2 = get_app_func(func1);
+    if (!func2) {
+        return init_tactic_result(false, NULL, "Goal type is not a binary relation");
+    }
+    Expression *relation = func2;
+    Expression *relation_over = get_expression_type(relation_right_hand);
+
+    // Require that Equivalence proof applies to relation
+    // TODO: Since we are hardcoding rewriting only for Leibniz Equality....
+    if (get_app_func(relation) != eq) {
+        return init_tactic_result(false, NULL,
+                                  "Currently only rewriting for Leibniz Equality is supported");
+    }
+
+    // Once that's confirmed, we can begin attempting to rewrite. Start with the
+    // lhs and try to apply the lemma.
+    RewriteResult *rwr = erewrite(relation_left_hand, lemma, operating_ctx);
+    if (!rwr) {
+        return init_tactic_result(false, NULL, "Rewriting failed");
+    }
+
+    // rwr gives us eq A lhs lhs' with proof pf. We now need to build the proof
+    // of eq relation_over lhs rhs. We'll just use eq_trans : (forall (A: Type),
+    // (forall (x: A), (forall (y: A), (forall (z: A), (forall (_: (((eq A) x)
+    // y)), (forall (_: (((eq A) y) z)), (((eq A) x) z)))))))
+    Expression *new_goal_type = init_app_expression_wc(
+        init_app_expression_wc(init_app_expression_wc(eq, relation_over, operating_ctx),
+                               rwr->rewritten, operating_ctx),
+        relation_right_hand, operating_ctx);
+    Expression *new_goal = init_hole_expression("Goal", new_goal_type, operating_ctx);
+    Expression *proof_of_goal = init_app_expression_wc(
+        init_app_expression_wc(
+            init_app_expression_wc(
+                init_app_expression_wc(
+                    init_app_expression_wc(
+                        init_app_expression_wc(eq_trans, relation_over, operating_ctx),
+                        rwr->original, operating_ctx),
+                    rwr->rewritten, operating_ctx),
+                relation_right_hand, operating_ctx),
+            rwr->original_to_rewritten_proof, operating_ctx),
+        new_goal, operating_ctx);
+
+    DoublyLinkedList *new_goals = dll_create();
+    dll_insert_at_tail(new_goals, dll_new_node(new_goal));
+    new_goals = dll_merge(new_goals, rwr->new_goals);
+
+    if (!can_fill(goal, proof_of_goal)) {
+        free_rewrite_result(rwr);
+        return init_tactic_result(false, NULL, "Failed to fill the goal after rewriting");
+    }
+
+    fill_hole(goal, proof_of_goal);
+
+    TacticResult *tac_result = init_tactic_result(true, new_goals, NULL);
+    free_rewrite_result(rwr);
+    return tac_result;
+}

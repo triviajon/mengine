@@ -2,7 +2,6 @@
 
 #include "src/common/color.h"
 #include "src/engine/tactics.h"
-#include "src/kernel/utils.h"
 #include "src/runtime/proof_state.h"
 #include "src/termlanguage/ast_to_expression.h"
 
@@ -123,7 +122,38 @@ static bool _handle_rewrite_tactic(MEngineRuntime *rt, RewriteTactic *t) {
         return false;
     }
 
+    // we're not actually handling the backward flag right now... but we should handle it with an
+    // application of the equivalence symmetry
     TacticResult *result = rewrite_tactic(goal, lemma);
+    if (result->success) {
+        proof_state_add_goals(rt->proof_state, result->new_goals);
+    } else {
+        fprintf(stderr, ERROR "%s\n" CRESET, result->error_message);
+    }
+    bool success = result->success;
+    free_tactic_result(result);
+    return success;
+}
+
+static bool _handle_erewrite_tactic(MEngineRuntime *rt, RewriteTactic *t) {
+    Expression *goal = _current_goal(rt);
+    Context *ctx = get_expression_context(goal);
+
+    Expression *lemma = ast_to_expression(t->lemma, ctx);
+    if (!lemma) {
+        fprintf(stderr, ERROR "Could not resolve rewrite lemma\n" CRESET);
+        return false;
+    }
+
+    Expression *equiv_proof = ast_to_expression(t->equiv_proof, ctx);
+    if (!equiv_proof) {
+        fprintf(stderr, ERROR "Could not resolve equivalence proof\n" CRESET);
+        return false;
+    }
+
+    // we're not actually handling the backward flag right now... but we should handle it with an
+    // application of the equivalence symmetry
+    TacticResult *result = erewrite_tactic(goal, lemma);
     if (result->success) {
         proof_state_add_goals(rt->proof_state, result->new_goals);
     } else {
@@ -196,6 +226,10 @@ bool _mengine_dispatch_tactic(MEngineRuntime *rt, Tactic *tac) {
         case TACTIC_REWRITE:
         case TACTIC_REWRITE_BACKWARD:
             return _handle_rewrite_tactic(rt, &tac->as.rewrite);
+
+        case TACTIC_EREWRITE:
+        case TACTIC_EREWRITE_BACKWARD:
+            return _handle_erewrite_tactic(rt, &tac->as.rewrite);
 
         case TACTIC_REFLEXIVITY:
             return _handle_reflexivity_tactic(rt);

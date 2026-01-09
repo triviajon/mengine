@@ -12,6 +12,8 @@ typedef enum {
     TACTIC_EXACT,
     TACTIC_REWRITE,
     TACTIC_REWRITE_BACKWARD,
+    TACTIC_EREWRITE,
+    TACTIC_EREWRITE_BACKWARD,
     TACTIC_REFLEXIVITY,
     TACTIC_ASSUMPTION,
     TACTIC_SPLIT,
@@ -82,6 +84,8 @@ Tactic *tactic_parse_proof_command(Parser *p);
  *            | "exact" <term>
  *            | "rewrite" <term> "with" <term>
  *            | "rewrite" "<-" <term> "with" <term>
+ *            | "erewrite" <term> "with" <term>
+ *            | "erewrite" "<-" <term> "with" <term>
  *            | "reflexivity"
  *            | "assumption"
  *            | "split"
@@ -138,6 +142,12 @@ Tactic *tactic_parse_rewrite(Parser *p);
 
 /**
  * @param p Pointer to the Parser.
+ * @return Tactic structure representing the erewrite tactic.
+ */
+Tactic *tactic_parse_erewrite(Parser *p);
+
+/**
+ * @param p Pointer to the Parser.
  * @return Tactic structure representing the reflexivity tactic.
  */
 Tactic *tactic_parse_reflexivity(Parser *p);
@@ -187,6 +197,7 @@ static TacticDispatchEntry tactic_dispatch_table[] = {
     {TOK_EAPPLY, tactic_parse_eapply},
     {TOK_EXACT, tactic_parse_exact},
     {TOK_REWRITE, tactic_parse_rewrite},
+    {TOK_EREWRITE, tactic_parse_erewrite},
     {TOK_REFLEXIVITY, tactic_parse_reflexivity},
     {TOK_ASSUMPTION, tactic_parse_assumption},
     {TOK_SPLIT, tactic_parse_split},
