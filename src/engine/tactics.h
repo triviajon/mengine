@@ -1,16 +1,8 @@
 #ifndef NEW_TACTICS_H
 #define NEW_TACTICS_H
 
+#include "src/engine/tactic_api.h"
 #include "src/kernel/expression.h"
-
-typedef struct {
-    bool success;                 // true if the tactic was successful, false otherwise
-    DoublyLinkedList *new_goals;  // If success, the new goals, otherwise NULL
-    char *error_message;          // If success, NULL, otherwise the error message
-} TacticResult;
-
-TacticResult *init_tactic_result(bool success, DoublyLinkedList *new_goals, char *error_message);
-void free_tactic_result(TacticResult *result);
 
 // DoublyLinkedList *apply(Expression *goal, Expression *lemma);
 // DoublyLinkedList *eapply(Expression *goal, Expression *lemma);
@@ -39,13 +31,6 @@ TacticResult *assumption_tactic(Expression *goal);
 // Given a hole and a proof term, check if the term's type matches the goal, and fill the hole with
 // it.
 TacticResult *exact_tactic(Expression *goal, Expression *proof_term);
-
-typedef struct {
-    Expression *original;
-    Expression *rewritten;
-    DoublyLinkedList *new_goals;
-    Expression *original_to_rewritten_proof;
-} RewriteResult;
 
 // Given a hole and a lemma, where the hole's expected type has the form eq A x y. The eventual goal
 // is to generalize this to any equivalence relation. See:
