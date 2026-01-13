@@ -8,7 +8,7 @@
 #include "src/kernel/inductive.h"
 #include "src/kernel/normalize.h"
 #include "src/kernel/utils.h"
-#include "src/runtime/proof_state.h"
+#include "src/engine/proof_state.h"
 #include "src/runtime/runtime.h"
 #include "src/termlanguage/ast_to_expression.h"
 

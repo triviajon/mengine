@@ -11,7 +11,7 @@
 #include "src/kernel/inductive.h"
 #include "src/kernel/utils.h"
 #include "src/runtime/core.h"
-#include "src/runtime/proof_state.h"
+#include "src/engine/proof_state.h"
 #include "src/tacticlanguage/tactic_exec.h"
 
 void debug_print_mode(MEngineRuntime *rt) {

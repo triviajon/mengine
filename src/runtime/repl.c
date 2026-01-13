@@ -8,7 +8,7 @@
 #include "src/common/options.h"
 #include "src/kernel/expression.h"
 #include "src/kernel/utils.h"
-#include "src/runtime/proof_state.h"
+#include "src/engine/proof_state.h"
 #include "src/runtime/runtime.h"
 
 void trim_whitespace(char *s) {

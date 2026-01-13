@@ -1,4 +1,4 @@
-#include "src/runtime/proof_state.h"
+#include "src/engine/proof_state.h"
 
 #include <stddef.h>
 #include <stdlib.h>
