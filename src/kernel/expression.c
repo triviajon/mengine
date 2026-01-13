@@ -8,6 +8,7 @@
 #include "src/common/linear_map.h"
 #include "src/kernel/beta_reduction.h"
 #include "src/kernel/context.h"
+#include "src/kernel/definitional_equal.h"
 #include "src/kernel/inductive.h"
 #include "src/kernel/structural.h"
 #include "src/kernel/subst.h"
@@ -1328,7 +1329,7 @@ bool is_hole(Expression *expr) { return expr->tag == HOLE_EXPRESSION; }
 //    3) Term does not itself contain the hole.
 // This does no modifications/creates no new objects.
 bool can_fill(Expression *hole, Expression *term) {
-    bool types_match = congruent_with_holes(get_expression_type(hole), get_expression_type(term));
+    bool types_match = definitional_equal(get_expression_type(hole), get_expression_type(term));
     if (get_maybe_hole_free(term)) {
         return types_match && valid_in_context(term, get_expression_context(hole));
     }
@@ -1412,71 +1413,57 @@ void fill_hole(Expression *hole, Expression *term) {
         return;
     }
 
-    // check if term satisfies hole type...
-    LinearMap *alpha_equivalences = linear_map_new();
-    LinearMap *required_holes = linear_map_new();
-    bool types_match = _congruent_with_holes(get_expression_type(hole), get_expression_type(term),
-                                             alpha_equivalences, required_holes);
+    bool types_match = definitional_equal(get_expression_type(hole), get_expression_type(term));
     if (!types_match) {
-        linear_map_clear_free(alpha_equivalences);
-        linear_map_clear_free(required_holes);
         return;  // Todo: signal that this has failed?
     }
-
-    int n = required_holes->size;
-    for (int i = 0; i < n; i++) {
-        Expression *hole = (required_holes->items + i)->key;
-        Expression *substitute = (required_holes->items + i)->val;
-        fill_hole(hole, substitute);
-    }
-
     DoublyLinkedList *holepars = hole->uplinks;
     for (int i = 0; i < dll_len(holepars); i++) {
         Uplink *uplink = dll_at(holepars, i)->data;
         switch (uplink->relation) {
             case (LAMBDA_BODY): {
                 Expression *ptr = (Expression *)uplink->ptr;
-                ptr->as.lambda.body = term;
+                SET_LAMBDA_BODY(ptr, term);
                 break;
             }
             case (LAMBDA_BOUND_VAR): {
                 Expression *ptr = (Expression *)uplink->ptr;
-                ptr->as.lambda.bound_variable = term;
+                SET_LAMBDA_BOUND_VAR(ptr, term);
                 break;
             }
             case (APP_FUNC): {
                 Expression *ptr = (Expression *)uplink->ptr;
-                ptr->as.app.func = term;
+                SET_APP_FUNC(ptr, term);
                 break;
             }
             case (APP_ARG): {
                 Expression *ptr = (Expression *)uplink->ptr;
-                ptr->as.app.arg = term;
+                SET_APP_ARG(ptr, term);
                 break;
             }
             case (FORALL_BODY): {
                 Expression *ptr = (Expression *)uplink->ptr;
-                ptr->as.forall.body = term;
+                SET_FORALL_BODY(ptr, term);
                 break;
             }
             case (FORALL_BOUND_VAR): {
                 Expression *ptr = (Expression *)uplink->ptr;
-                ptr->as.forall.bound_variable = term;
+                SET_FORALL_BOUND_VAR(ptr, term);
                 break;
             }
             case (VAR_BODY): {
                 Expression *ptr = (Expression *)uplink->ptr;
-                ptr->as.var.body = term;
+                SET_VAR_BODY(ptr, term);
                 break;
             }
             case (EXPR_TYPE): {
                 Expression *ptr = (Expression *)uplink->ptr;
-                ptr->type = term;
+                SET_EXPR_TYPE(ptr, term);
                 break;
             }
             case (EXPR_CONTEXT): {
                 Expression *ptr = (Expression *)uplink->ptr;
-                ptr->context = term;
+                SET_EXPR_CONTEXT(ptr, term);
                 break;
             }
             default:
@@ -1485,9 +1472,6 @@ void fill_hole(Expression *hole, Expression *term) {
                 break;
         }
     }
-
-    linear_map_clear_free(alpha_equivalences);
-    linear_map_clear_free(required_holes);
 }
 
 char c_counter = 'a';

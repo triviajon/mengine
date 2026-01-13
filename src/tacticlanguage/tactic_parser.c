@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "src/common/lexer.h"
+#include "src/common/parser_base.h"
+
 char *tactic_tag_to_string(TacticTag tag) {
     switch (tag) {
         case TACTIC_ADMITTED:
@@ -367,5 +370,35 @@ Tactic *tactic_parse_exists(Parser *p) {
     tactic->tag = TACTIC_EXISTS;
     tactic->as.exists.witness = witness;
 
+    return tactic;
+}
+
+Tactic *tactic_parse_cbv(Parser *p) {
+    // "cbv" { <ident> }
+    if (!parser_expect_consume(p, TOK_CBV)) {
+        parser_error(p, "expected 'cbv'");
+    }
+
+    char **rules = NULL;
+    size_t rules_count = 0;
+
+    // Zero or more identifiers
+    while (parser_expect_no_consume(p, TOK_IDENT)) {
+        Token *ident_token = parser_next(p);
+
+        rules = realloc(rules, sizeof(char *) * (rules_count + 1));
+        rules[rules_count] = strdup(ident_token->lexeme);
+        lexer_free_token(ident_token);
+        rules_count++;
+    }
+
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "Expected '.' at end of cbv");
+    }
+
+    Tactic *tactic = malloc(sizeof(Tactic));
+    tactic->tag = TACTIC_CBV;
+    tactic->as.cbv.rules = rules;
+    tactic->as.cbv.rules_count = rules_count;
     return tactic;
 }

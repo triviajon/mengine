@@ -1,0 +1,12 @@
+(* cbv_tactic.me *)
+(* Using the cbv tactic. *)
+
+Inductive nat : Type := | O : nat | S : forall (_: nat), nat.
+
+Check nat.
+Check (S O).
+Check nat_ind.
+
+Fixpoint add (n : nat) (m : nat) {struct n} : nat := match n with | O => m | S n' => S (add n' m) end.
+
+Theorem test1 : eq nat (add (S O) (O)) (S O).

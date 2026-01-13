@@ -19,7 +19,8 @@ typedef enum {
     TACTIC_SPLIT,
     TACTIC_LEFT,
     TACTIC_RIGHT,
-    TACTIC_EXISTS
+    TACTIC_EXISTS,
+    TACTIC_CBV
 } TacticTag;
 
 typedef struct {
@@ -53,6 +54,11 @@ typedef struct {
     AST *witness;
 } ExistsTactic;
 
+typedef struct {
+    char **rules;
+    int rules_count;
+} CbvTactic;
+
 typedef struct Tactic {
     TacticTag tag;
     union {
@@ -63,6 +69,7 @@ typedef struct Tactic {
         ExactTactic exact;
         RewriteTactic rewrite;
         ExistsTactic exists;
+        CbvTactic cbv;
     } as;
 } Tactic;
 
@@ -92,6 +99,7 @@ Tactic *tactic_parse_proof_command(Parser *p);
  *            | "left"
  *            | "right"
  *            | "exists" <term>
+ *            | "cbv" { <ident> }
  *
  * @param p Pointer to the Parser.
  * @return Tactic structure representing the parsed tactic.
@@ -182,6 +190,12 @@ Tactic *tactic_parse_right(Parser *p);
  */
 Tactic *tactic_parse_exists(Parser *p);
 
+/**
+ * @param p Pointer to the Parser.
+ * @return Tactic structure representing the cbv tactic.
+ */
+Tactic *tactic_parse_cbv(Parser *p);
+
 typedef Tactic *(*TacticParseFunc)(Parser *p);
 
 typedef struct {
@@ -204,6 +218,7 @@ static TacticDispatchEntry tactic_dispatch_table[] = {
     {TOK_LEFT, tactic_parse_left},
     {TOK_RIGHT, tactic_parse_right},
     {TOK_EXISTS, tactic_parse_exists},
+    {TOK_CBV, tactic_parse_cbv},
 };
 
 #define TACTIC_DISPATCH_TABLE (tactic_dispatch_table)

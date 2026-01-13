@@ -19,4 +19,5 @@ Tactic language
           | "left"
           | "right"
           | "exists" <term>
+          | "cbv" { <ident> }
 ```
