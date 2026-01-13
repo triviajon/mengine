@@ -2,7 +2,7 @@
 
 #include "src/common/color.h"
 #include "src/engine/tactics.h"
-#include "src/runtime/proof_state.h"
+#include "src/engine/proof_state.h"
 #include "src/tacticlanguage/tactic_parser.h"
 #include "src/termlanguage/ast_to_expression.h"
 
