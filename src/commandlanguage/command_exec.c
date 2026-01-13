@@ -832,8 +832,10 @@ static int _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
             // Show proof term
             Expression *pending_theorem = proof_state_pending_theorem(rt->proof_state);
             Expression *pending_theorem_body = get_expression_body(pending_theorem);
-            MPRINT(rt->options->quiet, stdout, HEADER "Proof Term:" CRESET "\n%s\n",
-                   stringify_expression(pending_theorem_body));
+            Expression *pending_theorem_type = get_expression_type(pending_theorem);
+            MPRINT(rt->options->quiet, stdout, HEADER "Proof Term:" CRESET "\n%s : %s\n",
+                   stringify_expression(pending_theorem_body),
+                   stringify_expression(pending_theorem_type));
             return 0;
         }
         case SHOW_KW_GOAL: {

@@ -3,6 +3,7 @@
 #include "src/common/color.h"
 #include "src/engine/tactics.h"
 #include "src/runtime/proof_state.h"
+#include "src/tacticlanguage/tactic_parser.h"
 #include "src/termlanguage/ast_to_expression.h"
 
 static Expression *_current_goal(MEngineRuntime *rt) {
@@ -203,6 +204,19 @@ static bool _handle_exists_tactic(MEngineRuntime *rt, ExistsTactic *t) {
     return true;
 }
 
+static bool _handle_cbv_tactic(MEngineRuntime *rt, CbvTactic *t) {
+    Expression *g = _current_goal(rt);
+    TacticResult *result = cbv_tactic(g, t->rules, t->rules_count);
+    if (result->success) {
+        proof_state_add_goals(rt->proof_state, result->new_goals);
+    } else {
+        fprintf(stderr, ERROR "%s\n" CRESET, result->error_message);
+    }
+    bool success = result->success;
+    free_tactic_result(result);
+    return success;
+}
+
 bool _mengine_dispatch_tactic(MEngineRuntime *rt, Tactic *tac) {
     switch (tac->tag) {
         case TACTIC_ADMITTED:
@@ -248,6 +262,9 @@ bool _mengine_dispatch_tactic(MEngineRuntime *rt, Tactic *tac) {
 
         case TACTIC_EXISTS:
             return _handle_exists_tactic(rt, &tac->as.exists);
+
+        case TACTIC_CBV:
+            return _handle_cbv_tactic(rt, &tac->as.cbv);
     }
     return false;
 }

@@ -1,11 +1,14 @@
 #include "src/engine/tactics.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "src/common/doubly_linked_list.h"
 #include "src/engine/rewrite_internal.h"
+#include "src/engine/tactic_api.h"
 #include "src/engine/unify.h"
 #include "src/kernel/expression.h"
+#include "src/kernel/normalize.h"
 #include "src/kernel/subst.h"
 #include "src/runtime/core.h"
 
@@ -326,4 +329,43 @@ TacticResult *erewrite_tactic(Expression *goal, Expression *lemma) {
     TacticResult *tac_result = init_tactic_result(true, new_goals, NULL);
     free_rewrite_result(rwr);
     return tac_result;
+}
+
+TacticResult *cbv_tactic(Expression *goal, char **rules, int rule_count) {
+    ReductionFlags flags = 0;
+    if (!rules || rule_count == 0) {
+        flags = REDUCE_ALL;
+    } else {
+        for (int i = 0; i < rule_count; i++) {
+            if (strcmp(rules[i], "beta")) {
+                flags |= REDUCE_BETA;
+            } else if (strcmp(rules[i], "delta")) {
+                flags |= REDUCE_DELTA;
+            } else if (strcmp(rules[i], "iota")) {
+                flags |= REDUCE_IOTA;
+            } else if (strcmp(rules[i], "fix")) {
+                flags |= REDUCE_FIX;
+            } else {
+                // unknown rule for now
+                return init_tactic_result(false, NULL, "Unknown converison rule in cbv.");
+            }
+        }
+    }
+
+    char *old_goal_name = get_hole_name(goal);
+    Expression *old_goal_ty = get_expression_type(goal);
+    Context *ctx = get_expression_context(goal);
+
+    Expression *new_goal_ty = normalize_cbv(old_goal_ty, flags);
+    Expression *new_goal = init_hole_expression(old_goal_name, new_goal_ty, ctx);
+
+    if (!can_fill(goal, new_goal)) {
+        return init_tactic_result(false, NULL, "Failed to fill the goal conversion");
+    }
+
+    fill_hole(goal, new_goal);
+
+    DoublyLinkedList *new_goals = dll_create();
+    dll_insert_at_tail(new_goals, dll_new_node(new_goal));
+    return init_tactic_result(true, new_goals, NULL);
 }

@@ -40,4 +40,16 @@ TacticResult *rewrite_tactic(Expression *goal, Expression *lemma);
 // Same as rewrite_tactic, but allows unresolved binders to be added as goals to the proof state.
 TacticResult *erewrite_tactic(Expression *goal, Expression *lemma);
 
+// Given a goal, and optionally a list of conversion rules, attempt to normalize the goal by
+// applying the set of conversion rules given in `rules`.
+//
+// Supported rules:
+// - beta: (fun x => t) u ~> t[x := u]
+// - delta: unfold definitions
+// - iota: match on constructors
+// - fix: fixpoint to lambdas
+//
+// If `rules` is NULL, then all rules are applied
+TacticResult *cbv_tactic(Expression *goal, char **rules, int rule_count);
+
 #endif  // NEW_TACTICS

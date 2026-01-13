@@ -176,21 +176,93 @@ Expression *normalize_whnf(Expression *expr) {
         return NULL;
     }
 
-    switch (expr->tag) {
-        case APP_EXPRESSION: {
-            Context *ctx = get_expression_context(expr);
-            Expression *func = get_app_func(expr);
-            Expression *arg = get_app_arg(expr);
-            if (func->tag == LAMBDA_EXPRESSION) {
-                return normalize_whnf(beta_reduce(ctx, func, arg));
+    Expression *current = expr;
+
+    while (true) {
+        switch (current->tag) {
+            case VAR_EXPRESSION: {
+                if (is_delta_reducible(current)) {
+                    Expression *next = delta_reduce(current);
+                    if (next) {
+                        current = next;
+                        continue;
+                    }
+                }
+                return current;
             }
 
-            // TODO: Figure out if whnf also consider FIX_EXPRESSIONs. If so, we'd also need to
-            // handle FIX_EXPRESSION in the main switch statement to apply fix reduction.
-            return expr;
-        }
+            case APP_EXPRESSION: {
+                Context *ctx = get_expression_context(current);
+                Expression *func = get_app_func(current);
+                Expression *arg = get_app_arg(current);
 
-        default:
-            return expr;
+                // First normalize the function to WHNF
+                Expression *norm_func = normalize_whnf(func);
+
+                if (norm_func != func) {
+                    current = init_app_expression_wc(norm_func, arg, ctx);
+                    continue;
+                }
+
+                if (norm_func->tag == LAMBDA_EXPRESSION) {
+                    current = beta_reduce(ctx, norm_func, arg);
+                    continue;
+                }
+
+                if (norm_func->tag == FIX_EXPRESSION && is_fix_reducible(norm_func)) {
+                    Expression *unfolded = fix_reduce(norm_func);
+                    if (unfolded) {
+                        current = init_app_expression_wc(unfolded, arg, ctx);
+                        continue;
+                    }
+                }
+
+                return current;
+            }
+
+            case FIX_EXPRESSION: {
+                if (is_fix_reducible(current)) {
+                    Expression *next = fix_reduce(current);
+                    if (next) {
+                        current = next;
+                        continue;
+                    }
+                }
+                return current;
+            }
+
+            case MATCH_EXPRESSION: {
+                Context *ctx = get_expression_context(current);
+
+                Expression *scrut = current->as.match.scrutinee;
+                Expression *norm_scrut = normalize_whnf(scrut);
+
+                if (norm_scrut != scrut) {
+                    current = init_match_expression_wc(norm_scrut, current->as.match.branches,
+                                                       current->as.match.branch_count, ctx);
+                    continue;
+                }
+
+                if (is_iota_reducible(current)) {
+                    Expression *next = iota_reduce(ctx, current);
+                    if (next) {
+                        current = next;
+                        continue;
+                    }
+                }
+
+                return current;
+            }
+
+            case LAMBDA_EXPRESSION:
+            case FORALL_EXPRESSION:
+            case TYPE_EXPRESSION:
+            case PROP_EXPRESSION:
+            case HOLE_EXPRESSION:
+                return current;
+
+            default:
+                return current;
+        }
     }
 }
