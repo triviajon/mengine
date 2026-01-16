@@ -1,13 +1,13 @@
 #include "src/tacticlanguage/tactic_exec.h"
 
 #include "src/common/color.h"
-#include "src/engine/tactics.h"
-#include "src/engine/proof_state.h"
+#include "src/engine/engine_api.h"
+#include "src/kernel/kernel_api.h"
 #include "src/tacticlanguage/tactic_parser.h"
 #include "src/termlanguage/ast_to_expression.h"
 
 static Expression *_current_goal(MEngineRuntime *rt) {
-    return proof_state_current(rt->proof_state);
+    return engine_proof_state_current_goal(rt->proof_state);
 }
 
 static bool _handle_admitted_tactic(MEngineRuntime *rt) {
@@ -19,34 +19,33 @@ static bool _handle_admitted_tactic(MEngineRuntime *rt) {
 
 static bool _handle_intro_tactic(MEngineRuntime *rt, IntroTactic *t) {
     Expression *g = _current_goal(rt);
-    TacticResult *result = intro_tactic(g, t->name);
-    if (result->success) {
-        proof_state_add_goals(rt->proof_state, result->new_goals);
+    TacticResult *result = engine_tactic_intro(g, t->name);
+    if (engine_tactic_result_success(result)) {
+        engine_proof_state_add_goals(rt->proof_state, engine_tactic_result_goals(result));
     } else {
-        fprintf(stderr, ERROR "%s\n" CRESET, result->error_message);
+        fprintf(stderr, ERROR "%s\n" CRESET, engine_tactic_result_error(result));
     }
-    bool success = result->success;
-    free_tactic_result(result);
-    (void)t;
+    bool success = engine_tactic_result_success(result);
+    engine_tactic_result_free(result);
     return success;
 }
 
 static bool _handle_intros_tactic(MEngineRuntime *rt, IntrosTactic *t) {
     Expression *g = _current_goal(rt);
-    TacticResult *result = intros_tactic(g, t->names, t->name_count);
-    if (result->success) {
-        proof_state_add_goals(rt->proof_state, result->new_goals);
+    TacticResult *result = engine_tactic_intros(g, t->names, t->name_count);
+    if (engine_tactic_result_success(result)) {
+        engine_proof_state_add_goals(rt->proof_state, engine_tactic_result_goals(result));
     } else {
-        fprintf(stderr, ERROR "%s\n" CRESET, result->error_message);
+        fprintf(stderr, ERROR "%s\n" CRESET, engine_tactic_result_error(result));
     }
-    bool success = result->success;
-    free_tactic_result(result);
+    bool success = engine_tactic_result_success(result);
+    engine_tactic_result_free(result);
     return success;
 }
 
 static bool _handle_apply_tactic(MEngineRuntime *rt, ApplyTactic *t) {
     Expression *goal = _current_goal(rt);
-    Context *ctx = get_expression_context(goal);
+    Context *ctx = kernel_expr_context(goal);
 
     Expression *lemma = ast_to_expression(t->lemma, ctx);
     if (!lemma) {
@@ -54,20 +53,20 @@ static bool _handle_apply_tactic(MEngineRuntime *rt, ApplyTactic *t) {
         return false;
     }
 
-    TacticResult *result = apply_tactic(goal, lemma);
-    if (result->success) {
-        proof_state_add_goals(rt->proof_state, result->new_goals);
+    TacticResult *result = engine_tactic_apply(goal, lemma);
+    if (engine_tactic_result_success(result)) {
+        engine_proof_state_add_goals(rt->proof_state, engine_tactic_result_goals(result));
     } else {
-        fprintf(stderr, ERROR "%s\n" CRESET, result->error_message);
+        fprintf(stderr, ERROR "%s\n" CRESET, engine_tactic_result_error(result));
     }
-    bool success = result->success;
-    free_tactic_result(result);
+    bool success = engine_tactic_result_success(result);
+    engine_tactic_result_free(result);
     return success;
 }
 
 static bool _handle_eapply_tactic(MEngineRuntime *rt, EapplyTactic *t) {
     Expression *goal = _current_goal(rt);
-    Context *ctx = get_expression_context(goal);
+    Context *ctx = kernel_expr_context(goal);
 
     Expression *lemma = ast_to_expression(t->lemma, ctx);
     if (!lemma) {
@@ -75,20 +74,20 @@ static bool _handle_eapply_tactic(MEngineRuntime *rt, EapplyTactic *t) {
         return false;
     }
 
-    TacticResult *result = eapply_tactic(goal, lemma);
-    if (result->success) {
-        proof_state_add_goals(rt->proof_state, result->new_goals);
+    TacticResult *result = engine_tactic_eapply(goal, lemma);
+    if (engine_tactic_result_success(result)) {
+        engine_proof_state_add_goals(rt->proof_state, engine_tactic_result_goals(result));
     } else {
-        fprintf(stderr, ERROR "%s\n" CRESET, result->error_message);
+        fprintf(stderr, ERROR "%s\n" CRESET, engine_tactic_result_error(result));
     }
-    bool success = result->success;
-    free_tactic_result(result);
+    bool success = engine_tactic_result_success(result);
+    engine_tactic_result_free(result);
     return success;
 }
 
 static bool _handle_exact_tactic(MEngineRuntime *rt, ExactTactic *t) {
     Expression *goal = _current_goal(rt);
-    Context *ctx = get_expression_context(goal);
+    Context *ctx = kernel_expr_context(goal);
 
     Expression *proof_term = ast_to_expression(t->proof_term, ctx);
     if (!proof_term) {
@@ -96,20 +95,20 @@ static bool _handle_exact_tactic(MEngineRuntime *rt, ExactTactic *t) {
         return false;
     }
 
-    TacticResult *result = exact_tactic(goal, proof_term);
-    if (result->success) {
-        proof_state_add_goals(rt->proof_state, result->new_goals);
+    TacticResult *result = engine_tactic_exact(goal, proof_term);
+    if (engine_tactic_result_success(result)) {
+        engine_proof_state_add_goals(rt->proof_state, engine_tactic_result_goals(result));
     } else {
-        fprintf(stderr, ERROR "%s\n" CRESET, result->error_message);
+        fprintf(stderr, ERROR "%s\n" CRESET, engine_tactic_result_error(result));
     }
-    bool success = result->success;
-    free_tactic_result(result);
+    bool success = engine_tactic_result_success(result);
+    engine_tactic_result_free(result);
     return success;
 }
 
 static bool _handle_rewrite_tactic(MEngineRuntime *rt, RewriteTactic *t) {
     Expression *goal = _current_goal(rt);
-    Context *ctx = get_expression_context(goal);
+    Context *ctx = kernel_expr_context(goal);
 
     Expression *lemma = ast_to_expression(t->lemma, ctx);
     if (!lemma) {
@@ -123,22 +122,20 @@ static bool _handle_rewrite_tactic(MEngineRuntime *rt, RewriteTactic *t) {
         return false;
     }
 
-    // we're not actually handling the backward flag right now... but we should handle it with an
-    // application of the equivalence symmetry
-    TacticResult *result = rewrite_tactic(goal, lemma);
-    if (result->success) {
-        proof_state_add_goals(rt->proof_state, result->new_goals);
+    TacticResult *result = engine_tactic_rewrite(goal, lemma);
+    if (engine_tactic_result_success(result)) {
+        engine_proof_state_add_goals(rt->proof_state, engine_tactic_result_goals(result));
     } else {
-        fprintf(stderr, ERROR "%s\n" CRESET, result->error_message);
+        fprintf(stderr, ERROR "%s\n" CRESET, engine_tactic_result_error(result));
     }
-    bool success = result->success;
-    free_tactic_result(result);
+    bool success = engine_tactic_result_success(result);
+    engine_tactic_result_free(result);
     return success;
 }
 
 static bool _handle_erewrite_tactic(MEngineRuntime *rt, RewriteTactic *t) {
     Expression *goal = _current_goal(rt);
-    Context *ctx = get_expression_context(goal);
+    Context *ctx = kernel_expr_context(goal);
 
     Expression *lemma = ast_to_expression(t->lemma, ctx);
     if (!lemma) {
@@ -152,68 +149,113 @@ static bool _handle_erewrite_tactic(MEngineRuntime *rt, RewriteTactic *t) {
         return false;
     }
 
-    // we're not actually handling the backward flag right now... but we should handle it with an
-    // application of the equivalence symmetry
-    TacticResult *result = erewrite_tactic(goal, lemma);
-    if (result->success) {
-        proof_state_add_goals(rt->proof_state, result->new_goals);
+    TacticResult *result = engine_tactic_erewrite(goal, lemma);
+    if (engine_tactic_result_success(result)) {
+        engine_proof_state_add_goals(rt->proof_state, engine_tactic_result_goals(result));
     } else {
-        fprintf(stderr, ERROR "%s\n" CRESET, result->error_message);
+        fprintf(stderr, ERROR "%s\n" CRESET, engine_tactic_result_error(result));
     }
-    bool success = result->success;
-    free_tactic_result(result);
+    bool success = engine_tactic_result_success(result);
+    engine_tactic_result_free(result);
     return success;
 }
 
 static bool _handle_reflexivity_tactic(MEngineRuntime *rt) {
-    (void)rt;
-    return true;
+    Expression *goal = _current_goal(rt);
+    TacticResult *result = engine_tactic_reflexivity(goal);
+    if (engine_tactic_result_success(result)) {
+        engine_proof_state_add_goals(rt->proof_state, engine_tactic_result_goals(result));
+    } else {
+        fprintf(stderr, ERROR "%s\n" CRESET, engine_tactic_result_error(result));
+    }
+    bool success = engine_tactic_result_success(result);
+    engine_tactic_result_free(result);
+    return success;
 }
 
 static bool _handle_assumption_tactic(MEngineRuntime *rt) {
     Expression *goal = _current_goal(rt);
-    TacticResult *result = assumption_tactic(goal);
-    if (result->success) {
-        proof_state_add_goals(rt->proof_state, result->new_goals);
+    TacticResult *result = engine_tactic_assumption(goal);
+    if (engine_tactic_result_success(result)) {
+        engine_proof_state_add_goals(rt->proof_state, engine_tactic_result_goals(result));
     } else {
-        fprintf(stderr, ERROR "%s\n" CRESET, result->error_message);
+        fprintf(stderr, ERROR "%s\n" CRESET, engine_tactic_result_error(result));
     }
-    bool success = result->success;
-    free_tactic_result(result);
+    bool success = engine_tactic_result_success(result);
+    engine_tactic_result_free(result);
     return success;
 }
 
 static bool _handle_split_tactic(MEngineRuntime *rt) {
-    (void)rt;
-    return true;
+    Expression *goal = _current_goal(rt);
+    TacticResult *result = engine_tactic_split(goal);
+    if (engine_tactic_result_success(result)) {
+        engine_proof_state_add_goals(rt->proof_state, engine_tactic_result_goals(result));
+    } else {
+        fprintf(stderr, ERROR "%s\n" CRESET, engine_tactic_result_error(result));
+    }
+    bool success = engine_tactic_result_success(result);
+    engine_tactic_result_free(result);
+    return success;
 }
 
 static bool _handle_left_tactic(MEngineRuntime *rt) {
-    (void)rt;
-    return true;
+    Expression *goal = _current_goal(rt);
+    TacticResult *result = engine_tactic_left(goal);
+    if (engine_tactic_result_success(result)) {
+        engine_proof_state_add_goals(rt->proof_state, engine_tactic_result_goals(result));
+    } else {
+        fprintf(stderr, ERROR "%s\n" CRESET, engine_tactic_result_error(result));
+    }
+    bool success = engine_tactic_result_success(result);
+    engine_tactic_result_free(result);
+    return success;
 }
 
 static bool _handle_right_tactic(MEngineRuntime *rt) {
-    (void)rt;
-    return true;
+    Expression *goal = _current_goal(rt);
+    TacticResult *result = engine_tactic_right(goal);
+    if (engine_tactic_result_success(result)) {
+        engine_proof_state_add_goals(rt->proof_state, engine_tactic_result_goals(result));
+    } else {
+        fprintf(stderr, ERROR "%s\n" CRESET, engine_tactic_result_error(result));
+    }
+    bool success = engine_tactic_result_success(result);
+    engine_tactic_result_free(result);
+    return success;
 }
 
 static bool _handle_exists_tactic(MEngineRuntime *rt, ExistsTactic *t) {
-    (void)rt;
-    (void)t;
-    return true;
+    Expression *goal = _current_goal(rt);
+    Context *ctx = kernel_expr_context(goal);
+
+    Expression *witness = ast_to_expression(t->witness, ctx);
+    if (!witness) {
+        fprintf(stderr, ERROR "Could not resolve witness\n" CRESET);
+        return false;
+    }
+
+    TacticResult *result = engine_tactic_exists(goal, witness);
+    if (engine_tactic_result_success(result)) {
+        engine_proof_state_add_goals(rt->proof_state, engine_tactic_result_goals(result));
+    } else {
+        fprintf(stderr, ERROR "%s\n" CRESET, engine_tactic_result_error(result));
+    }
+    bool success = engine_tactic_result_success(result);
+    engine_tactic_result_free(result);
+    return success;
 }
 
 static bool _handle_cbv_tactic(MEngineRuntime *rt, CbvTactic *t) {
     Expression *g = _current_goal(rt);
-    TacticResult *result = cbv_tactic(g, t->rules, t->rules_count);
-    if (result->success) {
-        proof_state_add_goals(rt->proof_state, result->new_goals);
+    TacticResult *result = engine_tactic_cbv(g, t->rules, t->rules_count);
+    if (engine_tactic_result_success(result)) {
+        engine_proof_state_add_goals(rt->proof_state, engine_tactic_result_goals(result));
     } else {
-        fprintf(stderr, ERROR "%s\n" CRESET, result->error_message);
+        fprintf(stderr, ERROR "%s\n" CRESET, engine_tactic_result_error(result));
     }
-    bool success = result->success;
-    free_tactic_result(result);
+    bool success = engine_tactic_result_success(result);
+    engine_tactic_result_free(result);
     return success;
 }
 
@@ -287,13 +329,13 @@ int mengine_execute_tactic(MEngineRuntime *rt, Tactic *tac) {
 
     // Each tactic handler will take care of adding new goals. We just need to
     // advance to the next goal if there is one.
-    if (!proof_state_next(rt->proof_state)) {
+    if (!engine_proof_state_next_goal(rt->proof_state)) {
         // No more goals - proof is complete!
         Expression *thm = rt->pending_theorem;
         rt->ctx = thm;
 
         MPRINT(rt->options->quiet, stdout, SUCCESS "Proof complete." CRESET " %s declared.\n",
-               get_var_name(thm));
+               kernel_var_name(thm));
 
         mengine_runtime_command_mode(rt);
     }

@@ -2,8 +2,7 @@
 #define AST_TO_EXPRESSION_H
 
 #include "src/common/options.h"
-#include "src/kernel/context.h"
-#include "src/kernel/expression.h"
+#include "src/kernel/kernel_api.h"
 #include "src/termlanguage/parser.h"
 
 /**

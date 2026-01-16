@@ -136,6 +136,13 @@ bool valid_in_context(Expression *expr, Expression *context) {
     return true;
 }
 
+int context_size(Context *context) {
+    if (context_is_empty(context)) {
+        return 0;
+    }
+    return context->ctx_size;
+}
+
 bool valid_to_add_to_context(Expression *expr, Expression *context) {
     if (expr->tag != VAR_EXPRESSION) {
         return false;

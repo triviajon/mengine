@@ -236,3 +236,23 @@ RewriteResult *erewrite(Expression *expr, Expression *lemma, Context *context) {
     map_clear_free_values(cached_rwr);
     return rwr;
 }
+Expression *rewrite_result_get_original(RewriteResult *result) {
+    if (!result) {
+        return NULL;
+    }
+    return result->original;
+}
+
+Expression *rewrite_result_get_rewritten(RewriteResult *result) {
+    if (!result) {
+        return NULL;
+    }
+    return result->rewritten;
+}
+
+DoublyLinkedList *rewrite_result_get_new_goals(RewriteResult *result) {
+    if (!result) {
+        return NULL;
+    }
+    return result->new_goals;
+}

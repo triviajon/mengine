@@ -7,7 +7,7 @@
 #include "src/common/color.h"
 #include "src/common/doubly_linked_list.h"
 #include "src/common/lexer.h"
-#include "src/kernel/expression.h"
+#include "src/kernel/kernel_api.h"
 #include "src/termlanguage/parser.h"
 
 /**
@@ -79,7 +79,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                 return letbinding;
             }
 
-            Expression *val = context_lookup_by_name(context, ast->value.var.name);
+            Expression *val = kernel_context_lookup(context, ast->value.var.name);
             if (!val) {
                 fprintf(stderr, ERROR "Variable %s not found in context.\n" CRESET,
                         ast->value.var.name);
@@ -89,10 +89,10 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
         }
 
         case AST_TYPE:
-            return init_type_expression();
+            return kernel_type_create();
 
         case AST_PROP:
-            return init_prop_expression();
+            return kernel_prop_create();
 
         case AST_LAMBDA: {
             Expression *binder_type =
@@ -104,7 +104,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
 
             char *name = ast->value.lambda.binder.name;
 
-            Expression *bound_var = init_var_expression_wc(name, binder_type, context);
+            Expression *bound_var = kernel_var_create(name, binder_type, context);
             if (!bound_var) {
                 fprintf(stderr, ERROR "Failed to create lambda bound var.\n" CRESET);
                 return NULL;
@@ -123,7 +123,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                 return NULL;
             }
 
-            return init_lambda_expression_wc(bound_var, body);
+            return kernel_lambda_create(bound_var, body);
         }
 
         case AST_FORALL: {
@@ -136,7 +136,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
 
             char *name = ast->value.forall.binder.name;
 
-            Expression *bound_var = init_var_expression_wc(name, binder_type, context);
+            Expression *bound_var = kernel_var_create(name, binder_type, context);
             if (!bound_var) {
                 fprintf(stderr, ERROR "Failed to create forall bound var.\n" CRESET);
                 return NULL;
@@ -155,7 +155,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                 return NULL;
             }
 
-            return init_forall_expression_wc(bound_var, body);
+            return kernel_forall_create(bound_var, body);
         }
 
         case AST_APP: {
@@ -171,7 +171,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                 return NULL;
             }
 
-            return init_app_expression_wc(func, arg, context);
+            return kernel_app_create(func, arg, context);
         }
 
         case AST_LET: {
@@ -191,7 +191,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
             // identifier that is already in use in the context. wrt the kernel,
             // this doesn't matter. But for the user, this could be confusing so
             // we'll fail here.
-            if (context_contains_name(context, ast->value.let.name)) {
+            if (kernel_context_has_name(context, ast->value.let.name)) {
                 return NULL;
             }
 
@@ -208,7 +208,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
             }
 
             int branch_count = ast->value.match.branch_count;
-            MatchBranch **branches = malloc(branch_count * sizeof(MatchBranch *));
+            void **branches = malloc(branch_count * sizeof(void *));
             if (!branches) {
                 return NULL;
             }
@@ -217,85 +217,85 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                 AST *branch_ast = ast->value.match.branches[i];
                 Pattern *pattern = branch_ast->value.matchbranch.pattern;
 
-                MatchBranch *branch = malloc(sizeof(MatchBranch));
-                if (!branch) {
-                    fprintf(stderr, ERROR "Failed to create match branch.\n" CRESET);
-                    free(branches);
-                    return NULL;
-                }
-
-                Expression *constructor =
-                    context_lookup_by_name(context, pattern->constructor_name);
+                Expression *constructor = kernel_context_lookup(context, pattern->constructor_name);
                 if (!constructor) {
                     fprintf(stderr, ERROR "Constructor %s not found in context.\n" CRESET,
                             pattern->constructor_name);
-                    free(branch);
                     free(branches);
                     return NULL;
                 }
-                branch->constructor = constructor;
 
                 // Create pattern variables
-                branch->pattern_var_count = pattern->argument_count;
-                branch->pattern_variables = NULL;
+                int pattern_var_count = pattern->argument_count;
+                Expression **pattern_variables = NULL;
 
-                if (branch->pattern_var_count > 0) {
-                    branch->pattern_variables =
-                        malloc(branch->pattern_var_count * sizeof(Expression *));
+                if (pattern_var_count > 0) {
+                    pattern_variables = malloc(pattern_var_count * sizeof(Expression *));
 
-                    Expression *ctor_type = get_expression_type(constructor);
+                    Expression *ctor_type = kernel_expr_type(constructor);
                     Context *extended_context = context;
 
-                    for (int j = 0; j < branch->pattern_var_count; j++) {
-                        if (ctor_type->tag != FORALL_EXPRESSION) {
+                    for (int j = 0; j < pattern_var_count; j++) {
+                        Expression *bound_var = kernel_forall_var(ctor_type);
+                        if (!bound_var) {
                             fprintf(stderr, ERROR
                                     "Constructor has fewer parameters than pattern.\n" CRESET);
-                            free(branch->pattern_variables);
-                            free(branch);
+                            free(pattern_variables);
                             free(branches);
                             return NULL;
                         }
 
-                        Expression *bound_var = get_forall_bound_variable(ctor_type);
-                        Expression *param_type = get_expression_type(bound_var);
+                        Expression *param_type = kernel_expr_type(bound_var);
 
-                        Expression *pattern_var = init_var_expression_wc(
-                            pattern->argument_names[j], param_type, extended_context);
+                        Expression *pattern_var = kernel_var_create(pattern->argument_names[j],
+                                                                    param_type, extended_context);
 
-                        branch->pattern_variables[j] = pattern_var;
+                        pattern_variables[j] = pattern_var;
 
                         extended_context = pattern_var;
 
-                        ctor_type = get_forall_body(ctor_type);
+                        ctor_type = kernel_forall_body(ctor_type);
                     }
 
-                    branch->body = _ast_to_expression(branch_ast->value.matchbranch.body,
-                                                      extended_context, letbindings);
+                    Expression *body = _ast_to_expression(branch_ast->value.matchbranch.body,
+                                                          extended_context, letbindings);
+                    if (!body) {
+                        fprintf(stderr, ERROR "Failed to create match branch body.\n" CRESET);
+                        free(pattern_variables);
+                        free(branches);
+                        return NULL;
+                    }
+
+                    branches[i] = kernel_match_branch_create(constructor, pattern_variables,
+                                                             pattern_var_count, body);
                 } else {
-                    branch->body = _ast_to_expression(branch_ast->value.matchbranch.body, context,
-                                                      letbindings);
+                    Expression *body = _ast_to_expression(branch_ast->value.matchbranch.body,
+                                                          context, letbindings);
+                    if (!body) {
+                        fprintf(stderr, ERROR "Failed to create match branch body.\n" CRESET);
+                        free(branches);
+                        return NULL;
+                    }
+
+                    branches[i] =
+                        kernel_match_branch_create(constructor, /*pattern_variables*/ NULL,
+                                                   /*pattern_var_count*/ 0, body);
                 }
 
-                if (!branch->body) {
-                    fprintf(stderr, ERROR "Failed to create match branch body.\n" CRESET);
-                    free(branch->pattern_variables);
-                    free(branch);
+                if (!branches[i]) {
+                    fprintf(stderr, ERROR "Failed to create match branch.\n" CRESET);
+                    free(pattern_variables);
                     free(branches);
                     return NULL;
                 }
-
-                branches[i] = branch;
             }
 
             Expression *match_expr =
-                init_match_expression_wc(scrutinee, branches, branch_count, context);
+                kernel_match_create(scrutinee, branches, branch_count, context);
             if (!match_expr) {
                 fprintf(stderr, ERROR "Failed to create match expression.\n" CRESET);
                 for (int i = 0; i < branch_count; i++) {
-                    if (branches[i]) {
-                        free(branches[i]->pattern_variables);
-                        free(branches[i]);
-                    }
+                    kernel_match_branch_free(branches[i]);
                 }
                 free(branches);
                 return NULL;
@@ -325,8 +325,8 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                         return NULL;
                     }
 
-                    Expression *binder = init_var_expression_wc(ast->value.fix.binders[i]->name,
-                                                                binder_type, contexts[i]);
+                    Expression *binder = kernel_var_create(ast->value.fix.binders[i]->name,
+                                                           binder_type, contexts[i]);
                     if (!binder) {
                         fprintf(stderr,
                                 ERROR "Failed to create binder in fix expression.\n" CRESET);
@@ -349,7 +349,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                 // recursive var type: forall (x1 : A1) ... (xn : An), return_type
                 Expression *rec_var_type = return_type;
                 for (int i = binder_count - 1; i >= 0; i--) {
-                    rec_var_type = init_forall_expression_wc(contexts[i + 1], rec_var_type);
+                    rec_var_type = kernel_forall_create(contexts[i + 1], rec_var_type);
                     if (!rec_var_type) {
                         fprintf(stderr, ERROR "Failed to create forall type.\n" CRESET);
                         free(contexts);
@@ -357,7 +357,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                     }
                 }
 
-                recursive_var = init_var_expression_wc(ast->value.fix.name, rec_var_type, context);
+                recursive_var = kernel_var_create(ast->value.fix.name, rec_var_type, context);
                 if (!recursive_var) {
                     fprintf(stderr,
                             ERROR "Failed to create recursive var in fix expression.\n" CRESET);
@@ -386,8 +386,8 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                         return NULL;
                     }
 
-                    Expression *binder = init_var_expression_wc(ast->value.fix.binders[i]->name,
-                                                                binder_type, contexts[i]);
+                    Expression *binder = kernel_var_create(ast->value.fix.binders[i]->name,
+                                                           binder_type, contexts[i]);
                     if (!binder) {
                         fprintf(stderr,
                                 ERROR "Failed to create binder in fix expression.\n" CRESET);
@@ -406,7 +406,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                     return NULL;
                 }
 
-                Expression *decreasing_arg = context_lookup_by_name(
+                Expression *decreasing_arg = kernel_context_lookup(
                     contexts[binder_count], ast->value.fix.decreasing_arg_name);
                 if (!decreasing_arg) {
                     fprintf(stderr, ERROR "Decreasing argument '%s' not found in context.\n" CRESET,
@@ -430,8 +430,8 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                     return NULL;
                 }
 
-                fix_expr = init_fix_expression_wc(recursive_var, contexts + 1, binder_count,
-                                                  decreasing_arg_index, body);
+                fix_expr = kernel_fix_create(recursive_var, contexts + 1, binder_count, body,
+                                             decreasing_arg_index, contexts[0]);
                 if (!fix_expr) {
                     fprintf(stderr, ERROR "Failed to create fix expression.\n" CRESET);
                     free(contexts);
