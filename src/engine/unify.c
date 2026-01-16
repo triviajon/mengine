@@ -197,3 +197,30 @@ UnificationResult *bad_unify_for_eq(Context *goal_context, Expression *lemma, Ex
     }
     return init_unification_result(current_lemma_app, remaining_open);
 }
+UnificationResult *unify_and_instantiate(Context *goal_context, Expression *lemma,
+                                         Expression *lemma_ty, Expression *expr) {
+    (void)lemma_ty;  // Not used in current implementation
+    (void)expr;      // Not used in current implementation
+
+    // Instantiate the lemma with holes in the goal context
+    Expression *instantiated_lemma = instantiate_lemma(goal_context, lemma);
+
+    // Collect holes in the instantiated lemma as new goals
+    DoublyLinkedList *holes = list_holes(instantiated_lemma);
+
+    return init_unification_result(instantiated_lemma, holes);
+}
+
+Expression *unification_result_get_lemma_instantiation(UnificationResult *result) {
+    if (!result) {
+        return NULL;
+    }
+    return result->lemma_instantiation;
+}
+
+DoublyLinkedList *unification_result_get_new_goals(UnificationResult *result) {
+    if (!result) {
+        return NULL;
+    }
+    return result->new_goals;
+}

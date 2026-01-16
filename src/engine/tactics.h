@@ -2,7 +2,7 @@
 #define NEW_TACTICS_H
 
 #include "src/engine/tactic_api.h"
-#include "src/kernel/expression.h"
+#include "src/kernel/kernel_api.h"
 
 // DoublyLinkedList *apply(Expression *goal, Expression *lemma);
 // DoublyLinkedList *eapply(Expression *goal, Expression *lemma);

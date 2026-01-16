@@ -7,11 +7,9 @@
 #include "src/commandlanguage/command_parser.h"
 #include "src/common/color.h"
 #include "src/common/options.h"
-#include "src/kernel/expression.h"
-#include "src/kernel/inductive.h"
-#include "src/kernel/utils.h"
+#include "src/kernel/kernel_api.h"
 #include "src/runtime/core.h"
-#include "src/engine/proof_state.h"
+#include "src/engine/engine_api.h"
 #include "src/tacticlanguage/tactic_exec.h"
 
 void debug_print_mode(MEngineRuntime *rt) {
@@ -32,7 +30,7 @@ void debug_print_mode(MEngineRuntime *rt) {
         case MENGINE_RUNTIME_PROOF_MODE:
             fprintf(stderr, "PROOF_MODE");
             if (rt->pending_theorem) {
-                fprintf(stderr, " (goal: %s)", stringify_expression(rt->pending_theorem));
+                fprintf(stderr, " (goal: %s)", kernel_expr_to_string(rt->pending_theorem));
             }
             // todo: I also should print proof_state
             break;
@@ -55,14 +53,12 @@ MEngineRuntime *mengine_runtime_new(MEngineOptions *options) {
     rt->pending_theorem = NULL;
     rt->options = options;
 
-    rt->ctx = context_create_empty();
+    rt->ctx = kernel_context_empty();
     if (!rt->ctx) {
         free(rt);
         return NULL;
     }
 
-    // Initialize inductive type registry
-    inductive_registry_init();
 
     init_core(&rt->ctx);
     mengine_runtime_command_mode(rt);
@@ -216,7 +212,7 @@ void mengine_runtime_proof_mode(MEngineRuntime *rt, Expression *pending_theorem)
 
     rt->mode = MENGINE_RUNTIME_PROOF_MODE;
     rt->pending_theorem = pending_theorem;
-    rt->proof_state = proof_state_new(pending_theorem);
+    rt->proof_state = engine_proof_state_create(pending_theorem);
 
     debug_print_mode(rt);
 }
@@ -230,7 +226,7 @@ void mengine_runtime_command_mode(MEngineRuntime *rt) {
     rt->pending_theorem = NULL;
 
     if (rt->proof_state) {
-        proof_state_free(rt->proof_state);
+        engine_proof_state_free(rt->proof_state);
         rt->proof_state = NULL;
     }
 

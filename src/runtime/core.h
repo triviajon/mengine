@@ -3,8 +3,7 @@
 
 #include <stdbool.h>
 
-#include "src/kernel/context.h"
-#include "src/kernel/expression.h"
+#include "src/kernel/kernel_api.h"
 
 // Core types and constructors hardcoded in C. All of this won't be necessary
 // once we implement a tactic writing language

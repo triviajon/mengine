@@ -2,7 +2,7 @@
 #define RUNTIME_H
 
 #include "src/common/options.h"
-#include "src/engine/proof_state.h"
+#include "src/engine/engine_api.h"
 
 typedef enum {
     MENGINE_RUNTIME_COMMAND_MODE,  // Normal mode of the Mengine Runtime, where

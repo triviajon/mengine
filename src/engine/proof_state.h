@@ -5,11 +5,13 @@
 
 #include "src/kernel/expression.h"
 
-typedef struct {
+typedef struct ProofState ProofState;
+
+struct ProofState {
     Expression *pending_theorem;
     DoublyLinkedList *goals;  // list of Expression* representing proof obligations
     size_t goal_index;        // current goal index
-} ProofState;
+};
 
 /**
  * Create a new proof state to prove the pending theorem.

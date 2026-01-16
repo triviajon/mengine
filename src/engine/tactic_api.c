@@ -21,3 +21,24 @@ void free_tactic_result(TacticResult *result) {
     }
     free(result);
 }
+
+bool tactic_result_get_success(TacticResult *result) {
+    if (!result) {
+        return false;
+    }
+    return result->success;
+}
+
+char *tactic_result_get_error_message(TacticResult *result) {
+    if (!result) {
+        return NULL;
+    }
+    return result->error_message;
+}
+
+DoublyLinkedList *tactic_result_get_goals(TacticResult *result) {
+    if (!result) {
+        return NULL;
+    }
+    return result->new_goals;
+}

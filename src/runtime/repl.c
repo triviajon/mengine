@@ -6,9 +6,8 @@
 
 #include "src/common/color.h"
 #include "src/common/options.h"
-#include "src/kernel/expression.h"
-#include "src/kernel/utils.h"
-#include "src/engine/proof_state.h"
+#include "src/kernel/kernel_api.h"
+#include "src/engine/engine_api.h"
 #include "src/runtime/runtime.h"
 
 void trim_whitespace(char *s) {
@@ -43,19 +42,19 @@ static void print_proof_state(MEngineRuntime *rt) {
         return;
     }
 
-    Expression *goal = proof_state_current(rt->proof_state);
+    Expression *goal = engine_proof_state_current_goal(rt->proof_state);
     Context *rt_ctx = mengine_runtime_context(rt);
     if (!goal || !rt_ctx) {
         return;
     }
 
-    Context *goal_ctx = get_expression_context(goal);
-    char *ctx_str = stringify_context_until(goal_ctx, rt_ctx, CTX_STRINGIFY_PRETTY_IND2);
-    char *goal_str = stringify_expression(get_expression_type(goal));
+    Context *goal_ctx = kernel_expr_context(goal);
+    char *ctx_str = kernel_context_to_string(goal_ctx);
+    char *goal_str = kernel_expr_to_string(kernel_expr_type(goal));
 
     // Header
     Expression *current_theorem = rt->pending_theorem;
-    char *theorem_name = get_var_name(current_theorem);
+    char *theorem_name = kernel_var_name(current_theorem);
     fprintf(stdout, "\n" UI "⊢ " CRESET BOLD "%s\n", theorem_name);
     fprintf(stdout, UI "────────────────────────────────\n" CRESET);
 

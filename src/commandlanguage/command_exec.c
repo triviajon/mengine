@@ -1,14 +1,15 @@
 #include "src/commandlanguage/command_exec.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "src/commandlanguage/command_parser.h"
 #include "src/common/color.h"
+#include "src/common/doubly_linked_list.h"
 #include "src/common/options.h"
-#include "src/kernel/context.h"
-#include "src/kernel/expression.h"
-#include "src/kernel/inductive.h"
-#include "src/kernel/normalize.h"
-#include "src/kernel/utils.h"
-#include "src/engine/proof_state.h"
+#include "src/engine/engine_api.h"
+#include "src/kernel/kernel_api.h"
 #include "src/runtime/runtime.h"
 #include "src/termlanguage/ast_to_expression.h"
 
@@ -19,7 +20,7 @@ static int _handle_declaration_command(MEngineRuntime *rt, DeclarationCmd *decl_
                 decl_cmd->binder.name);
         return 1;
     }
-    Expression *new_var = init_var_expression_wc(decl_cmd->binder.name, var_type, rt->ctx);
+    Expression *new_var = kernel_var_create(decl_cmd->binder.name, var_type, rt->ctx);
     if (!new_var) {
         fprintf(stderr,
                 ERROR
@@ -32,7 +33,7 @@ static int _handle_declaration_command(MEngineRuntime *rt, DeclarationCmd *decl_
 
     MPRINT(rt->options->quiet, stdout, UI "%s " CRESET "%s : %s declared.\n",
            decl_keyword_to_string(decl_cmd->kw), decl_cmd->binder.name,
-           stringify_expression(var_type));
+           kernel_expr_to_string(var_type));
     return 0;
 }
 
@@ -52,7 +53,7 @@ Expression *_create_definition_body(MEngineRuntime *rt, Binder **params, size_t 
         Binder *b = params[i];
 
         Expression *param_type = ast_to_expression(b->type, c);
-        Expression *param_var = init_var_expression_wc(b->name, param_type, c);
+        Expression *param_var = kernel_var_create(b->name, param_type, c);
         c = param_var;
 
         params_rendered[i] = param_var;
@@ -63,7 +64,7 @@ Expression *_create_definition_body(MEngineRuntime *rt, Binder **params, size_t 
     *rendered_def_body = result;
     *rendered_type_ctx = c;
     for (size_t i = param_count; i > 0; i--) {
-        result = init_lambda_expression_wc(params_rendered[i - 1], result);
+        result = kernel_lambda_create(params_rendered[i - 1], result);
     }
 
     free(params_rendered);
@@ -85,24 +86,24 @@ static int _handle_definition_command(MEngineRuntime *rt, DefinitionCmd *defn_cm
     Expression *body = _create_definition_body(rt, params, param_count, defn_cmd->body,
                                                &rendered_def_body, &rendered_type_ctx);
 
-    Expression *inferred_type_def_body = get_expression_type(rendered_def_body);
+    Expression *inferred_type_def_body = kernel_expr_type(rendered_def_body);
     Expression *expected_type_def_body = ast_to_expression(defn_cmd->type, rendered_type_ctx);
     if (!expected_type_def_body) {
         fprintf(stderr, ERROR "Error:" CRESET " definition '%s' has a invalid type.\n", name);
     }
 
-    if (!congruence(inferred_type_def_body, expected_type_def_body)) {
+    if (!kernel_expr_congruent(inferred_type_def_body, expected_type_def_body)) {
         fprintf(stderr, ERROR "Type error:" CRESET " definition '%s' has a mismatched type.\n",
                 name);
-        fprintf(stderr, "  Declared type: %s\n", stringify_expression(expected_type_def_body));
-        fprintf(stderr, "  Inferred type: %s\n", stringify_expression(inferred_type_def_body));
+        fprintf(stderr, "  Declared type: %s\n", kernel_expr_to_string(expected_type_def_body));
+        fprintf(stderr, "  Inferred type: %s\n", kernel_expr_to_string(inferred_type_def_body));
         return 1;
     }
 
-    Expression *defn_var = init_var_expression_wc_with_body(defn_cmd->name, body, rt->ctx);
+    Expression *defn_var = kernel_var_create_with_body(defn_cmd->name, body, rt->ctx);
     rt->ctx = defn_var;
     MPRINT(rt->options->quiet, stdout, UI "Definition " CRESET "%s : %s defined.\n", name,
-           stringify_expression(get_expression_type(defn_var)));
+           kernel_expr_to_string(kernel_expr_type(defn_var)));
     return 0;
 }
 
@@ -117,14 +118,14 @@ static int _handle_statement_command(MEngineRuntime *rt, StatementCmd *stmt_cmd)
         return 1;
     }
 
-    Expression *initial_goal = init_hole_expression("Goal", statement_type, rt->ctx);
+    Expression *initial_goal = kernel_hole_create((char *)"Goal", statement_type, rt->ctx);
     Expression *pending_theorem =
-        init_var_expression_wc_with_body(stmt_cmd->name, initial_goal, rt->ctx);
+        kernel_var_create_with_body(stmt_cmd->name, initial_goal, rt->ctx);
     mengine_runtime_proof_mode(rt, pending_theorem);
 
     MPRINT(rt->options->quiet, stdout, UI "%s " CRESET "%s : %s stated.\n",
            stmt_keyword_to_string(stmt_cmd->kw), stmt_cmd->name,
-           stringify_expression(statement_type));
+           kernel_expr_to_string(statement_type));
 
     debug_print_mode(rt);
     return 0;
@@ -138,7 +139,7 @@ static int _handle_check_command(MEngineRuntime *rt, CheckCmd *check_cmd) {
     // If we're in proof mode, we should render this Expression against the
     // current goal's context rather than the runtime context.
     Context *ctx = (rt->mode == MENGINE_RUNTIME_PROOF_MODE)
-                       ? get_expression_context(proof_state_current(rt->proof_state))
+                       ? kernel_expr_context(engine_proof_state_current_goal(rt->proof_state))
                        : rt->ctx;
     Expression *expr = ast_to_expression(check_cmd->term, ctx);
     if (!expr) {
@@ -146,14 +147,14 @@ static int _handle_check_command(MEngineRuntime *rt, CheckCmd *check_cmd) {
         return 1;
     }
 
-    Expression *expr_type = get_expression_type(expr);
+    Expression *expr_type = kernel_expr_type(expr);
     if (!expr_type) {
         fprintf(stderr, ERROR "Failed to get type of expression in Check command.\n" CRESET);
         return 1;
     }
 
-    MPRINT(rt->options->quiet, stdout, DIMTEXT "%s\n\t: %s\n" CRESET, stringify_expression(expr),
-           stringify_expression(expr_type));
+    MPRINT(rt->options->quiet, stdout, DIMTEXT "%s\n\t: %s\n" CRESET, kernel_expr_to_string(expr),
+           kernel_expr_to_string(expr_type));
     return 0;
 }
 
@@ -164,16 +165,16 @@ void _print_inductive_definition(MEngineRuntime *rt, Expression *expr) {
 
     // Inductive <name> : <type> :=
     MPRINT(rt->options->quiet, stdout,
-           DIMTEXT "Inductive " CRESET "%s : %s := ", stringify_expression(expr),
-           stringify_expression(expr->type));
+           DIMTEXT "Inductive " CRESET "%s : %s := ", kernel_expr_to_string(expr),
+           kernel_expr_to_string(kernel_expr_type(expr)));
 
     // | cons : type
     int constructor_count;
-    Expression **constructors = get_constructors(expr, &constructor_count);
+    Expression **constructors = kernel_inductive_constructors(expr, &constructor_count);
     for (int i = 0; i < constructor_count; i++) {
         Expression *ctor = constructors[i];
-        MPRINT(rt->options->quiet, stdout, "\n\t| %s : %s", stringify_expression(ctor),
-               stringify_expression(ctor->type));
+        MPRINT(rt->options->quiet, stdout, "\n\t| %s : %s", kernel_expr_to_string(ctor),
+               kernel_expr_to_string(kernel_expr_type(ctor)));
     }
 
     MPRINT(rt->options->quiet, stdout, ".\n")
@@ -187,36 +188,36 @@ static int _handle_print_command(MEngineRuntime *rt, PrintCmd *print_cmd) {
     // If we're in proof mode, we should render this Expression against the
     // current goal's context rather than the runtime context.
     Context *ctx = (rt->mode == MENGINE_RUNTIME_PROOF_MODE)
-                       ? get_expression_context(proof_state_current(rt->proof_state))
+                       ? kernel_expr_context(engine_proof_state_current_goal(rt->proof_state))
                        : rt->ctx;
-    Expression *expr = context_lookup_by_name(ctx, print_cmd->name);
+    Expression *expr = kernel_context_lookup(ctx, print_cmd->name);
     if (!expr) {
         fprintf(stderr, ERROR "Failed to convert term in Print command.\n" CRESET);
         return 1;
     }
 
-    Expression *expr_type = get_expression_type(expr);
+    Expression *expr_type = kernel_expr_type(expr);
     if (!expr_type) {
         fprintf(stderr, ERROR "Failed to get type of expression in Print command.\n" CRESET);
         return 1;
     }
 
     // Check if it's an inductive type
-    if (is_inductive(expr)) {
+    if (kernel_expr_is_inductive(expr)) {
         _print_inductive_definition(rt, expr);
         return 0;
     }
 
     // Attempt to get the variable's body
-    Expression *expr_body = get_expression_body(expr);
+    Expression *expr_body = kernel_var_body(expr);
     if (!expr_body) {
-        fprintf(stderr, ERROR "%s is an opaque variable.\n" CRESET, stringify_expression(expr));
+        fprintf(stderr, ERROR "%s is an opaque variable.\n" CRESET, kernel_expr_to_string(expr));
         return 1;
     }
 
     MPRINT(rt->options->quiet, stdout, DIMTEXT "%s := %s\n\t: %s\n" CRESET,
-           stringify_expression(expr), stringify_expression(expr_body),
-           stringify_expression(expr_type));
+           kernel_expr_to_string(expr), kernel_expr_to_string(expr_body),
+           kernel_expr_to_string(expr_type));
     return 0;
 }
 
@@ -230,7 +231,7 @@ static Expression *_build_motive_type(Expression *ind_var, Expression **param_va
                                       Expression ***index_vars_out, size_t *index_count_out) {
     Expression *ind_applied = ind_var;
     for (size_t i = 0; i < param_count; i++) {
-        ind_applied = init_app_expression_wc(ind_applied, param_vars[i], ctx);
+        ind_applied = kernel_app_create(ind_applied, param_vars[i], ctx);
         if (!ind_applied) {
             fprintf(stderr, ERROR "Failed to apply parameter %zu in motive type\n" CRESET, i);
             return NULL;
@@ -238,19 +239,19 @@ static Expression *_build_motive_type(Expression *ind_var, Expression **param_va
     }
 
     // Check if the TYPE of ind_applied is a forall - if so, we have indices
-    Expression *ind_applied_type = get_expression_type(ind_applied);
+    Expression *ind_applied_type = kernel_expr_type(ind_applied);
     Expression *current = ind_applied_type;
     size_t index_count = 0;
-    while (current->tag == FORALL_EXPRESSION) {
+    while (kernel_forall_var(current) != NULL) {
         index_count++;
-        current = get_forall_body(current);
+        current = kernel_forall_body(current);
     }
 
     if (index_count == 0) {
         // No indices: motive is (ind params) -> Prop
         *index_vars_out = NULL;
         *index_count_out = 0;
-        return init_arrow_expression_wc(ind_applied, init_prop_expression(), ctx);
+        return kernel_arrow_create(ind_applied, kernel_prop_create(), ctx);
     }
 
     // With indices: motive is forall (indices), (ind params indices) -> Prop
@@ -259,30 +260,36 @@ static Expression *_build_motive_type(Expression *ind_var, Expression **param_va
     current = ind_applied_type;
 
     for (size_t i = 0; i < index_count; i++) {
-        Expression *index_type = get_expression_type(get_forall_bound_variable(current));
+        Expression *bound_var = kernel_forall_var(current);
+        if (!bound_var) {
+            fprintf(stderr, ERROR "Failed to read index binder from inductive type.\n" CRESET);
+            free(index_vars);
+            return NULL;
+        }
+        Expression *index_type = kernel_expr_type(bound_var);
         char index_name[32];
         sprintf(index_name, "i%zu", i);
 
-        index_vars[i] = init_var_expression_wc(index_name, index_type, motive_ctx);
+        index_vars[i] = kernel_var_create(index_name, index_type, motive_ctx);
         motive_ctx = index_vars[i];
-        current = get_forall_body(current);
+        current = kernel_forall_body(current);
     }
 
     // Build (ind params index_0 ... index_n)
     Expression *ind_with_indices = ind_var;
     for (size_t i = 0; i < param_count; i++) {
-        ind_with_indices = init_app_expression_wc(ind_with_indices, param_vars[i], motive_ctx);
+        ind_with_indices = kernel_app_create(ind_with_indices, param_vars[i], motive_ctx);
     }
     for (size_t i = 0; i < index_count; i++) {
-        ind_with_indices = init_app_expression_wc(ind_with_indices, index_vars[i], motive_ctx);
+        ind_with_indices = kernel_app_create(ind_with_indices, index_vars[i], motive_ctx);
     }
 
     // Build forall (i0 : T0) ... (in : Tn), (ind params i0 ... in) -> Prop
     Expression *motive_type =
-        init_arrow_expression_wc(ind_with_indices, init_prop_expression(), motive_ctx);
+        kernel_arrow_create(ind_with_indices, kernel_prop_create(), motive_ctx);
     for (size_t i = index_count; i > 0; i--) {
-        motive_type = init_forall_expression_wc(index_vars[i - 1], motive_type);
-        motive_ctx = get_expression_context(index_vars[i - 1]);
+        motive_type = kernel_forall_create(index_vars[i - 1], motive_type);
+        motive_ctx = kernel_expr_context(index_vars[i - 1]);
     }
 
     *index_vars_out = index_vars;
@@ -299,7 +306,7 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd, Expres
     size_t index_count = 0;
     Expression *motive_type =
         _build_motive_type(ind_var, param_vars, param_count, elim_ctx, &index_vars, &index_count);
-    Expression *motive_var = init_var_expression_wc("P", motive_type, elim_ctx);
+    Expression *motive_var = kernel_var_create("P", motive_type, elim_ctx);
     elim_ctx = motive_var;
 
     size_t ctor_count = ind_cmd->constructor_count;
@@ -309,7 +316,7 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd, Expres
 
     for (size_t i = 0; i < ctor_count; i++) {
         InductiveConstructor *ctor = ind_cmd->constructors[i];
-        Expression *ctor_expr = context_lookup_by_name(elim_ctx, ctor->name);
+        Expression *ctor_expr = kernel_context_lookup(elim_ctx, ctor->name);
         if (!ctor_expr) {
             fprintf(stderr, ERROR "Constructor %s not found in context\n" CRESET, ctor->name);
             free(case_vars);
@@ -317,7 +324,7 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd, Expres
             return NULL;
         }
 
-        Expression *ctor_type = get_expression_type(ctor_expr);
+        Expression *ctor_type = kernel_expr_type(ctor_expr);
         Expression *case_type =
             _build_constructor_case_type(ctor_expr, ctor_type, motive_var, param_vars, param_count,
                                          index_count, case_contexts[i]);
@@ -331,7 +338,7 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd, Expres
 
         char case_name[64];
         sprintf(case_name, "case_%s", ctor->name);
-        case_vars[i] = init_var_expression_wc(case_name, case_type, case_contexts[i]);
+        case_vars[i] = kernel_var_create(case_name, case_type, case_contexts[i]);
         if (!case_vars[i]) {
             fprintf(stderr, ERROR "Failed to create case variable for %s\n" CRESET, ctor->name);
             free(case_vars);
@@ -350,10 +357,10 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd, Expres
     if (index_count > 0) {
         concl_index_vars = malloc(index_count * sizeof(Expression *));
         for (size_t i = 0; i < index_count; i++) {
-            Expression *index_type = get_expression_type(index_vars[i]);
+            Expression *index_type = kernel_expr_type(index_vars[i]);
             char index_name[32];
             sprintf(index_name, "y%zu", i);
-            concl_index_vars[i] = init_var_expression_wc(index_name, index_type, final_ctx);
+            concl_index_vars[i] = kernel_var_create(index_name, index_type, final_ctx);
             final_ctx = concl_index_vars[i];
         }
     }
@@ -361,7 +368,7 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd, Expres
     // Build (ind params concl_index_0 ... concl_index_n)
     Expression *ind_applied = ind_var;
     for (size_t i = 0; i < param_count; i++) {
-        ind_applied = init_app_expression_wc(ind_applied, param_vars[i], final_ctx);
+        ind_applied = kernel_app_create(ind_applied, param_vars[i], final_ctx);
         if (!ind_applied) {
             fprintf(stderr,
                     ERROR
@@ -380,19 +387,19 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd, Expres
         }
     }
     for (size_t i = 0; i < index_count; i++) {
-        ind_applied = init_app_expression_wc(ind_applied, concl_index_vars[i], final_ctx);
+        ind_applied = kernel_app_create(ind_applied, concl_index_vars[i], final_ctx);
     }
 
-    Expression *target_var = init_var_expression_wc("e", ind_applied, final_ctx);
+    Expression *target_var = kernel_var_create("e", ind_applied, final_ctx);
     Context *target_ctx = target_var;
 
     // Apply motive to indices and target: P concl_index_0 ... concl_index_n
     // target
     Expression *target_applied = motive_var;
     for (size_t i = 0; i < index_count; i++) {
-        target_applied = init_app_expression_wc(target_applied, concl_index_vars[i], target_ctx);
+        target_applied = kernel_app_create(target_applied, concl_index_vars[i], target_ctx);
     }
-    target_applied = init_app_expression_wc(target_applied, target_var, target_ctx);
+    target_applied = kernel_app_create(target_applied, target_var, target_ctx);
     if (!target_applied) {
         fprintf(stderr, ERROR "Failed to apply motive to target\n" CRESET);
         free(case_vars);
@@ -406,12 +413,12 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd, Expres
         return NULL;
     }
 
-    Expression *result = init_forall_expression_wc(target_var, target_applied);
+    Expression *result = kernel_forall_create(target_var, target_applied);
 
     // Wrap with foralls for conclusion indices
     for (size_t i = index_count; i > 0; i--) {
-        result = init_forall_expression_wc(concl_index_vars[i - 1], result);
-        final_ctx = get_expression_context(concl_index_vars[i - 1]);
+        result = kernel_forall_create(concl_index_vars[i - 1], result);
+        final_ctx = kernel_expr_context(concl_index_vars[i - 1]);
     }
 
     if (concl_index_vars) {
@@ -419,7 +426,7 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd, Expres
     }
 
     for (size_t i = ctor_count; i > 0; i--) {
-        result = init_forall_expression_wc(case_vars[i - 1], result);
+        result = kernel_forall_create(case_vars[i - 1], result);
         if (!result) {
             fprintf(stderr, ERROR "Failed to wrap with constructor case %zu\n" CRESET, i - 1);
             free(case_vars);
@@ -428,7 +435,7 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd, Expres
         }
     }
 
-    result = init_forall_expression_wc(motive_var, result);
+    result = kernel_forall_create(motive_var, result);
     if (!result) {
         fprintf(stderr, ERROR "Failed to wrap with motive P\n" CRESET);
         free(case_vars);
@@ -437,7 +444,7 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd, Expres
     }
 
     for (size_t i = param_count; i > 0; i--) {
-        result = init_forall_expression_wc(param_vars[i - 1], result);
+        result = kernel_forall_create(param_vars[i - 1], result);
         if (!result) {
             fprintf(stderr, ERROR "Failed to wrap with parameter %zu\n" CRESET, i - 1);
             free(case_vars);
@@ -460,22 +467,22 @@ static Expression *_build_constructor_case_type(Expression *ctor_expr, Expressio
                                                 Context *elim_ctx) {
     Expression *core_type = ctor_type;
     for (size_t i = 0; i < param_count; i++) {
-        if (core_type->tag == FORALL_EXPRESSION) {
-            core_type = get_forall_body(core_type);
+        if (kernel_forall_var(core_type) != NULL) {
+            core_type = kernel_forall_body(core_type);
         }
     }
 
     DoublyLinkedList *arg_types = dll_create();
     Expression *current = core_type;
-    while (current->tag == FORALL_EXPRESSION) {
-        Expression *arg_type = get_expression_type(get_forall_bound_variable(current));
+    while (kernel_forall_var(current) != NULL) {
+        Expression *arg_type = kernel_expr_type(kernel_forall_var(current));
         dll_insert_at_tail(arg_types, dll_new_node(arg_type));
-        current = get_forall_body(current);
+        current = kernel_forall_body(current);
     }
 
     Expression *ctor_app = ctor_expr;
     for (size_t i = 0; i < param_count; i++) {
-        ctor_app = init_app_expression_wc(ctor_app, param_vars[i], elim_ctx);
+        ctor_app = kernel_app_create(ctor_app, param_vars[i], elim_ctx);
         if (!ctor_app) {
             fprintf(stderr, ERROR "Failed to apply parameter %zu to constructor\n" CRESET, i);
             dll_destroy(arg_types);
@@ -492,9 +499,9 @@ static Expression *_build_constructor_case_type(Expression *ctor_expr, Expressio
         char arg_name[32];
         sprintf(arg_name, "arg%zu", i);
 
-        arg_vars[i] = init_var_expression_wc(arg_name, arg_type, case_ctx);
+        arg_vars[i] = kernel_var_create(arg_name, arg_type, case_ctx);
         case_ctx = arg_vars[i];
-        ctor_app = init_app_expression_wc(ctor_app, arg_vars[i], case_ctx);
+        ctor_app = kernel_app_create(ctor_app, arg_vars[i], case_ctx);
         if (!ctor_app) {
             fprintf(stderr, ERROR "Failed to apply constructor arg %zu\n" CRESET, i);
             dll_destroy(arg_types);
@@ -514,9 +521,9 @@ static Expression *_build_constructor_case_type(Expression *ctor_expr, Expressio
         // trailing applications)
         DoublyLinkedList *spine = dll_create();
         Expression *head = current;
-        while (head->tag == APP_EXPRESSION) {
-            dll_insert_at_head(spine, dll_new_node(get_app_arg(head)));
-            head = get_app_func(head);
+        while (kernel_app_func(head) != NULL) {
+            dll_insert_at_head(spine, dll_new_node(kernel_app_arg(head)));
+            head = kernel_app_func(head);
         }
 
         // The spine now has all the arguments. Skip param_count, take
@@ -542,7 +549,7 @@ static Expression *_build_constructor_case_type(Expression *ctor_expr, Expressio
     // Apply motive to indices first, then to constructor application
     Expression *case_result = motive_var;
     for (size_t i = 0; i < index_count; i++) {
-        case_result = init_app_expression_wc(case_result, ctor_indices[i], case_ctx);
+        case_result = kernel_app_create(case_result, ctor_indices[i], case_ctx);
         if (!case_result) {
             fprintf(stderr, ERROR "Failed to apply motive to index %zu\n" CRESET, i);
             dll_destroy(arg_types);
@@ -554,7 +561,7 @@ static Expression *_build_constructor_case_type(Expression *ctor_expr, Expressio
         }
     }
 
-    case_result = init_app_expression_wc(case_result, ctor_app, case_ctx);
+    case_result = kernel_app_create(case_result, ctor_app, case_ctx);
     if (!case_result) {
         fprintf(stderr, ERROR "Failed to apply motive to constructor application\n" CRESET);
         dll_destroy(arg_types);
@@ -570,7 +577,7 @@ static Expression *_build_constructor_case_type(Expression *ctor_expr, Expressio
     }
     Expression *case_type = case_result;
     for (size_t i = arg_count; i > 0; i--) {
-        case_type = init_forall_expression_wc(arg_vars[i - 1], case_type);
+        case_type = kernel_forall_create(arg_vars[i - 1], case_type);
     }
 
     dll_destroy(arg_types);
@@ -595,7 +602,7 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
 
     for (size_t i = 0; i < param_count; i++) {
         Expression *param_type = ast_to_expression(params[i]->type, c);
-        Expression *param_var = init_var_expression_wc(params[i]->name, param_type, c);
+        Expression *param_var = kernel_var_create(params[i]->name, param_type, c);
         c = param_var;
 
         param_vars[i] = param_var;
@@ -605,10 +612,10 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
     Expression *ind_return_type = ast_to_expression(ind_cmd->type, c);
     Expression *ind_type = ind_return_type;
     for (size_t i = param_count; i > 0; i--) {
-        ind_type = init_forall_expression_wc(param_vars[i - 1], ind_type);
+        ind_type = kernel_forall_create(param_vars[i - 1], ind_type);
     }
 
-    Expression *ind_var = init_var_expression_wc(name, ind_type, rt->ctx);
+    Expression *ind_var = kernel_var_create(name, ind_type, rt->ctx);
     rt->ctx = ind_var;
     c = ind_var;
 
@@ -617,7 +624,7 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
     }
 
     MPRINT(rt->options->quiet, stdout, UI "Inductive " CRESET "%s : %s defined.\n", name,
-           stringify_expression(ind_type));
+           kernel_expr_to_string(ind_type));
 
     size_t ctor_count = ind_cmd->constructor_count;
 
@@ -642,7 +649,7 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
 
         Expression *ctor_type = ctor_core_type;
         for (size_t j = param_count; j > 0; j--) {
-            ctor_type = init_forall_expression_wc(param_vars[j - 1], ctor_type);
+            ctor_type = kernel_forall_create(param_vars[j - 1], ctor_type);
             if (!ctor_type) {
                 fprintf(stderr,
                         ERROR
@@ -655,7 +662,7 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
             }
         }
 
-        Expression *ctor_var = init_var_expression_wc(ctor->name, ctor_type, rt->ctx);
+        Expression *ctor_var = kernel_var_create(ctor->name, ctor_type, rt->ctx);
         if (!ctor_var) {
             fprintf(stderr, ERROR "Failed to create constructor variable for %s\n" CRESET,
                     ctor->name);
@@ -675,7 +682,7 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
         }
 
         MPRINT(rt->options->quiet, stdout, UI "Constructor " CRESET "%s : %s defined.\n",
-               ctor->name, stringify_expression(ctor_type));
+               ctor->name, kernel_expr_to_string(ctor_type));
     }
 
     char *ind_principle_name = malloc(strlen(name) + 5);
@@ -686,15 +693,15 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
 
     Expression *ind_principle_var = NULL;
     if (ind_principle_type) {
-        ind_principle_var = init_var_expression_wc(ind_principle_name, ind_principle_type, rt->ctx);
+        ind_principle_var = kernel_var_create(ind_principle_name, ind_principle_type, rt->ctx);
         rt->ctx = ind_principle_var;
 
         MPRINT(rt->options->quiet, stdout, UI "Induction principle " CRESET "%s : %s generated.\n",
-               ind_principle_name, stringify_expression(ind_principle_type));
+               ind_principle_name, kernel_expr_to_string(ind_principle_type));
     }
 
     // Register the inductive type
-    if (!register_inductive(ind_var, ctor_vars, ctor_count, ind_principle_var)) {
+    if (!kernel_inductive_register(ind_var, ctor_vars, ctor_count, ind_principle_var)) {
         fprintf(stderr, ERROR "Failed to register inductive type %s.\n" CRESET, name);
     } else {
         MPRINT(rt->options->quiet, stdout,
@@ -733,7 +740,7 @@ static int _handle_fixpoint_command(MEngineRuntime *rt, FixpointCmd *fix_cmd) {
     rt->ctx = fixpoint_var;
 
     MPRINT(rt->options->quiet, stdout, UI "Fixpoint " CRESET "%s : %s defined.\n", fix_cmd->name,
-           stringify_expression(get_expression_type(fixpoint_var)));
+           kernel_expr_to_string(kernel_expr_type(fixpoint_var)));
     return 0;
 }
 
@@ -744,7 +751,7 @@ static int _handle_eval_command(MEngineRuntime *rt, EvalCmd *eval_cmd) {
 
     // Convert AST to expression
     Context *ctx = (rt->mode == MENGINE_RUNTIME_PROOF_MODE)
-                       ? get_expression_context(proof_state_current(rt->proof_state))
+                       ? kernel_expr_context(engine_proof_state_current_goal(rt->proof_state))
                        : rt->ctx;
     Expression *expr = ast_to_expression(eval_cmd->term, ctx);
     if (!expr) {
@@ -753,7 +760,7 @@ static int _handle_eval_command(MEngineRuntime *rt, EvalCmd *eval_cmd) {
     }
 
     // Determine reduction flags based on strategy and flags
-    ReductionFlags flags = 0;
+    unsigned int flags = 0;
     Expression *result = NULL;
 
     switch (eval_cmd->strategy) {
@@ -762,25 +769,25 @@ static int _handle_eval_command(MEngineRuntime *rt, EvalCmd *eval_cmd) {
             if (eval_cmd->beta_flag || eval_cmd->delta_flag || eval_cmd->iota_flag ||
                 eval_cmd->fix_flag) {
                 if (eval_cmd->beta_flag) {
-                    flags |= REDUCE_BETA;
+                    flags |= KERNEL_REDUCE_BETA;
                 }
                 if (eval_cmd->delta_flag) {
-                    flags |= REDUCE_DELTA;
+                    flags |= KERNEL_REDUCE_DELTA;
                 }
                 if (eval_cmd->iota_flag) {
-                    flags |= REDUCE_IOTA;
+                    flags |= KERNEL_REDUCE_IOTA;
                 }
                 if (eval_cmd->fix_flag) {
-                    flags |= REDUCE_FIX;
+                    flags |= KERNEL_REDUCE_FIX;
                 }
             } else {
-                flags = REDUCE_ALL;
+                flags = KERNEL_REDUCE_ALL;
             }
-            result = normalize_cbv(expr, flags);
+            result = kernel_normalize_cbv(expr, flags);
             break;
 
         case EVAL_STRATEGY_COMPUTE:
-            result = normalize_compute(expr);
+            result = kernel_normalize_compute(expr);
             break;
 
         default:
@@ -794,7 +801,7 @@ static int _handle_eval_command(MEngineRuntime *rt, EvalCmd *eval_cmd) {
     }
 
     MPRINT(rt->options->quiet, stdout, DIMTEXT "\t= %s\n\t: %s\n" CRESET,
-           stringify_expression(result), stringify_expression(get_expression_type(result)));
+           kernel_expr_to_string(result), kernel_expr_to_string(kernel_expr_type(result)));
     return 0;
 }
 
@@ -807,7 +814,7 @@ static int _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
         case SHOW_KW_CONTEXT: {
             Context *ctx = mengine_runtime_context(rt);
             MPRINT(rt->options->quiet, stdout, HEADER "Context:" CRESET "\n%s\n",
-                   stringify_context(ctx, CTX_STRINGIFY_PRETTY_IND0));
+                   kernel_context_to_string(ctx));
             break;
         }
         case SHOW_KW_PROOF: {
@@ -823,19 +830,19 @@ static int _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
                 return 1;
             }
 
-            Expression *current_goal = proof_state_current(rt->proof_state);
+            Expression *current_goal = engine_proof_state_current_goal(rt->proof_state);
             if (!current_goal) {
                 fprintf(stderr, ERROR " No current goal.\n" CRESET);
                 return 1;
             }
 
             // Show proof term
-            Expression *pending_theorem = proof_state_pending_theorem(rt->proof_state);
-            Expression *pending_theorem_body = get_expression_body(pending_theorem);
-            Expression *pending_theorem_type = get_expression_type(pending_theorem);
+            Expression *pending_theorem = engine_proof_state_pending_theorem(rt->proof_state);
+            Expression *pending_theorem_body = kernel_var_body(pending_theorem);
+            Expression *pending_theorem_type = kernel_expr_type(pending_theorem);
             MPRINT(rt->options->quiet, stdout, HEADER "Proof Term:" CRESET "\n%s : %s\n",
-                   stringify_expression(pending_theorem_body),
-                   stringify_expression(pending_theorem_type));
+                   kernel_expr_to_string(pending_theorem_body),
+                   kernel_expr_to_string(pending_theorem_type));
             return 0;
         }
         case SHOW_KW_GOAL: {
@@ -851,22 +858,20 @@ static int _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
                 return 1;
             }
 
-            Expression *current_goal = proof_state_current(rt->proof_state);
+            Expression *current_goal = engine_proof_state_current_goal(rt->proof_state);
             if (!current_goal) {
                 fprintf(stderr, ERROR " No current goal.\n" CRESET);
                 return 1;
             }
 
-            Context *goal_ctx = get_expression_context(current_goal);
-            Context *runtime_ctx = mengine_runtime_context(rt);
-            if (goal_ctx && runtime_ctx) {
-                char *ctx_str =
-                    stringify_context_until(goal_ctx, runtime_ctx, CTX_STRINGIFY_PRETTY_IND0);
+            Context *goal_ctx = kernel_expr_context(current_goal);
+            if (goal_ctx) {
+                char *ctx_str = kernel_context_to_string(goal_ctx);
                 MPRINT(rt->options->quiet, stdout, HEADER "Goal Context:" CRESET "\n%s\n", ctx_str);
                 free(ctx_str);
             }
             MPRINT(rt->options->quiet, stdout, HEADER "Goal:" CRESET "\n%s\n",
-                   stringify_expression(get_expression_type(current_goal)));
+                   kernel_expr_to_string(kernel_expr_type(current_goal)));
             return 0;
         }
         case SHOW_KW_STATE: {
@@ -882,31 +887,29 @@ static int _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
                 return 1;
             }
 
-            Expression *current_goal = proof_state_current(rt->proof_state);
+            Expression *current_goal = engine_proof_state_current_goal(rt->proof_state);
             if (!current_goal) {
                 fprintf(stderr, ERROR " No current goal.\n" CRESET);
                 return 1;
             }
 
             // Show proof term
-            Expression *pending_theorem = proof_state_pending_theorem(rt->proof_state);
-            Expression *pending_theorem_body = get_expression_body(pending_theorem);
+            Expression *pending_theorem = engine_proof_state_pending_theorem(rt->proof_state);
+            Expression *pending_theorem_body = kernel_var_body(pending_theorem);
             MPRINT(rt->options->quiet, stdout, HEADER "Proof Term:" CRESET "\n%s\n",
-                   stringify_expression(pending_theorem_body));
+                   kernel_expr_to_string(pending_theorem_body));
 
             // Show current goal context
-            Context *goal_ctx = get_expression_context(current_goal);
-            Context *runtime_ctx = mengine_runtime_context(rt);
-            if (goal_ctx && runtime_ctx) {
-                char *ctx_str =
-                    stringify_context_until(goal_ctx, runtime_ctx, CTX_STRINGIFY_PRETTY_IND0);
+            Context *goal_ctx = kernel_expr_context(current_goal);
+            if (goal_ctx) {
+                char *ctx_str = kernel_context_to_string(goal_ctx);
                 MPRINT(rt->options->quiet, stdout, CYN "Goal Context:" CRESET "\n%s\n", ctx_str);
                 free(ctx_str);
             }
 
             // Show goal
             MPRINT(rt->options->quiet, stdout, CYN "Goal:" CRESET "\n%s\n",
-                   stringify_expression(get_expression_type(current_goal)));
+                   kernel_expr_to_string(kernel_expr_type(current_goal)));
             return 0;
         }
     }
