@@ -1,5 +1,7 @@
 #include "unify.h"
 
+#include <stdlib.h>
+
 #include "src/kernel/subst.h"
 #include "src/runtime/core.h"
 
