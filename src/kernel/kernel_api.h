@@ -15,8 +15,9 @@ typedef struct Expression Context;
  * ============================================================================ */
 
 /**
- * Create a variable expression in the given context.
- * Time Complexity:
+ * Create a variable expression in the given context with a given name and type. The name is only
+ * used for printing purposes.
+ * Time Complexity: linear in size of type
  *
  * @param name
  * @param type
@@ -27,7 +28,7 @@ Expression *kernel_var_create(const char *name, Expression *type, Context *conte
 
 /**
  * Create a variable expression with an associated body in the given context.
- * Time Complexity:
+ * Time Complexity: linear in size of body and type(body)
  *
  * @param name
  * @param body
@@ -38,7 +39,8 @@ Expression *kernel_var_create_with_body(const char *name, Expression *body, Cont
 
 /**
  * Create an application expression (func applied to arg) in the given context.
- * Time Complexity:
+ * Time Complexity: linear in the size of the func and arg + (todo) the time to construct the app
+ * type
  *
  * @param func
  * @param arg
@@ -49,7 +51,7 @@ Expression *kernel_app_create(Expression *func, Expression *arg, Context *contex
 
 /**
  * Create a lambda expression with a bound variable and body.
- * Time Complexity:
+ * Time Complexity: linear in the size of the body + the time to construct the lambda type
  *
  * @param bound_var
  * @param body
@@ -59,7 +61,7 @@ Expression *kernel_lambda_create(Expression *bound_var, Expression *body);
 
 /**
  * Create a forall expression with a bound variable and body.
- * Time Complexity:
+ * Time Complexity: linear in the size of the body and the type of the bound variable
  *
  * @param bound_var
  * @param body
@@ -69,7 +71,7 @@ Expression *kernel_forall_create(Expression *bound_var, Expression *body);
 
 /**
  * Create an arrow expression (lhs -> rhs) in the given context.
- * Time Complexity:
+ * Time Complexity: time to construct the anonymous variable + the time to construct the forall type
  *
  * @param lhs
  * @param rhs
@@ -80,7 +82,7 @@ Expression *kernel_arrow_create(Expression *lhs, Expression *rhs, Context *conte
 
 /**
  * Create a hole expression with a name and return type in the given context.
- * Time Complexity:
+ * Time Complexity: linear in the size of the return type
  *
  * @param name
  * @param return_type
@@ -91,7 +93,7 @@ Expression *kernel_hole_create(char *name, Expression *return_type, Context *con
 
 /**
  * Create a match-branch object for use with kernel_match_create.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @param constructor
  * @param pattern_variables
@@ -104,7 +106,7 @@ void *kernel_match_branch_create(Expression *constructor, Expression **pattern_v
 
 /**
  * Free a match-branch object previously created by kernel_match_branch_create.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @param branch
  * @return
@@ -141,7 +143,7 @@ Expression *kernel_fix_create(Expression *recursive_var, Expression **args, int 
 
 /**
  * Create the universe Type expression.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @return
  */
@@ -149,7 +151,7 @@ Expression *kernel_type_create(void);
 
 /**
  * Create the Prop expression.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @return
  */
@@ -161,7 +163,7 @@ Expression *kernel_prop_create(void);
 
 /**
  * Get the type of an expression.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @param expr
  * @return
@@ -170,7 +172,7 @@ Expression *kernel_expr_type(Expression *expr);
 
 /**
  * Get the context of an expression.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @param expr
  * @return
@@ -179,7 +181,7 @@ Context *kernel_expr_context(Expression *expr);
 
 /**
  * Get the name stored in a hole expression.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @param hole_expr
  * @return
@@ -188,7 +190,7 @@ char *kernel_hole_name(Expression *hole_expr);
 
 /**
  * Get the name of a variable expression.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @param var_expr
  * @return
@@ -197,7 +199,7 @@ char *kernel_var_name(Expression *var_expr);
 
 /**
  * Get the body of a variable expression (if any).
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @param var_expr
  * @return
@@ -206,7 +208,7 @@ Expression *kernel_var_body(Expression *var_expr);
 
 /**
  * Get the function part of an application expression.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @param app_expr
  * @return
@@ -215,7 +217,7 @@ Expression *kernel_app_func(Expression *app_expr);
 
 /**
  * Get the argument part of an application expression.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @param app_expr
  * @return
@@ -224,7 +226,7 @@ Expression *kernel_app_arg(Expression *app_expr);
 
 /**
  * Get the bound variable of a lambda expression.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @param lambda_expr
  * @return
@@ -233,7 +235,7 @@ Expression *kernel_lambda_var(Expression *lambda_expr);
 
 /**
  * Get the body of a lambda expression.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @param lambda_expr
  * @return
@@ -242,7 +244,7 @@ Expression *kernel_lambda_body(Expression *lambda_expr);
 
 /**
  * Get the bound variable of a forall expression.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @param forall_expr
  * @return
@@ -251,7 +253,7 @@ Expression *kernel_forall_var(Expression *forall_expr);
 
 /**
  * Get the body of a forall expression.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @param forall_expr
  * @return
@@ -306,7 +308,7 @@ int kernel_fix_decreasing_arg(Expression *fix_expr);
 
 /**
  * Check whether an expression is a hole.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @param expr
  * @return
@@ -560,7 +562,7 @@ Expression *kernel_normalize_whnf(Expression *expr);
 
 /**
  * Check whether an expression is valid in the given context.
- * Time Complexity:
+ * Time Complexity: linear in the size of context which expr is valid in.
  *
  * @param expr
  * @param context
