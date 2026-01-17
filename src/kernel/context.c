@@ -54,6 +54,10 @@ bool context_is_ancestor(Expression *contextA, Expression *contextB) {
 }
 
 Expression *context_find(Expression *context, Expression *var) {
+    /**
+     * @very future me, I think a vEB tree could be used to do this in O(1)
+     */
+
     Expression *curr = context;
     while (!context_is_empty(curr)) {
         if (curr == var) {
@@ -69,16 +73,6 @@ DoublyLinkedList *context_ancestors(Expression *context_A) {
     DoublyLinkedList *list = dll_create();
     Expression *curr_context = context_A;
     while (!context_is_empty(curr_context)) {
-        dll_insert_at_head(list, dll_new_node(curr_context));
-        curr_context = get_expression_context(curr_context);
-    }
-    return list;
-}
-
-DoublyLinkedList *context_ancestors_until(Expression *context_A, Expression *until) {
-    DoublyLinkedList *list = dll_create();
-    Expression *curr_context = context_A;
-    while (!context_is_empty(curr_context) && curr_context != until) {
         dll_insert_at_head(list, dll_new_node(curr_context));
         curr_context = get_expression_context(curr_context);
     }
@@ -122,18 +116,7 @@ Context *context_replace(Context *context, Expression *x, Expression *a) {
 
 bool valid_in_context(Expression *expr, Expression *context) {
     Expression *curr_expr_ctx = get_expression_context(expr);
-    if (context_is_ancestor(curr_expr_ctx, context)) {
-        return true;
-    }
-
-    while (!context_is_empty(curr_expr_ctx)) {
-        Expression *curr_var = curr_expr_ctx;
-        if (context_find(context, curr_var) == NULL) {
-            return false;
-        }
-        curr_expr_ctx = get_expression_context(curr_expr_ctx);
-    }
-    return true;
+    return context_is_ancestor(curr_expr_ctx, context);
 }
 
 int context_size(Context *context) {
