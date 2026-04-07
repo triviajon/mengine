@@ -138,11 +138,7 @@ bool kernel_hole_fill(Expression *hole, Expression *term) {
     if (!hole || !term) {
         return false;
     }
-    if (!can_fill(hole, term)) {
-        return false;
-    }
-    fill_hole(hole, term);
-    return true;
+    return fill_hole(hole, term);
 }
 
 /* CONTEXT OPERATIONS */

@@ -443,27 +443,15 @@ bool has_holes(Expression *expr);
 // Returns true if the expression is a hole.
 bool is_hole(Expression *expr);
 
-// Returns true if the term can fill the hole.
-bool can_fill(Expression *hole, Expression *term);
-
-// Fills a hole with a term. The term must satisfy the following conditions:
-//    1) The type of term  expected return type of hole.
-//    2) The defining context of hole contains the context(term).
-//    3) Term does not itself contain the hole.
-// This does no modifications/creates no new objects. Instead, it modifies the
-// uplinks of the hole to point to the term.
-void fill_hole(Expression *hole, Expression *term);
+// Fills a hole with a term by rewriting uplinks. Checks preconditions
+// (type match, context validity, occurs check) and returns false if any fail.
+bool fill_hole(Expression *hole, Expression *term);
 
 // Returns true if var_or_hole appears as a subterm in term
 bool occurs_in(Expression *var_or_hole, Expression *term);
 
 // Returns true if the expressions are alpha-congruent.
 bool congruence(Expression *a, Expression *b);
-
-// Returns true if the expressions are alpha-congruent while allowing holes.
-// When a hole is encountered, it checks if the other expression can fill it.
-// This is useful for type checking when holes are present in the expressions.
-bool congruent_with_holes(Expression *a, Expression *b);
 
 // Returns true if a is a subtype of b. We don't implement a full subtyping
 // relation, but it is necessary specifically for Type and Prop.
