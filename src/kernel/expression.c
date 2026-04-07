@@ -1163,123 +1163,6 @@ Expression *match_and_subst(Expression *a, Expression *b, Expression *to_subst) 
     return result;
 }
 
-bool _congruent_with_holes(Expression *a, Expression *b, LinearMap *alpha_equivalences,
-                           LinearMap *required_holes) {
-    if (a == b) {
-        return true;
-    }
-
-    if (a->tag == HOLE_EXPRESSION && b->tag == HOLE_EXPRESSION) {
-        return false;  // TODO: what do we do in this case?
-    }
-    if (a->tag == HOLE_EXPRESSION) {
-        bool b_can_fill = can_fill(a, b);
-        if (b_can_fill) {
-            linear_map_set(required_holes, a, b);
-            return true;
-        }
-        return false;
-    }
-    if (b->tag == HOLE_EXPRESSION) {
-        bool a_can_fill = can_fill(b, a);
-        if (a_can_fill) {
-            linear_map_set(required_holes, b, a);
-            return true;
-        }
-        return false;
-    }
-
-    if (a->tag != b->tag) {
-        return false;
-    }
-
-    switch (a->tag) {
-        case (TYPE_EXPRESSION):
-            return true;
-        case (PROP_EXPRESSION):
-            return true;
-        case (APP_EXPRESSION): {
-            bool result1 = _congruent_with_holes(a->as.app.func, b->as.app.func, alpha_equivalences,
-                                                 required_holes);
-            bool result2 = _congruent_with_holes(a->as.app.arg, b->as.app.arg, alpha_equivalences,
-                                                 required_holes);
-            return result1 && result2;
-        }
-        case (FORALL_EXPRESSION): {
-            linear_map_set(alpha_equivalences, a->as.forall.bound_variable,
-                           b->as.forall.bound_variable);
-            bool result = _congruent_with_holes(a->as.forall.body, b->as.forall.body,
-                                                alpha_equivalences, required_holes);
-            return result;
-        }
-        case (LAMBDA_EXPRESSION): {
-            linear_map_set(alpha_equivalences, a->as.lambda.bound_variable,
-                           b->as.lambda.bound_variable);
-            bool result = _congruent_with_holes(a->as.lambda.body, b->as.lambda.body,
-                                                alpha_equivalences, required_holes);
-            return result;
-        }
-        case (VAR_EXPRESSION): {
-            return (a == b) || linear_map_get(alpha_equivalences, a) == b;
-        }
-        case (MATCH_EXPRESSION): {
-            if (!_congruent_with_holes(a->as.match.scrutinee, b->as.match.scrutinee,
-                                       alpha_equivalences, required_holes)) {
-                return false;
-            }
-            if (a->as.match.branch_count != b->as.match.branch_count) {
-                return false;
-            }
-            for (int i = 0; i < a->as.match.branch_count; i++) {
-                MatchBranch *branch_a = a->as.match.branches[i];
-                MatchBranch *branch_b = b->as.match.branches[i];
-                if (!_congruent_with_holes(branch_a->constructor, branch_b->constructor,
-                                           alpha_equivalences, required_holes)) {
-                    return false;
-                }
-                if (branch_a->pattern_var_count != branch_b->pattern_var_count) {
-                    return false;
-                }
-                for (int j = 0; j < branch_a->pattern_var_count; j++) {
-                    linear_map_set(alpha_equivalences, branch_a->pattern_variables[j],
-                                   branch_b->pattern_variables[j]);
-                }
-                if (!_congruent_with_holes(branch_a->body, branch_b->body, alpha_equivalences,
-                                           required_holes)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        case (FIX_EXPRESSION): {
-            linear_map_set(alpha_equivalences, a->as.fix.recursive_var, b->as.fix.recursive_var);
-            if (a->as.fix.arg_count != b->as.fix.arg_count) {
-                return false;
-            }
-            if (a->as.fix.decreasing_arg_index != b->as.fix.decreasing_arg_index) {
-                return false;
-            }
-            for (int i = 0; i < a->as.fix.arg_count; i++) {
-                linear_map_set(alpha_equivalences, a->as.fix.args[i], b->as.fix.args[i]);
-            }
-            return _congruent_with_holes(a->as.fix.body, b->as.fix.body, alpha_equivalences,
-                                         required_holes);
-        }
-        default:
-            fprintf(stderr, ERROR "Unknown expression type in _congruent_with_holes.\n" CRESET);
-            return false;
-    }
-}
-
-bool congruent_with_holes(Expression *a, Expression *b) {
-    LinearMap *alpha_equivalences = linear_map_new();
-    LinearMap *required_holes = linear_map_new();
-    bool result = _congruent_with_holes(a, b, alpha_equivalences, required_holes);
-    linear_map_clear_free(alpha_equivalences);
-    linear_map_clear_free(required_holes);
-    return result;
-}
-
 bool get_maybe_hole_free(Expression *expr) { return expr->maybe_hole_free; }
 
 bool has_holes(Expression *expr) {
@@ -1321,21 +1204,6 @@ bool has_holes(Expression *expr) {
 }
 
 bool is_hole(Expression *expr) { return expr->tag == HOLE_EXPRESSION; }
-
-// Returns true if you can safely substitute term into a hole.
-// This means three things:
-//    1) The type(term) == expected return type of hole.
-//    2) The defining context of hole contains the context(term).
-//    3) Term does not itself contain the hole.
-// This does no modifications/creates no new objects.
-bool can_fill(Expression *hole, Expression *term) {
-    bool types_match = definitional_equal(get_expression_type(hole), get_expression_type(term));
-    if (get_maybe_hole_free(term)) {
-        return types_match && valid_in_context(term, get_expression_context(hole));
-    }
-    bool occurs = occurs_in(hole, term);
-    return types_match && valid_in_context(term, get_expression_context(hole)) && !occurs;
-}
 
 bool _occurs_in(Expression *var_or_hole, Expression *term, LinearMap *visited) {
     if (linear_map_get(visited, term) != NULL) {
@@ -1404,19 +1272,25 @@ bool occurs_in(Expression *var_or_hole, Expression *term) {
     return _occurs_in(var_or_hole, term, linear_map_new());
 }
 
-void fill_hole(Expression *hole, Expression *term) {
+bool fill_hole(Expression *hole, Expression *term) {
     if (hole->tag != HOLE_EXPRESSION) {
-        return;
+        return false;
     }
 
-    if (occurs_in(hole, term)) {
-        return;
+    // Check preconditions:
+    //   1) type(term) == expected return type of hole
+    //   2) term is valid in hole's context
+    //   3) term does not contain the hole (occurs check)
+    if (!definitional_equal(get_expression_type(hole), get_expression_type(term))) {
+        return false;
+    }
+    if (!valid_in_context(term, get_expression_context(hole))) {
+        return false;
+    }
+    if (!get_maybe_hole_free(term) && occurs_in(hole, term)) {
+        return false;
     }
 
-    bool types_match = definitional_equal(get_expression_type(hole), get_expression_type(term));
-    if (!types_match) {
-        return;  // Todo: signal that this has failed?
-    }
     DoublyLinkedList *holepars = hole->uplinks;
     for (int i = 0; i < dll_len(holepars); i++) {
         Uplink *uplink = dll_at(holepars, i)->data;
@@ -1472,6 +1346,7 @@ void fill_hole(Expression *hole, Expression *term) {
                 break;
         }
     }
+    return true;
 }
 
 char c_counter = 'a';
