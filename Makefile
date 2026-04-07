@@ -61,6 +61,15 @@ check: tests
 	done
 	@echo "=== All tests passed ==="
 
+examples: $(MENGINE_BIN)
+	@echo "Running all examples with mengine..."
+	@set -e; \
+	for example in examples/*.me; do \
+		echo "-- Running $$example"; \
+		./$(MENGINE_BIN) "$$example" || exit 1; \
+	done
+	@echo "=== All examples ran successfully ==="
+
 install: $(MENGINE_BIN)
 	@echo "Installing mengine..."
 	sudo install -m 755 $(MENGINE_BIN) /usr/bin/$(MENGINE_BIN)
