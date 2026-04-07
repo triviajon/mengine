@@ -212,7 +212,7 @@ Expression *_construct_app_type(Context *context, Expression *func, Expression *
 }
 
 Expression *_init_expression_base(ExpressionType tag, Context *context, int ctx_size,
-                                  Expression *type, bool maybe_hole_free) {
+                                  Expression *type) {
     Expression *expr = (Expression *)calloc(1, sizeof(Expression));
     if (!expr) {
         return NULL;
@@ -223,7 +223,6 @@ Expression *_init_expression_base(ExpressionType tag, Context *context, int ctx_
     SET_EXPR_CONTEXT(expr, context);
     SET_EXPR_CTX_SIZE(expr, ctx_size);
     SET_EXPR_TYPE(expr, type);
-    SET_EXPR_MAYBE_HOLE_FREE(expr, maybe_hole_free);
 
     return expr;
 }
@@ -232,8 +231,7 @@ Expression *init_prop_expression() {
     if (PROP == NULL) {
         PROP =
             _init_expression_base(/* tag */ PROP_EXPRESSION, /* context */ context_create_empty(),
-                                  /* ctx_size */ 0, /* type */ init_type_expression(),
-                                  /* maybe_hole_free */ true);
+                                  /* ctx_size */ 0, /* type */ init_type_expression());
     }
     return PROP;
 }
@@ -269,8 +267,7 @@ Expression *init_hole_expression(char *name, Expression *type, Context *gamma) {
 
     Expression *expr = _init_expression_base(/* tag */ HOLE_EXPRESSION, /* context */ gamma,
                                              /* ctx_size */ gamma->ctx_size,
-                                             /* type */ type,
-                                             /* maybe_hole_free */ false);
+                                             /* type */ type);
 
     SET_HOLE_NAME(expr, strdup(name));
     return expr;
@@ -290,8 +287,7 @@ Expression *init_var_expression_wc(const char *name, Expression *type, Context *
 
     Expression *expr = _init_expression_base(/* tag */ VAR_EXPRESSION, /* context */ gamma,
                                              /* ctx_size */ gamma->ctx_size + 1,
-                                             /* type */ type,
-                                             /* maybe_hole_free */ true);
+                                             /* type */ type);
 
     SET_VAR_NAME(expr, strdup(name));
     return expr;
@@ -317,8 +313,7 @@ Expression *init_var_expression_wc_with_body(const char *name, Expression *body,
 
     Expression *expr = _init_expression_base(/* tag */ VAR_EXPRESSION, /* context */ gamma,
                                              /* ctx_size */ gamma->ctx_size + 1,
-                                             /* type */ type,
-                                             /* maybe_hole_free */ true);
+                                             /* type */ type);
 
     SET_VAR_NAME(expr, strdup(name));
     SET_VAR_BODY(expr, body);
@@ -338,8 +333,7 @@ Expression *init_lambda_expression_wc(Expression *bound_variable, Expression *bo
     Expression *expr =
         _init_expression_base(/* tag */ LAMBDA_EXPRESSION, /* context */ gamma,
                               /* ctx_size */ gamma->ctx_size,
-                              /* type */ _construct_lambda_type(bound_variable, body),
-                              /* maybe_hole_free */ get_maybe_hole_free(body));
+                              /* type */ _construct_lambda_type(bound_variable, body));
 
     SET_LAMBDA_BOUND_VAR(expr, bound_variable);
     SET_LAMBDA_BODY(expr, body);
@@ -374,8 +368,7 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg, Context *c
     Expression *expr = _init_expression_base(
         /* tag */ APP_EXPRESSION, /* context */ context,
         /* ctx_size */ context->ctx_size,
-        /* type */ type,
-        /* maybe_hole_free */ get_maybe_hole_free(func) && get_maybe_hole_free(arg));
+        /* type */ type);
 
     SET_APP_FUNC(expr, func);
     SET_APP_ARG(expr, arg);
@@ -406,8 +399,7 @@ Expression *init_forall_expression_wc(Expression *bound_variable, Expression *bo
 
     Expression *expr = _init_expression_base(/* tag */ FORALL_EXPRESSION, /* context */ gamma,
                                              /* ctx_size */ gamma->ctx_size,
-                                             /* type */ body_type,
-                                             /* maybe_hole_free */ get_maybe_hole_free(body));
+                                             /* type */ body_type);
 
     SET_FORALL_BOUND_VAR(expr, bound_variable);
     SET_FORALL_BODY(expr, body);
@@ -534,8 +526,7 @@ Expression *init_match_expression_wc(Expression *scrutinee, MatchBranch **branch
     Expression *expr = _init_expression_base(
         /* tag */ MATCH_EXPRESSION, /* context */ context,
         /* ctx_size */ context->ctx_size,
-        /* type */ match_type,
-        /* maybe_hole_free */ get_maybe_hole_free(scrutinee));
+        /* type */ match_type);
 
     expr->as.match.branch_count = branch_count;  // Set branch_count BEFORE calling macros
     SET_MATCH_SCRUTINEE(expr, scrutinee);
@@ -724,8 +715,7 @@ Expression *init_fix_expression_wc(Expression *recursive_var, Expression **args,
 
     Expression *expr = _init_expression_base(/* tag */ FIX_EXPRESSION, /* context */ gamma,
                                              /* ctx_size */ gamma->ctx_size,
-                                             /* type */ get_expression_type(recursive_var),
-                                             /* maybe_hole_free */ get_maybe_hole_free(body));
+                                             /* type */ get_expression_type(recursive_var));
 
     SET_FIX_RECURSIVE_VAR(expr, recursive_var);
     SET_FIX_ARGS(expr, args);
@@ -1163,13 +1153,7 @@ Expression *match_and_subst(Expression *a, Expression *b, Expression *to_subst) 
     return result;
 }
 
-bool get_maybe_hole_free(Expression *expr) { return expr->maybe_hole_free; }
-
 bool has_holes(Expression *expr) {
-    if (get_maybe_hole_free(expr)) {
-        return false;
-    }
-
     switch (expr->tag) {
         case (TYPE_EXPRESSION):
         case (PROP_EXPRESSION):
@@ -1287,7 +1271,7 @@ bool fill_hole(Expression *hole, Expression *term) {
     if (!valid_in_context(term, get_expression_context(hole))) {
         return false;
     }
-    if (!get_maybe_hole_free(term) && occurs_in(hole, term)) {
+    if (occurs_in(hole, term)) {
         return false;
     }
 
