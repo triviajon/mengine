@@ -213,7 +213,7 @@ Expression *_construct_app_type(Context *context, Expression *func, Expression *
 
 Expression *_init_expression_base(ExpressionType tag, Context *context, int ctx_size,
                                   Expression *type, bool maybe_hole_free) {
-    Expression *expr = (Expression *)malloc(sizeof(Expression));
+    Expression *expr = (Expression *)calloc(1, sizeof(Expression));
     if (!expr) {
         return NULL;
     }
