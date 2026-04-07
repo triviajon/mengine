@@ -138,8 +138,6 @@ struct Expression {
                                 // 0 for TYPE and PROP
     Expression *type;           // The type of this expression
                                 // NULL for TYPE and PROP
-    bool maybe_hole_free;       // True means term is hole-free, false means may
-                                // contain holes. Unused for TYPE and PROP.
 
     union {
         VarExpression var;
@@ -187,8 +185,6 @@ Uplink *new_uplink(void *ptr, Relation r);
 #define SET_EXPR_TYPE(expr, value) \
     (expr)->type = (value);        \
     add_to_parents((value), (expr), EXPR_TYPE)
-
-#define SET_EXPR_MAYBE_HOLE_FREE(expr, value) (expr)->maybe_hole_free = (value);
 
 #define SET_HOLE_NAME(expr, value) (expr)->as.hole.name = (value);
 
@@ -428,14 +424,6 @@ Expression *get_lambda_body(Expression *expr);
 Expression *get_arrow_lhs(Expression *expr);
 
 Expression *get_arrow_rhs(Expression *expr);
-
-// Returns the value of the maybe_hole_free field of an expression.
-// This is a heuristic to determine if the expression may contain holes.
-// The reason this exists is because an expression containing a hole may be
-// modified to remove the hole, via a call to `fill_hole(hole, term)`. This
-// heuristic can be removed in the future if we implement proper upwards
-// traversal of the expression tree to update the maybe_hole_free field.
-bool get_maybe_hole_free(Expression *expr);
 
 // Returns true if the expression has any holes.
 bool has_holes(Expression *expr);
