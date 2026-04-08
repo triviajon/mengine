@@ -7,9 +7,9 @@
 #include "src/commandlanguage/command_parser.h"
 #include "src/common/color.h"
 #include "src/common/options.h"
+#include "src/engine/engine_api.h"
 #include "src/kernel/kernel_api.h"
 #include "src/runtime/core.h"
-#include "src/engine/engine_api.h"
 #include "src/tacticlanguage/tactic_exec.h"
 
 void debug_print_mode(MEngineRuntime *rt) {
@@ -58,7 +58,6 @@ MEngineRuntime *mengine_runtime_new(MEngineOptions *options) {
         free(rt);
         return NULL;
     }
-
 
     init_core(&rt->ctx);
     mengine_runtime_command_mode(rt);
