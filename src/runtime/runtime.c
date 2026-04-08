@@ -60,6 +60,8 @@ MEngineRuntime *mengine_runtime_new(MEngineOptions *options) {
         return NULL;
     }
 
+    rt->tactic_env = tactic_env_new();
+
     init_core(&rt->ctx);
     mengine_runtime_command_mode(rt);
 
@@ -70,6 +72,8 @@ void mengine_runtime_free(MEngineRuntime *rt) {
     if (!rt) {
         return;
     }
+
+    tactic_env_free(rt->tactic_env);
 
     // TODO: A memory management strategy...
     // free_context(rt->ctx);

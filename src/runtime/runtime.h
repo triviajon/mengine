@@ -4,6 +4,9 @@
 #include "src/common/options.h"
 #include "src/engine/engine_api.h"
 
+// Forward declaration
+typedef struct TacticEnv TacticEnv;
+
 typedef enum {
     MENGINE_RUNTIME_COMMAND_MODE,  // Normal mode of the Mengine Runtime, where
                                    // we are expecting commands such as
@@ -27,6 +30,7 @@ typedef struct {
                                   // the current state of the proof being created
                                   // for pending_theorem.
     MEngineRuntimeMode mode;      // current mode of operation, see MEngineRuntimeMode
+    TacticEnv *tactic_env;        // user-defined tactic definitions
 } MEngineRuntime;
 
 void debug_print_mode(MEngineRuntime *rt);
