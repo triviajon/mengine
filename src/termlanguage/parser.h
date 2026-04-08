@@ -29,12 +29,17 @@ typedef enum {
     AST_FIX,
     AST_MATCHBRANCH,
     AST_MATCH,
-    AST_APP
+    AST_APP,
+    AST_PATVAR,
 } ASTTag;
 
 typedef struct {
     char *name;
 } VarAST;
+
+typedef struct {
+    char *name;
+} PatVarAST;
 
 typedef struct {
     char *name;
@@ -87,6 +92,7 @@ struct AST {
     union {
         VarAST var;
         HoleAST hole;
+        PatVarAST patvar;
         LambdaAST lambda;
         ForallAST forall;
         LetAST let;
@@ -212,6 +218,14 @@ AST *parse_application(Parser *p);
  * @return AST node representing the parsed atomic term.
  */
 AST *parse_atomic(Parser *p);
+
+/**
+ * Parse a term pattern (like parse_term but also handles ?X pattern variables).
+ *
+ * @param p Pointer to the Parser.
+ * @return AST node representing the parsed term pattern.
+ */
+AST *parse_term_pattern(Parser *p);
 
 /**
  * Print an AST node to a file stream (for debugging).

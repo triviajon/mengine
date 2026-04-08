@@ -123,6 +123,9 @@ static AST *_ast_subst(AST *ast, char **params, AST **args, size_t count) {
             copy->value.matchbranch.body =
                 _ast_subst(ast->value.matchbranch.body, params, args, count);
             break;
+        case AST_PATVAR:
+            copy->value.patvar.name = strdup(ast->value.patvar.name);
+            break;
     }
 
     return copy;
