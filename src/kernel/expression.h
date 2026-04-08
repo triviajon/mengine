@@ -11,6 +11,18 @@
 typedef struct Expression Expression;
 typedef struct Expression Context;
 
+// Reference from an expression to a hole it (transitively) contains.
+typedef struct {
+    Expression *hole;        // The hole being referenced
+    DLLNode *backlink_node;  // Corresponding node in hole's evar_backlinks
+} EvarRef;
+
+// Backlink from a hole to an expression that references it.
+typedef struct {
+    Expression *owner;  // The expression that references this hole
+    DLLNode *ref_node;  // Corresponding node in owner's evar_refs
+} EvarBacklink;
+
 // Supported expression types for the Expression struct.
 typedef enum {
     VAR_EXPRESSION,
@@ -100,7 +112,9 @@ static Expression *PROP = NULL;
 
 // A typed hole to be filled later.
 typedef struct {
-    char *name;  // A user-friendly name for the hole. Not used internally.
+    char *name;                        // A user-friendly name for the hole. Not used internally.
+    DoublyLinkedList *evar_backlinks;  // List of EvarBacklink*: every expression that
+                                       // directly or indirectly references this hole.
 } HoleExpression;
 
 // A single branch in a match expression.
@@ -130,14 +144,16 @@ typedef struct {
 // Represents a generic expression.
 struct Expression {
     // Common fields
-    ExpressionType tag;         // The kind of expression (VAR, LAMBDA, APP, etc.)
-    DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced
-    Context *context;           // The minimal context this expression is valid in
-                                // NULL for TYPE and PROP
-    int ctx_size;               // Size of the context (0 for empty, 1+ for variables)
-                                // 0 for TYPE and PROP
-    Expression *type;           // The type of this expression
-                                // NULL for TYPE and PROP
+    ExpressionType tag;           // The kind of expression (VAR, LAMBDA, APP, etc.)
+    DoublyLinkedList *uplinks;    // Uplinks where this expression is referenced
+    Context *context;             // The minimal context this expression is valid in
+                                  // NULL for TYPE and PROP
+    int ctx_size;                 // Size of the context (0 for empty, 1+ for variables)
+                                  // 0 for TYPE and PROP
+    Expression *type;             // The type of this expression
+                                  // NULL for TYPE and PROP
+    DoublyLinkedList *evar_refs;  // List of EvarRef*: holes this expression directly
+                                  // or indirectly references. Empty means evar-free.
 
     union {
         VarExpression var;
@@ -168,6 +184,10 @@ void free_expression(Expression *expr);
 
 // Create a new uplink describing how ptr relates.
 Uplink *new_uplink(void *ptr, Relation r);
+
+// Add evar references from child to parent. For each hole in child's evar_refs,
+// adds a cross-linked reference to parent's evar_refs and the hole's backlinks.
+void propagate_evar_refs(Expression *parent, Expression *child);
 
 // Macros for setting Expression fields
 #define SET_EXPR_TAG(expr, value) (expr)->tag = (value);

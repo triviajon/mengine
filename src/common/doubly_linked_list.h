@@ -104,4 +104,12 @@ DLLNode *dll_new_node(void *val);
  */
 DoublyLinkedList *dll_merge(DoublyLinkedList *list1, DoublyLinkedList *list2);
 
+/*
+ * Remove a specific node from the list given a direct pointer to it.
+ * Does NOT free the node or its data. O(1).
+ * @list: Pointer to the list
+ * @node: The node to remove
+ */
+void dll_remove_node(DoublyLinkedList *list, DLLNode *node);
+
 #endif  // DOUBLY_LINKED_LIST_H
