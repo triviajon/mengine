@@ -6,8 +6,8 @@
 
 #include "src/common/color.h"
 #include "src/common/options.h"
-#include "src/kernel/kernel_api.h"
 #include "src/engine/engine_api.h"
+#include "src/kernel/kernel_api.h"
 #include "src/runtime/runtime.h"
 
 void trim_whitespace(char *s) {
