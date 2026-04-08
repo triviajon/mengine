@@ -2,19 +2,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
-#include "src/common/color.h"
-#include "src/common/doubly_linked_list.h"
-#include "src/engine/engine_api.h"
-#include "src/kernel/kernel_api.h"
-#include "src/tacticlanguage/tactic_ast.h"
-#include "src/tacticlanguage/tactic_parser.h"
-#include "src/termlanguage/ast_to_expression.h"
-
-#include "src/tacticlanguage/tactic_interp.h"
-
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "src/common/color.h"
@@ -23,6 +10,7 @@
 #include "src/kernel/kernel_api.h"
 #include "src/runtime/runtime.h"
 #include "src/tacticlanguage/tactic_ast.h"
+#include "src/tacticlanguage/tactic_interp.h"
 #include "src/tacticlanguage/tactic_parser.h"
 #include "src/termlanguage/ast_to_expression.h"
 
@@ -35,9 +23,7 @@
 
 static AST *_ast_subst(AST *ast, char **params, AST **args, size_t count);
 
-static AST *_ast_deep_copy(AST *ast) {
-    return _ast_subst(ast, NULL, NULL, 0);
-}
+static AST *_ast_deep_copy(AST *ast) { return _ast_subst(ast, NULL, NULL, 0); }
 
 static Binder *_binder_subst(Binder *b, char **params, AST **args, size_t count) {
     Binder *copy = malloc(sizeof(Binder));
@@ -88,17 +74,15 @@ static AST *_ast_subst(AST *ast, char **params, AST **args, size_t count) {
             copy->value.app.arg = _ast_subst(ast->value.app.arg, params, args, count);
             break;
         case AST_LAMBDA:
-            copy->value.lambda.binder.name = ast->value.lambda.binder.name
-                                                 ? strdup(ast->value.lambda.binder.name)
-                                                 : NULL;
+            copy->value.lambda.binder.name =
+                ast->value.lambda.binder.name ? strdup(ast->value.lambda.binder.name) : NULL;
             copy->value.lambda.binder.type =
                 _ast_subst(ast->value.lambda.binder.type, params, args, count);
             copy->value.lambda.body = _ast_subst(ast->value.lambda.body, params, args, count);
             break;
         case AST_FORALL:
-            copy->value.forall.binder.name = ast->value.forall.binder.name
-                                                 ? strdup(ast->value.forall.binder.name)
-                                                 : NULL;
+            copy->value.forall.binder.name =
+                ast->value.forall.binder.name ? strdup(ast->value.forall.binder.name) : NULL;
             copy->value.forall.binder.type =
                 _ast_subst(ast->value.forall.binder.type, params, args, count);
             copy->value.forall.body = _ast_subst(ast->value.forall.body, params, args, count);
@@ -128,8 +112,7 @@ static AST *_ast_subst(AST *ast, char **params, AST **args, size_t count) {
             copy->value.match.scrutinee =
                 _ast_subst(ast->value.match.scrutinee, params, args, count);
             copy->value.match.branch_count = ast->value.match.branch_count;
-            copy->value.match.branches =
-                malloc(sizeof(AST *) * ast->value.match.branch_count);
+            copy->value.match.branches = malloc(sizeof(AST *) * ast->value.match.branch_count);
             for (size_t i = 0; i < ast->value.match.branch_count; i++) {
                 copy->value.match.branches[i] =
                     _ast_subst(ast->value.match.branches[i], params, args, count);
@@ -163,8 +146,7 @@ static Tactic *_tactic_subst(Tactic *tac, char **params, AST **args, size_t coun
             copy->as.eapply.lemma = _ast_subst(tac->as.eapply.lemma, params, args, count);
             break;
         case TACTIC_EXACT:
-            copy->as.exact.proof_term =
-                _ast_subst(tac->as.exact.proof_term, params, args, count);
+            copy->as.exact.proof_term = _ast_subst(tac->as.exact.proof_term, params, args, count);
             break;
         case TACTIC_REWRITE:
         case TACTIC_REWRITE_BACKWARD:
@@ -216,16 +198,14 @@ static TacticExpr *_tactic_expr_subst(TacticExpr *expr, char **params, AST **arg
             return tactic_expr_primitive(
                 _tactic_subst(expr->as.primitive.tactic, params, args, count));
         case TAC_SEQ:
-            return tactic_expr_seq(
-                _tactic_expr_subst(expr->as.seq.left, params, args, count),
-                _tactic_expr_subst(expr->as.seq.right, params, args, count));
+            return tactic_expr_seq(_tactic_expr_subst(expr->as.seq.left, params, args, count),
+                                   _tactic_expr_subst(expr->as.seq.right, params, args, count));
         case TAC_ORELSE:
             return tactic_expr_orelse(
                 _tactic_expr_subst(expr->as.orelse.left, params, args, count),
                 _tactic_expr_subst(expr->as.orelse.right, params, args, count));
         case TAC_TRY:
-            return tactic_expr_try(
-                _tactic_expr_subst(expr->as.try_expr.body, params, args, count));
+            return tactic_expr_try(_tactic_expr_subst(expr->as.try_expr.body, params, args, count));
         case TAC_REPEAT:
             return tactic_expr_repeat(
                 _tactic_expr_subst(expr->as.repeat.body, params, args, count));
@@ -490,16 +470,15 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
             if (expr->as.call.arg_count != def->param_count) {
                 char msg[256];
-                snprintf(msg, sizeof(msg),
-                         "Tactic '%s' expects %zu argument(s), got %zu",
+                snprintf(msg, sizeof(msg), "Tactic '%s' expects %zu argument(s), got %zu",
                          expr->as.call.name, def->param_count, expr->as.call.arg_count);
                 return init_tactic_result(false, NULL, msg);
             }
 
             TacticExpr *body = def->body;
             if (def->param_count > 0) {
-                body = _tactic_expr_subst(def->body, def->params,
-                                          expr->as.call.args, def->param_count);
+                body = _tactic_expr_subst(def->body, def->params, expr->as.call.args,
+                                          def->param_count);
             }
 
             return tactic_interpret(rt, goal, body);

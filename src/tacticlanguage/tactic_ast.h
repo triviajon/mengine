@@ -49,9 +49,9 @@ typedef struct {
 } FirstTacticExpr;
 
 typedef struct {
-    char *name;         // tactic name
-    AST **args;         // term arguments (NULL if no args)
-    size_t arg_count;   // number of arguments
+    char *name;        // tactic name
+    AST **args;        // term arguments (NULL if no args)
+    size_t arg_count;  // number of arguments
 } CallTacticExpr;
 
 struct TacticExpr {
@@ -138,16 +138,16 @@ static inline TacticExpr *tactic_expr_call(char *name, AST **args, size_t arg_co
  * ============================================================================ */
 
 typedef struct {
-    char *name;           // tactic name
-    char **params;        // parameter names (NULL if none)
-    size_t param_count;   // number of parameters
-    TacticExpr *body;     // body expression
+    char *name;          // tactic name
+    char **params;       // parameter names (NULL if none)
+    size_t param_count;  // number of parameters
+    TacticExpr *body;    // body expression
 } TacticDef;
 
 typedef struct TacticEnv {
-    TacticDef **defs;   // dynamic array of definitions
-    size_t count;       // number of definitions
-    size_t capacity;    // allocated capacity
+    TacticDef **defs;  // dynamic array of definitions
+    size_t count;      // number of definitions
+    size_t capacity;   // allocated capacity
 } TacticEnv;
 
 static inline TacticEnv *tactic_env_new(void) {
