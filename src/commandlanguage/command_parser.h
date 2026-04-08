@@ -107,10 +107,10 @@ typedef struct {
 typedef struct TacticExpr TacticExpr;
 
 typedef struct {
-    char *name;           // tactic name
-    char **params;        // parameter names (NULL if none)
-    size_t param_count;   // number of parameters
-    TacticExpr *body;     // body tactic expression
+    char *name;          // tactic name
+    char **params;       // parameter names (NULL if none)
+    size_t param_count;  // number of parameters
+    TacticExpr *body;    // body tactic expression
 } TacticDefCmd;
 
 typedef struct Command {

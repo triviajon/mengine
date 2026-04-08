@@ -435,9 +435,8 @@ static TacticExpr *_parse_tactic_atom(Parser *p) {
         while (!parser_eof(p)) {
             TokenType next = p->current->type;
             // Stop at combinator tokens, separators, and terminators
-            if (next == TOK_SEMICOLON || next == TOK_DOUBLE_PIPE ||
-                next == TOK_DOT || next == TOK_RPAREN ||
-                next == TOK_RBRACKET || next == TOK_PIPE) {
+            if (next == TOK_SEMICOLON || next == TOK_DOUBLE_PIPE || next == TOK_DOT ||
+                next == TOK_RPAREN || next == TOK_RBRACKET || next == TOK_PIPE) {
                 break;
             }
             AST *arg = parse_atomic(p);
@@ -477,6 +476,4 @@ TacticExpr *tactic_parse_proof_command(Parser *p) {
     return expr;
 }
 
-TacticExpr *tactic_parse_expr(Parser *p) {
-    return _parse_tactic_expr(p);
-}
+TacticExpr *tactic_parse_expr(Parser *p) { return _parse_tactic_expr(p); }
