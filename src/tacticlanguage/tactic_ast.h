@@ -16,7 +16,8 @@ typedef enum {
     TAC_FIRST,      // first [ tac1 | tac2 | ... ]
     TAC_IDTAC,      // idtac (identity, always succeeds)
     TAC_FAIL,       // fail (always fails)
-    TAC_CALL,       // user-defined tactic call
+    TAC_CALL,        // user-defined tactic call
+    TAC_MATCH_GOAL,  // match goal with | [ ... |- ... ] => tac end
 } TacticExprTag;
 
 typedef struct TacticExpr TacticExpr;
@@ -54,6 +55,23 @@ typedef struct {
     size_t arg_count;  // number of arguments
 } CallTacticExpr;
 
+typedef struct {
+    char *name;  // hypothesis binding name (e.g. "H" in "H : ?P")
+    AST *type;   // type pattern (AST with AST_PATVAR nodes)
+} HypPattern;
+
+typedef struct {
+    HypPattern *hyps;    // array of hypothesis patterns
+    size_t hyp_count;    // number of hypothesis patterns
+    AST *conclusion;     // conclusion pattern (after |-)
+    TacticExpr *body;    // tactic body to execute on match
+} GoalBranch;
+
+typedef struct {
+    GoalBranch *branches;  // array of goal branches
+    size_t branch_count;   // number of branches
+} MatchGoalTacticExpr;
+
 struct TacticExpr {
     TacticExprTag tag;
     union {
@@ -64,6 +82,7 @@ struct TacticExpr {
         RepeatTacticExpr repeat;
         FirstTacticExpr first;
         CallTacticExpr call;
+        MatchGoalTacticExpr match_goal;
     } as;
 };
 
@@ -130,6 +149,14 @@ static inline TacticExpr *tactic_expr_call(char *name, AST **args, size_t arg_co
     e->as.call.name = strdup(name);
     e->as.call.args = args;
     e->as.call.arg_count = arg_count;
+    return e;
+}
+
+static inline TacticExpr *tactic_expr_match_goal(GoalBranch *branches, size_t branch_count) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_MATCH_GOAL;
+    e->as.match_goal.branches = branches;
+    e->as.match_goal.branch_count = branch_count;
     return e;
 }
 
