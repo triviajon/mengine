@@ -133,4 +133,62 @@ static inline TacticExpr *tactic_expr_call(char *name, AST **args, size_t arg_co
     return e;
 }
 
+/* ============================================================================
+ * Tactic definitions (stored in the tactic environment)
+ * ============================================================================ */
+
+typedef struct {
+    char *name;           // tactic name
+    char **params;        // parameter names (NULL if none)
+    size_t param_count;   // number of parameters
+    TacticExpr *body;     // body expression
+} TacticDef;
+
+typedef struct TacticEnv {
+    TacticDef **defs;   // dynamic array of definitions
+    size_t count;       // number of definitions
+    size_t capacity;    // allocated capacity
+} TacticEnv;
+
+static inline TacticEnv *tactic_env_new(void) {
+    TacticEnv *env = malloc(sizeof(TacticEnv));
+    env->defs = NULL;
+    env->count = 0;
+    env->capacity = 0;
+    return env;
+}
+
+static inline void tactic_env_add(TacticEnv *env, TacticDef *def) {
+    // Replace existing definition with same name
+    for (size_t i = 0; i < env->count; i++) {
+        if (strcmp(env->defs[i]->name, def->name) == 0) {
+            // TODO: free old def
+            env->defs[i] = def;
+            return;
+        }
+    }
+    if (env->count >= env->capacity) {
+        env->capacity = env->capacity == 0 ? 8 : env->capacity * 2;
+        env->defs = realloc(env->defs, sizeof(TacticDef *) * env->capacity);
+    }
+    env->defs[env->count++] = def;
+}
+
+static inline TacticDef *tactic_env_lookup(TacticEnv *env, const char *name) {
+    if (!env) return NULL;
+    for (size_t i = 0; i < env->count; i++) {
+        if (strcmp(env->defs[i]->name, name) == 0) {
+            return env->defs[i];
+        }
+    }
+    return NULL;
+}
+
+static inline void tactic_env_free(TacticEnv *env) {
+    if (!env) return;
+    // TODO: deep-free definitions
+    free(env->defs);
+    free(env);
+}
+
 #endif  // TACTIC_AST_H
