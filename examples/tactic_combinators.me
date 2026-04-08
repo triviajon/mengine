@@ -1,0 +1,40 @@
+(* tactic_combinators.me *)
+(* Demonstration of the tactic combinator language. *)
+
+(* Basic setup *)
+Axiom nat : Type.
+Axiom zero : nat.
+Axiom succ : forall (n: nat), nat.
+
+(* Semicolon: sequencing tactics *)
+Theorem seq_example : forall (P : Prop), forall (H : P), P.
+intro P; intro H; exact H.
+
+(* Semicolon chains *)
+Theorem seq_chain : forall (A : Prop), forall (B : forall (_: A), Prop), forall (a : A), forall (b : B a), B a.
+intro A; intro B; intro a; intro b; exact b.
+
+(* Try: swallow failure *)
+Theorem try_example : forall (P : Prop), forall (H : P), P.
+intro P; intro H; try apply zero; exact H.
+
+(* Repeat: apply a tactic until it fails *)
+Theorem repeat_intro : forall (A : Prop), forall (B : Prop), forall (a : A), A.
+repeat intro; assumption.
+
+(* First: try alternatives *)
+Theorem first_example : forall (P : Prop), forall (H : P), P.
+intro P; intro H; first [ apply zero | exact H ].
+
+(* Orelse: try two alternatives *)
+Theorem orelse_example : forall (P : Prop), forall (H : P), P.
+intros P H.
+apply zero || exact H.
+
+(* Nested combinators *)
+Theorem nested : forall (P : Prop), forall (Q : Prop), forall (p : P), forall (q : Q), P.
+repeat intro; first [ exact q || exact p ].
+
+(* Idtac: no-op tactic *)
+Theorem idtac_example : forall (P : Prop), forall (H : P), P.
+intro P; intro H; idtac; exact H.
