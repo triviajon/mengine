@@ -6,6 +6,7 @@
 
 #include "src/common/lexer.h"
 #include "src/common/parser_base.h"
+#include "src/tacticlanguage/tactic_ast.h"
 #include "src/termlanguage/parser.h"
 
 char *decl_keyword_to_string(DeclKeyword kw) {
@@ -492,6 +493,53 @@ Command *command_parse_eval(Parser *p) {
     cmd->as.eval.iota_flag = iota_flag;
     cmd->as.eval.fix_flag = fix_flag;
     cmd->as.eval.term = term;
+
+    return cmd;
+}
+
+Command *command_parse_tactic_def(Parser *p) {
+    // Tactic <name> { <param> } := <tactic_expr> .
+    if (!parser_expect_consume(p, TOK_TACTIC)) {
+        parser_error(p, "expected 'Tactic'");
+    }
+
+    // Parse tactic name
+    if (!parser_expect_no_consume(p, TOK_IDENT)) {
+        parser_error(p, "expected tactic name after 'Tactic'");
+    }
+    Token *name_tok = parser_next(p);
+    char *name = strdup(name_tok->lexeme);
+    lexer_free_token(name_tok);
+
+    // Parse parameter names (identifiers before ':=')
+    char **params = NULL;
+    size_t param_count = 0;
+
+    while (parser_expect_no_consume(p, TOK_IDENT)) {
+        Token *param_tok = parser_next(p);
+        params = realloc(params, sizeof(char *) * (param_count + 1));
+        params[param_count++] = strdup(param_tok->lexeme);
+        lexer_free_token(param_tok);
+    }
+
+    // Expect ':='
+    if (!parser_expect_consume(p, TOK_COLON_EQ)) {
+        parser_error(p, "expected ':=' in Tactic definition");
+    }
+
+    // Parse body as a tactic expression (no trailing '.')
+    TacticExpr *body = tactic_parse_expr(p);
+
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "expected '.' at end of Tactic definition");
+    }
+
+    Command *cmd = malloc(sizeof(Command));
+    cmd->tag = CMD_TACTIC_DEF;
+    cmd->as.tactic_def.name = name;
+    cmd->as.tactic_def.params = params;
+    cmd->as.tactic_def.param_count = param_count;
+    cmd->as.tactic_def.body = body;
 
     return cmd;
 }

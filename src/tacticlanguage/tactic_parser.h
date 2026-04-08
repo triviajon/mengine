@@ -95,4 +95,13 @@ typedef struct TacticExpr TacticExpr;
  */
 TacticExpr *tactic_parse_proof_command(Parser *p);
 
+/**
+ * Parse a tactic expression (without consuming trailing '.').
+ * Used by the command parser for parsing Tactic definition bodies.
+ *
+ * @param p Pointer to the Parser.
+ * @return TacticExpr structure representing the parsed expression.
+ */
+TacticExpr *tactic_parse_expr(Parser *p);
+
 #endif  // TACTIC_PARSER_H

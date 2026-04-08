@@ -450,3 +450,7 @@ TacticExpr *tactic_parse_proof_command(Parser *p) {
 
     return expr;
 }
+
+TacticExpr *tactic_parse_expr(Parser *p) {
+    return _parse_tactic_expr(p);
+}
