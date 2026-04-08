@@ -11,7 +11,9 @@ MENGINE_SRC := src/main.c
 MENGINE_OBJ := $(MENGINE_SRC:.c=.o)
 
 TEST_SRC := $(shell find tests -name '*.c' ! -path 'tests/helpers/*' ! -name 'test_driver.c')
-TEST_BINARIES := $(TEST_SRC:.c=)
+TEST_OBJ := $(TEST_SRC:.c=.o)
+TEST_DRIVER_SRC := tests/test_driver.c
+TEST_DRIVER := tests/test_driver
 
 HELPERS_SRC := $(shell find tests/helpers -name '*.c')
 HELPERS_OBJ := $(HELPERS_SRC:.c=.o)
@@ -50,16 +52,10 @@ $(ENGINE_LIB): $(ENGINE_OBJ)
 $(MENGINE_BIN): $(MENGINE_OBJ) $(ENGINE_LIB)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-tests: $(TEST_BINARIES)
+tests: $(TEST_DRIVER)
 
 check: tests
-	@echo "=== Running test suite ==="
-	@set -e; \
-	for t in $(TEST_BINARIES); do \
-		echo "-- Running $$t"; \
-		./$$t || exit 1; \
-	done
-	@echo "=== All tests passed ==="
+	@./$(TEST_DRIVER)
 
 examples: $(MENGINE_BIN)
 	@echo "Running all examples with mengine..."
@@ -78,14 +74,14 @@ uninstall:
 	@echo "Uninstalling mengine..."
 	sudo rm -f /usr/bin/$(MENGINE_BIN)
 
-$(TEST_BINARIES): %: %.c $(HELPERS_OBJ) $(ENGINE_LIB)
-	$(CC) $(CFLAGS) -o $@ $< $(HELPERS_OBJ) $(ENGINE_LIB)
+$(TEST_DRIVER): $(TEST_DRIVER_SRC) $(TEST_OBJ) $(HELPERS_OBJ) $(ENGINE_LIB)
+	$(CC) $(CFLAGS) -o $@ $(TEST_DRIVER_SRC) $(TEST_OBJ) $(HELPERS_OBJ) $(ENGINE_LIB) $(LDFLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(ENGINE_OBJ) $(MENGINE_OBJ) $(HELPERS_OBJ) $(ENGINE_LIB) $(MENGINE_BIN) $(TEST_BINARIES)
+	rm -f $(ENGINE_OBJ) $(MENGINE_OBJ) $(HELPERS_OBJ) $(TEST_OBJ) $(ENGINE_LIB) $(MENGINE_BIN) $(TEST_DRIVER)
 	if [ "$(UNAME)" = "Darwin" ]; then \
 		find . -name "*.dSYM" -type d -exec rm -rf {} +; \
 	fi

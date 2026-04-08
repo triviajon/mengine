@@ -237,7 +237,7 @@ void test_convert_application(void) {
     assert_true(strstr(str, "fun") != NULL, "should contain fun");
 }
 
-int main() {
+void run_ast_to_expression_tests(void) {
     test_suite_start("AST to Expression Conversion Test Suite");
 
     // Atomic conversions (boundaries)
@@ -269,6 +269,4 @@ int main() {
     test_convert_application();
 
     test_suite_end();
-    print_test_summary();
-    return get_test_failures();
 }

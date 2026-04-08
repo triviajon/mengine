@@ -271,7 +271,7 @@ void test_parse_definition_identity(void) {
     assert_equal_int(AST_VAR, cmd->as.defn.body->tag, "body should be variable");
 }
 
-int main() {
+void run_command_parser_tests(void) {
     test_suite_start("Command Parser Test Suite");
 
     // Declarations
@@ -298,6 +298,4 @@ int main() {
     test_parse_lemma_complex();
 
     test_suite_end();
-    print_test_summary();
-    return get_test_failures();
 }
