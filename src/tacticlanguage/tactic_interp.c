@@ -141,7 +141,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
                     DoublyLinkedList *right_goals = tactic_result_get_goals(right_result);
                     if (right_goals) {
-                        dll_merge(all_goals, right_goals);
+                        all_goals = dll_merge(all_goals, right_goals);
                     }
                     free_tactic_result(right_result);
 
@@ -196,7 +196,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                         made_progress = true;
                         DoublyLinkedList *new_goals = tactic_result_get_goals(result);
                         if (new_goals) {
-                            dll_merge(next_goals, new_goals);
+                            next_goals = dll_merge(next_goals, new_goals);
                         }
                     } else {
                         // This goal couldn't be processed, keep it

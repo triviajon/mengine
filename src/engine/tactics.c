@@ -32,7 +32,9 @@ static Expression *intro_step(Expression *goal, char *name, char **error_out) {
     Expression *A = kernel_expr_type(x);
     Expression *B = kernel_forall_body(goal_ty);
 
-    Expression *x_prime = kernel_var_create(name, A, kernel_expr_context(goal));
+    // If no name provided, use the bound variable name from the forall type
+    char *intro_name = name ? name : kernel_var_name(x);
+    Expression *x_prime = kernel_var_create(intro_name, A, kernel_expr_context(goal));
     Expression *B_prime = kernel_subst(x_prime, B, x, x_prime);
     Context *new_context = x_prime;
     Expression *new_goal = kernel_hole_create((char *)"Goal", B_prime, new_context);
