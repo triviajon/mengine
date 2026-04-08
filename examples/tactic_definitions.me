@@ -1,0 +1,57 @@
+(* tactic_definitions.me — Named tactic definitions via "Tactic" command *)
+
+Axiom A : Prop.
+Axiom B : Prop.
+Axiom C : Prop.
+Axiom a : A.
+Axiom b : B.
+Axiom c : C.
+
+(* --- Zero-argument tactic definitions --- *)
+
+(* Simple named tactic *)
+Tactic my_assumption := assumption.
+
+Theorem use_assumption : A.
+my_assumption.
+
+(* Named tactic with combinators *)
+Tactic intro_all := repeat intro.
+
+Theorem use_intro_all : forall (P : Prop), forall (Q : Prop), forall (x : P), forall (y : Q), Q.
+intro_all; assumption.
+
+(* Named tactic using sequencing *)
+Tactic auto_intros := repeat intro; try assumption.
+
+Theorem use_auto_intros1 : forall (P : Prop), forall (x : P), P.
+auto_intros.
+
+Theorem use_auto_intros2 : forall (P : Prop), forall (Q : Prop), forall (x : P), forall (y : Q), P.
+auto_intros.
+
+(* --- Parameterized tactic definitions --- *)
+
+(* Single parameter *)
+Tactic my_exact x := exact x.
+
+Theorem use_my_exact : A.
+my_exact a.
+
+(* Calling a named tactic inside another named tactic *)
+Tactic intro_then_assume := intro; my_assumption.
+
+Theorem use_composed : forall (x : A), A.
+intro_then_assume.
+
+(* Parameterized tactic with combinators *)
+Tactic my_exact_or x y := exact x || exact y.
+
+Theorem use_exact_or : B.
+my_exact_or a b.
+
+(* Tactic redefinition (overwrite previous) *)
+Tactic my_assumption := intro; assumption.
+
+Theorem use_redefined : forall (x : C), C.
+my_assumption.
