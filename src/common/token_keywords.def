@@ -50,3 +50,9 @@ X("left", TOK_LEFT, "LEFT")
 X("right", TOK_RIGHT, "RIGHT")
 X("exists", TOK_EXISTS, "EXISTS")
 
+X("try", TOK_TRY, "TRY")
+X("repeat", TOK_REPEAT, "REPEAT")
+X("first", TOK_FIRST, "FIRST")
+X("idtac", TOK_IDTAC, "IDTAC")
+X("fail", TOK_FAIL, "FAIL")
+

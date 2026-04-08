@@ -21,6 +21,10 @@ static const char *token_type_name(TokenType t) {
 #undef X
 
         [TOK_LEFT_ARROW] = "LEFT_ARROW",
+        [TOK_SEMICOLON] = "SEMICOLON",
+        [TOK_DOUBLE_PIPE] = "DOUBLE_PIPE",
+        [TOK_LBRACKET] = "LBRACKET",
+        [TOK_RBRACKET] = "RBRACKET",
 
         [TOK_COMMENT] = "COMMENT",       [TOK_EOF] = "EOF",       [TOK_ERROR] = "ERROR",
     };
@@ -174,7 +178,25 @@ Token *lexer_next_token(Lexer *lx) {
             break;
         }
         case '|': {
+            char next = peek_char(lx);
+            if (next == '|') {
+                next_char(lx);
+                token = make_token(TOK_DOUBLE_PIPE, lx->pos - 2, NULL);
+                break;
+            }
             token = make_token(TOK_PIPE, lx->pos - 1, NULL);
+            break;
+        }
+        case ';': {
+            token = make_token(TOK_SEMICOLON, lx->pos - 1, NULL);
+            break;
+        }
+        case '[': {
+            token = make_token(TOK_LBRACKET, lx->pos - 1, NULL);
+            break;
+        }
+        case ']': {
+            token = make_token(TOK_RBRACKET, lx->pos - 1, NULL);
             break;
         }
         case '<': {
