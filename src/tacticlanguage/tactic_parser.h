@@ -75,13 +75,25 @@ typedef struct Tactic {
 
 char *tactic_tag_to_string(TacticTag tag);
 
+// Forward declaration - full definition in tactic_ast.h
+typedef struct TacticExpr TacticExpr;
+
 /**
- * <proof_command> ::= <tactic> "." | "Admitted" "."
+ * <proof_command> ::= <tactic_expr> "." | "Admitted" "."
+ * <tactic_expr>   ::= <tactic_seq> { "||" <tactic_seq> }
+ * <tactic_seq>    ::= <tactic_atom> { ";" <tactic_atom> }
+ * <tactic_atom>   ::= <primitive_tactic>
+ *                    | "try" <tactic_atom>
+ *                    | "repeat" <tactic_atom>
+ *                    | "first" "[" <tactic_expr> { "|" <tactic_expr> } "]"
+ *                    | "idtac"
+ *                    | "fail"
+ *                    | "(" <tactic_expr> ")"
  *
  * @param p Pointer to the Parser.
- * @return Tactic structure representing the parsed proof command.
+ * @return TacticExpr structure representing the parsed proof command.
  */
-Tactic *tactic_parse_proof_command(Parser *p);
+TacticExpr *tactic_parse_proof_command(Parser *p);
 
 /**
  * <tactic> ::= "intro" [ <ident> ]
