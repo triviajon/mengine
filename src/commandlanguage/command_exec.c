@@ -917,6 +917,17 @@ static int _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
     return 0;
 }
 
+static int _handle_tactic_def_command(MEngineRuntime *rt, TacticDefCmd *tc) {
+    TacticDef *def = malloc(sizeof(TacticDef));
+    def->name = tc->name;
+    def->params = tc->params;
+    def->param_count = tc->param_count;
+    def->body = tc->body;
+    tactic_env_add(rt->tactic_env, def);
+    MPRINT(rt->options->quiet, stdout, UI "Tactic " CRESET "%s defined.\n", tc->name);
+    return 0;
+}
+
 int mengine_execute_command(MEngineRuntime *rt, Command *cmd) {
     if (!rt || !cmd) {
         return 1;
@@ -951,15 +962,7 @@ int mengine_execute_command(MEngineRuntime *rt, Command *cmd) {
             return _handle_show_command(rt, &cmd->as.show);
         }
         case CMD_TACTIC_DEF: {
-            TacticDefCmd *tc = &cmd->as.tactic_def;
-            TacticDef *def = malloc(sizeof(TacticDef));
-            def->name = tc->name;
-            def->params = tc->params;
-            def->param_count = tc->param_count;
-            def->body = tc->body;
-            tactic_env_add(rt->tactic_env, def);
-            MPRINT(rt->options->quiet, stdout, UI "Tactic " CRESET "%s defined.\n", tc->name);
-            return 0;
+            return _handle_tactic_def_command(rt, &cmd->as.tactic_def);
         }
         default:
             return 1;
