@@ -7,12 +7,103 @@
 #include "src/common/color.h"
 #include "src/common/doubly_linked_list.h"
 #include "src/engine/engine_api.h"
+#include "src/kernel/expression.h"
 #include "src/kernel/kernel_api.h"
 #include "src/runtime/runtime.h"
 #include "src/tacticlanguage/tactic_ast.h"
 #include "src/tacticlanguage/tactic_interp.h"
 #include "src/tacticlanguage/tactic_parser.h"
 #include "src/termlanguage/ast_to_expression.h"
+
+/* ============================================================================
+ * Pattern bindings: maps pattern variable names → Expression*
+ * ============================================================================ */
+
+#define MAX_PATTERN_BINDINGS 64
+
+typedef struct {
+    char *names[MAX_PATTERN_BINDINGS];
+    Expression *values[MAX_PATTERN_BINDINGS];
+    size_t count;
+} PatternBindings;
+
+static void bindings_init(PatternBindings *b) { b->count = 0; }
+
+static Expression *bindings_lookup(PatternBindings *b, const char *name) {
+    for (size_t i = 0; i < b->count; i++) {
+        if (strcmp(b->names[i], name) == 0) return b->values[i];
+    }
+    return NULL;
+}
+
+static bool bindings_add(PatternBindings *b, const char *name, Expression *val) {
+    // Check for existing binding — must be consistent
+    Expression *existing = bindings_lookup(b, name);
+    if (existing) return existing == val;
+    if (b->count >= MAX_PATTERN_BINDINGS) return false;
+    b->names[b->count] = strdup(name);
+    b->values[b->count] = val;
+    b->count++;
+    return true;
+}
+
+static void bindings_free(PatternBindings *b) {
+    for (size_t i = 0; i < b->count; i++) free(b->names[i]);
+}
+
+/* ============================================================================
+ * Pattern matching: match an AST pattern against a kernel Expression
+ * ============================================================================ */
+
+static bool _match_pattern(AST *pattern, Expression *expr, PatternBindings *bindings) {
+    if (!pattern || !expr) return false;
+
+    switch (pattern->tag) {
+        case AST_PATVAR:
+            if (strcmp(pattern->value.patvar.name, "_") == 0) return true;
+            return bindings_add(bindings, pattern->value.patvar.name, expr);
+
+        case AST_VAR:
+            // Match a concrete variable by name
+            if (expr->tag != VAR_EXPRESSION) return false;
+            return strcmp(pattern->value.var.name, get_var_name(expr)) == 0;
+
+        case AST_TYPE:
+            return expr->tag == TYPE_EXPRESSION;
+
+        case AST_PROP:
+            return expr->tag == PROP_EXPRESSION;
+
+        case AST_APP:
+            if (expr->tag != APP_EXPRESSION) return false;
+            return _match_pattern(pattern->value.app.func, get_app_func(expr), bindings) &&
+                   _match_pattern(pattern->value.app.arg, get_app_arg(expr), bindings);
+
+        case AST_FORALL:
+            if (expr->tag != FORALL_EXPRESSION) return false;
+            // Match binder type
+            if (pattern->value.forall.binder.type) {
+                Expression *bv = get_forall_bound_variable(expr);
+                if (!_match_pattern(pattern->value.forall.binder.type,
+                                    get_expression_type(bv), bindings))
+                    return false;
+            }
+            return _match_pattern(pattern->value.forall.body, get_forall_body(expr), bindings);
+
+        case AST_LAMBDA:
+            if (expr->tag != LAMBDA_EXPRESSION) return false;
+            if (pattern->value.lambda.binder.type) {
+                Expression *bv = get_lambda_bound_variable(expr);
+                if (!_match_pattern(pattern->value.lambda.binder.type,
+                                    get_expression_type(bv), bindings))
+                    return false;
+            }
+            return _match_pattern(pattern->value.lambda.body, get_lambda_body(expr), bindings);
+
+        default:
+            return false;
+    }
+}
 
 /* ============================================================================
  * AST deep-copy with variable substitution
