@@ -285,13 +285,20 @@ typedef struct {
 } InternalTacticDispatchEntry;
 
 static InternalTacticDispatchEntry internal_dispatch_table[] = {
-    {TOK_INTRO, _parse_intro},         {TOK_INTROS, _parse_intros},
-    {TOK_APPLY, _parse_apply},         {TOK_EAPPLY, _parse_eapply},
-    {TOK_EXACT, _parse_exact},         {TOK_REWRITE, _parse_rewrite},
-    {TOK_EREWRITE, _parse_erewrite},   {TOK_REFLEXIVITY, _parse_reflexivity},
-    {TOK_ASSUMPTION, _parse_assumption}, {TOK_SPLIT, _parse_split},
-    {TOK_LEFT, _parse_left},           {TOK_RIGHT, _parse_right},
-    {TOK_EXISTS, _parse_exists},       {TOK_CBV, _parse_cbv},
+    {TOK_INTRO, _parse_intro},
+    {TOK_INTROS, _parse_intros},
+    {TOK_APPLY, _parse_apply},
+    {TOK_EAPPLY, _parse_eapply},
+    {TOK_EXACT, _parse_exact},
+    {TOK_REWRITE, _parse_rewrite},
+    {TOK_EREWRITE, _parse_erewrite},
+    {TOK_REFLEXIVITY, _parse_reflexivity},
+    {TOK_ASSUMPTION, _parse_assumption},
+    {TOK_SPLIT, _parse_split},
+    {TOK_LEFT, _parse_left},
+    {TOK_RIGHT, _parse_right},
+    {TOK_EXISTS, _parse_exists},
+    {TOK_CBV, _parse_cbv},
 };
 
 #define INTERNAL_DISPATCH_SIZE \
