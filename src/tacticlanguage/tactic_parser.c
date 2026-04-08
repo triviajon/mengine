@@ -422,6 +422,32 @@ static TacticExpr *_parse_tactic_atom(Parser *p) {
         return tactic_expr_primitive(prim);
     }
 
+    // User-defined tactic call: <ident> { <term_arg> }
+    if (tok == TOK_IDENT) {
+        Token *name_tok = parser_next(p);
+        char *name = strdup(name_tok->lexeme);
+        lexer_free_token(name_tok);
+
+        // Parse term arguments until a combinator/separator token
+        AST **args = NULL;
+        size_t arg_count = 0;
+
+        while (!parser_eof(p)) {
+            TokenType next = p->current->type;
+            // Stop at combinator tokens, separators, and terminators
+            if (next == TOK_SEMICOLON || next == TOK_DOUBLE_PIPE ||
+                next == TOK_DOT || next == TOK_RPAREN ||
+                next == TOK_RBRACKET || next == TOK_PIPE) {
+                break;
+            }
+            AST *arg = parse_term(p);
+            args = realloc(args, sizeof(AST *) * (arg_count + 1));
+            args[arg_count++] = arg;
+        }
+
+        return tactic_expr_call(name, args, arg_count);
+    }
+
     parser_error(p, "Unknown or unsupported tactic keyword");
     return NULL;  // unreachable
 }
