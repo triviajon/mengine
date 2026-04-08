@@ -11,6 +11,7 @@
 #include "src/engine/engine_api.h"
 #include "src/kernel/kernel_api.h"
 #include "src/runtime/runtime.h"
+#include "src/tacticlanguage/tactic_ast.h"
 #include "src/termlanguage/ast_to_expression.h"
 
 static int _handle_declaration_command(MEngineRuntime *rt, DeclarationCmd *decl_cmd) {
@@ -948,6 +949,17 @@ int mengine_execute_command(MEngineRuntime *rt, Command *cmd) {
         }
         case CMD_SHOW: {
             return _handle_show_command(rt, &cmd->as.show);
+        }
+        case CMD_TACTIC_DEF: {
+            TacticDefCmd *tc = &cmd->as.tactic_def;
+            TacticDef *def = malloc(sizeof(TacticDef));
+            def->name = tc->name;
+            def->params = tc->params;
+            def->param_count = tc->param_count;
+            def->body = tc->body;
+            tactic_env_add(rt->tactic_env, def);
+            MPRINT(rt->options->quiet, stdout, UI "Tactic " CRESET "%s defined.\n", tc->name);
+            return 0;
         }
         default:
             return 1;
