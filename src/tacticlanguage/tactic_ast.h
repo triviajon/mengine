@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "src/tacticlanguage/tactic_parser.h"
 
@@ -15,6 +16,7 @@ typedef enum {
     TAC_FIRST,      // first [ tac1 | tac2 | ... ]
     TAC_IDTAC,      // idtac (identity, always succeeds)
     TAC_FAIL,       // fail (always fails)
+    TAC_CALL,       // user-defined tactic call
 } TacticExprTag;
 
 typedef struct TacticExpr TacticExpr;
@@ -46,6 +48,12 @@ typedef struct {
     size_t count;
 } FirstTacticExpr;
 
+typedef struct {
+    char *name;         // tactic name
+    AST **args;         // term arguments (NULL if no args)
+    size_t arg_count;   // number of arguments
+} CallTacticExpr;
+
 struct TacticExpr {
     TacticExprTag tag;
     union {
@@ -55,6 +63,7 @@ struct TacticExpr {
         TryTacticExpr try_expr;
         RepeatTacticExpr repeat;
         FirstTacticExpr first;
+        CallTacticExpr call;
     } as;
 };
 
@@ -112,6 +121,15 @@ static inline TacticExpr *tactic_expr_idtac(void) {
 static inline TacticExpr *tactic_expr_fail(void) {
     TacticExpr *e = malloc(sizeof(TacticExpr));
     e->tag = TAC_FAIL;
+    return e;
+}
+
+static inline TacticExpr *tactic_expr_call(char *name, AST **args, size_t arg_count) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_CALL;
+    e->as.call.name = strdup(name);
+    e->as.call.args = args;
+    e->as.call.arg_count = arg_count;
     return e;
 }
 
