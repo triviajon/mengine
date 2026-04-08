@@ -13,7 +13,8 @@ typedef enum {
     CMD_EVAL,
     CMD_INDUCTIVE,
     CMD_FIXPOINT,
-    CMD_SHOW
+    CMD_SHOW,
+    CMD_TACTIC_DEF
 } CommandTag;
 
 typedef enum { DECL_KW_AXIOM, DECL_KW_VARIABLE } DeclKeyword;
@@ -102,6 +103,16 @@ typedef struct {
     AST *term;
 } EvalCmd;
 
+// Forward declaration for tactic expressions
+typedef struct TacticExpr TacticExpr;
+
+typedef struct {
+    char *name;           // tactic name
+    char **params;        // parameter names (NULL if none)
+    size_t param_count;   // number of parameters
+    TacticExpr *body;     // body tactic expression
+} TacticDefCmd;
+
 typedef struct Command {
     CommandTag tag;
     union {
@@ -114,6 +125,7 @@ typedef struct Command {
         StatementCmd stmt;
         InductiveCmd inductive;
         FixpointCmd fixpoint;
+        TacticDefCmd tactic_def;
     } as;
 } Command;
 
@@ -244,6 +256,14 @@ InductiveConstructor *command_parse_constructor(Parser *p);
  */
 Command *command_parse_inductive(Parser *p);
 
+/**
+ * <tactic_def> ::= "Tactic" <identifier> { <identifier> } ":=" <tactic_expr> "."
+ *
+ * @param p Pointer to the Parser.
+ * @return Command structure representing the parsed tactic definition.
+ */
+Command *command_parse_tactic_def(Parser *p);
+
 typedef Command *(*CommandParseFunc)(Parser *p);
 
 typedef struct {
@@ -261,7 +281,8 @@ static CommandDispatchEntry command_dispatch_table[] = {{TOK_AXIOM, command_pars
                                                         {TOK_EVAL, command_parse_eval},
                                                         {TOK_INDUCTIVE, command_parse_inductive},
                                                         {TOK_FIXPOINT, command_parse_fixpoint},
-                                                        {TOK_SHOW, command_parse_show}};
+                                                        {TOK_SHOW, command_parse_show},
+                                                        {TOK_TACTIC, command_parse_tactic_def}};
 
 #define CMD_DISPATCH_TABLE (command_dispatch_table)
 #define CMD_DISPATCH_TABLE_SIZE (sizeof(command_dispatch_table) / sizeof(command_dispatch_table[0]))
