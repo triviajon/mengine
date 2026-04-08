@@ -405,6 +405,83 @@ static TacticExpr *_parse_tactic_atom(Parser *p) {
         return tactic_expr_fail();
     }
 
+    // match Goal with | [ ... |- ... ] => tac ... end
+    if (tok == TOK_MATCH) {
+        parser_expect_consume(p, TOK_MATCH);
+        if (!parser_expect_consume(p, TOK_GOAL)) {
+            parser_error(p, "Expected 'Goal' after 'match' in tactic");
+        }
+        if (!parser_expect_consume(p, TOK_WITH)) {
+            parser_error(p, "Expected 'with' after 'match Goal'");
+        }
+
+        GoalBranch *branches = NULL;
+        size_t branch_count = 0;
+
+        while (parser_expect_no_consume(p, TOK_PIPE)) {
+            parser_expect_consume(p, TOK_PIPE);
+            if (!parser_expect_consume(p, TOK_LBRACKET)) {
+                parser_error(p, "Expected '[' after '|' in match goal branch");
+            }
+
+            // Parse hypothesis patterns: H : <pat> , H2 : <pat> , ... |- <concl>
+            HypPattern *hyps = NULL;
+            size_t hyp_count = 0;
+
+            // If we see |- immediately, there are no hypothesis patterns
+            if (!parser_expect_no_consume(p, TOK_TURNSTILE)) {
+                // Parse hypothesis patterns separated by commas
+                while (true) {
+                    // Each hyp: <ident> : <term_pattern>
+                    if (!parser_expect_no_consume(p, TOK_IDENT)) {
+                        parser_error(p, "Expected hypothesis name in match goal pattern");
+                    }
+                    Token *hyp_name = parser_next(p);
+                    if (!parser_expect_consume(p, TOK_COLON)) {
+                        parser_error(p, "Expected ':' after hypothesis name");
+                    }
+                    AST *hyp_type = parse_term_pattern(p);
+
+                    hyps = realloc(hyps, sizeof(HypPattern) * (hyp_count + 1));
+                    hyps[hyp_count].name = strdup(hyp_name->lexeme);
+                    hyps[hyp_count].type = hyp_type;
+                    lexer_free_token(hyp_name);
+                    hyp_count++;
+
+                    if (!parser_expect_consume(p, TOK_COMMA)) break;
+                }
+            }
+
+            if (!parser_expect_consume(p, TOK_TURNSTILE)) {
+                parser_error(p, "Expected '|-' in match goal pattern");
+            }
+
+            AST *conclusion = parse_term_pattern(p);
+
+            if (!parser_expect_consume(p, TOK_RBRACKET)) {
+                parser_error(p, "Expected ']' after match goal pattern");
+            }
+            if (!parser_expect_consume(p, TOK_DARROW)) {
+                parser_error(p, "Expected '=>' after match goal pattern");
+            }
+
+            TacticExpr *body = _parse_tactic_expr(p);
+
+            branches = realloc(branches, sizeof(GoalBranch) * (branch_count + 1));
+            branches[branch_count].hyps = hyps;
+            branches[branch_count].hyp_count = hyp_count;
+            branches[branch_count].conclusion = conclusion;
+            branches[branch_count].body = body;
+            branch_count++;
+        }
+
+        if (!parser_expect_consume(p, TOK_END)) {
+            parser_error(p, "Expected 'end' after match goal branches");
+        }
+
+        return tactic_expr_match_goal(branches, branch_count);
+    }
+
     // ( <tactic_expr> )
     if (tok == TOK_LPAREN) {
         parser_expect_consume(p, TOK_LPAREN);
@@ -436,7 +513,8 @@ static TacticExpr *_parse_tactic_atom(Parser *p) {
             TokenType next = p->current->type;
             // Stop at combinator tokens, separators, and terminators
             if (next == TOK_SEMICOLON || next == TOK_DOUBLE_PIPE || next == TOK_DOT ||
-                next == TOK_RPAREN || next == TOK_RBRACKET || next == TOK_PIPE) {
+                next == TOK_RPAREN || next == TOK_RBRACKET || next == TOK_PIPE ||
+                next == TOK_END) {
                 break;
             }
             AST *arg = parse_atomic(p);
