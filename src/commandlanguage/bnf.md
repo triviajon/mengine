@@ -6,6 +6,7 @@ Similar to Rocq's Vernacular:
             | <statement>
             | <inductive>
             | <fixpoint>
+            | <tactic_def>
             | <check>
             | <print>
             | <show>
@@ -38,6 +39,8 @@ Similar to Rocq's Vernacular:
 
 <show> ::= "Show" <show_keyword> "."
 <show_keyword> ::= "Context" | "Proof" | "Goal" | "State"
+
+<tactic_def> ::= "Tactic" <identifier> { <identifier> } ":=" <tactic_expr> "."
 
 <!-- The following are defined in src/termlanguage/bnf.md -->
 <decreasing_arg_annotation> ::= ...

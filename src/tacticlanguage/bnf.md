@@ -1,6 +1,8 @@
 Tactic language
 
 ```bnf
+<tactic_def>        ::= "Tactic" <identifier> { <identifier> } ":=" <tactic_expr> "."
+
 <proof_command>     ::= <tactic_expr> "."
                       | "Admitted" "."
 
@@ -13,6 +15,7 @@ Tactic language
                       | "idtac"
                       | "fail"
                       | "(" <tactic_expr> ")"
+                      | <identifier> { <atomic_term> }
 
 <primitive_tactic>  ::= "intro" [ <identifier> ]
                       | "intros" { <identifier> }
