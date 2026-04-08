@@ -10,11 +10,18 @@ static inline char peek_char(Lexer *lx) { return lx->src[lx->pos]; }
 
 static const char *token_type_name(TokenType t) {
     static const char *names[NUM_TOKEN_TYPES] = {
-        [TOK_IDENT] = "IDENT",           [TOK_LPAREN] = "LPAREN", [TOK_RPAREN] = "RPAREN",
-        [TOK_LBRACE] = "LBRACE",         [TOK_RBRACE] = "RBRACE", [TOK_COLON] = "COLON",
-        [TOK_COLON_EQ] = "COLON_EQ",     [TOK_COMMA] = "COMMA",   [TOK_DOT] = "DOT",
+        [TOK_IDENT] = "IDENT",
+        [TOK_LPAREN] = "LPAREN",
+        [TOK_RPAREN] = "RPAREN",
+        [TOK_LBRACE] = "LBRACE",
+        [TOK_RBRACE] = "RBRACE",
+        [TOK_COLON] = "COLON",
+        [TOK_COLON_EQ] = "COLON_EQ",
+        [TOK_COMMA] = "COMMA",
+        [TOK_DOT] = "DOT",
 
-        [TOK_DARROW] = "DARROW",         [TOK_PIPE] = "PIPE",
+        [TOK_DARROW] = "DARROW",
+        [TOK_PIPE] = "PIPE",
 
 #define X(lexeme, tok, dbg) [tok] = dbg,
 #include "src/common/token_keywords.def"
@@ -26,7 +33,9 @@ static const char *token_type_name(TokenType t) {
         [TOK_LBRACKET] = "LBRACKET",
         [TOK_RBRACKET] = "RBRACKET",
 
-        [TOK_COMMENT] = "COMMENT",       [TOK_EOF] = "EOF",       [TOK_ERROR] = "ERROR",
+        [TOK_COMMENT] = "COMMENT",
+        [TOK_EOF] = "EOF",
+        [TOK_ERROR] = "ERROR",
     };
 
     if ((unsigned)t >= (unsigned)NUM_TOKEN_TYPES || names[t] == NULL) {

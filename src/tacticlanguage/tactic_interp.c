@@ -129,8 +129,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                 DLLNode *node = left_goals->head;
                 while (node) {
                     Expression *subgoal = (Expression *)node->data;
-                    TacticResult *right_result =
-                        tactic_interpret(rt, subgoal, expr->as.seq.right);
+                    TacticResult *right_result = tactic_interpret(rt, subgoal, expr->as.seq.right);
 
                     if (!tactic_result_get_success(right_result)) {
                         // Propagate failure

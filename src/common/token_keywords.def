@@ -28,6 +28,7 @@ X("Proof", TOK_PROOF, "PROOF")
 X("Goal", TOK_GOAL, "GOAL")
 X("State", TOK_STATE, "STATE")
 X("Inductive", TOK_INDUCTIVE, "INDUCTIVE")
+X("Tactic", TOK_TACTIC, "TACTIC")
 
 X("cbv", TOK_CBV, "CBV")
 X("compute", TOK_COMPUTE, "COMPUTE")
