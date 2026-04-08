@@ -6,6 +6,7 @@
 
 #include "src/common/lexer.h"
 #include "src/common/parser_base.h"
+#include "src/tacticlanguage/tactic_ast.h"
 
 char *tactic_tag_to_string(TacticTag tag) {
     switch (tag) {
@@ -42,85 +43,29 @@ char *tactic_tag_to_string(TacticTag tag) {
     }
 }
 
-Tactic *tactic_parse_proof_command(Parser *p) {
-    TokenType tok_type = p->current->type;
+/* ============================================================================
+ * Primitive tactic parsers (do NOT consume trailing '.')
+ * ============================================================================ */
 
-    TacticDispatchEntry *entry = NULL;
-    TACTIC_LOOKUP_ENTRY(&entry, tok_type);
-
-    if (entry == NULL) {
-        parser_error(p, "Unknown or unsupported proof command or tactic keyword");
-    }
-
-    TacticParseFunc fn = TACTIC_ENTRY_PARSER(entry);
-    if (!fn) {
-        parser_error(p, "Internal error: null parse function");
-    }
-
-    Tactic *tactic = fn(p);
-
-    return tactic;
-}
-
-Tactic *tactic_parse_tactic(Parser *p) {
-    TokenType tok_type = p->current->type;
-
-    TacticDispatchEntry *entry = NULL;
-    TACTIC_LOOKUP_ENTRY(&entry, tok_type);
-
-    if (entry == NULL) {
-        parser_error(p, "Unknown or unsupported tactic keyword");
-    }
-
-    TacticParseFunc fn = TACTIC_ENTRY_PARSER(entry);
-    if (!fn) {
-        parser_error(p, "Internal error: null parse function");
-    }
-
-    return fn(p);
-}
-
-Tactic *tactic_parse_admitted(Parser *p) {
-    if (!parser_expect_consume(p, TOK_ADMITTED)) {
-        parser_error(p, "expected 'Admitted'");
-    }
-
-    if (!parser_expect_consume(p, TOK_DOT)) {
-        parser_error(p, "Expected '.' at end of Admitted");
-    }
-
-    Tactic *tactic = malloc(sizeof(Tactic));
-    tactic->tag = TACTIC_ADMITTED;
-
-    return tactic;
-}
-
-Tactic *tactic_parse_intro(Parser *p) {
+static Tactic *_parse_intro(Parser *p) {
     if (!parser_expect_consume(p, TOK_INTRO)) {
         parser_error(p, "expected 'intro'");
     }
 
     char *name = NULL;
-
-    // Optional identifier
     if (parser_expect_no_consume(p, TOK_IDENT)) {
         Token *ident_token = parser_next(p);
         name = strdup(ident_token->lexeme);
         lexer_free_token(ident_token);
     }
 
-    if (!parser_expect_consume(p, TOK_DOT)) {
-        parser_error(p, "Expected '.' at end of intro");
-    }
-
     Tactic *tactic = malloc(sizeof(Tactic));
     tactic->tag = TACTIC_INTRO;
     tactic->as.intro.name = name;
-
     return tactic;
 }
 
-Tactic *tactic_parse_intros(Parser *p) {
+static Tactic *_parse_intros(Parser *p) {
     if (!parser_expect_consume(p, TOK_INTROS)) {
         parser_error(p, "expected 'intros'");
     }
@@ -128,29 +73,22 @@ Tactic *tactic_parse_intros(Parser *p) {
     char **names = NULL;
     size_t name_count = 0;
 
-    // Zero or more identifiers
     while (parser_expect_no_consume(p, TOK_IDENT)) {
         Token *ident_token = parser_next(p);
-
         names = realloc(names, sizeof(char *) * (name_count + 1));
         names[name_count] = strdup(ident_token->lexeme);
         lexer_free_token(ident_token);
         name_count++;
     }
 
-    if (!parser_expect_consume(p, TOK_DOT)) {
-        parser_error(p, "Expected '.' at end of intros");
-    }
-
     Tactic *tactic = malloc(sizeof(Tactic));
     tactic->tag = TACTIC_INTROS;
     tactic->as.intros.names = names;
     tactic->as.intros.name_count = name_count;
-
     return tactic;
 }
 
-Tactic *tactic_parse_apply(Parser *p) {
+static Tactic *_parse_apply(Parser *p) {
     if (!parser_expect_consume(p, TOK_APPLY)) {
         parser_error(p, "expected 'apply'");
     }
@@ -158,18 +96,13 @@ Tactic *tactic_parse_apply(Parser *p) {
     AST *lemma = parse_term(p);
     debug_print_ast(p, lemma);
 
-    if (!parser_expect_consume(p, TOK_DOT)) {
-        parser_error(p, "Expected '.' at end of apply");
-    }
-
     Tactic *tactic = malloc(sizeof(Tactic));
     tactic->tag = TACTIC_APPLY;
     tactic->as.apply.lemma = lemma;
-
     return tactic;
 }
 
-Tactic *tactic_parse_eapply(Parser *p) {
+static Tactic *_parse_eapply(Parser *p) {
     if (!parser_expect_consume(p, TOK_EAPPLY)) {
         parser_error(p, "expected 'eapply'");
     }
@@ -177,18 +110,13 @@ Tactic *tactic_parse_eapply(Parser *p) {
     AST *lemma = parse_term(p);
     debug_print_ast(p, lemma);
 
-    if (!parser_expect_consume(p, TOK_DOT)) {
-        parser_error(p, "Expected '.' at end of eapply");
-    }
-
     Tactic *tactic = malloc(sizeof(Tactic));
     tactic->tag = TACTIC_EAPPLY;
     tactic->as.eapply.lemma = lemma;
-
     return tactic;
 }
 
-Tactic *tactic_parse_exact(Parser *p) {
+static Tactic *_parse_exact(Parser *p) {
     if (!parser_expect_consume(p, TOK_EXACT)) {
         parser_error(p, "expected 'exact'");
     }
@@ -196,25 +124,18 @@ Tactic *tactic_parse_exact(Parser *p) {
     AST *proof_term = parse_term(p);
     debug_print_ast(p, proof_term);
 
-    if (!parser_expect_consume(p, TOK_DOT)) {
-        parser_error(p, "Expected '.' at end of exact");
-    }
-
     Tactic *tactic = malloc(sizeof(Tactic));
     tactic->tag = TACTIC_EXACT;
     tactic->as.exact.proof_term = proof_term;
-
     return tactic;
 }
 
-Tactic *tactic_parse_rewrite(Parser *p) {
+static Tactic *_parse_rewrite(Parser *p) {
     if (!parser_expect_consume(p, TOK_REWRITE)) {
         parser_error(p, "expected 'rewrite'");
     }
 
     bool backward = false;
-
-    // Check for optional "<-"
     if (parser_expect_consume(p, TOK_LEFT_ARROW)) {
         backward = true;
     }
@@ -222,35 +143,27 @@ Tactic *tactic_parse_rewrite(Parser *p) {
     AST *lemma = parse_term(p);
     debug_print_ast(p, lemma);
 
-    // Expect "with"
     if (!parser_expect_consume(p, TOK_WITH)) {
         parser_error(p, "Expected 'with' after rewrite lemma");
     }
 
     AST *equiv_proof = parse_term(p);
     debug_print_ast(p, equiv_proof);
-
-    if (!parser_expect_consume(p, TOK_DOT)) {
-        parser_error(p, "Expected '.' at end of rewrite");
-    }
 
     Tactic *tactic = malloc(sizeof(Tactic));
     tactic->tag = backward ? TACTIC_REWRITE_BACKWARD : TACTIC_REWRITE;
     tactic->as.rewrite.lemma = lemma;
     tactic->as.rewrite.equiv_proof = equiv_proof;
     tactic->as.rewrite.backward = backward;
-
     return tactic;
 }
 
-Tactic *tactic_parse_erewrite(Parser *p) {
+static Tactic *_parse_erewrite(Parser *p) {
     if (!parser_expect_consume(p, TOK_EREWRITE)) {
         parser_error(p, "expected 'erewrite'");
     }
 
     bool backward = false;
-
-    // Check for optional "<-"
     if (parser_expect_consume(p, TOK_LEFT_ARROW)) {
         backward = true;
     }
@@ -258,7 +171,6 @@ Tactic *tactic_parse_erewrite(Parser *p) {
     AST *lemma = parse_term(p);
     debug_print_ast(p, lemma);
 
-    // Expect "with"
     if (!parser_expect_consume(p, TOK_WITH)) {
         parser_error(p, "Expected 'with' after rewrite lemma");
     }
@@ -266,95 +178,65 @@ Tactic *tactic_parse_erewrite(Parser *p) {
     AST *equiv_proof = parse_term(p);
     debug_print_ast(p, equiv_proof);
 
-    if (!parser_expect_consume(p, TOK_DOT)) {
-        parser_error(p, "Expected '.' at end of rewrite");
-    }
-
     Tactic *tactic = malloc(sizeof(Tactic));
     tactic->tag = backward ? TACTIC_EREWRITE_BACKWARD : TACTIC_EREWRITE;
     tactic->as.rewrite.lemma = lemma;
     tactic->as.rewrite.equiv_proof = equiv_proof;
     tactic->as.rewrite.backward = backward;
-
     return tactic;
 }
 
-Tactic *tactic_parse_reflexivity(Parser *p) {
+static Tactic *_parse_reflexivity(Parser *p) {
     if (!parser_expect_consume(p, TOK_REFLEXIVITY)) {
         parser_error(p, "expected 'reflexivity'");
     }
 
-    if (!parser_expect_consume(p, TOK_DOT)) {
-        parser_error(p, "Expected '.' at end of reflexivity");
-    }
-
     Tactic *tactic = malloc(sizeof(Tactic));
     tactic->tag = TACTIC_REFLEXIVITY;
-
     return tactic;
 }
 
-Tactic *tactic_parse_assumption(Parser *p) {
+static Tactic *_parse_assumption(Parser *p) {
     if (!parser_expect_consume(p, TOK_ASSUMPTION)) {
         parser_error(p, "expected 'assumption'");
     }
 
-    if (!parser_expect_consume(p, TOK_DOT)) {
-        parser_error(p, "Expected '.' at end of assumption");
-    }
-
     Tactic *tactic = malloc(sizeof(Tactic));
     tactic->tag = TACTIC_ASSUMPTION;
-
     return tactic;
 }
 
-Tactic *tactic_parse_split(Parser *p) {
+static Tactic *_parse_split(Parser *p) {
     if (!parser_expect_consume(p, TOK_SPLIT)) {
         parser_error(p, "expected 'split'");
     }
 
-    if (!parser_expect_consume(p, TOK_DOT)) {
-        parser_error(p, "Expected '.' at end of split");
-    }
-
     Tactic *tactic = malloc(sizeof(Tactic));
     tactic->tag = TACTIC_SPLIT;
-
     return tactic;
 }
 
-Tactic *tactic_parse_left(Parser *p) {
+static Tactic *_parse_left(Parser *p) {
     if (!parser_expect_consume(p, TOK_LEFT)) {
         parser_error(p, "expected 'left'");
     }
 
-    if (!parser_expect_consume(p, TOK_DOT)) {
-        parser_error(p, "Expected '.' at end of left");
-    }
-
     Tactic *tactic = malloc(sizeof(Tactic));
     tactic->tag = TACTIC_LEFT;
-
     return tactic;
 }
 
-Tactic *tactic_parse_right(Parser *p) {
+static Tactic *_parse_right(Parser *p) {
     if (!parser_expect_consume(p, TOK_RIGHT)) {
         parser_error(p, "expected 'right'");
     }
 
-    if (!parser_expect_consume(p, TOK_DOT)) {
-        parser_error(p, "Expected '.' at end of right");
-    }
-
     Tactic *tactic = malloc(sizeof(Tactic));
     tactic->tag = TACTIC_RIGHT;
-
     return tactic;
 }
 
-Tactic *tactic_parse_exists(Parser *p) {
+static Tactic *_parse_exists(Parser *p) {
     if (!parser_expect_consume(p, TOK_EXISTS)) {
         parser_error(p, "expected 'exists'");
     }
@@ -362,19 +244,13 @@ Tactic *tactic_parse_exists(Parser *p) {
     AST *witness = parse_term(p);
     debug_print_ast(p, witness);
 
-    if (!parser_expect_consume(p, TOK_DOT)) {
-        parser_error(p, "Expected '.' at end of exists");
-    }
-
     Tactic *tactic = malloc(sizeof(Tactic));
     tactic->tag = TACTIC_EXISTS;
     tactic->as.exists.witness = witness;
-
     return tactic;
 }
 
-Tactic *tactic_parse_cbv(Parser *p) {
-    // "cbv" { <ident> }
+static Tactic *_parse_cbv(Parser *p) {
     if (!parser_expect_consume(p, TOK_CBV)) {
         parser_error(p, "expected 'cbv'");
     }
@@ -382,18 +258,12 @@ Tactic *tactic_parse_cbv(Parser *p) {
     char **rules = NULL;
     size_t rules_count = 0;
 
-    // Zero or more identifiers
     while (parser_expect_no_consume(p, TOK_IDENT)) {
         Token *ident_token = parser_next(p);
-
         rules = realloc(rules, sizeof(char *) * (rules_count + 1));
         rules[rules_count] = strdup(ident_token->lexeme);
         lexer_free_token(ident_token);
         rules_count++;
-    }
-
-    if (!parser_expect_consume(p, TOK_DOT)) {
-        parser_error(p, "Expected '.' at end of cbv");
     }
 
     Tactic *tactic = malloc(sizeof(Tactic));
@@ -401,4 +271,314 @@ Tactic *tactic_parse_cbv(Parser *p) {
     tactic->as.cbv.rules = rules;
     tactic->as.cbv.rules_count = rules_count;
     return tactic;
+}
+
+/* ============================================================================
+ * Internal dispatch table for primitive tactics
+ * ============================================================================ */
+
+typedef Tactic *(*InternalTacticParseFunc)(Parser *p);
+
+typedef struct {
+    TokenType type;
+    InternalTacticParseFunc parse_func;
+} InternalTacticDispatchEntry;
+
+static InternalTacticDispatchEntry internal_dispatch_table[] = {
+    {TOK_INTRO, _parse_intro},         {TOK_INTROS, _parse_intros},
+    {TOK_APPLY, _parse_apply},         {TOK_EAPPLY, _parse_eapply},
+    {TOK_EXACT, _parse_exact},         {TOK_REWRITE, _parse_rewrite},
+    {TOK_EREWRITE, _parse_erewrite},   {TOK_REFLEXIVITY, _parse_reflexivity},
+    {TOK_ASSUMPTION, _parse_assumption}, {TOK_SPLIT, _parse_split},
+    {TOK_LEFT, _parse_left},           {TOK_RIGHT, _parse_right},
+    {TOK_EXISTS, _parse_exists},       {TOK_CBV, _parse_cbv},
+};
+
+#define INTERNAL_DISPATCH_SIZE \
+    (sizeof(internal_dispatch_table) / sizeof(internal_dispatch_table[0]))
+
+static InternalTacticParseFunc _lookup_primitive(TokenType tok) {
+    for (size_t i = 0; i < INTERNAL_DISPATCH_SIZE; i++) {
+        if (internal_dispatch_table[i].type == tok) {
+            return internal_dispatch_table[i].parse_func;
+        }
+    }
+    return NULL;
+}
+
+/* ============================================================================
+ * Tactic expression parser (precedence climbing)
+ *
+ * Precedence (lowest to highest):
+ *   1. orelse:  tac1 || tac2
+ *   2. seq:     tac1 ; tac2
+ *   3. atom:    primitive | try | repeat | first | idtac | fail | (expr)
+ * ============================================================================ */
+
+static TacticExpr *_parse_tactic_expr(Parser *p);
+static TacticExpr *_parse_tactic_seq(Parser *p);
+static TacticExpr *_parse_tactic_atom(Parser *p);
+
+static TacticExpr *_parse_tactic_expr(Parser *p) {
+    TacticExpr *left = _parse_tactic_seq(p);
+
+    while (parser_expect_no_consume(p, TOK_DOUBLE_PIPE)) {
+        parser_expect_consume(p, TOK_DOUBLE_PIPE);
+        TacticExpr *right = _parse_tactic_seq(p);
+        left = tactic_expr_orelse(left, right);
+    }
+
+    return left;
+}
+
+static TacticExpr *_parse_tactic_seq(Parser *p) {
+    TacticExpr *left = _parse_tactic_atom(p);
+
+    while (parser_expect_no_consume(p, TOK_SEMICOLON)) {
+        parser_expect_consume(p, TOK_SEMICOLON);
+        TacticExpr *right = _parse_tactic_atom(p);
+        left = tactic_expr_seq(left, right);
+    }
+
+    return left;
+}
+
+static TacticExpr *_parse_tactic_atom(Parser *p) {
+    TokenType tok = p->current->type;
+
+    // try <tactic_atom>
+    if (tok == TOK_TRY) {
+        parser_expect_consume(p, TOK_TRY);
+        TacticExpr *body = _parse_tactic_atom(p);
+        return tactic_expr_try(body);
+    }
+
+    // repeat <tactic_atom>
+    if (tok == TOK_REPEAT) {
+        parser_expect_consume(p, TOK_REPEAT);
+        TacticExpr *body = _parse_tactic_atom(p);
+        return tactic_expr_repeat(body);
+    }
+
+    // first [ tac1 | tac2 | ... ]
+    if (tok == TOK_FIRST) {
+        parser_expect_consume(p, TOK_FIRST);
+        if (!parser_expect_consume(p, TOK_LBRACKET)) {
+            parser_error(p, "Expected '[' after 'first'");
+        }
+
+        TacticExpr **alts = NULL;
+        size_t count = 0;
+
+        alts = realloc(alts, sizeof(TacticExpr *) * (count + 1));
+        alts[count++] = _parse_tactic_expr(p);
+
+        while (parser_expect_no_consume(p, TOK_PIPE)) {
+            parser_expect_consume(p, TOK_PIPE);
+            alts = realloc(alts, sizeof(TacticExpr *) * (count + 1));
+            alts[count++] = _parse_tactic_expr(p);
+        }
+
+        if (!parser_expect_consume(p, TOK_RBRACKET)) {
+            parser_error(p, "Expected ']' after 'first' alternatives");
+        }
+
+        return tactic_expr_first(alts, count);
+    }
+
+    // idtac
+    if (tok == TOK_IDTAC) {
+        parser_expect_consume(p, TOK_IDTAC);
+        return tactic_expr_idtac();
+    }
+
+    // fail
+    if (tok == TOK_FAIL) {
+        parser_expect_consume(p, TOK_FAIL);
+        return tactic_expr_fail();
+    }
+
+    // ( <tactic_expr> )
+    if (tok == TOK_LPAREN) {
+        parser_expect_consume(p, TOK_LPAREN);
+        TacticExpr *inner = _parse_tactic_expr(p);
+        if (!parser_expect_consume(p, TOK_RPAREN)) {
+            parser_error(p, "Expected ')' in tactic expression");
+        }
+        return inner;
+    }
+
+    // Primitive tactic
+    InternalTacticParseFunc fn = _lookup_primitive(tok);
+    if (fn) {
+        Tactic *prim = fn(p);
+        return tactic_expr_primitive(prim);
+    }
+
+    parser_error(p, "Unknown or unsupported tactic keyword");
+    return NULL;  // unreachable
+}
+
+/* ============================================================================
+ * Public API
+ * ============================================================================ */
+
+TacticExpr *tactic_parse_proof_command(Parser *p) {
+    // Handle "Admitted." specially — it's not composable
+    if (parser_expect_no_consume(p, TOK_ADMITTED)) {
+        parser_expect_consume(p, TOK_ADMITTED);
+        if (!parser_expect_consume(p, TOK_DOT)) {
+            parser_error(p, "Expected '.' at end of Admitted");
+        }
+        Tactic *tactic = malloc(sizeof(Tactic));
+        tactic->tag = TACTIC_ADMITTED;
+        return tactic_expr_primitive(tactic);
+    }
+
+    TacticExpr *expr = _parse_tactic_expr(p);
+
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "Expected '.' at end of tactic");
+    }
+
+    return expr;
+}
+
+Tactic *tactic_parse_tactic(Parser *p) {
+    TokenType tok_type = p->current->type;
+
+    InternalTacticParseFunc fn = _lookup_primitive(tok_type);
+    if (!fn) {
+        parser_error(p, "Unknown or unsupported tactic keyword");
+    }
+
+    return fn(p);
+}
+
+/* ============================================================================
+ * Legacy public parsers (kept for backward compatibility, consume '.')
+ * ============================================================================ */
+
+Tactic *tactic_parse_admitted(Parser *p) {
+    if (!parser_expect_consume(p, TOK_ADMITTED)) {
+        parser_error(p, "expected 'Admitted'");
+    }
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "Expected '.' at end of Admitted");
+    }
+    Tactic *tactic = malloc(sizeof(Tactic));
+    tactic->tag = TACTIC_ADMITTED;
+    return tactic;
+}
+
+Tactic *tactic_parse_intro(Parser *p) {
+    Tactic *t = _parse_intro(p);
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "Expected '.' at end of intro");
+    }
+    return t;
+}
+
+Tactic *tactic_parse_intros(Parser *p) {
+    Tactic *t = _parse_intros(p);
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "Expected '.' at end of intros");
+    }
+    return t;
+}
+
+Tactic *tactic_parse_apply(Parser *p) {
+    Tactic *t = _parse_apply(p);
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "Expected '.' at end of apply");
+    }
+    return t;
+}
+
+Tactic *tactic_parse_eapply(Parser *p) {
+    Tactic *t = _parse_eapply(p);
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "Expected '.' at end of eapply");
+    }
+    return t;
+}
+
+Tactic *tactic_parse_exact(Parser *p) {
+    Tactic *t = _parse_exact(p);
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "Expected '.' at end of exact");
+    }
+    return t;
+}
+
+Tactic *tactic_parse_rewrite(Parser *p) {
+    Tactic *t = _parse_rewrite(p);
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "Expected '.' at end of rewrite");
+    }
+    return t;
+}
+
+Tactic *tactic_parse_erewrite(Parser *p) {
+    Tactic *t = _parse_erewrite(p);
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "Expected '.' at end of erewrite");
+    }
+    return t;
+}
+
+Tactic *tactic_parse_reflexivity(Parser *p) {
+    Tactic *t = _parse_reflexivity(p);
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "Expected '.' at end of reflexivity");
+    }
+    return t;
+}
+
+Tactic *tactic_parse_assumption(Parser *p) {
+    Tactic *t = _parse_assumption(p);
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "Expected '.' at end of assumption");
+    }
+    return t;
+}
+
+Tactic *tactic_parse_split(Parser *p) {
+    Tactic *t = _parse_split(p);
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "Expected '.' at end of split");
+    }
+    return t;
+}
+
+Tactic *tactic_parse_left(Parser *p) {
+    Tactic *t = _parse_left(p);
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "Expected '.' at end of left");
+    }
+    return t;
+}
+
+Tactic *tactic_parse_right(Parser *p) {
+    Tactic *t = _parse_right(p);
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "Expected '.' at end of right");
+    }
+    return t;
+}
+
+Tactic *tactic_parse_exists(Parser *p) {
+    Tactic *t = _parse_exists(p);
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "Expected '.' at end of exists");
+    }
+    return t;
+}
+
+Tactic *tactic_parse_cbv(Parser *p) {
+    Tactic *t = _parse_cbv(p);
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "Expected '.' at end of cbv");
+    }
+    return t;
 }

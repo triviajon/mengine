@@ -10,6 +10,7 @@
 #include "src/engine/engine_api.h"
 #include "src/kernel/kernel_api.h"
 #include "src/runtime/core.h"
+#include "src/tacticlanguage/tactic_ast.h"
 #include "src/tacticlanguage/tactic_exec.h"
 
 void debug_print_mode(MEngineRuntime *rt) {
@@ -138,7 +139,7 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
                 }
 
                 // It's a tactic, parse and execute it
-                Tactic *tactic = tactic_parse_proof_command(&parser);
+                TacticExpr *tactic = tactic_parse_proof_command(&parser);
                 if (!tactic) {
                     fprintf(stderr, ERROR "Tactic parse error.\n" CRESET);
                     rc = 1;

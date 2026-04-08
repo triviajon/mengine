@@ -3,6 +3,7 @@
 #include "src/common/color.h"
 #include "src/engine/engine_api.h"
 #include "src/kernel/kernel_api.h"
+#include "src/tacticlanguage/tactic_ast.h"
 #include "src/tacticlanguage/tactic_parser.h"
 #include "src/termlanguage/ast_to_expression.h"
 
@@ -311,19 +312,26 @@ bool _mengine_dispatch_tactic(MEngineRuntime *rt, Tactic *tac) {
     return false;
 }
 
-int mengine_execute_tactic(MEngineRuntime *rt, Tactic *tac) {
+int mengine_execute_tactic(MEngineRuntime *rt, TacticExpr *tac) {
     if (!rt || !rt->proof_state || !tac) {
         return 1;
     }
 
-    bool success = _mengine_dispatch_tactic(rt, tac);
+    // For now, only handle primitive tactics (will be replaced by interpreter)
+    if (tac->tag != TAC_PRIMITIVE) {
+        fprintf(stderr, ERROR "Non-primitive tactic expressions not yet supported\n" CRESET);
+        return 1;
+    }
+
+    Tactic *prim = tac->as.primitive.tactic;
+    bool success = _mengine_dispatch_tactic(rt, prim);
 
     // Only proceed if the tactic succeeded
     if (!success) {
         return 1;
     }
 
-    if (tac->tag == TACTIC_ADMITTED) {
+    if (prim->tag == TACTIC_ADMITTED) {
         return 0;
     }
 
