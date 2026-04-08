@@ -428,7 +428,7 @@ static TacticExpr *_parse_tactic_atom(Parser *p) {
         char *name = strdup(name_tok->lexeme);
         lexer_free_token(name_tok);
 
-        // Parse term arguments until a combinator/separator token
+        // Parse atomic term arguments until a combinator/separator token
         AST **args = NULL;
         size_t arg_count = 0;
 
@@ -440,7 +440,7 @@ static TacticExpr *_parse_tactic_atom(Parser *p) {
                 next == TOK_RBRACKET || next == TOK_PIPE) {
                 break;
             }
-            AST *arg = parse_term(p);
+            AST *arg = parse_atomic(p);
             args = realloc(args, sizeof(AST *) * (arg_count + 1));
             args[arg_count++] = arg;
         }
