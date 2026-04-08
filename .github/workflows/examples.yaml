@@ -1,0 +1,23 @@
+name: examples
+
+on:
+  push:
+  pull_request:
+
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y clang make
+
+    - name: Build and run examples
+      run: |
+        make examples
