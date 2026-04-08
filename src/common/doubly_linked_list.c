@@ -212,3 +212,24 @@ DoublyLinkedList *dll_merge(DoublyLinkedList *list1, DoublyLinkedList *list2) {
     // free(list2);
     return list1;
 }
+
+void dll_remove_node(DoublyLinkedList *list, DLLNode *node) {
+    if (!list || !node) {
+        return;
+    }
+
+    if (node->prev) {
+        node->prev->next = node->next;
+    } else {
+        list->head = node->next;
+    }
+
+    if (node->next) {
+        node->next->prev = node->prev;
+    } else {
+        list->tail = node->prev;
+    }
+
+    node->prev = NULL;
+    node->next = NULL;
+}

@@ -52,6 +52,35 @@ void add_to_parents(Expression *expression, void *ptr, Relation r) {
     dll_insert_at_head(expression->uplinks, dll_new_node(uplink));
 }
 
+// Create a cross-linked evar reference: adds hole to parent's evar_refs and
+// parent to hole's evar_backlinks.
+static void add_evar_ref(Expression *parent, Expression *hole) {
+    EvarRef *ref = malloc(sizeof(EvarRef));
+    ref->hole = hole;
+    ref->backlink_node = NULL;
+
+    DLLNode *ref_node = dll_new_node(ref);
+    dll_insert_at_head(parent->evar_refs, ref_node);
+
+    EvarBacklink *bl = malloc(sizeof(EvarBacklink));
+    bl->owner = parent;
+    bl->ref_node = ref_node;
+
+    DLLNode *bl_node = dll_new_node(bl);
+    dll_insert_at_head(hole->as.hole.evar_backlinks, bl_node);
+
+    ref->backlink_node = bl_node;
+}
+
+void propagate_evar_refs(Expression *parent, Expression *child) {
+    DLLNode *node = child->evar_refs->head;
+    while (node) {
+        EvarRef *child_ref = (EvarRef *)node->data;
+        add_evar_ref(parent, child_ref->hole);
+        node = node->next;
+    }
+}
+
 Uplink *new_uplink(void *ptr, Relation r) {
     Uplink *new_uplink = malloc(sizeof(Uplink));
     if (!new_uplink) {
@@ -157,10 +186,46 @@ void free_expression(Expression *expr) {
             break;
         case HOLE_EXPRESSION:
             free(expr->as.hole.name);
+            // Clean up backlinks: remove this hole from all owners' evar_refs
+            {
+                DLLNode *bl_node = expr->as.hole.evar_backlinks->head;
+                while (bl_node) {
+                    DLLNode *next = bl_node->next;
+                    EvarBacklink *bl = (EvarBacklink *)bl_node->data;
+                    if (bl->owner != expr) {
+                        dll_remove_node(bl->owner->evar_refs, bl->ref_node);
+                        free(bl->ref_node->data);
+                        free(bl->ref_node);
+                    }
+                    free(bl);
+                    free(bl_node);
+                    bl_node = next;
+                }
+                dll_destroy(expr->as.hole.evar_backlinks);
+            }
             break;
         case TYPE_EXPRESSION:
         case PROP_EXPRESSION:
             break;
+    }
+
+    // Clean up evar_refs: remove this expression from each hole's backlinks
+    {
+        DLLNode *ref_node = expr->evar_refs->head;
+        while (ref_node) {
+            DLLNode *next = ref_node->next;
+            EvarRef *ref = (EvarRef *)ref_node->data;
+            Expression *hole = ref->hole;
+            if (hole != expr && hole->tag == HOLE_EXPRESSION) {
+                dll_remove_node(hole->as.hole.evar_backlinks, ref->backlink_node);
+                free(ref->backlink_node->data);
+                free(ref->backlink_node);
+            }
+            free(ref);
+            free(ref_node);
+            ref_node = next;
+        }
+        dll_destroy(expr->evar_refs);
     }
 
     dll_destroy(expr->uplinks);
@@ -223,6 +288,7 @@ Expression *_init_expression_base(ExpressionType tag, Context *context, int ctx_
     SET_EXPR_CONTEXT(expr, context);
     SET_EXPR_CTX_SIZE(expr, ctx_size);
     SET_EXPR_TYPE(expr, type);
+    expr->evar_refs = dll_create();
 
     return expr;
 }
@@ -249,6 +315,7 @@ Expression *init_type_expression() {
         SET_EXPR_CONTEXT(TYPE, context);
         SET_EXPR_CTX_SIZE(TYPE, 0);
         SET_EXPR_TYPE(TYPE, init_type_expression());
+        TYPE->evar_refs = dll_create();
     }
     return TYPE;
 }
@@ -270,6 +337,8 @@ Expression *init_hole_expression(char *name, Expression *type, Context *gamma) {
                                              /* type */ type);
 
     SET_HOLE_NAME(expr, strdup(name));
+    expr->as.hole.evar_backlinks = dll_create();
+    add_evar_ref(expr, expr);  // A hole references itself
     return expr;
 }
 
@@ -317,6 +386,7 @@ Expression *init_var_expression_wc_with_body(const char *name, Expression *body,
 
     SET_VAR_NAME(expr, strdup(name));
     SET_VAR_BODY(expr, body);
+    propagate_evar_refs(expr, body);
 
     return expr;
 }
@@ -337,6 +407,7 @@ Expression *init_lambda_expression_wc(Expression *bound_variable, Expression *bo
 
     SET_LAMBDA_BOUND_VAR(expr, bound_variable);
     SET_LAMBDA_BODY(expr, body);
+    propagate_evar_refs(expr, body);
 
     return expr;
 }
@@ -372,6 +443,8 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg, Context *c
 
     SET_APP_FUNC(expr, func);
     SET_APP_ARG(expr, arg);
+    propagate_evar_refs(expr, func);
+    propagate_evar_refs(expr, arg);
 
     return expr;
 }
@@ -403,6 +476,7 @@ Expression *init_forall_expression_wc(Expression *bound_variable, Expression *bo
 
     SET_FORALL_BOUND_VAR(expr, bound_variable);
     SET_FORALL_BODY(expr, body);
+    propagate_evar_refs(expr, body);
 
     return expr;
 }
@@ -531,6 +605,10 @@ Expression *init_match_expression_wc(Expression *scrutinee, MatchBranch **branch
     expr->as.match.branch_count = branch_count;  // Set branch_count BEFORE calling macros
     SET_MATCH_SCRUTINEE(expr, scrutinee);
     SET_MATCH_BRANCHES(expr, branches);
+    propagate_evar_refs(expr, scrutinee);
+    for (int i = 0; i < branch_count; i++) {
+        propagate_evar_refs(expr, branches[i]->body);
+    }
 
     return expr;
 }
@@ -722,6 +800,7 @@ Expression *init_fix_expression_wc(Expression *recursive_var, Expression **args,
     SET_FIX_ARG_COUNT(expr, arg_count);
     SET_FIX_DECREASING_ARG_INDEX(expr, decreasing_arg_index);
     SET_FIX_BODY(expr, body);
+    propagate_evar_refs(expr, body);
 
     if (!register_fix_body_to_expression(recursive_var, body_bound)) {
         fprintf(stderr, ERROR "Failed to register body to recursive variable.\n" CRESET);
@@ -1153,39 +1232,7 @@ Expression *match_and_subst(Expression *a, Expression *b, Expression *to_subst) 
     return result;
 }
 
-bool has_holes(Expression *expr) {
-    switch (expr->tag) {
-        case (TYPE_EXPRESSION):
-        case (PROP_EXPRESSION):
-            return false;
-        case (HOLE_EXPRESSION):
-            return true;
-        case (APP_EXPRESSION):
-            return has_holes(expr->as.app.func) || has_holes(expr->as.app.arg);
-        case (FORALL_EXPRESSION):
-            return has_holes(expr->as.forall.body);
-        case (LAMBDA_EXPRESSION):
-            return has_holes(expr->as.lambda.body);
-        case (VAR_EXPRESSION):
-            return false;
-        case (MATCH_EXPRESSION): {
-            if (has_holes(expr->as.match.scrutinee)) {
-                return true;
-            }
-            for (int i = 0; i < expr->as.match.branch_count; i++) {
-                if (has_holes(expr->as.match.branches[i]->body)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        case (FIX_EXPRESSION):
-            return has_holes(expr->as.fix.body);
-        default:
-            fprintf(stderr, ERROR "Unknown expression type in has_holes.\n" CRESET);
-            exit(EXIT_FAILURE);
-    }
-}
+bool has_holes(Expression *expr) { return expr->evar_refs->head != NULL; }
 
 bool is_hole(Expression *expr) { return expr->tag == HOLE_EXPRESSION; }
 
@@ -1264,17 +1311,46 @@ bool fill_hole(Expression *hole, Expression *term) {
     // Check preconditions:
     //   1) type(term) == expected return type of hole
     //   2) term is valid in hole's context
-    //   3) term does not contain the hole (occurs check)
+    //   3) term does not contain the hole (occurs check, skipped if term is evar-free)
     if (!definitional_equal(get_expression_type(hole), get_expression_type(term))) {
         return false;
     }
     if (!valid_in_context(term, get_expression_context(hole))) {
         return false;
     }
-    if (occurs_in(hole, term)) {
+    if (term->evar_refs->head != NULL && occurs_in(hole, term)) {
         return false;
     }
 
+    // Update evar_refs: for every expression that references this hole,
+    // remove that reference and (if term has holes) add term's holes instead.
+    DLLNode *bl_node = hole->as.hole.evar_backlinks->head;
+    while (bl_node) {
+        DLLNode *next_bl = bl_node->next;
+        EvarBacklink *bl = (EvarBacklink *)bl_node->data;
+        Expression *owner = bl->owner;
+
+        // Remove the hole's ref from owner's evar_refs
+        DLLNode *ref_node = bl->ref_node;
+        dll_remove_node(owner->evar_refs, ref_node);
+        free(ref_node->data);
+        free(ref_node);
+
+        // If owner is the hole itself, skip propagation (hole is being replaced)
+        if (owner != hole) {
+            // Add term's evar refs to owner
+            propagate_evar_refs(owner, term);
+        }
+
+        // Free the backlink
+        free(bl);
+        free(bl_node);
+        bl_node = next_bl;
+    }
+    hole->as.hole.evar_backlinks->head = NULL;
+    hole->as.hole.evar_backlinks->tail = NULL;
+
+    // Rewrite structural uplinks: replace hole with term in all parents
     DoublyLinkedList *holepars = hole->uplinks;
     for (int i = 0; i < dll_len(holepars); i++) {
         Uplink *uplink = dll_at(holepars, i)->data;
