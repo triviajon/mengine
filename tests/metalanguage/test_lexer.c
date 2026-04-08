@@ -539,7 +539,7 @@ void test_match_expression(void) {
     lexer_free_token(tok);
 }
 
-int main() {
+void run_lexer_tests(void) {
     test_suite_start("Lexer Test Suite");
 
     // Boundaries and partitions
@@ -587,6 +587,4 @@ int main() {
     test_match_expression();
 
     test_suite_end();
-    print_test_summary();
-    return get_test_failures();
 }

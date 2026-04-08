@@ -351,7 +351,7 @@ void test_parse_complex_nested(void) {
                      "third level should be FORALL");
 }
 
-int main() {
+void run_parser_tests(void) {
     test_suite_start("Parser Test Suite");
 
     // Atomic expressions (boundaries)
@@ -391,6 +391,4 @@ int main() {
     test_parse_complex_nested();
 
     test_suite_end();
-    print_test_summary();
-    return get_test_failures();
 }
