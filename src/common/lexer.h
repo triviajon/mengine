@@ -30,6 +30,8 @@ typedef enum {
     TOK_DOUBLE_PIPE,   // ||
     TOK_LBRACKET,      // [
     TOK_RBRACKET,      // ]
+    TOK_QUESTION,      // ?
+    TOK_TURNSTILE,     // |-
 
     TOK_COMMENT,
     TOK_EOF,

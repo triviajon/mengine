@@ -193,6 +193,11 @@ Token *lexer_next_token(Lexer *lx) {
                 token = make_token(TOK_DOUBLE_PIPE, lx->pos - 2, NULL);
                 break;
             }
+            if (next == '-') {
+                next_char(lx);
+                token = make_token(TOK_TURNSTILE, lx->pos - 2, NULL);
+                break;
+            }
             token = make_token(TOK_PIPE, lx->pos - 1, NULL);
             break;
         }
@@ -206,6 +211,10 @@ Token *lexer_next_token(Lexer *lx) {
         }
         case ']': {
             token = make_token(TOK_RBRACKET, lx->pos - 1, NULL);
+            break;
+        }
+        case '?': {
+            token = make_token(TOK_QUESTION, lx->pos - 1, NULL);
             break;
         }
         case '<': {
