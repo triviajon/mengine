@@ -234,6 +234,28 @@ static TacticExpr *_tactic_expr_subst(TacticExpr *expr, char **params, AST **arg
             return tactic_expr_idtac();
         case TAC_FAIL:
             return tactic_expr_fail();
+        case TAC_MATCH_GOAL: {
+            size_t bc = expr->as.match_goal.branch_count;
+            GoalBranch *new_branches = malloc(sizeof(GoalBranch) * bc);
+            for (size_t i = 0; i < bc; i++) {
+                GoalBranch *old = &expr->as.match_goal.branches[i];
+                new_branches[i].hyp_count = old->hyp_count;
+                new_branches[i].hyps = NULL;
+                if (old->hyp_count > 0) {
+                    new_branches[i].hyps = malloc(sizeof(HypPattern) * old->hyp_count);
+                    for (size_t j = 0; j < old->hyp_count; j++) {
+                        new_branches[i].hyps[j].name = strdup(old->hyps[j].name);
+                        new_branches[i].hyps[j].type =
+                            _ast_subst(old->hyps[j].type, params, args, count);
+                    }
+                }
+                new_branches[i].conclusion =
+                    _ast_subst(old->conclusion, params, args, count);
+                new_branches[i].body =
+                    _tactic_expr_subst(old->body, params, args, count);
+            }
+            return tactic_expr_match_goal(new_branches, bc);
+        }
     }
 
     return expr;
