@@ -529,8 +529,37 @@ static bool _is_pattern_atomic_start(Token *t) {
 }
 
 static AST *_parse_pattern_prefix(Parser *p) {
-    if (parser_expect_no_consume(p, TOK_FUN)) return parse_lambda(p);
-    if (parser_expect_no_consume(p, TOK_FORALL)) return parse_forall(p);
+    if (parser_expect_no_consume(p, TOK_FORALL)) {
+        parser_expect_consume(p, TOK_FORALL);
+        // Pattern forall: forall (x : <pat>) , <pat>
+        if (!parser_expect_consume(p, TOK_LPAREN)) {
+            parser_error(p, "Expected '(' after 'forall' in pattern");
+        }
+        // Parse binder with pattern-aware type
+        if (!parser_expect_no_consume(p, TOK_IDENT)) {
+            parser_error(p, "Expected identifier in forall pattern binder");
+        }
+        Token *name_tok = parser_next(p);
+        char *binder_name = strdup(name_tok->lexeme);
+        lexer_free_token(name_tok);
+        if (!parser_expect_consume(p, TOK_COLON)) {
+            parser_error(p, "Expected ':' in forall pattern binder");
+        }
+        AST *binder_type = parse_term_pattern(p);
+        if (!parser_expect_consume(p, TOK_RPAREN)) {
+            parser_error(p, "Expected ')' after binder in forall pattern");
+        }
+        if (!parser_expect_consume(p, TOK_COMMA)) {
+            parser_error(p, "Expected ',' after forall binder in pattern");
+        }
+        AST *body = parse_term_pattern(p);
+        AST *forall_ast = malloc(sizeof(AST));
+        forall_ast->tag = AST_FORALL;
+        forall_ast->value.forall.binder.name = binder_name;
+        forall_ast->value.forall.binder.type = binder_type;
+        forall_ast->value.forall.body = body;
+        return forall_ast;
+    }
     return _parse_pattern_application(p);
 }
 
