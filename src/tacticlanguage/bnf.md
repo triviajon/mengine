@@ -13,6 +13,9 @@ Tactic language
                       | "repeat" <tactic_atom>
                       | "first" "[" <tactic_expr> { "|" <tactic_expr> } "]"
                       | "match" "Goal" "with" { <goal_branch> } "end"
+                      | "let" <identifier> ":=" <tactic_atom> "in" <tactic_expr>
+                      | "goal_type"
+                      | "type_of" <atomic_term>
                       | "idtac"
                       | "fail"
                       | "(" <tactic_expr> ")"
