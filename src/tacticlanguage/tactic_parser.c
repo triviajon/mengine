@@ -443,6 +443,37 @@ static TacticExpr *_parse_tactic_atom(Parser *p) {
         return tactic_expr_type_of(term);
     }
 
+    // mk_hole <type> — creates a hole of the given type, returns it
+    if (tok == TOK_MK_HOLE) {
+        parser_expect_consume(p, TOK_MK_HOLE);
+        AST *type = parse_atomic(p);
+        return tactic_expr_mk_hole(type);
+    }
+
+    // fill <hole> <term> — fills a hole with a term
+    if (tok == TOK_FILL) {
+        parser_expect_consume(p, TOK_FILL);
+        AST *hole = parse_atomic(p);
+        AST *term = parse_atomic(p);
+        return tactic_expr_fill(hole, term);
+    }
+
+    // subst <new> <body> <old> — substitution body[old := new]
+    if (tok == TOK_SUBST) {
+        parser_expect_consume(p, TOK_SUBST);
+        AST *new_term = parse_atomic(p);
+        AST *body = parse_atomic(p);
+        AST *old_var = parse_atomic(p);
+        return tactic_expr_subst(new_term, body, old_var);
+    }
+
+    // eunify <lemma> — existential unification against current goal
+    if (tok == TOK_EUNIFY) {
+        parser_expect_consume(p, TOK_EUNIFY);
+        AST *lemma = parse_atomic(p);
+        return tactic_expr_eunify(lemma);
+    }
+
     // match Goal with | [ ... |- ... ] => tac ... end
     // match <term>  with | <pat>        => tac ... end
     if (tok == TOK_MATCH) {

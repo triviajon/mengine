@@ -397,6 +397,17 @@ static TacticExpr *_tactic_expr_subst(TacticExpr *expr, char **params, AST **arg
             return tactic_expr_match_term(
                 _ast_subst(expr->as.match_term.scrutinee, params, args, count), new_branches, bc);
         }
+        case TAC_MK_HOLE:
+            return tactic_expr_mk_hole(_ast_subst(expr->as.mk_hole.type, params, args, count));
+        case TAC_FILL:
+            return tactic_expr_fill(_ast_subst(expr->as.fill.hole, params, args, count),
+                                    _ast_subst(expr->as.fill.term, params, args, count));
+        case TAC_SUBST:
+            return tactic_expr_subst(_ast_subst(expr->as.subst.new_term, params, args, count),
+                                     _ast_subst(expr->as.subst.body, params, args, count),
+                                     _ast_subst(expr->as.subst.old_var, params, args, count));
+        case TAC_EUNIFY:
+            return tactic_expr_eunify(_ast_subst(expr->as.eunify.lemma, params, args, count));
     }
 
     return expr;
@@ -860,6 +871,66 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             }
 
             return init_tactic_result(false, NULL, "No branch matched in match <term>");
+        }
+
+        case TAC_MK_HOLE: {
+            Context *ctx = kernel_expr_context(goal);
+            Expression *type = ast_to_expression(expr->as.mk_hole.type, ctx);
+            if (!type) {
+                return init_tactic_result(false, NULL, "mk_hole: could not resolve type");
+            }
+            Expression *hole = kernel_hole_create("hole", type, ctx);
+            DoublyLinkedList *goals = dll_create();
+            dll_insert_at_tail(goals, dll_new_node(hole));
+            TacticResult *r = init_tactic_result(true, goals, NULL);
+            r->term_value = hole;
+            return r;
+        }
+
+        case TAC_FILL: {
+            Context *ctx = kernel_expr_context(goal);
+            Expression *hole = ast_to_expression(expr->as.fill.hole, ctx);
+            Expression *term = ast_to_expression(expr->as.fill.term, ctx);
+            if (!hole || !term) {
+                return init_tactic_result(false, NULL, "fill: could not resolve arguments");
+            }
+            if (!kernel_hole_fill(hole, term)) {
+                return init_tactic_result(false, NULL, "fill: hole fill failed");
+            }
+            return init_tactic_result(true, dll_create(), NULL);
+        }
+
+        case TAC_SUBST: {
+            Context *ctx = kernel_expr_context(goal);
+            Expression *new_term = ast_to_expression(expr->as.subst.new_term, ctx);
+            Expression *body = ast_to_expression(expr->as.subst.body, ctx);
+            Expression *old_var = ast_to_expression(expr->as.subst.old_var, ctx);
+            if (!new_term || !body || !old_var) {
+                return init_tactic_result(false, NULL, "subst: could not resolve arguments");
+            }
+            Expression *result = kernel_subst(ctx, body, old_var, new_term);
+            if (!result) {
+                return init_tactic_result(false, NULL, "subst: substitution failed");
+            }
+            return init_tactic_result_value(result);
+        }
+
+        case TAC_EUNIFY: {
+            Context *ctx = kernel_expr_context(goal);
+            Expression *lemma_expr = ast_to_expression(expr->as.eunify.lemma, ctx);
+            if (!lemma_expr) {
+                return init_tactic_result(false, NULL, "eunify: could not resolve lemma");
+            }
+            UnificationResult *unif = engine_eunify(lemma_expr, goal);
+            if (!unif) {
+                return init_tactic_result(false, NULL, "eunify: unification failed");
+            }
+            Expression *inst = engine_unify_get_lemma(unif);
+            DoublyLinkedList *new_goals = (DoublyLinkedList *)engine_unify_get_bindings(unif);
+            TacticResult *r = init_tactic_result(true, new_goals ? new_goals : dll_create(), NULL);
+            r->term_value = inst;
+            engine_unify_free(unif);
+            return r;
         }
     }
 

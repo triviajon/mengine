@@ -60,3 +60,8 @@ X("fail", TOK_FAIL, "FAIL")
 X("goal_type", TOK_GOAL_TYPE, "GOAL_TYPE")
 X("type_of", TOK_TYPE_OF, "TYPE_OF")
 
+X("mk_hole", TOK_MK_HOLE, "MK_HOLE")
+X("fill", TOK_FILL, "FILL")
+X("subst", TOK_SUBST, "SUBST")
+X("eunify", TOK_EUNIFY, "EUNIFY")
+
