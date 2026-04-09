@@ -697,13 +697,41 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                     continue;
                 }
 
-                // Substitute hypothesis name bindings into the body
-                TacticExpr *body = branch->body;
-                if (hyp_param_count > 0) {
-                    body = _tactic_expr_subst(body, hyp_param_names, hyp_param_values,
-                                              hyp_param_count);
+                // Substitute hypothesis name bindings AND pattern variable
+                // bindings into the body.  Hypothesis names map to AST_VAR
+                // nodes (already collected above); pattern variables map to
+                // AST_EXPR_REF nodes wrapping the matched Expression*.
+                size_t total_count = hyp_param_count + bindings.count;
+                char **all_names = NULL;
+                AST **all_values = NULL;
+
+                if (total_count > 0) {
+                    all_names = malloc(sizeof(char *) * total_count);
+                    all_values = malloc(sizeof(AST *) * total_count);
+
+                    // Copy hypothesis name bindings
+                    for (size_t k = 0; k < hyp_param_count; k++) {
+                        all_names[k] = hyp_param_names[k];
+                        all_values[k] = hyp_param_values[k];
+                    }
+
+                    // Convert pattern variable bindings to AST_EXPR_REF
+                    for (size_t k = 0; k < bindings.count; k++) {
+                        all_names[hyp_param_count + k] = bindings.names[k];
+                        AST *ref = malloc(sizeof(AST));
+                        ref->tag = AST_EXPR_REF;
+                        ref->value.expr_ref.expr = bindings.values[k];
+                        all_values[hyp_param_count + k] = ref;
+                    }
                 }
 
+                TacticExpr *body = branch->body;
+                if (total_count > 0) {
+                    body = _tactic_expr_subst(body, all_names, all_values, total_count);
+                }
+
+                free(all_names);
+                free(all_values);
                 free(hyp_param_names);
                 free(hyp_param_values);
                 bindings_free(&bindings);
