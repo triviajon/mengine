@@ -430,27 +430,27 @@ static TacticExpr *_parse_tactic_atom(Parser *p) {
         return tactic_expr_let(name, rhs, body);
     }
 
-    // goal_type — returns the type of the current goal
+    // goal_type - returns the type of the current goal
     if (tok == TOK_GOAL_TYPE) {
         parser_expect_consume(p, TOK_GOAL_TYPE);
         return tactic_expr_goal_type();
     }
 
-    // type_of <term> — returns the type of a term
+    // type_of <term> - returns the type of a term
     if (tok == TOK_TYPE_OF) {
         parser_expect_consume(p, TOK_TYPE_OF);
         AST *term = parse_atomic(p);
         return tactic_expr_type_of(term);
     }
 
-    // mk_hole <type> — creates a hole of the given type, returns it
+    // mk_hole <type> - creates a hole of the given type, returns it
     if (tok == TOK_MK_HOLE) {
         parser_expect_consume(p, TOK_MK_HOLE);
         AST *type = parse_atomic(p);
         return tactic_expr_mk_hole(type);
     }
 
-    // fill <hole> <term> — fills a hole with a term
+    // fill <hole> <term> - fills a hole with a term
     if (tok == TOK_FILL) {
         parser_expect_consume(p, TOK_FILL);
         AST *hole = parse_atomic(p);
@@ -458,7 +458,7 @@ static TacticExpr *_parse_tactic_atom(Parser *p) {
         return tactic_expr_fill(hole, term);
     }
 
-    // subst <new> <body> <old> — substitution body[old := new]
+    // subst <new> <body> <old> - substitution body[old := new]
     if (tok == TOK_SUBST) {
         parser_expect_consume(p, TOK_SUBST);
         AST *new_term = parse_atomic(p);
@@ -467,7 +467,7 @@ static TacticExpr *_parse_tactic_atom(Parser *p) {
         return tactic_expr_subst(new_term, body, old_var);
     }
 
-    // eunify <lemma> — existential unification against current goal
+    // eunify <lemma> - existential unification against current goal
     if (tok == TOK_EUNIFY) {
         parser_expect_consume(p, TOK_EUNIFY);
         AST *lemma = parse_atomic(p);
@@ -635,7 +635,7 @@ static TacticExpr *_parse_tactic_atom(Parser *p) {
  * ============================================================================ */
 
 TacticExpr *tactic_parse_proof_command(Parser *p) {
-    // Handle "Admitted." specially — it's not composable
+    // Handle "Admitted." specially - it's not composable
     if (parser_expect_no_consume(p, TOK_ADMITTED)) {
         parser_expect_consume(p, TOK_ADMITTED);
         if (!parser_expect_consume(p, TOK_DOT)) {

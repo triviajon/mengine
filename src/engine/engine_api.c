@@ -70,30 +70,16 @@ TacticResult *engine_tactic_exact(Expression *goal, Expression *proof_term) {
 
 TacticResult *engine_tactic_assumption(Expression *goal) { return assumption_tactic(goal); }
 
-TacticResult *engine_tactic_reflexivity(Expression *goal) {
-    (void)goal; /* stub for now - reflexivity isn't implemented yet */
-    return init_tactic_result(false, NULL, "reflexivity not yet implemented");
-}
+TacticResult *engine_tactic_reflexivity(Expression *goal) { return reflexivity_tactic(goal); }
 
-TacticResult *engine_tactic_split(Expression *goal) {
-    (void)goal; /* stub for now */
-    return init_tactic_result(false, NULL, "split not yet implemented");
-}
+TacticResult *engine_tactic_split(Expression *goal) { return split_tactic(goal); }
 
-TacticResult *engine_tactic_left(Expression *goal) {
-    (void)goal; /* stub for now */
-    return init_tactic_result(false, NULL, "left not yet implemented");
-}
+TacticResult *engine_tactic_left(Expression *goal) { return left_tactic(goal); }
 
-TacticResult *engine_tactic_right(Expression *goal) {
-    (void)goal;
-    return init_tactic_result(false, NULL, "right not yet implemented");
-}
+TacticResult *engine_tactic_right(Expression *goal) { return right_tactic(goal); }
 
 TacticResult *engine_tactic_exists(Expression *goal, Expression *witness) {
-    (void)goal;
-    (void)witness; /* stub for now */
-    return init_tactic_result(false, NULL, "exists not yet implemented");
+    return exists_tactic(goal, witness);
 }
 
 TacticResult *engine_tactic_cbv(Expression *goal, char **rules, int rule_count) {

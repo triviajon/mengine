@@ -527,7 +527,9 @@ static AST *_parse_pattern_atomic(Parser *p);
 static AST *_parse_pattern_application(Parser *p);
 
 static bool _is_pattern_atomic_start(Token *t) {
-    if (!t) return false;
+    if (!t) {
+        return false;
+    }
     return t->type == TOK_IDENT || t->type == TOK_LPAREN || t->type == TOK_TYPE ||
            t->type == TOK_PROP || t->type == TOK_QUESTION;
 }
@@ -572,7 +574,9 @@ static AST *_parse_pattern_application(Parser *p) {
 
     while (true) {
         Token *next_token = parser_peek(p);
-        if (!next_token || !_is_pattern_atomic_start(next_token)) break;
+        if (!next_token || !_is_pattern_atomic_start(next_token)) {
+            break;
+        }
         AST *arg = _parse_pattern_atomic(p);
         AST *app_ast = malloc(sizeof(AST));
         app_ast->tag = AST_APP;

@@ -52,4 +52,19 @@ TacticResult *erewrite_tactic(Expression *goal, Expression *lemma);
 // If `rules` is NULL, then all rules are applied
 TacticResult *cbv_tactic(Expression *goal, char **rules, int rule_count);
 
+// Close a goal of the form `eq A x x` by applying eq_refl.
+TacticResult *reflexivity_tactic(Expression *goal);
+
+// Split a goal of the form `and A B` into two subgoals: `A` and `B`.
+TacticResult *split_tactic(Expression *goal);
+
+// Prove a goal of the form `or A B` by proving the left disjunct `A`.
+TacticResult *left_tactic(Expression *goal);
+
+// Prove a goal of the form `or A B` by proving the right disjunct `B`.
+TacticResult *right_tactic(Expression *goal);
+
+// Prove a goal of the form `ex A P` by providing a witness and leaving `P witness` as a subgoal.
+TacticResult *exists_tactic(Expression *goal, Expression *witness);
+
 #endif  // NEW_TACTICS
