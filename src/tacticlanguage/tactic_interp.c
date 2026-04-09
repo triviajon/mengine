@@ -167,9 +167,11 @@ static AST *_ast_subst(AST *ast, char **params, AST **args, size_t count) {
     }
 
     // Check for variable substitution
-    if (ast->tag == AST_VAR && params) {
+    if ((ast->tag == AST_VAR || ast->tag == AST_PATVAR) && params) {
+        const char *name =
+            ast->tag == AST_VAR ? ast->value.var.name : ast->value.patvar.name;
         for (size_t i = 0; i < count; i++) {
-            if (strcmp(ast->value.var.name, params[i]) == 0) {
+            if (strcmp(name, params[i]) == 0) {
                 return _ast_deep_copy(args[i]);
             }
         }
@@ -241,6 +243,9 @@ static AST *_ast_subst(AST *ast, char **params, AST **args, size_t count) {
             break;
         case AST_PATVAR:
             copy->value.patvar.name = strdup(ast->value.patvar.name);
+            break;
+        case AST_EXPR_REF:
+            copy->value.expr_ref.expr = ast->value.expr_ref.expr;
             break;
     }
 

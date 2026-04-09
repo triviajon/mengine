@@ -8,6 +8,9 @@
 // Forward declaration of the AST.
 typedef struct AST AST;
 
+// Forward declaration of kernel Expression (used by AST_EXPR_REF).
+typedef struct Expression Expression;
+
 typedef struct {
     char *name;  // identifier name
     AST *type;   // AST node representing the type
@@ -31,6 +34,7 @@ typedef enum {
     AST_MATCH,
     AST_APP,
     AST_PATVAR,
+    AST_EXPR_REF,  // wraps a kernel Expression* (injected by tactic interpreter)
 } ASTTag;
 
 typedef struct {
@@ -40,6 +44,10 @@ typedef struct {
 typedef struct {
     char *name;
 } PatVarAST;
+
+typedef struct {
+    Expression *expr;  // kernel expression pointer (not owned by AST)
+} ExprRefAST;
 
 typedef struct {
     char *name;
@@ -100,6 +108,7 @@ struct AST {
         MatchBranchAST matchbranch;
         MatchAST match;
         FixAST fix;
+        ExprRefAST expr_ref;
     } value;
 };
 

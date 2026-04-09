@@ -95,6 +95,10 @@ void fprint_ast(FILE *stream, AST *ast) {
             fprintf(stream, "PATVAR(?%s)", ast->value.patvar.name);
             return;
 
+        case AST_EXPR_REF:
+            fprintf(stream, "EXPR_REF(%p)", (void *)ast->value.expr_ref.expr);
+            return;
+
         default:
             fprintf(stream, "UNKNOWN");
             return;
