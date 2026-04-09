@@ -94,6 +94,9 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
         case AST_PROP:
             return kernel_prop_create();
 
+        case AST_EXPR_REF:
+            return ast->value.expr_ref.expr;
+
         case AST_LAMBDA: {
             Expression *binder_type =
                 _ast_to_expression(ast->value.lambda.binder.type, context, letbindings);
