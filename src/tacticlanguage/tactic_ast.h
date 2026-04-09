@@ -18,6 +18,9 @@ typedef enum {
     TAC_FAIL,        // fail (always fails)
     TAC_CALL,        // user-defined tactic call
     TAC_MATCH_GOAL,  // match goal with | [ ... |- ... ] => tac end
+    TAC_LET,         // let x := <tactic_expr> in <tactic_expr>
+    TAC_GOAL_TYPE,   // goal_type — returns the type of the current goal
+    TAC_TYPE_OF,     // type_of <term> — returns the type of a term
 } TacticExprTag;
 
 typedef struct TacticExpr TacticExpr;
@@ -72,6 +75,16 @@ typedef struct {
     size_t branch_count;   // number of branches
 } MatchGoalTacticExpr;
 
+typedef struct {
+    char *name;        // binding name
+    TacticExpr *rhs;   // right-hand side (value-producing expression)
+    TacticExpr *body;  // body in which name is bound
+} LetTacticExpr;
+
+typedef struct {
+    AST *term;  // term whose type to compute
+} TypeOfTacticExpr;
+
 struct TacticExpr {
     TacticExprTag tag;
     union {
@@ -83,6 +96,8 @@ struct TacticExpr {
         FirstTacticExpr first;
         CallTacticExpr call;
         MatchGoalTacticExpr match_goal;
+        LetTacticExpr let_expr;
+        TypeOfTacticExpr type_of;
     } as;
 };
 
@@ -157,6 +172,28 @@ static inline TacticExpr *tactic_expr_match_goal(GoalBranch *branches, size_t br
     e->tag = TAC_MATCH_GOAL;
     e->as.match_goal.branches = branches;
     e->as.match_goal.branch_count = branch_count;
+    return e;
+}
+
+static inline TacticExpr *tactic_expr_let(char *name, TacticExpr *rhs, TacticExpr *body) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_LET;
+    e->as.let_expr.name = strdup(name);
+    e->as.let_expr.rhs = rhs;
+    e->as.let_expr.body = body;
+    return e;
+}
+
+static inline TacticExpr *tactic_expr_goal_type(void) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_GOAL_TYPE;
+    return e;
+}
+
+static inline TacticExpr *tactic_expr_type_of(AST *term) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_TYPE_OF;
+    e->as.type_of.term = term;
     return e;
 }
 

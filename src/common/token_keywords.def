@@ -57,3 +57,6 @@ X("first", TOK_FIRST, "FIRST")
 X("idtac", TOK_IDTAC, "IDTAC")
 X("fail", TOK_FAIL, "FAIL")
 
+X("goal_type", TOK_GOAL_TYPE, "GOAL_TYPE")
+X("type_of", TOK_TYPE_OF, "TYPE_OF")
+

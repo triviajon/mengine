@@ -379,6 +379,16 @@ static TacticExpr *_tactic_expr_subst(TacticExpr *expr, char **params, AST **arg
             }
             return tactic_expr_match_goal(new_branches, bc);
         }
+        case TAC_LET:
+            return tactic_expr_let(
+                expr->as.let_expr.name,
+                _tactic_expr_subst(expr->as.let_expr.rhs, params, args, count),
+                _tactic_expr_subst(expr->as.let_expr.body, params, args, count));
+        case TAC_GOAL_TYPE:
+            return tactic_expr_goal_type();
+        case TAC_TYPE_OF:
+            return tactic_expr_type_of(
+                _ast_subst(expr->as.type_of.term, params, args, count));
     }
 
     return expr;
@@ -740,6 +750,50 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             }
 
             return init_tactic_result(false, NULL, "No branch matched in match Goal");
+        }
+
+        case TAC_LET: {
+            // Evaluate the RHS to get its term value
+            TacticResult *rhs_result = tactic_interpret(rt, goal, expr->as.let_expr.rhs);
+            if (!tactic_result_get_success(rhs_result)) {
+                return rhs_result;
+            }
+            Expression *value = tactic_result_get_value(rhs_result);
+            if (!value) {
+                free_tactic_result(rhs_result);
+                return init_tactic_result(
+                    false, NULL, "let binding RHS did not produce a term value");
+            }
+
+            // Substitute the bound name in the body with AST_EXPR_REF wrapping
+            // the value.
+            AST *ref = malloc(sizeof(AST));
+            ref->tag = AST_EXPR_REF;
+            ref->value.expr_ref.expr = value;
+
+            char *params[1] = {expr->as.let_expr.name};
+            AST *args[1] = {ref};
+            TacticExpr *body =
+                _tactic_expr_subst(expr->as.let_expr.body, params, args, 1);
+
+            free_tactic_result(rhs_result);
+            return tactic_interpret(rt, goal, body);
+        }
+
+        case TAC_GOAL_TYPE: {
+            Expression *goal_type = get_expression_type(goal);
+            return init_tactic_result_value(goal_type);
+        }
+
+        case TAC_TYPE_OF: {
+            Context *ctx = kernel_expr_context(goal);
+            Expression *term = ast_to_expression(expr->as.type_of.term, ctx);
+            if (!term) {
+                return init_tactic_result(false, NULL,
+                    "type_of: could not resolve term");
+            }
+            Expression *type = kernel_expr_type(term);
+            return init_tactic_result_value(type);
         }
     }
 

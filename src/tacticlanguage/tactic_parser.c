@@ -405,6 +405,44 @@ static TacticExpr *_parse_tactic_atom(Parser *p) {
         return tactic_expr_fail();
     }
 
+    // let x := <tactic_expr> in <tactic_expr>
+    if (tok == TOK_LET) {
+        parser_expect_consume(p, TOK_LET);
+        if (!parser_expect_no_consume(p, TOK_IDENT)) {
+            parser_error(p, "Expected identifier after 'let'");
+        }
+        Token *name_tok = parser_next(p);
+        char *name = strdup(name_tok->lexeme);
+        lexer_free_token(name_tok);
+
+        if (!parser_expect_consume(p, TOK_COLON_EQ)) {
+            parser_error(p, "Expected ':=' after let binding name");
+        }
+
+        TacticExpr *rhs = _parse_tactic_atom(p);
+
+        if (!parser_expect_consume(p, TOK_IN)) {
+            parser_error(p, "Expected 'in' after let binding value");
+        }
+
+        TacticExpr *body = _parse_tactic_expr(p);
+
+        return tactic_expr_let(name, rhs, body);
+    }
+
+    // goal_type — returns the type of the current goal
+    if (tok == TOK_GOAL_TYPE) {
+        parser_expect_consume(p, TOK_GOAL_TYPE);
+        return tactic_expr_goal_type();
+    }
+
+    // type_of <term> — returns the type of a term
+    if (tok == TOK_TYPE_OF) {
+        parser_expect_consume(p, TOK_TYPE_OF);
+        AST *term = parse_atomic(p);
+        return tactic_expr_type_of(term);
+    }
+
     // match Goal with | [ ... |- ... ] => tac ... end
     if (tok == TOK_MATCH) {
         parser_expect_consume(p, TOK_MATCH);
