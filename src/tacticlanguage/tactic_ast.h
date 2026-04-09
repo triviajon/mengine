@@ -19,13 +19,13 @@ typedef enum {
     TAC_CALL,        // user-defined tactic call
     TAC_MATCH_GOAL,  // match goal with | [ ... |- ... ] => tac end
     TAC_LET,         // let x := <tactic_expr> in <tactic_expr>
-    TAC_GOAL_TYPE,    // goal_type — returns the type of the current goal
-    TAC_TYPE_OF,      // type_of <term> — returns the type of a term
-    TAC_MATCH_TERM,   // match <term> with | <pat> => tac ... end
-    TAC_MK_HOLE,      // mk_hole <type>        — creates a hole, returns it as term_value
-    TAC_FILL,         // fill <hole> <term>    — fills hole with term
-    TAC_SUBST,        // subst <new> <body> <old> — substitution body[old := new]
-    TAC_EUNIFY,       // eunify <lemma> <goal> — existential unification
+    TAC_GOAL_TYPE,   // goal_type - returns the type of the current goal
+    TAC_TYPE_OF,     // type_of <term> - returns the type of a term
+    TAC_MATCH_TERM,  // match <term> with | <pat> => tac ... end
+    TAC_MK_HOLE,     // mk_hole <type>        - creates a hole, returns it as term_value
+    TAC_FILL,        // fill <hole> <term>    - fills hole with term
+    TAC_SUBST,       // subst <new> <body> <old> - substitution body[old := new]
+    TAC_EUNIFY,      // eunify <lemma> <goal> - existential unification
 } TacticExprTag;
 
 typedef struct TacticExpr TacticExpr;
@@ -91,12 +91,12 @@ typedef struct {
 } TypeOfTacticExpr;
 
 typedef struct {
-    AST *pattern;    // term pattern (with AST_PATVAR nodes)
+    AST *pattern;      // term pattern (with AST_PATVAR nodes)
     TacticExpr *body;  // tactic body to execute on match
 } TermBranch;
 
 typedef struct {
-    AST *scrutinee;       // term to match (AST evaluated at interpret-time)
+    AST *scrutinee;  // term to match (AST evaluated at interpret-time)
     TermBranch *branches;
     size_t branch_count;
 } MatchTermTacticExpr;
@@ -238,7 +238,7 @@ static inline TacticExpr *tactic_expr_type_of(AST *term) {
 }
 
 static inline TacticExpr *tactic_expr_match_term(AST *scrutinee, TermBranch *branches,
-                                                  size_t branch_count) {
+                                                 size_t branch_count) {
     TacticExpr *e = malloc(sizeof(TacticExpr));
     e->tag = TAC_MATCH_TERM;
     e->as.match_term.scrutinee = scrutinee;

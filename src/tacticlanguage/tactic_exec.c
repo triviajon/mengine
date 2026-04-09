@@ -14,7 +14,7 @@ int mengine_execute_tactic(MEngineRuntime *rt, TacticExpr *tac) {
         return 1;
     }
 
-    // Handle "Admitted" specially — it exits proof mode immediately
+    // Handle "Admitted" specially - it exits proof mode immediately
     if (tac->tag == TAC_PRIMITIVE && tac->as.primitive.tactic->tag == TACTIC_ADMITTED) {
         Expression *thm = rt->pending_theorem;
         rt->ctx = thm;
@@ -43,7 +43,7 @@ int mengine_execute_tactic(MEngineRuntime *rt, TacticExpr *tac) {
 
     // Advance to the next goal
     if (!engine_proof_state_next_goal(rt->proof_state)) {
-        // No more goals — proof is complete!
+        // No more goals - proof is complete!
         Expression *thm = rt->pending_theorem;
         rt->ctx = thm;
 

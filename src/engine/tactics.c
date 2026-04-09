@@ -354,3 +354,49 @@ TacticResult *cbv_tactic(Expression *goal, char **rules, int rule_count) {
     dll_insert_at_tail(new_goals, dll_new_node(new_goal));
     return init_tactic_result(true, new_goals, NULL);
 }
+
+TacticResult *reflexivity_tactic(Expression *goal) { return apply_tactic(goal, eq_refl); }
+
+TacticResult *split_tactic(Expression *goal) { return eapply_tactic(goal, prop_conj); }
+
+TacticResult *left_tactic(Expression *goal) { return eapply_tactic(goal, or_introl); }
+
+TacticResult *right_tactic(Expression *goal) { return eapply_tactic(goal, or_intror); }
+
+TacticResult *exists_tactic(Expression *goal, Expression *witness) {
+    if (!kernel_expr_is_hole(goal)) {
+        return init_tactic_result(false, NULL, "Goal is not a hole");
+    }
+
+    Expression *goal_ty = kernel_expr_type(goal);
+    Context *ctx = kernel_expr_context(goal);
+
+    /* goal_ty should be  ex A P  i.e.  (ex A) P */
+    Expression *ex_A = kernel_app_func(goal_ty);
+    if (!ex_A) {
+        return init_tactic_result(false, NULL, "Goal type is not an application");
+    }
+    Expression *P = kernel_app_arg(goal_ty);
+    Expression *A = kernel_app_arg(ex_A);
+    if (!A || !P) {
+        return init_tactic_result(false, NULL, "Goal type is not a binary application");
+    }
+
+    /* Build subgoal: P witness */
+    Expression *P_witness = kernel_app_create(P, witness, ctx);
+    Expression *subgoal = kernel_hole_create("_", P_witness, ctx);
+
+    /* Build proof term: ex_intro A P witness subgoal */
+    Expression *proof = kernel_app_create(
+        kernel_app_create(kernel_app_create(kernel_app_create(ex_intro, A, ctx), P, ctx), witness,
+                          ctx),
+        subgoal, ctx);
+
+    if (!kernel_hole_fill(goal, proof)) {
+        return init_tactic_result(false, NULL, "Cannot fill goal with exists proof term");
+    }
+
+    DoublyLinkedList *new_goals = dll_create();
+    dll_insert_at_tail(new_goals, dll_new_node(subgoal));
+    return init_tactic_result(true, new_goals, NULL);
+}
