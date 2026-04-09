@@ -7,6 +7,7 @@
 #include "src/common/color.h"
 #include "src/common/doubly_linked_list.h"
 #include "src/engine/engine_api.h"
+#include "src/kernel/context.h"
 #include "src/kernel/expression.h"
 #include "src/kernel/kernel_api.h"
 #include "src/runtime/runtime.h"
@@ -598,6 +599,90 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             }
 
             return tactic_interpret(rt, goal, body);
+        }
+
+        case TAC_MATCH_GOAL: {
+            Expression *goal_type = get_expression_type(goal);
+            Context *ctx = kernel_expr_context(goal);
+
+            for (size_t i = 0; i < expr->as.match_goal.branch_count; i++) {
+                GoalBranch *branch = &expr->as.match_goal.branches[i];
+                PatternBindings bindings;
+                bindings_init(&bindings);
+
+                // Match conclusion pattern against goal type
+                if (!_match_pattern(branch->conclusion, goal_type, &bindings)) {
+                    bindings_free(&bindings);
+                    continue;
+                }
+
+                // Match hypothesis patterns against context entries
+                bool hyps_matched = true;
+                // For each hyp pattern, we need to find a context entry that matches.
+                // Track which hyp pattern names map to which context variable names.
+                char **hyp_param_names = NULL;
+                AST **hyp_param_values = NULL;
+                size_t hyp_param_count = 0;
+
+                for (size_t j = 0; j < branch->hyp_count; j++) {
+                    HypPattern *hp = &branch->hyps[j];
+                    bool found = false;
+                    Context *c = ctx;
+
+                    while (!context_is_empty(c)) {
+                        Expression *hyp_type = get_expression_type(c);
+                        PatternBindings trial = bindings;
+                        // Try matching this hypothesis type
+                        if (_match_pattern(hp->type, hyp_type, &trial)) {
+                            // Match succeeded — record the binding
+                            bindings = trial;
+                            hyp_param_names =
+                                realloc(hyp_param_names,
+                                        sizeof(char *) * (hyp_param_count + 1));
+                            hyp_param_values =
+                                realloc(hyp_param_values,
+                                        sizeof(AST *) * (hyp_param_count + 1));
+                            hyp_param_names[hyp_param_count] = hp->name;
+                            AST *var_ast = malloc(sizeof(AST));
+                            var_ast->tag = AST_VAR;
+                            var_ast->value.var.name = strdup(get_var_name(c));
+                            hyp_param_values[hyp_param_count] = var_ast;
+                            hyp_param_count++;
+                            found = true;
+                            break;
+                        }
+                        c = get_expression_context(c);
+                    }
+
+                    if (!found) {
+                        hyps_matched = false;
+                        break;
+                    }
+                }
+
+                if (!hyps_matched) {
+                    free(hyp_param_names);
+                    free(hyp_param_values);
+                    bindings_free(&bindings);
+                    continue;
+                }
+
+                // Substitute hypothesis name bindings into the body
+                TacticExpr *body = branch->body;
+                if (hyp_param_count > 0) {
+                    body = _tactic_expr_subst(body, hyp_param_names, hyp_param_values,
+                                              hyp_param_count);
+                }
+
+                free(hyp_param_names);
+                free(hyp_param_values);
+                bindings_free(&bindings);
+
+                return tactic_interpret(rt, goal, body);
+            }
+
+            return init_tactic_result(false, NULL,
+                                      "No branch matched in match Goal");
         }
     }
 
