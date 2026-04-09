@@ -12,10 +12,17 @@ Tactic language
                       | "try" <tactic_atom>
                       | "repeat" <tactic_atom>
                       | "first" "[" <tactic_expr> { "|" <tactic_expr> } "]"
+                      | "match" "Goal" "with" { <goal_branch> } "end"
                       | "idtac"
                       | "fail"
                       | "(" <tactic_expr> ")"
                       | <identifier> { <atomic_term> }
+
+<goal_branch>       ::= "|" "[" { <hyp_pattern> "," } "|-" <term_pattern> "]" "=>" <tactic_expr>
+<hyp_pattern>       ::= <identifier> ":" <term_pattern>
+<term_pattern>      ::= <term>
+                      | "?" <identifier>
+                      | "_"
 
 <primitive_tactic>  ::= "intro" [ <identifier> ]
                       | "intros" { <identifier> }
