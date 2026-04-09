@@ -3,6 +3,29 @@
 
 #include "src/kernel/expression.h"
 
+/* ============================================================================
+ * Relation Registry — tracks (relation, refl, trans, congr) tuples
+ * ============================================================================ */
+
+typedef struct {
+    Expression *relation;  // e.g. eq
+    Expression *refl;      // e.g. eq_refl   : forall A x, R A x x
+    Expression *trans;     // e.g. eq_trans   : forall A x y z, R A x y -> R A y z -> R A x z
+    Expression *congr;  // e.g. Bad_App_Congruence : forall A B f g x y, R (A->B) f g -> R A x y ->
+                        // R B (f x) (g y)
+} RelationInfo;
+
+typedef struct RelationRegistry RelationRegistry;
+
+RelationRegistry *relation_registry_new(void);
+void relation_registry_free(RelationRegistry *reg);
+bool relation_registry_add(RelationRegistry *reg, RelationInfo info);
+RelationInfo *relation_registry_lookup(RelationRegistry *reg, Expression *relation);
+
+/* ============================================================================
+ * Rewrite Result
+ * ============================================================================ */
+
 typedef struct RewriteResult RewriteResult;
 
 struct RewriteResult {

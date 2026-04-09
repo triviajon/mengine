@@ -3,6 +3,7 @@
 
 #include "src/common/options.h"
 #include "src/engine/engine_api.h"
+#include "src/engine/rewrite_internal.h"
 
 // Forward declaration
 typedef struct TacticEnv TacticEnv;
@@ -18,19 +19,20 @@ typedef enum {
 } MEngineRuntimeMode;
 
 typedef struct {
-    MEngineOptions *options;      // Runtime options
-    Context *ctx;                 // current runtime context
-    Expression *pending_theorem;  // when in proof mode, this holds a reference to the
-                                  // theorem yet to be proven. It is expected that when
-                                  // the proof script is complete, and the runtime
-                                  // transitions back to command mode, we will add this
-                                  // expression to the runtime context and clear this
-                                  // field.
-    ProofState *proof_state;      // when in proof mode, this holds a reference to
-                                  // the current state of the proof being created
-                                  // for pending_theorem.
-    MEngineRuntimeMode mode;      // current mode of operation, see MEngineRuntimeMode
-    TacticEnv *tactic_env;        // user-defined tactic definitions
+    MEngineOptions *options;              // Runtime options
+    Context *ctx;                         // current runtime context
+    Expression *pending_theorem;          // when in proof mode, this holds a reference to the
+                                          // theorem yet to be proven. It is expected that when
+                                          // the proof script is complete, and the runtime
+                                          // transitions back to command mode, we will add this
+                                          // expression to the runtime context and clear this
+                                          // field.
+    ProofState *proof_state;              // when in proof mode, this holds a reference to
+                                          // the current state of the proof being created
+                                          // for pending_theorem.
+    MEngineRuntimeMode mode;              // current mode of operation, see MEngineRuntimeMode
+    TacticEnv *tactic_env;                // user-defined tactic definitions
+    RelationRegistry *relation_registry;  // registered equivalence relations for rewriting
 } MEngineRuntime;
 
 void debug_print_mode(MEngineRuntime *rt);

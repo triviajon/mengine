@@ -16,7 +16,7 @@ TacticResult *init_tactic_result(bool success, DoublyLinkedList *new_goals, char
     return result;
 }
 
-TacticResult *init_tactic_result_value(Expression *value) {
+TacticResult *init_tactic_result_value(TacticValue *value) {
     TacticResult *result = malloc(sizeof(TacticResult));
     if (!result) {
         return NULL;
@@ -58,7 +58,7 @@ DoublyLinkedList *tactic_result_get_goals(TacticResult *result) {
     return result->new_goals;
 }
 
-Expression *tactic_result_get_value(TacticResult *result) {
+TacticValue *tactic_result_get_value(TacticResult *result) {
     if (!result) {
         return NULL;
     }

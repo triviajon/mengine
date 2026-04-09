@@ -8,6 +8,7 @@
 #include "src/common/color.h"
 #include "src/common/options.h"
 #include "src/engine/engine_api.h"
+#include "src/engine/rewrite_internal.h"
 #include "src/kernel/kernel_api.h"
 #include "src/runtime/core.h"
 #include "src/tacticlanguage/tactic_ast.h"
@@ -63,7 +64,19 @@ MEngineRuntime *mengine_runtime_new(MEngineOptions *options) {
     rt->tactic_env = tactic_env_new();
 
     init_core(&rt->ctx);
+
+    rt->relation_registry = relation_registry_new();
+
     mengine_runtime_command_mode(rt);
+
+    /* Load prelude (tactic definitions, relation registration) quietly */
+    bool saved_quiet = rt->options->quiet;
+    rt->options->quiet = true;
+    int prelude_rc = mengine_runtime_exec_file(rt, "prelude/tactics.me");
+    rt->options->quiet = saved_quiet;
+    if (prelude_rc != 0) {
+        fprintf(stderr, "Warning: could not load prelude/tactics.me\n");
+    }
 
     return rt;
 }
@@ -74,6 +87,7 @@ void mengine_runtime_free(MEngineRuntime *rt) {
     }
 
     tactic_env_free(rt->tactic_env);
+    relation_registry_free(rt->relation_registry);
 
     // TODO: A memory management strategy...
     // free_context(rt->ctx);
