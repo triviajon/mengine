@@ -22,6 +22,10 @@ typedef enum {
     TAC_GOAL_TYPE,    // goal_type — returns the type of the current goal
     TAC_TYPE_OF,      // type_of <term> — returns the type of a term
     TAC_MATCH_TERM,   // match <term> with | <pat> => tac ... end
+    TAC_MK_HOLE,      // mk_hole <type>        — creates a hole, returns it as term_value
+    TAC_FILL,         // fill <hole> <term>    — fills hole with term
+    TAC_SUBST,        // subst <new> <body> <old> — substitution body[old := new]
+    TAC_EUNIFY,       // eunify <lemma> <goal> — existential unification
 } TacticExprTag;
 
 typedef struct TacticExpr TacticExpr;
@@ -97,6 +101,25 @@ typedef struct {
     size_t branch_count;
 } MatchTermTacticExpr;
 
+typedef struct {
+    AST *type;  // type of the hole to create
+} MkHoleTacticExpr;
+
+typedef struct {
+    AST *hole;  // hole expression
+    AST *term;  // term to fill with
+} FillTacticExpr;
+
+typedef struct {
+    AST *new_term;  // replacement
+    AST *body;      // expression to substitute into
+    AST *old_var;   // variable to replace
+} SubstTacticExpr;
+
+typedef struct {
+    AST *lemma;  // lemma to unify against current goal
+} EunifyTacticExpr;
+
 struct TacticExpr {
     TacticExprTag tag;
     union {
@@ -111,6 +134,10 @@ struct TacticExpr {
         LetTacticExpr let_expr;
         TypeOfTacticExpr type_of;
         MatchTermTacticExpr match_term;
+        MkHoleTacticExpr mk_hole;
+        FillTacticExpr fill;
+        SubstTacticExpr subst;
+        EunifyTacticExpr eunify;
     } as;
 };
 
@@ -217,6 +244,37 @@ static inline TacticExpr *tactic_expr_match_term(AST *scrutinee, TermBranch *bra
     e->as.match_term.scrutinee = scrutinee;
     e->as.match_term.branches = branches;
     e->as.match_term.branch_count = branch_count;
+    return e;
+}
+
+static inline TacticExpr *tactic_expr_mk_hole(AST *type) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_MK_HOLE;
+    e->as.mk_hole.type = type;
+    return e;
+}
+
+static inline TacticExpr *tactic_expr_fill(AST *hole, AST *term) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_FILL;
+    e->as.fill.hole = hole;
+    e->as.fill.term = term;
+    return e;
+}
+
+static inline TacticExpr *tactic_expr_subst(AST *new_term, AST *body, AST *old_var) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_SUBST;
+    e->as.subst.new_term = new_term;
+    e->as.subst.body = body;
+    e->as.subst.old_var = old_var;
+    return e;
+}
+
+static inline TacticExpr *tactic_expr_eunify(AST *lemma) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_EUNIFY;
+    e->as.eunify.lemma = lemma;
     return e;
 }
 
