@@ -47,89 +47,6 @@ char *tactic_tag_to_string(TacticTag tag) {
  * Primitive tactic parsers (do NOT consume trailing '.')
  * ============================================================================ */
 
-static Tactic *_parse_intro(Parser *p) {
-    if (!parser_expect_consume(p, TOK_INTRO)) {
-        parser_error(p, "expected 'intro'");
-    }
-
-    char *name = NULL;
-    if (parser_expect_no_consume(p, TOK_IDENT)) {
-        Token *ident_token = parser_next(p);
-        name = strdup(ident_token->lexeme);
-        lexer_free_token(ident_token);
-    }
-
-    Tactic *tactic = malloc(sizeof(Tactic));
-    tactic->tag = TACTIC_INTRO;
-    tactic->as.intro.name = name;
-    return tactic;
-}
-
-static Tactic *_parse_intros(Parser *p) {
-    if (!parser_expect_consume(p, TOK_INTROS)) {
-        parser_error(p, "expected 'intros'");
-    }
-
-    char **names = NULL;
-    size_t name_count = 0;
-
-    while (parser_expect_no_consume(p, TOK_IDENT)) {
-        Token *ident_token = parser_next(p);
-        names = realloc(names, sizeof(char *) * (name_count + 1));
-        names[name_count] = strdup(ident_token->lexeme);
-        lexer_free_token(ident_token);
-        name_count++;
-    }
-
-    Tactic *tactic = malloc(sizeof(Tactic));
-    tactic->tag = TACTIC_INTROS;
-    tactic->as.intros.names = names;
-    tactic->as.intros.name_count = name_count;
-    return tactic;
-}
-
-static Tactic *_parse_apply(Parser *p) {
-    if (!parser_expect_consume(p, TOK_APPLY)) {
-        parser_error(p, "expected 'apply'");
-    }
-
-    AST *lemma = parse_term(p);
-    debug_print_ast(p, lemma);
-
-    Tactic *tactic = malloc(sizeof(Tactic));
-    tactic->tag = TACTIC_APPLY;
-    tactic->as.apply.lemma = lemma;
-    return tactic;
-}
-
-static Tactic *_parse_eapply(Parser *p) {
-    if (!parser_expect_consume(p, TOK_EAPPLY)) {
-        parser_error(p, "expected 'eapply'");
-    }
-
-    AST *lemma = parse_term(p);
-    debug_print_ast(p, lemma);
-
-    Tactic *tactic = malloc(sizeof(Tactic));
-    tactic->tag = TACTIC_EAPPLY;
-    tactic->as.eapply.lemma = lemma;
-    return tactic;
-}
-
-static Tactic *_parse_exact(Parser *p) {
-    if (!parser_expect_consume(p, TOK_EXACT)) {
-        parser_error(p, "expected 'exact'");
-    }
-
-    AST *proof_term = parse_term(p);
-    debug_print_ast(p, proof_term);
-
-    Tactic *tactic = malloc(sizeof(Tactic));
-    tactic->tag = TACTIC_EXACT;
-    tactic->as.exact.proof_term = proof_term;
-    return tactic;
-}
-
 static Tactic *_parse_rewrite(Parser *p) {
     if (!parser_expect_consume(p, TOK_REWRITE)) {
         parser_error(p, "expected 'rewrite'");
@@ -186,70 +103,6 @@ static Tactic *_parse_erewrite(Parser *p) {
     return tactic;
 }
 
-static Tactic *_parse_reflexivity(Parser *p) {
-    if (!parser_expect_consume(p, TOK_REFLEXIVITY)) {
-        parser_error(p, "expected 'reflexivity'");
-    }
-
-    Tactic *tactic = malloc(sizeof(Tactic));
-    tactic->tag = TACTIC_REFLEXIVITY;
-    return tactic;
-}
-
-static Tactic *_parse_assumption(Parser *p) {
-    if (!parser_expect_consume(p, TOK_ASSUMPTION)) {
-        parser_error(p, "expected 'assumption'");
-    }
-
-    Tactic *tactic = malloc(sizeof(Tactic));
-    tactic->tag = TACTIC_ASSUMPTION;
-    return tactic;
-}
-
-static Tactic *_parse_split(Parser *p) {
-    if (!parser_expect_consume(p, TOK_SPLIT)) {
-        parser_error(p, "expected 'split'");
-    }
-
-    Tactic *tactic = malloc(sizeof(Tactic));
-    tactic->tag = TACTIC_SPLIT;
-    return tactic;
-}
-
-static Tactic *_parse_left(Parser *p) {
-    if (!parser_expect_consume(p, TOK_LEFT)) {
-        parser_error(p, "expected 'left'");
-    }
-
-    Tactic *tactic = malloc(sizeof(Tactic));
-    tactic->tag = TACTIC_LEFT;
-    return tactic;
-}
-
-static Tactic *_parse_right(Parser *p) {
-    if (!parser_expect_consume(p, TOK_RIGHT)) {
-        parser_error(p, "expected 'right'");
-    }
-
-    Tactic *tactic = malloc(sizeof(Tactic));
-    tactic->tag = TACTIC_RIGHT;
-    return tactic;
-}
-
-static Tactic *_parse_exists(Parser *p) {
-    if (!parser_expect_consume(p, TOK_EXISTS)) {
-        parser_error(p, "expected 'exists'");
-    }
-
-    AST *witness = parse_term(p);
-    debug_print_ast(p, witness);
-
-    Tactic *tactic = malloc(sizeof(Tactic));
-    tactic->tag = TACTIC_EXISTS;
-    tactic->as.exists.witness = witness;
-    return tactic;
-}
-
 static Tactic *_parse_cbv(Parser *p) {
     if (!parser_expect_consume(p, TOK_CBV)) {
         parser_error(p, "expected 'cbv'");
@@ -285,19 +138,8 @@ typedef struct {
 } InternalTacticDispatchEntry;
 
 static InternalTacticDispatchEntry internal_dispatch_table[] = {
-    {TOK_INTRO, _parse_intro},
-    {TOK_INTROS, _parse_intros},
-    {TOK_APPLY, _parse_apply},
-    {TOK_EAPPLY, _parse_eapply},
-    {TOK_EXACT, _parse_exact},
     {TOK_REWRITE, _parse_rewrite},
     {TOK_EREWRITE, _parse_erewrite},
-    {TOK_REFLEXIVITY, _parse_reflexivity},
-    {TOK_ASSUMPTION, _parse_assumption},
-    {TOK_SPLIT, _parse_split},
-    {TOK_LEFT, _parse_left},
-    {TOK_RIGHT, _parse_right},
-    {TOK_EXISTS, _parse_exists},
     {TOK_CBV, _parse_cbv},
 };
 
@@ -474,6 +316,22 @@ static TacticExpr *_parse_tactic_atom(Parser *p) {
         return tactic_expr_eunify(lemma);
     }
 
+    // current_goal - returns the current goal hole as a term value
+    if (tok == TOK_CURRENT_GOAL) {
+        parser_expect_consume(p, TOK_CURRENT_GOAL);
+        return tactic_expr_current_goal();
+    }
+
+    // intro_step [name] - introduce a single forall-bound variable
+    if (tok == TOK_INTRO_STEP) {
+        parser_expect_consume(p, TOK_INTRO_STEP);
+        AST *name = NULL;
+        if (parser_expect_no_consume(p, TOK_IDENT)) {
+            name = parse_atomic(p);
+        }
+        return tactic_expr_intro_step(name);
+    }
+
     // match Goal with | [ ... |- ... ] => tac ... end
     // match <term>  with | <pat>        => tac ... end
     if (tok == TOK_MATCH) {
@@ -594,6 +452,65 @@ static TacticExpr *_parse_tactic_atom(Parser *p) {
         return inner;
     }
 
+    // pair <term> <term>
+    if (tok == TOK_PAIR) {
+        parser_expect_consume(p, TOK_PAIR);
+        AST *fst = parse_atomic(p);
+        AST *snd = parse_atomic(p);
+        return tactic_expr_pair(fst, snd);
+    }
+
+    // fst <term>
+    if (tok == TOK_FST) {
+        parser_expect_consume(p, TOK_FST);
+        AST *term = parse_atomic(p);
+        return tactic_expr_fst(term);
+    }
+
+    // snd <term>
+    if (tok == TOK_SND) {
+        parser_expect_consume(p, TOK_SND);
+        AST *term = parse_atomic(p);
+        return tactic_expr_snd(term);
+    }
+
+    // app_func <term>
+    if (tok == TOK_APP_FUNC) {
+        parser_expect_consume(p, TOK_APP_FUNC);
+        AST *term = parse_atomic(p);
+        return tactic_expr_app_func(term);
+    }
+
+    // app_arg <term>
+    if (tok == TOK_APP_ARG) {
+        parser_expect_consume(p, TOK_APP_ARG);
+        AST *term = parse_atomic(p);
+        return tactic_expr_app_arg(term);
+    }
+
+    // expr_eq <term> <term>
+    if (tok == TOK_EXPR_EQ) {
+        parser_expect_consume(p, TOK_EXPR_EQ);
+        AST *left = parse_atomic(p);
+        AST *right = parse_atomic(p);
+        return tactic_expr_expr_eq(left, right);
+    }
+
+    // rewrite_unify <lemma> <target>
+    if (tok == TOK_REWRITE_UNIFY) {
+        parser_expect_consume(p, TOK_REWRITE_UNIFY);
+        AST *lemma = parse_atomic(p);
+        AST *target = parse_atomic(p);
+        return tactic_expr_rewrite_unify(lemma, target);
+    }
+
+    // constr <term> - evaluate a term expression and return as tactic value
+    if (tok == TOK_CONSTR) {
+        parser_expect_consume(p, TOK_CONSTR);
+        AST *term = parse_atomic(p);
+        return tactic_expr_constr(term);
+    }
+
     // Primitive tactic
     InternalTacticParseFunc fn = _lookup_primitive(tok);
     if (fn) {
@@ -615,7 +532,8 @@ static TacticExpr *_parse_tactic_atom(Parser *p) {
             TokenType next = p->current->type;
             // Stop at combinator tokens, separators, and terminators
             if (next == TOK_SEMICOLON || next == TOK_DOUBLE_PIPE || next == TOK_DOT ||
-                next == TOK_RPAREN || next == TOK_RBRACKET || next == TOK_PIPE || next == TOK_END) {
+                next == TOK_RPAREN || next == TOK_RBRACKET || next == TOK_PIPE ||
+                next == TOK_END || next == TOK_IN) {
                 break;
             }
             AST *arg = parse_atomic(p);

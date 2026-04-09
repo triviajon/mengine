@@ -9,9 +9,12 @@
 #include "src/kernel/context.h"
 #include "src/kernel/expression.h"
 #include "src/kernel/kernel_api.h"
+#include "src/kernel/normalize.h"
 #include "src/runtime/runtime.h"
 #include "src/tacticlanguage/tactic_ast.h"
 #include "src/tacticlanguage/tactic_parser.h"
+#include "src/engine/unify.h"
+#include "src/runtime/core.h"
 #include "src/termlanguage/ast_to_expression.h"
 
 /* ============================================================================
@@ -244,7 +247,7 @@ static AST *_ast_subst(AST *ast, char **params, AST **args, size_t count) {
             copy->value.patvar.name = strdup(ast->value.patvar.name);
             break;
         case AST_EXPR_REF:
-            copy->value.expr_ref.expr = ast->value.expr_ref.expr;
+            copy->value.expr_ref.tval = ast->value.expr_ref.tval;
             break;
     }
 
@@ -264,15 +267,6 @@ static Tactic *_tactic_subst(Tactic *tac, char **params, AST **args, size_t coun
     *copy = *tac;  // shallow copy
 
     switch (tac->tag) {
-        case TACTIC_APPLY:
-            copy->as.apply.lemma = _ast_subst(tac->as.apply.lemma, params, args, count);
-            break;
-        case TACTIC_EAPPLY:
-            copy->as.eapply.lemma = _ast_subst(tac->as.eapply.lemma, params, args, count);
-            break;
-        case TACTIC_EXACT:
-            copy->as.exact.proof_term = _ast_subst(tac->as.exact.proof_term, params, args, count);
-            break;
         case TACTIC_REWRITE:
         case TACTIC_REWRITE_BACKWARD:
         case TACTIC_EREWRITE:
@@ -281,21 +275,6 @@ static Tactic *_tactic_subst(Tactic *tac, char **params, AST **args, size_t coun
             copy->as.rewrite.equiv_proof =
                 _ast_subst(tac->as.rewrite.equiv_proof, params, args, count);
             copy->as.rewrite.backward = tac->as.rewrite.backward;
-            break;
-        case TACTIC_EXISTS:
-            copy->as.exists.witness = _ast_subst(tac->as.exists.witness, params, args, count);
-            break;
-        case TACTIC_INTRO:
-            copy->as.intro.name = tac->as.intro.name ? strdup(tac->as.intro.name) : NULL;
-            break;
-        case TACTIC_INTROS:
-            copy->as.intros.name_count = tac->as.intros.name_count;
-            if (tac->as.intros.names) {
-                copy->as.intros.names = malloc(sizeof(char *) * tac->as.intros.name_count);
-                for (size_t i = 0; i < tac->as.intros.name_count; i++) {
-                    copy->as.intros.names[i] = strdup(tac->as.intros.names[i]);
-                }
-            }
             break;
         case TACTIC_CBV:
             copy->as.cbv.rules_count = tac->as.cbv.rules_count;
@@ -307,8 +286,7 @@ static Tactic *_tactic_subst(Tactic *tac, char **params, AST **args, size_t coun
             }
             break;
         default:
-            // TACTIC_REFLEXIVITY, TACTIC_ASSUMPTION, TACTIC_SPLIT,
-            // TACTIC_LEFT, TACTIC_RIGHT, TACTIC_ADMITTED — no AST fields
+            // TACTIC_ADMITTED — no AST fields
             break;
     }
 
@@ -408,6 +386,33 @@ static TacticExpr *_tactic_expr_subst(TacticExpr *expr, char **params, AST **arg
                                      _ast_subst(expr->as.subst.old_var, params, args, count));
         case TAC_EUNIFY:
             return tactic_expr_eunify(_ast_subst(expr->as.eunify.lemma, params, args, count));
+        case TAC_CURRENT_GOAL:
+            return tactic_expr_current_goal();
+        case TAC_INTRO_STEP:
+            return tactic_expr_intro_step(
+                expr->as.intro_step.name
+                    ? _ast_subst(expr->as.intro_step.name, params, args, count)
+                    : NULL);
+        case TAC_PAIR:
+            return tactic_expr_pair(_ast_subst(expr->as.pair.fst, params, args, count),
+                                    _ast_subst(expr->as.pair.snd, params, args, count));
+        case TAC_FST:
+            return tactic_expr_fst(_ast_subst(expr->as.fst.term, params, args, count));
+        case TAC_SND:
+            return tactic_expr_snd(_ast_subst(expr->as.snd.term, params, args, count));
+        case TAC_APP_FUNC:
+            return tactic_expr_app_func(_ast_subst(expr->as.app_func.term, params, args, count));
+        case TAC_APP_ARG:
+            return tactic_expr_app_arg(_ast_subst(expr->as.app_arg.term, params, args, count));
+        case TAC_EXPR_EQ:
+            return tactic_expr_expr_eq(_ast_subst(expr->as.expr_eq.left, params, args, count),
+                                       _ast_subst(expr->as.expr_eq.right, params, args, count));
+        case TAC_REWRITE_UNIFY:
+            return tactic_expr_rewrite_unify(
+                _ast_subst(expr->as.rewrite_unify.lemma, params, args, count),
+                _ast_subst(expr->as.rewrite_unify.target, params, args, count));
+        case TAC_CONSTR:
+            return tactic_expr_constr(_ast_subst(expr->as.constr.term, params, args, count));
     }
 
     return expr;
@@ -425,36 +430,6 @@ static TacticResult *_interpret_primitive(MEngineRuntime *rt, Expression *goal, 
     Context *ctx = kernel_expr_context(goal);
 
     switch (tac->tag) {
-        case TACTIC_INTRO:
-            return engine_tactic_intro(goal, tac->as.intro.name);
-
-        case TACTIC_INTROS:
-            return engine_tactic_intros(goal, tac->as.intros.names, tac->as.intros.name_count);
-
-        case TACTIC_APPLY: {
-            Expression *lemma = ast_to_expression(tac->as.apply.lemma, ctx);
-            if (!lemma) {
-                return init_tactic_result(false, NULL, "Could not resolve lemma");
-            }
-            return engine_tactic_apply(goal, lemma);
-        }
-
-        case TACTIC_EAPPLY: {
-            Expression *lemma = ast_to_expression(tac->as.eapply.lemma, ctx);
-            if (!lemma) {
-                return init_tactic_result(false, NULL, "Could not resolve lemma");
-            }
-            return engine_tactic_eapply(goal, lemma);
-        }
-
-        case TACTIC_EXACT: {
-            Expression *proof_term = ast_to_expression(tac->as.exact.proof_term, ctx);
-            if (!proof_term) {
-                return init_tactic_result(false, NULL, "Could not resolve proof term");
-            }
-            return engine_tactic_exact(goal, proof_term);
-        }
-
         case TACTIC_REWRITE:
         case TACTIC_REWRITE_BACKWARD: {
             Expression *lemma = ast_to_expression(tac->as.rewrite.lemma, ctx);
@@ -474,35 +449,15 @@ static TacticResult *_interpret_primitive(MEngineRuntime *rt, Expression *goal, 
             return engine_tactic_erewrite(goal, lemma);
         }
 
-        case TACTIC_REFLEXIVITY:
-            return engine_tactic_reflexivity(goal);
-
-        case TACTIC_ASSUMPTION:
-            return engine_tactic_assumption(goal);
-
-        case TACTIC_SPLIT:
-            return engine_tactic_split(goal);
-
-        case TACTIC_LEFT:
-            return engine_tactic_left(goal);
-
-        case TACTIC_RIGHT:
-            return engine_tactic_right(goal);
-
-        case TACTIC_EXISTS: {
-            Expression *witness = ast_to_expression(tac->as.exists.witness, ctx);
-            if (!witness) {
-                return init_tactic_result(false, NULL, "Could not resolve witness");
-            }
-            return engine_tactic_exists(goal, witness);
-        }
-
         case TACTIC_CBV:
             return engine_tactic_cbv(goal, tac->as.cbv.rules, tac->as.cbv.rules_count);
 
         case TACTIC_ADMITTED:
             // Admitted is handled specially at the top level, not here
             return init_tactic_result(false, NULL, "Admitted cannot be used in tactic expressions");
+
+        default:
+            break;
     }
 
     return init_tactic_result(false, NULL, "Unknown tactic");
@@ -511,6 +466,18 @@ static TacticResult *_interpret_primitive(MEngineRuntime *rt, Expression *goal, 
 /* ============================================================================
  * Tactic interpreter
  * ============================================================================ */
+
+/* Resolve an AST node to a TacticValue.
+ * If the node is an AST_EXPR_REF, return the wrapped TacticValue directly.
+ * Otherwise, evaluate via ast_to_expression and wrap as TVAL_EXPRESSION. */
+static TacticValue *resolve_tactic_value(AST *ast, Context *ctx) {
+    if (ast->tag == AST_EXPR_REF) {
+        return ast->value.expr_ref.tval;
+    }
+    Expression *e = ast_to_expression(ast, ctx);
+    if (!e) return NULL;
+    return tactic_value_expr(e);
+}
 
 #define TAC_CALL_MAX_DEPTH 1000
 static int _tac_call_depth = 0;
@@ -530,6 +497,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             // Run right tactic on each subgoal from left
             DoublyLinkedList *left_goals = tactic_result_get_goals(left_result);
             DoublyLinkedList *all_goals = dll_create();
+            TacticValue *last_value = NULL;
 
             if (left_goals) {
                 DLLNode *node = left_goals->head;
@@ -548,6 +516,9 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                     if (right_goals) {
                         all_goals = dll_merge(all_goals, right_goals);
                     }
+                    if (right_result->term_value) {
+                        last_value = right_result->term_value;
+                    }
                     free_tactic_result(right_result);
 
                     node = node->next;
@@ -555,7 +526,9 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             }
 
             free_tactic_result(left_result);
-            return init_tactic_result(true, all_goals, NULL);
+            TacticResult *seq_result = init_tactic_result(true, all_goals, NULL);
+            seq_result->term_value = last_value;
+            return seq_result;
         }
 
         case TAC_ORELSE: {
@@ -642,7 +615,8 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             return init_tactic_result(false, NULL, "fail");
 
         case TAC_CALL: {
-            TacticDef *def = tactic_env_lookup(rt->tactic_env, expr->as.call.name);
+            TacticDef *def = tactic_env_lookup(rt->tactic_env, expr->as.call.name,
+                                                 expr->as.call.arg_count);
             if (!def) {
                 char msg[256];
                 snprintf(msg, sizeof(msg), "Unknown tactic '%s'", expr->as.call.name);
@@ -762,7 +736,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                         all_names[hyp_param_count + k] = bindings.names[k];
                         AST *ref = malloc(sizeof(AST));
                         ref->tag = AST_EXPR_REF;
-                        ref->value.expr_ref.expr = bindings.values[k];
+                        ref->value.expr_ref.tval = tactic_value_expr(bindings.values[k]);
                         all_values[hyp_param_count + k] = ref;
                     }
                 }
@@ -790,30 +764,44 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             if (!tactic_result_get_success(rhs_result)) {
                 return rhs_result;
             }
-            Expression *value = tactic_result_get_value(rhs_result);
+            TacticValue *value = tactic_result_get_value(rhs_result);
             if (!value) {
                 free_tactic_result(rhs_result);
                 return init_tactic_result(false, NULL,
                                           "let binding RHS did not produce a term value");
             }
 
+            // Save RHS goals before freeing the result struct
+            DoublyLinkedList *rhs_goals = tactic_result_get_goals(rhs_result);
+
             // Substitute the bound name in the body with AST_EXPR_REF wrapping
             // the value.
             AST *ref = malloc(sizeof(AST));
             ref->tag = AST_EXPR_REF;
-            ref->value.expr_ref.expr = value;
+            ref->value.expr_ref.tval = value;
 
             char *params[1] = {expr->as.let_expr.name};
             AST *args[1] = {ref};
             TacticExpr *body = _tactic_expr_subst(expr->as.let_expr.body, params, args, 1);
 
-            free_tactic_result(rhs_result);
-            return tactic_interpret(rt, goal, body);
+            free(rhs_result);  // free struct only, not the goals list we saved
+            TacticResult *body_result = tactic_interpret(rt, goal, body);
+
+            // Merge RHS goals into body result
+            if (rhs_goals && tactic_result_get_success(body_result)) {
+                DoublyLinkedList *body_goals = tactic_result_get_goals(body_result);
+                if (body_goals) {
+                    body_result->new_goals = dll_merge(rhs_goals, body_goals);
+                } else {
+                    body_result->new_goals = rhs_goals;
+                }
+            }
+            return body_result;
         }
 
         case TAC_GOAL_TYPE: {
             Expression *goal_type = get_expression_type(goal);
-            return init_tactic_result_value(goal_type);
+            return init_tactic_result_value(tactic_value_expr(goal_type));
         }
 
         case TAC_TYPE_OF: {
@@ -823,7 +811,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                 return init_tactic_result(false, NULL, "type_of: could not resolve term");
             }
             Expression *type = kernel_expr_type(term);
-            return init_tactic_result_value(type);
+            return init_tactic_result_value(tactic_value_expr(type));
         }
 
         case TAC_MATCH_TERM: {
@@ -854,7 +842,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                         names[k] = bindings.names[k];
                         AST *ref = malloc(sizeof(AST));
                         ref->tag = AST_EXPR_REF;
-                        ref->value.expr_ref.expr = bindings.values[k];
+                        ref->value.expr_ref.tval = tactic_value_expr(bindings.values[k]);
                         refs[k] = ref;
                     }
                 }
@@ -879,11 +867,12 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             if (!type) {
                 return init_tactic_result(false, NULL, "mk_hole: could not resolve type");
             }
+            type = normalize_whnf(type);
             Expression *hole = kernel_hole_create("hole", type, ctx);
             DoublyLinkedList *goals = dll_create();
             dll_insert_at_tail(goals, dll_new_node(hole));
             TacticResult *r = init_tactic_result(true, goals, NULL);
-            r->term_value = hole;
+            r->term_value = tactic_value_expr(hole);
             return r;
         }
 
@@ -912,7 +901,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             if (!result) {
                 return init_tactic_result(false, NULL, "subst: substitution failed");
             }
-            return init_tactic_result_value(result);
+            return init_tactic_result_value(tactic_value_expr(result));
         }
 
         case TAC_EUNIFY: {
@@ -928,9 +917,153 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             Expression *inst = engine_unify_get_lemma(unif);
             DoublyLinkedList *new_goals = (DoublyLinkedList *)engine_unify_get_bindings(unif);
             TacticResult *r = init_tactic_result(true, new_goals ? new_goals : dll_create(), NULL);
-            r->term_value = inst;
+            r->term_value = tactic_value_expr(inst);
             engine_unify_free(unif);
             return r;
+        }
+
+        case TAC_CURRENT_GOAL: {
+            TacticResult *r = init_tactic_result(true, dll_create(), NULL);
+            r->term_value = tactic_value_expr(goal);
+            return r;
+        }
+
+        case TAC_INTRO_STEP: {
+            Expression *goal_ty = kernel_expr_type(goal);
+            Expression *x = kernel_forall_var(goal_ty);
+            if (!x) {
+                return init_tactic_result(false, NULL,
+                                          "intro_step: goal is not a forall expression");
+            }
+
+            Expression *A = kernel_expr_type(x);
+            Expression *B = kernel_forall_body(goal_ty);
+
+            // Determine the name for the introduced variable
+            char *intro_name = kernel_var_name(x);  // default: forall's binder name
+            if (expr->as.intro_step.name) {
+                AST *name_ast = expr->as.intro_step.name;
+                if (name_ast->tag == AST_VAR) {
+                    intro_name = name_ast->value.var.name;
+                } else if (name_ast->tag == AST_EXPR_REF) {
+                    Expression *name_expr = tactic_value_as_expr(name_ast->value.expr_ref.tval);
+                    if (name_expr->tag == VAR_EXPRESSION) {
+                        intro_name = kernel_var_name(name_expr);
+                    }
+                }
+            }
+
+            Expression *x_prime = kernel_var_create(intro_name, A, kernel_expr_context(goal));
+            Expression *B_prime = kernel_subst(x_prime, B, x, x_prime);
+            Expression *new_goal = kernel_hole_create((char *)"Goal", B_prime, x_prime);
+
+            Expression *proof = kernel_lambda_create(x_prime, new_goal);
+            if (!kernel_hole_fill(goal, proof)) {
+                return init_tactic_result(false, NULL, "intro_step: failed to fill the hole");
+            }
+
+            DoublyLinkedList *goals = dll_create();
+            dll_insert_at_tail(goals, dll_new_node(new_goal));
+            return init_tactic_result(true, goals, NULL);
+        }
+
+        case TAC_PAIR: {
+            Context *ctx = kernel_expr_context(goal);
+            TacticValue *fst_val = resolve_tactic_value(expr->as.pair.fst, ctx);
+            TacticValue *snd_val = resolve_tactic_value(expr->as.pair.snd, ctx);
+            if (!fst_val || !snd_val) {
+                return init_tactic_result(false, NULL, "pair: could not resolve arguments");
+            }
+            return init_tactic_result_value(tactic_value_pair(fst_val, snd_val));
+        }
+
+        case TAC_FST: {
+            Context *ctx = kernel_expr_context(goal);
+            TacticValue *pair_val = resolve_tactic_value(expr->as.fst.term, ctx);
+            if (!pair_val || pair_val->kind != TVAL_PAIR) {
+                return init_tactic_result(false, NULL, "fst: expected a pair");
+            }
+            return init_tactic_result_value(pair_val->pair.fst);
+        }
+
+        case TAC_SND: {
+            Context *ctx = kernel_expr_context(goal);
+            TacticValue *pair_val = resolve_tactic_value(expr->as.snd.term, ctx);
+            if (!pair_val || pair_val->kind != TVAL_PAIR) {
+                return init_tactic_result(false, NULL, "snd: expected a pair");
+            }
+            return init_tactic_result_value(pair_val->pair.snd);
+        }
+
+        case TAC_APP_FUNC: {
+            Context *ctx = kernel_expr_context(goal);
+            Expression *app_val = ast_to_expression(expr->as.app_func.term, ctx);
+            if (!app_val || app_val->tag != APP_EXPRESSION) {
+                return init_tactic_result(false, NULL, "app_func: expected an application");
+            }
+            return init_tactic_result_value(tactic_value_expr(get_app_func(app_val)));
+        }
+
+        case TAC_APP_ARG: {
+            Context *ctx = kernel_expr_context(goal);
+            Expression *app_val = ast_to_expression(expr->as.app_arg.term, ctx);
+            if (!app_val || app_val->tag != APP_EXPRESSION) {
+                return init_tactic_result(false, NULL, "app_arg: expected an application");
+            }
+            return init_tactic_result_value(tactic_value_expr(get_app_arg(app_val)));
+        }
+
+        case TAC_EXPR_EQ: {
+            Context *ctx = kernel_expr_context(goal);
+            Expression *left = ast_to_expression(expr->as.expr_eq.left, ctx);
+            Expression *right = ast_to_expression(expr->as.expr_eq.right, ctx);
+            if (!left || !right) {
+                return init_tactic_result(false, NULL, "expr_eq: could not resolve arguments");
+            }
+            if (left == right) {
+                DoublyLinkedList *goals_list = dll_create();
+                dll_insert_at_tail(goals_list, dll_new_node(goal));
+                return init_tactic_result(true, goals_list, NULL);
+            }
+            return init_tactic_result(false, NULL, "expr_eq: expressions are not pointer-equal");
+        }
+
+        case TAC_REWRITE_UNIFY: {
+            Context *ctx = kernel_expr_context(goal);
+            Expression *lemma = ast_to_expression(expr->as.rewrite_unify.lemma, ctx);
+            Expression *target = ast_to_expression(expr->as.rewrite_unify.target, ctx);
+            if (!lemma || !target) {
+                return init_tactic_result(false, NULL,
+                                          "rewrite_unify: could not resolve arguments");
+            }
+            UnificationResult *unif = bad_unify_for_eq(ctx, lemma, target);
+            if (!unif) {
+                return init_tactic_result(false, NULL,
+                                          "rewrite_unify: unification failed");
+            }
+            if (dll_len(unif->new_goals) > 0) {
+                free_unification_result(unif);
+                return init_tactic_result(false, NULL,
+                                          "rewrite_unify: unresolved bindings");
+            }
+            Expression *inst = unif->lemma_instantiation;
+            Expression *proof_type = get_expression_type(inst);
+            if (!congruence(_get_lhs_eq(proof_type), target)) {
+                free_unification_result(unif);
+                return init_tactic_result(false, NULL,
+                                          "rewrite_unify: LHS does not match target");
+            }
+            free_unification_result(unif);
+            return init_tactic_result_value(tactic_value_expr(inst));
+        }
+
+        case TAC_CONSTR: {
+            Context *ctx = kernel_expr_context(goal);
+            Expression *term = ast_to_expression(expr->as.constr.term, ctx);
+            if (!term) {
+                return init_tactic_result(false, NULL, "constr: could not resolve term");
+            }
+            return init_tactic_result_value(tactic_value_expr(term));
         }
     }
 

@@ -9,6 +9,7 @@
 #include "src/common/doubly_linked_list.h"
 #include "src/common/options.h"
 #include "src/engine/engine_api.h"
+#include "src/engine/rewrite_internal.h"
 #include "src/kernel/kernel_api.h"
 #include "src/runtime/runtime.h"
 #include "src/tacticlanguage/tactic_ast.h"
@@ -928,6 +929,28 @@ static int _handle_tactic_def_command(MEngineRuntime *rt, TacticDefCmd *tc) {
     return 0;
 }
 
+static int _handle_register_relation_command(MEngineRuntime *rt, RegisterRelationCmd *rr) {
+    Expression *relation = ast_to_expression(rr->relation, rt->ctx);
+    Expression *refl = ast_to_expression(rr->refl, rt->ctx);
+    Expression *trans = ast_to_expression(rr->trans, rt->ctx);
+    Expression *congr = ast_to_expression(rr->congr, rt->ctx);
+
+    if (!relation || !refl || !trans || !congr) {
+        fprintf(stderr, ERROR "Failed to resolve terms in Register Relation command.\n" CRESET);
+        return 1;
+    }
+
+    RelationInfo info = {.relation = relation, .refl = refl, .trans = trans, .congr = congr};
+    if (!relation_registry_add(rt->relation_registry, info)) {
+        fprintf(stderr, ERROR "Failed to register relation.\n" CRESET);
+        return 1;
+    }
+
+    MPRINT(rt->options->quiet, stdout, UI "Relation " CRESET "%s registered.\n",
+           kernel_expr_to_string(relation));
+    return 0;
+}
+
 int mengine_execute_command(MEngineRuntime *rt, Command *cmd) {
     if (!rt || !cmd) {
         return 1;
@@ -963,6 +986,9 @@ int mengine_execute_command(MEngineRuntime *rt, Command *cmd) {
         }
         case CMD_TACTIC_DEF: {
             return _handle_tactic_def_command(rt, &cmd->as.tactic_def);
+        }
+        case CMD_REGISTER_RELATION: {
+            return _handle_register_relation_command(rt, &cmd->as.register_relation);
         }
         default:
             return 1;

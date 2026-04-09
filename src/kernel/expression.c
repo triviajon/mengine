@@ -1141,7 +1141,7 @@ bool subtypes(Expression *a, Expression *b) {
         return true;
     }
 
-    return congruence(a, b);
+    return definitional_equal(a, b);
 }
 
 void _match_and_subst(Expression *a, Expression *b, LinearMap *mapping) {

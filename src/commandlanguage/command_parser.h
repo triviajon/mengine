@@ -14,7 +14,8 @@ typedef enum {
     CMD_INDUCTIVE,
     CMD_FIXPOINT,
     CMD_SHOW,
-    CMD_TACTIC_DEF
+    CMD_TACTIC_DEF,
+    CMD_REGISTER_RELATION
 } CommandTag;
 
 typedef enum { DECL_KW_AXIOM, DECL_KW_VARIABLE } DeclKeyword;
@@ -113,6 +114,13 @@ typedef struct {
     TacticExpr *body;    // body tactic expression
 } TacticDefCmd;
 
+typedef struct {
+    AST *relation;  // the relation (e.g. eq)
+    AST *refl;      // reflexivity proof
+    AST *trans;     // transitivity proof
+    AST *congr;     // congruence proof
+} RegisterRelationCmd;
+
 typedef struct Command {
     CommandTag tag;
     union {
@@ -126,6 +134,7 @@ typedef struct Command {
         InductiveCmd inductive;
         FixpointCmd fixpoint;
         TacticDefCmd tactic_def;
+        RegisterRelationCmd register_relation;
     } as;
 } Command;
 
@@ -264,6 +273,14 @@ Command *command_parse_inductive(Parser *p);
  */
 Command *command_parse_tactic_def(Parser *p);
 
+/**
+ * <register_relation> ::= "Register" "Relation" <term> <term> <term> <term> "."
+ *
+ * @param p Pointer to the Parser.
+ * @return Command structure representing the parsed register relation command.
+ */
+Command *command_parse_register_relation(Parser *p);
+
 typedef Command *(*CommandParseFunc)(Parser *p);
 
 typedef struct {
@@ -271,18 +288,20 @@ typedef struct {
     CommandParseFunc parse_func;
 } CommandDispatchEntry;
 
-static CommandDispatchEntry command_dispatch_table[] = {{TOK_AXIOM, command_parse_declaration},
-                                                        {TOK_VARIABLE, command_parse_declaration},
-                                                        {TOK_DEFINITION, command_parse_definition},
-                                                        {TOK_THEOREM, command_parse_statement},
-                                                        {TOK_LEMMA, command_parse_statement},
-                                                        {TOK_CHECK, command_parse_check},
-                                                        {TOK_PRINT, command_parse_print},
-                                                        {TOK_EVAL, command_parse_eval},
-                                                        {TOK_INDUCTIVE, command_parse_inductive},
-                                                        {TOK_FIXPOINT, command_parse_fixpoint},
-                                                        {TOK_SHOW, command_parse_show},
-                                                        {TOK_TACTIC, command_parse_tactic_def}};
+static CommandDispatchEntry command_dispatch_table[] = {
+    {TOK_AXIOM, command_parse_declaration},
+    {TOK_VARIABLE, command_parse_declaration},
+    {TOK_DEFINITION, command_parse_definition},
+    {TOK_THEOREM, command_parse_statement},
+    {TOK_LEMMA, command_parse_statement},
+    {TOK_CHECK, command_parse_check},
+    {TOK_PRINT, command_parse_print},
+    {TOK_EVAL, command_parse_eval},
+    {TOK_INDUCTIVE, command_parse_inductive},
+    {TOK_FIXPOINT, command_parse_fixpoint},
+    {TOK_SHOW, command_parse_show},
+    {TOK_TACTIC, command_parse_tactic_def},
+    {TOK_REGISTER, command_parse_register_relation}};
 
 #define CMD_DISPATCH_TABLE (command_dispatch_table)
 #define CMD_DISPATCH_TABLE_SIZE (sizeof(command_dispatch_table) / sizeof(command_dispatch_table[0]))

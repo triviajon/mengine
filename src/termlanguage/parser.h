@@ -10,6 +10,7 @@ typedef struct AST AST;
 
 // Forward declaration of kernel Expression (used by AST_EXPR_REF).
 typedef struct Expression Expression;
+typedef struct TacticValue TacticValue;
 
 typedef struct {
     char *name;  // identifier name
@@ -46,7 +47,7 @@ typedef struct {
 } PatVarAST;
 
 typedef struct {
-    Expression *expr;  // kernel expression pointer (not owned by AST)
+    TacticValue *tval;  // tactic value (not owned by AST)
 } ExprRefAST;
 
 typedef struct {

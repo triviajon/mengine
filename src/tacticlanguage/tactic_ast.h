@@ -25,7 +25,17 @@ typedef enum {
     TAC_MK_HOLE,     // mk_hole <type>        - creates a hole, returns it as term_value
     TAC_FILL,        // fill <hole> <term>    - fills hole with term
     TAC_SUBST,       // subst <new> <body> <old> - substitution body[old := new]
-    TAC_EUNIFY,      // eunify <lemma> <goal> - existential unification
+    TAC_EUNIFY,          // eunify <lemma> <goal> - existential unification
+    TAC_CURRENT_GOAL,    // current_goal - returns the current goal hole as a term value
+    TAC_INTRO_STEP,      // intro_step [name] - introduce a forall-bound variable
+    TAC_PAIR,            // pair <term> <term> - create a tactic-level pair
+    TAC_FST,             // fst <term> - extract first element of a pair
+    TAC_SND,             // snd <term> - extract second element of a pair
+    TAC_APP_FUNC,        // app_func <term> - get function part of application
+    TAC_APP_ARG,         // app_arg <term> - get argument part of application
+    TAC_EXPR_EQ,         // expr_eq <term> <term> - pointer equality test
+    TAC_REWRITE_UNIFY,   // rewrite_unify <lemma> <target> - rewrite head unification
+    TAC_CONSTR,          // constr <term> - evaluate a term and return it as a value
 } TacticExprTag;
 
 typedef struct TacticExpr TacticExpr;
@@ -120,6 +130,45 @@ typedef struct {
     AST *lemma;  // lemma to unify against current goal
 } EunifyTacticExpr;
 
+typedef struct {
+    AST *name;  // optional name for the variable (NULL = use forall's name)
+} IntroStepTacticExpr;
+
+typedef struct {
+    AST *fst;  // first element
+    AST *snd;  // second element
+} PairTacticExpr;
+
+typedef struct {
+    AST *term;  // pair to destructure
+} FstTacticExpr;
+
+typedef struct {
+    AST *term;  // pair to destructure
+} SndTacticExpr;
+
+typedef struct {
+    AST *term;  // application expression to inspect
+} AppFuncTacticExpr;
+
+typedef struct {
+    AST *term;  // application expression to inspect
+} AppArgTacticExpr;
+
+typedef struct {
+    AST *left;   // first expression
+    AST *right;  // second expression
+} ExprEqTacticExpr;
+
+typedef struct {
+    AST *lemma;   // lemma to unify
+    AST *target;  // target expression
+} RewriteUnifyTacticExpr;
+
+typedef struct {
+    AST *term;  // term to evaluate
+} ConstrTacticExpr;
+
 struct TacticExpr {
     TacticExprTag tag;
     union {
@@ -138,6 +187,15 @@ struct TacticExpr {
         FillTacticExpr fill;
         SubstTacticExpr subst;
         EunifyTacticExpr eunify;
+        IntroStepTacticExpr intro_step;
+        PairTacticExpr pair;
+        FstTacticExpr fst;
+        SndTacticExpr snd;
+        AppFuncTacticExpr app_func;
+        AppArgTacticExpr app_arg;
+        ExprEqTacticExpr expr_eq;
+        RewriteUnifyTacticExpr rewrite_unify;
+        ConstrTacticExpr constr;
     } as;
 };
 
@@ -278,6 +336,78 @@ static inline TacticExpr *tactic_expr_eunify(AST *lemma) {
     return e;
 }
 
+static inline TacticExpr *tactic_expr_current_goal(void) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_CURRENT_GOAL;
+    return e;
+}
+
+static inline TacticExpr *tactic_expr_intro_step(AST *name) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_INTRO_STEP;
+    e->as.intro_step.name = name;
+    return e;
+}
+
+static inline TacticExpr *tactic_expr_pair(AST *fst, AST *snd) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_PAIR;
+    e->as.pair.fst = fst;
+    e->as.pair.snd = snd;
+    return e;
+}
+
+static inline TacticExpr *tactic_expr_fst(AST *term) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_FST;
+    e->as.fst.term = term;
+    return e;
+}
+
+static inline TacticExpr *tactic_expr_snd(AST *term) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_SND;
+    e->as.snd.term = term;
+    return e;
+}
+
+static inline TacticExpr *tactic_expr_app_func(AST *term) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_APP_FUNC;
+    e->as.app_func.term = term;
+    return e;
+}
+
+static inline TacticExpr *tactic_expr_app_arg(AST *term) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_APP_ARG;
+    e->as.app_arg.term = term;
+    return e;
+}
+
+static inline TacticExpr *tactic_expr_expr_eq(AST *left, AST *right) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_EXPR_EQ;
+    e->as.expr_eq.left = left;
+    e->as.expr_eq.right = right;
+    return e;
+}
+
+static inline TacticExpr *tactic_expr_rewrite_unify(AST *lemma, AST *target) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_REWRITE_UNIFY;
+    e->as.rewrite_unify.lemma = lemma;
+    e->as.rewrite_unify.target = target;
+    return e;
+}
+
+static inline TacticExpr *tactic_expr_constr(AST *term) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_CONSTR;
+    e->as.constr.term = term;
+    return e;
+}
+
 /* ============================================================================
  * Tactic definitions (stored in the tactic environment)
  * ============================================================================ */
@@ -304,9 +434,10 @@ static inline TacticEnv *tactic_env_new(void) {
 }
 
 static inline void tactic_env_add(TacticEnv *env, TacticDef *def) {
-    // Replace existing definition with same name
+    // Replace existing definition with same name AND same arity
     for (size_t i = 0; i < env->count; i++) {
-        if (strcmp(env->defs[i]->name, def->name) == 0) {
+        if (strcmp(env->defs[i]->name, def->name) == 0 &&
+            env->defs[i]->param_count == def->param_count) {
             // TODO: free old def
             env->defs[i] = def;
             return;
@@ -319,12 +450,13 @@ static inline void tactic_env_add(TacticEnv *env, TacticDef *def) {
     env->defs[env->count++] = def;
 }
 
-static inline TacticDef *tactic_env_lookup(TacticEnv *env, const char *name) {
+static inline TacticDef *tactic_env_lookup(TacticEnv *env, const char *name, size_t arg_count) {
     if (!env) {
         return NULL;
     }
     for (size_t i = 0; i < env->count; i++) {
-        if (strcmp(env->defs[i]->name, name) == 0) {
+        if (strcmp(env->defs[i]->name, name) == 0 &&
+            env->defs[i]->param_count == arg_count) {
             return env->defs[i];
         }
     }

@@ -7,6 +7,53 @@
 #include "src/engine/unify.h"
 #include "src/runtime/core.h"
 
+/* ============================================================================
+ * Relation Registry
+ * ============================================================================ */
+
+#define MAX_RELATIONS 64
+
+struct RelationRegistry {
+    RelationInfo entries[MAX_RELATIONS];
+    int count;
+};
+
+RelationRegistry *relation_registry_new(void) {
+    RelationRegistry *reg = calloc(1, sizeof(RelationRegistry));
+    return reg;
+}
+
+void relation_registry_free(RelationRegistry *reg) {
+    if (reg) free(reg);
+}
+
+bool relation_registry_add(RelationRegistry *reg, RelationInfo info) {
+    if (!reg || reg->count >= MAX_RELATIONS) return false;
+    /* overwrite if relation already registered */
+    for (int i = 0; i < reg->count; i++) {
+        if (reg->entries[i].relation == info.relation) {
+            reg->entries[i] = info;
+            return true;
+        }
+    }
+    reg->entries[reg->count++] = info;
+    return true;
+}
+
+RelationInfo *relation_registry_lookup(RelationRegistry *reg, Expression *relation) {
+    if (!reg) return NULL;
+    for (int i = 0; i < reg->count; i++) {
+        if (reg->entries[i].relation == relation) {
+            return &reg->entries[i];
+        }
+    }
+    return NULL;
+}
+
+/* ============================================================================
+ * Rewrite internals
+ * ============================================================================ */
+
 bool rewrite_is_noop(RewriteResult *rwr) { return rwr->original == rwr->rewritten; }
 
 Expression *_build_reflexivity_proof(Expression *expr, Context *ctx) {

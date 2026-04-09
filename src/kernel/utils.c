@@ -156,6 +156,7 @@ char *stringify_expression(Expression *expression) {
         case HOLE_EXPRESSION:
             result = str_concat("?", strdup(get_hole_name(expression)));
             break;
+
     }
 
     return result;

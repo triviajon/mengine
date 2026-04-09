@@ -85,6 +85,7 @@ static bool _defeq(Expression *a, Expression *b, LinearMap *mapping) {
             }
 
             return _defeq(a->as.fix.body, b->as.fix.body, mapping);
+
     }
 
     return false;

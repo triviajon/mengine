@@ -543,3 +543,31 @@ Command *command_parse_tactic_def(Parser *p) {
 
     return cmd;
 }
+
+Command *command_parse_register_relation(Parser *p) {
+    // Register Relation <relation> <refl> <trans> <congr> .
+    if (!parser_expect_consume(p, TOK_REGISTER)) {
+        parser_error(p, "expected 'Register'");
+    }
+    if (!parser_expect_consume(p, TOK_RELATION)) {
+        parser_error(p, "expected 'Relation' after 'Register'");
+    }
+
+    AST *relation = parse_atomic(p);
+    AST *refl = parse_atomic(p);
+    AST *trans = parse_atomic(p);
+    AST *congr = parse_atomic(p);
+
+    if (!parser_expect_consume(p, TOK_DOT)) {
+        parser_error(p, "expected '.' at end of Register Relation command");
+    }
+
+    Command *cmd = malloc(sizeof(Command));
+    cmd->tag = CMD_REGISTER_RELATION;
+    cmd->as.register_relation.relation = relation;
+    cmd->as.register_relation.refl = refl;
+    cmd->as.register_relation.trans = trans;
+    cmd->as.register_relation.congr = congr;
+
+    return cmd;
+}

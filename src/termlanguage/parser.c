@@ -96,7 +96,7 @@ void fprint_ast(FILE *stream, AST *ast) {
             return;
 
         case AST_EXPR_REF:
-            fprintf(stream, "EXPR_REF(%p)", (void *)ast->value.expr_ref.expr);
+            fprintf(stream, "EXPR_REF(%p)", (void *)ast->value.expr_ref.tval);
             return;
 
         default:

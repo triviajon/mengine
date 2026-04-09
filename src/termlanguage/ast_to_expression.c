@@ -7,6 +7,7 @@
 #include "src/common/color.h"
 #include "src/common/doubly_linked_list.h"
 #include "src/common/lexer.h"
+#include "src/engine/tactic_api.h"
 #include "src/kernel/kernel_api.h"
 #include "src/termlanguage/parser.h"
 
@@ -95,7 +96,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
             return kernel_prop_create();
 
         case AST_EXPR_REF:
-            return ast->value.expr_ref.expr;
+            return tactic_value_as_expr(ast->value.expr_ref.tval);
 
         case AST_LAMBDA: {
             Expression *binder_type =
