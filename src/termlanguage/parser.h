@@ -144,7 +144,8 @@ AST *parse_lambda(Parser *p);
 AST *parse_forall(Parser *p);
 
 /**
- * <fix_expr> ::= "fix" <identifier> { "(" <binder> ")" } <decreasing_arg_annotation> ":" <term> ":=" <term>
+ * <fix_expr> ::= "fix" <identifier> { "(" <binder> ")" } <decreasing_arg_annotation> ":" <term>
+ * ":=" <term>
  *
  * @param p Pointer to the Parser.
  * @return AST node representing the parsed fix expression.
