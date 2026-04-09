@@ -448,7 +448,9 @@ static TacticExpr *_parse_tactic_atom(Parser *p) {
                     lexer_free_token(hyp_name);
                     hyp_count++;
 
-                    if (!parser_expect_consume(p, TOK_COMMA)) break;
+                    if (!parser_expect_consume(p, TOK_COMMA)) {
+                        break;
+                    }
                 }
             }
 
@@ -513,8 +515,7 @@ static TacticExpr *_parse_tactic_atom(Parser *p) {
             TokenType next = p->current->type;
             // Stop at combinator tokens, separators, and terminators
             if (next == TOK_SEMICOLON || next == TOK_DOUBLE_PIPE || next == TOK_DOT ||
-                next == TOK_RPAREN || next == TOK_RBRACKET || next == TOK_PIPE ||
-                next == TOK_END) {
+                next == TOK_RPAREN || next == TOK_RBRACKET || next == TOK_PIPE || next == TOK_END) {
                 break;
             }
             AST *arg = parse_atomic(p);

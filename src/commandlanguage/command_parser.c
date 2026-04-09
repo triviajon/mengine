@@ -439,7 +439,7 @@ Command *command_parse_eval(Parser *p) {
     }
 
     // Parse strategy
-    EvalStrategy strategy;
+    EvalStrategy strategy = 0;
     if (parser_expect_consume(p, TOK_CBV)) {
         strategy = EVAL_STRATEGY_CBV;
     } else if (parser_expect_consume(p, TOK_COMPUTE)) {

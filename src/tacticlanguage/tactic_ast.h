@@ -8,14 +8,14 @@
 #include "src/tacticlanguage/tactic_parser.h"
 
 typedef enum {
-    TAC_PRIMITIVE,  // wraps an existing Tactic*
-    TAC_SEQ,        // tac1 ; tac2
-    TAC_ORELSE,     // tac1 || tac2
-    TAC_TRY,        // try tac
-    TAC_REPEAT,     // repeat tac
-    TAC_FIRST,      // first [ tac1 | tac2 | ... ]
-    TAC_IDTAC,      // idtac (identity, always succeeds)
-    TAC_FAIL,       // fail (always fails)
+    TAC_PRIMITIVE,   // wraps an existing Tactic*
+    TAC_SEQ,         // tac1 ; tac2
+    TAC_ORELSE,      // tac1 || tac2
+    TAC_TRY,         // try tac
+    TAC_REPEAT,      // repeat tac
+    TAC_FIRST,       // first [ tac1 | tac2 | ... ]
+    TAC_IDTAC,       // idtac (identity, always succeeds)
+    TAC_FAIL,        // fail (always fails)
     TAC_CALL,        // user-defined tactic call
     TAC_MATCH_GOAL,  // match goal with | [ ... |- ... ] => tac end
 } TacticExprTag;
@@ -61,10 +61,10 @@ typedef struct {
 } HypPattern;
 
 typedef struct {
-    HypPattern *hyps;    // array of hypothesis patterns
-    size_t hyp_count;    // number of hypothesis patterns
-    AST *conclusion;     // conclusion pattern (after |-)
-    TacticExpr *body;    // tactic body to execute on match
+    HypPattern *hyps;  // array of hypothesis patterns
+    size_t hyp_count;  // number of hypothesis patterns
+    AST *conclusion;   // conclusion pattern (after |-)
+    TacticExpr *body;  // tactic body to execute on match
 } GoalBranch;
 
 typedef struct {
@@ -202,7 +202,9 @@ static inline void tactic_env_add(TacticEnv *env, TacticDef *def) {
 }
 
 static inline TacticDef *tactic_env_lookup(TacticEnv *env, const char *name) {
-    if (!env) return NULL;
+    if (!env) {
+        return NULL;
+    }
     for (size_t i = 0; i < env->count; i++) {
         if (strcmp(env->defs[i]->name, name) == 0) {
             return env->defs[i];
@@ -212,7 +214,9 @@ static inline TacticDef *tactic_env_lookup(TacticEnv *env, const char *name) {
 }
 
 static inline void tactic_env_free(TacticEnv *env) {
-    if (!env) return;
+    if (!env) {
+        return;
+    }
     // TODO: deep-free definitions
     free(env->defs);
     free(env);
