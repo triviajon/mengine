@@ -168,8 +168,7 @@ static AST *_ast_subst(AST *ast, char **params, AST **args, size_t count) {
 
     // Check for variable substitution
     if ((ast->tag == AST_VAR || ast->tag == AST_PATVAR) && params) {
-        const char *name =
-            ast->tag == AST_VAR ? ast->value.var.name : ast->value.patvar.name;
+        const char *name = ast->tag == AST_VAR ? ast->value.var.name : ast->value.patvar.name;
         for (size_t i = 0; i < count; i++) {
             if (strcmp(name, params[i]) == 0) {
                 return _ast_deep_copy(args[i]);
@@ -380,15 +379,24 @@ static TacticExpr *_tactic_expr_subst(TacticExpr *expr, char **params, AST **arg
             return tactic_expr_match_goal(new_branches, bc);
         }
         case TAC_LET:
-            return tactic_expr_let(
-                expr->as.let_expr.name,
-                _tactic_expr_subst(expr->as.let_expr.rhs, params, args, count),
-                _tactic_expr_subst(expr->as.let_expr.body, params, args, count));
+            return tactic_expr_let(expr->as.let_expr.name,
+                                   _tactic_expr_subst(expr->as.let_expr.rhs, params, args, count),
+                                   _tactic_expr_subst(expr->as.let_expr.body, params, args, count));
         case TAC_GOAL_TYPE:
             return tactic_expr_goal_type();
         case TAC_TYPE_OF:
-            return tactic_expr_type_of(
-                _ast_subst(expr->as.type_of.term, params, args, count));
+            return tactic_expr_type_of(_ast_subst(expr->as.type_of.term, params, args, count));
+        case TAC_MATCH_TERM: {
+            size_t bc = expr->as.match_term.branch_count;
+            TermBranch *new_branches = malloc(sizeof(TermBranch) * bc);
+            for (size_t i = 0; i < bc; i++) {
+                TermBranch *old = &expr->as.match_term.branches[i];
+                new_branches[i].pattern = _ast_subst(old->pattern, params, args, count);
+                new_branches[i].body = _tactic_expr_subst(old->body, params, args, count);
+            }
+            return tactic_expr_match_term(
+                _ast_subst(expr->as.match_term.scrutinee, params, args, count), new_branches, bc);
+        }
     }
 
     return expr;
@@ -492,6 +500,9 @@ static TacticResult *_interpret_primitive(MEngineRuntime *rt, Expression *goal, 
 /* ============================================================================
  * Tactic interpreter
  * ============================================================================ */
+
+#define TAC_CALL_MAX_DEPTH 1000
+static int _tac_call_depth = 0;
 
 TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr *expr) {
     switch (expr->tag) {
@@ -634,13 +645,23 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                 return init_tactic_result(false, NULL, msg);
             }
 
+            if (_tac_call_depth >= TAC_CALL_MAX_DEPTH) {
+                char msg[256];
+                snprintf(msg, sizeof(msg), "Tactic recursion limit reached calling '%s'",
+                         expr->as.call.name);
+                return init_tactic_result(false, NULL, msg);
+            }
+
             TacticExpr *body = def->body;
             if (def->param_count > 0) {
                 body = _tactic_expr_subst(def->body, def->params, expr->as.call.args,
                                           def->param_count);
             }
 
-            return tactic_interpret(rt, goal, body);
+            _tac_call_depth++;
+            TacticResult *result = tactic_interpret(rt, goal, body);
+            _tac_call_depth--;
+            return result;
         }
 
         case TAC_MATCH_GOAL: {
@@ -761,8 +782,8 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             Expression *value = tactic_result_get_value(rhs_result);
             if (!value) {
                 free_tactic_result(rhs_result);
-                return init_tactic_result(
-                    false, NULL, "let binding RHS did not produce a term value");
+                return init_tactic_result(false, NULL,
+                                          "let binding RHS did not produce a term value");
             }
 
             // Substitute the bound name in the body with AST_EXPR_REF wrapping
@@ -773,8 +794,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
             char *params[1] = {expr->as.let_expr.name};
             AST *args[1] = {ref};
-            TacticExpr *body =
-                _tactic_expr_subst(expr->as.let_expr.body, params, args, 1);
+            TacticExpr *body = _tactic_expr_subst(expr->as.let_expr.body, params, args, 1);
 
             free_tactic_result(rhs_result);
             return tactic_interpret(rt, goal, body);
@@ -789,11 +809,57 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             Context *ctx = kernel_expr_context(goal);
             Expression *term = ast_to_expression(expr->as.type_of.term, ctx);
             if (!term) {
-                return init_tactic_result(false, NULL,
-                    "type_of: could not resolve term");
+                return init_tactic_result(false, NULL, "type_of: could not resolve term");
             }
             Expression *type = kernel_expr_type(term);
             return init_tactic_result_value(type);
+        }
+
+        case TAC_MATCH_TERM: {
+            Context *ctx = kernel_expr_context(goal);
+            Expression *scrutinee = ast_to_expression(expr->as.match_term.scrutinee, ctx);
+            if (!scrutinee) {
+                return init_tactic_result(false, NULL,
+                                          "match <term>: could not evaluate scrutinee");
+            }
+
+            for (size_t i = 0; i < expr->as.match_term.branch_count; i++) {
+                TermBranch *branch = &expr->as.match_term.branches[i];
+                PatternBindings bindings;
+                bindings_init(&bindings);
+
+                if (!_match_pattern(branch->pattern, scrutinee, &bindings)) {
+                    bindings_free(&bindings);
+                    continue;
+                }
+
+                // Convert pattern variable bindings to AST_EXPR_REF substitutions
+                char **names = NULL;
+                AST **refs = NULL;
+                if (bindings.count > 0) {
+                    names = malloc(sizeof(char *) * bindings.count);
+                    refs = malloc(sizeof(AST *) * bindings.count);
+                    for (size_t k = 0; k < bindings.count; k++) {
+                        names[k] = bindings.names[k];
+                        AST *ref = malloc(sizeof(AST));
+                        ref->tag = AST_EXPR_REF;
+                        ref->value.expr_ref.expr = bindings.values[k];
+                        refs[k] = ref;
+                    }
+                }
+
+                TacticExpr *body = branch->body;
+                if (bindings.count > 0) {
+                    body = _tactic_expr_subst(body, names, refs, bindings.count);
+                }
+
+                free(names);
+                free(refs);
+                bindings_free(&bindings);
+                return tactic_interpret(rt, goal, body);
+            }
+
+            return init_tactic_result(false, NULL, "No branch matched in match <term>");
         }
     }
 

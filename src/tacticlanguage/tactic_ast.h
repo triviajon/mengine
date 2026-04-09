@@ -19,8 +19,9 @@ typedef enum {
     TAC_CALL,        // user-defined tactic call
     TAC_MATCH_GOAL,  // match goal with | [ ... |- ... ] => tac end
     TAC_LET,         // let x := <tactic_expr> in <tactic_expr>
-    TAC_GOAL_TYPE,   // goal_type — returns the type of the current goal
-    TAC_TYPE_OF,     // type_of <term> — returns the type of a term
+    TAC_GOAL_TYPE,    // goal_type — returns the type of the current goal
+    TAC_TYPE_OF,      // type_of <term> — returns the type of a term
+    TAC_MATCH_TERM,   // match <term> with | <pat> => tac ... end
 } TacticExprTag;
 
 typedef struct TacticExpr TacticExpr;
@@ -85,6 +86,17 @@ typedef struct {
     AST *term;  // term whose type to compute
 } TypeOfTacticExpr;
 
+typedef struct {
+    AST *pattern;    // term pattern (with AST_PATVAR nodes)
+    TacticExpr *body;  // tactic body to execute on match
+} TermBranch;
+
+typedef struct {
+    AST *scrutinee;       // term to match (AST evaluated at interpret-time)
+    TermBranch *branches;
+    size_t branch_count;
+} MatchTermTacticExpr;
+
 struct TacticExpr {
     TacticExprTag tag;
     union {
@@ -98,6 +110,7 @@ struct TacticExpr {
         MatchGoalTacticExpr match_goal;
         LetTacticExpr let_expr;
         TypeOfTacticExpr type_of;
+        MatchTermTacticExpr match_term;
     } as;
 };
 
@@ -194,6 +207,16 @@ static inline TacticExpr *tactic_expr_type_of(AST *term) {
     TacticExpr *e = malloc(sizeof(TacticExpr));
     e->tag = TAC_TYPE_OF;
     e->as.type_of.term = term;
+    return e;
+}
+
+static inline TacticExpr *tactic_expr_match_term(AST *scrutinee, TermBranch *branches,
+                                                  size_t branch_count) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_MATCH_TERM;
+    e->as.match_term.scrutinee = scrutinee;
+    e->as.match_term.branches = branches;
+    e->as.match_term.branch_count = branch_count;
     return e;
 }
 
