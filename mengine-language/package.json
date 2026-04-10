@@ -1,0 +1,39 @@
+{
+  "name": "mengine-language",
+  "displayName": "mengine-language",
+  "description": "VS Code language support for mengine language.",
+  "version": "0.0.2",
+  "publisher": "triviajon",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/triviajon/mengine.git",
+    "directory": "mengine-language"
+  },
+  "engines": {
+    "vscode": "^1.115.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "mengine",
+        "aliases": [
+          "mengine"
+        ],
+        "extensions": [
+          ".me"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "mengine",
+        "scopeName": "source.mengine",
+        "path": "./syntaxes/mengine.tmLanguage.json"
+      }
+    ]
+  }
+}
