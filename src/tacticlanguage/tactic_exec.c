@@ -39,7 +39,12 @@ int mengine_execute_tactic(MEngineRuntime *rt, TacticExpr *tac) {
 
     // Add any new subgoals to the proof state
     engine_proof_state_add_goals(rt->proof_state, engine_tactic_result_goals(result));
+    result->new_goals = NULL;  // ownership transferred to proof state
     engine_tactic_result_free(result);
+
+    // The tactic filled the current goal, detaching it from the expression tree.
+    // Free the now-orphaned hole expression (shallow — don't cascade into children).
+    kernel_free_filled_hole(goal);
 
     // Advance to the next goal
     if (!engine_proof_state_next_goal(rt->proof_state)) {

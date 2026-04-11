@@ -46,7 +46,7 @@ typedef enum {
     FORALL_BOUND_VAR,          // expr->as.forall.bound_variable
     VAR_BODY,                  // expr->as.var.body
     EXPR_TYPE,                 // expr->type
-    EXPR_CONTEXT,              // expr->context
+    // EXPR_CONTEXT removed: context is a non-owning edge
     MATCH_SCRUTINEE,           // expr->as.match.scrutinee
     MATCH_BRANCH_BODY,         // expr->as.match.branches[i]->body
     MATCH_BRANCH_PATTERN_VAR,  // expr->as.match.branches[i]->pattern_variables[j]
@@ -182,6 +182,11 @@ void remove_uplink(Expression *expr, void *parent_ptr, Relation rel);
 // Never frees TYPE, PROP, or EMPTY_CONTEXT globals.
 void free_expression(Expression *expr);
 
+// Bulk-free every expression reachable from root via DFS (owning + context edges).
+// Used at shutdown to free the entire expression graph without cascading RC teardown.
+void free_expression_graph(Expression *root);
+void free_filled_hole(Expression *hole);
+
 // Create a new uplink describing how ptr relates.
 Uplink *new_uplink(void *ptr, Relation r);
 
@@ -194,11 +199,8 @@ void propagate_evar_refs(Expression *parent, Expression *child);
 
 #define SET_EXPR_UPLINKS(expr, value) (expr)->uplinks = (value);
 
-#define SET_EXPR_CONTEXT(expr, value)                  \
-    (expr)->context = (value);                         \
-    if (!context_is_empty(value)) {                    \
-        add_to_parents((value), (expr), EXPR_CONTEXT); \
-    }
+#define SET_EXPR_CONTEXT(expr, value) \
+    (expr)->context = (value);
 
 #define SET_EXPR_CTX_SIZE(expr, value) (expr)->ctx_size = (value);
 
@@ -242,9 +244,7 @@ void propagate_evar_refs(Expression *parent, Expression *child);
     (expr)->as.match.scrutinee = (value); \
     add_to_parents((value), (expr), MATCH_SCRUTINEE)
 
-#define SET_MATCH_BRANCHES(expr, value)                                                        \
-    (expr)->as.match.branches = malloc((expr)->as.match.branch_count * sizeof(MatchBranch *)); \
-    (expr)->as.match.branch_count = (expr)->as.match.branch_count;                             \
+#define SET_MATCH_BRANCHES(expr, value)                                                       \
     (expr)->as.match.branches = (value);                                                       \
     for (int __i = 0; __i < (expr)->as.match.branch_count; __i++) {                            \
         MatchBranch *branch = (expr)->as.match.branches[__i];                                  \
@@ -260,11 +260,9 @@ void propagate_evar_refs(Expression *parent, Expression *child);
     (expr)->as.fix.recursive_var = (value); \
     add_to_parents((value), (expr), FIX_RECURSIVE_VAR)
 
-#define SET_FIX_ARGS(expr, value)                                                  \
-    (expr)->as.fix.args = malloc((expr)->as.fix.arg_count * sizeof(Expression *)); \
-    (expr)->as.fix.arg_count = (expr)->as.fix.arg_count;                           \
-    (expr)->as.fix.args = (value);                                                 \
-    for (int __i = 0; __i < (expr)->as.fix.arg_count; __i++) {                     \
+#define SET_FIX_ARGS(expr, value)                                 \
+    (expr)->as.fix.args = (value);                                 \
+    for (int __i = 0; __i < (expr)->as.fix.arg_count; __i++) {     \
         (expr)->as.fix.args[__i] = (value)[__i];                                   \
         add_to_parents((value)[__i], (expr), FIX_ARG);                             \
     }

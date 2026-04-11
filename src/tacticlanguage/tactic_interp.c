@@ -247,7 +247,7 @@ static AST *_ast_subst(AST *ast, char **params, AST **args, size_t count) {
             copy->value.patvar.name = strdup(ast->value.patvar.name);
             break;
         case AST_EXPR_REF:
-            copy->value.expr_ref.tval = ast->value.expr_ref.tval;
+            copy->value.expr_ref.tval = tactic_value_dup(ast->value.expr_ref.tval);
             break;
     }
 
@@ -468,11 +468,12 @@ static TacticResult *_interpret_primitive(MEngineRuntime *rt, Expression *goal, 
  * ============================================================================ */
 
 /* Resolve an AST node to a TacticValue.
- * If the node is an AST_EXPR_REF, return the wrapped TacticValue directly.
- * Otherwise, evaluate via ast_to_expression and wrap as TVAL_EXPRESSION. */
+ * If the node is an AST_EXPR_REF, return an owned duplicate of the tval.
+ * Otherwise, evaluate via ast_to_expression and wrap as TVAL_EXPRESSION.
+ * The caller owns the returned TacticValue. */
 static TacticValue *resolve_tactic_value(AST *ast, Context *ctx) {
     if (ast->tag == AST_EXPR_REF) {
-        return ast->value.expr_ref.tval;
+        return tactic_value_dup(ast->value.expr_ref.tval);
     }
     Expression *e = ast_to_expression(ast, ctx);
     if (!e) return NULL;
@@ -508,18 +509,30 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                     if (!tactic_result_get_success(right_result)) {
                         // Propagate failure
                         dll_destroy(all_goals);
+                        free_tactic_value(last_value);
                         free_tactic_result(left_result);
                         return right_result;
                     }
 
                     DoublyLinkedList *right_goals = tactic_result_get_goals(right_result);
+                    // If subgoal was filled (not returned in right_goals), free it.
+                    // NULL new_goals means the tactic produced a pure value without touching
+                    // the goal (e.g. TAC_PAIR, TAC_FST, TAC_SND). An empty DLL means the
+                    // subgoal was actually filled with no remaining subgoals.
+                    bool subgoal_filled = right_goals != NULL && !dll_search(right_goals, subgoal);
                     if (right_goals) {
                         all_goals = dll_merge(all_goals, right_goals);
+                        right_result->new_goals = NULL;  // consumed by merge
                     }
                     if (right_result->term_value) {
+                        free_tactic_value(last_value);
                         last_value = right_result->term_value;
+                        right_result->term_value = NULL;  // ownership transferred
                     }
                     free_tactic_result(right_result);
+                    if (subgoal_filled) {
+                        kernel_free_filled_hole(subgoal);
+                    }
 
                     node = node->next;
                 }
@@ -573,8 +586,17 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                     if (tactic_result_get_success(result)) {
                         made_progress = true;
                         DoublyLinkedList *new_goals = tactic_result_get_goals(result);
+                        // NULL new_goals means pure value computation, g not filled.
+                        // An empty DLL means g was filled with no remaining subgoals.
+                        bool g_filled = new_goals != NULL && !dll_search(new_goals, g);
                         if (new_goals) {
                             next_goals = dll_merge(next_goals, new_goals);
+                            result->new_goals = NULL;  // consumed by merge
+                        }
+                        // Only free g if it was created internally (not the goal passed in
+                        // from outside). The caller owns `goal` and is responsible for freeing it.
+                        if (g_filled && g != goal) {
+                            kernel_free_filled_hole(g);
                         }
                     } else {
                         // This goal couldn't be processed, keep it
@@ -638,14 +660,17 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             }
 
             TacticExpr *body = def->body;
+            bool body_is_copy = false;
             if (def->param_count > 0) {
                 body = _tactic_expr_subst(def->body, def->params, expr->as.call.args,
                                           def->param_count);
+                body_is_copy = true;
             }
 
             _tac_call_depth++;
             TacticResult *result = tactic_interpret(rt, goal, body);
             _tac_call_depth--;
+            if (body_is_copy) free_tactic_expr(body);
             return result;
         }
 
@@ -742,17 +767,28 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                 }
 
                 TacticExpr *body = branch->body;
+                bool body_is_copy = false;
                 if (total_count > 0) {
                     body = _tactic_expr_subst(body, all_names, all_values, total_count);
+                    body_is_copy = true;
                 }
 
+                // Free temporary AST nodes used for substitution values
+                for (size_t k = 0; k < hyp_param_count; k++) {
+                    free_ast(hyp_param_values[k]);
+                }
+                for (size_t k = 0; k < bindings.count; k++) {
+                    free_ast(all_values[hyp_param_count + k]);
+                }
                 free(all_names);
                 free(all_values);
                 free(hyp_param_names);
                 free(hyp_param_values);
                 bindings_free(&bindings);
 
-                return tactic_interpret(rt, goal, body);
+                TacticResult *match_result = tactic_interpret(rt, goal, body);
+                if (body_is_copy) free_tactic_expr(body);
+                return match_result;
             }
 
             return init_tactic_result(false, NULL, "No branch matched in match Goal");
@@ -773,6 +809,9 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
             // Save RHS goals before freeing the result struct
             DoublyLinkedList *rhs_goals = tactic_result_get_goals(rhs_result);
+            rhs_result->new_goals = NULL;   // ownership transferred
+            rhs_result->term_value = NULL;  // ownership transferred
+            free_tactic_result(rhs_result);
 
             // Substitute the bound name in the body with AST_EXPR_REF wrapping
             // the value.
@@ -783,9 +822,10 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             char *params[1] = {expr->as.let_expr.name};
             AST *args[1] = {ref};
             TacticExpr *body = _tactic_expr_subst(expr->as.let_expr.body, params, args, 1);
+            free_ast(ref);
 
-            free(rhs_result);  // free struct only, not the goals list we saved
             TacticResult *body_result = tactic_interpret(rt, goal, body);
+            free_tactic_expr(body);
 
             // Merge RHS goals into body result
             if (rhs_goals && tactic_result_get_success(body_result)) {
@@ -795,6 +835,8 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                 } else {
                     body_result->new_goals = rhs_goals;
                 }
+            } else if (rhs_goals) {
+                dll_destroy(rhs_goals);
             }
             return body_result;
         }
@@ -848,14 +890,22 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                 }
 
                 TacticExpr *body = branch->body;
+                bool body_is_copy = false;
                 if (bindings.count > 0) {
                     body = _tactic_expr_subst(body, names, refs, bindings.count);
+                    body_is_copy = true;
+                    // Free temporary AST_EXPR_REF nodes (tval not owned)
+                    for (size_t k = 0; k < bindings.count; k++) {
+                        free_ast(refs[k]);
+                    }
                 }
 
                 free(names);
                 free(refs);
                 bindings_free(&bindings);
-                return tactic_interpret(rt, goal, body);
+                TacticResult *match_result = tactic_interpret(rt, goal, body);
+                if (body_is_copy) free_tactic_expr(body);
+                return match_result;
             }
 
             return init_tactic_result(false, NULL, "No branch matched in match <term>");
@@ -918,6 +968,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             DoublyLinkedList *new_goals = (DoublyLinkedList *)engine_unify_get_bindings(unif);
             TacticResult *r = init_tactic_result(true, new_goals ? new_goals : dll_create(), NULL);
             r->term_value = tactic_value_expr(inst);
+            unif->new_goals = NULL;  // ownership transferred to tactic result
             engine_unify_free(unif);
             return r;
         }
@@ -972,6 +1023,8 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             TacticValue *fst_val = resolve_tactic_value(expr->as.pair.fst, ctx);
             TacticValue *snd_val = resolve_tactic_value(expr->as.pair.snd, ctx);
             if (!fst_val || !snd_val) {
+                free_tactic_value(fst_val);
+                free_tactic_value(snd_val);
                 return init_tactic_result(false, NULL, "pair: could not resolve arguments");
             }
             return init_tactic_result_value(tactic_value_pair(fst_val, snd_val));
@@ -981,18 +1034,24 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             Context *ctx = kernel_expr_context(goal);
             TacticValue *pair_val = resolve_tactic_value(expr->as.fst.term, ctx);
             if (!pair_val || pair_val->kind != TVAL_PAIR) {
+                free_tactic_value(pair_val);
                 return init_tactic_result(false, NULL, "fst: expected a pair");
             }
-            return init_tactic_result_value(pair_val->pair.fst);
+            TacticValue *component = tactic_value_dup(pair_val->pair.fst);
+            free_tactic_value(pair_val);
+            return init_tactic_result_value(component);
         }
 
         case TAC_SND: {
             Context *ctx = kernel_expr_context(goal);
             TacticValue *pair_val = resolve_tactic_value(expr->as.snd.term, ctx);
             if (!pair_val || pair_val->kind != TVAL_PAIR) {
+                free_tactic_value(pair_val);
                 return init_tactic_result(false, NULL, "snd: expected a pair");
             }
-            return init_tactic_result_value(pair_val->pair.snd);
+            TacticValue *component = tactic_value_dup(pair_val->pair.snd);
+            free_tactic_value(pair_val);
+            return init_tactic_result_value(component);
         }
 
         case TAC_APP_FUNC: {

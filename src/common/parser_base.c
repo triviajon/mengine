@@ -144,3 +144,15 @@ void parser_flush_comments(Parser *p) {
     }
     p->pending_comment_count = 0;
 }
+
+void parser_cleanup(Parser *p) {
+    if (p->current) {
+        lexer_free_token(p->current);
+        p->current = NULL;
+    }
+    // Flush remaining comments (frees comment strings)
+    parser_flush_comments(p);
+    free(p->pending_comments);
+    p->pending_comments = NULL;
+    p->pending_comment_capacity = 0;
+}

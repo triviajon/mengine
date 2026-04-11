@@ -114,6 +114,7 @@ TacticResult *apply_tactic(Expression *goal, Expression *lemma) {
     DoublyLinkedList *new_goals = unif_result->new_goals;
     TacticResult *result = init_tactic_result(true, new_goals, NULL);
 
+    unif_result->new_goals = NULL;  // transferred to tactic result
     free_unification_result(unif_result);
     return result;
 }
@@ -140,7 +141,8 @@ TacticResult *eapply_tactic(Expression *goal, Expression *lemma) {
     DoublyLinkedList *new_goals = unif_result->new_goals;
     TacticResult *result = init_tactic_result(true, new_goals, NULL);
 
-    free(unif_result);
+    unif_result->new_goals = NULL;  // transferred to tactic result
+    free_unification_result(unif_result);
 
     return result;
 }
@@ -236,7 +238,10 @@ TacticResult *rewrite_tactic(Expression *goal, Expression *lemma) {
 
     DoublyLinkedList *new_goals = dll_create();
     dll_insert_at_tail(new_goals, dll_new_node(new_goal));
-    new_goals = dll_merge(new_goals, rwr->new_goals);
+    if (rwr->new_goals) {
+        new_goals = dll_merge(new_goals, rwr->new_goals);
+        rwr->new_goals = NULL;  // transferred ownership
+    }
 
     if (!kernel_hole_fill(goal, proof_of_goal)) {
         free_rewrite_result(rwr);
@@ -306,7 +311,10 @@ TacticResult *erewrite_tactic(Expression *goal, Expression *lemma) {
 
     DoublyLinkedList *new_goals = dll_create();
     dll_insert_at_tail(new_goals, dll_new_node(new_goal));
-    new_goals = dll_merge(new_goals, rwr->new_goals);
+    if (rwr->new_goals) {
+        new_goals = dll_merge(new_goals, rwr->new_goals);
+        rwr->new_goals = NULL;  // transferred ownership
+    }
 
     if (!kernel_hole_fill(goal, proof_of_goal)) {
         free_rewrite_result(rwr);

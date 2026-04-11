@@ -368,6 +368,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                     free(contexts);
                     return NULL;
                 }
+                free(contexts);
             }
             // Next, make the fix expression
 
@@ -436,9 +437,9 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
 
                 fix_expr = kernel_fix_create(recursive_var, contexts + 1, binder_count, body,
                                              decreasing_arg_index, contexts[0]);
+                free(contexts);
                 if (!fix_expr) {
                     fprintf(stderr, ERROR "Failed to create fix expression.\n" CRESET);
-                    free(contexts);
                     return NULL;
                 }
             }
@@ -532,6 +533,9 @@ void free_ast(AST *ast) {
         case AST_MATCH:
             free_ast(ast->value.match.scrutinee);
             if (ast->value.match.branches) {
+                for (size_t i = 0; i < ast->value.match.branch_count; i++) {
+                    free_ast(ast->value.match.branches[i]);
+                }
                 free(ast->value.match.branches);
             }
             break;
@@ -546,6 +550,38 @@ void free_ast(AST *ast) {
                 free(ast->value.matchbranch.pattern);
             }
             free_ast(ast->value.matchbranch.body);
+            break;
+
+        case AST_LET:
+            free(ast->value.let.name);
+            free_ast(ast->value.let.type);
+            free_ast(ast->value.let.value);
+            free_ast(ast->value.let.body);
+            break;
+
+        case AST_FIX:
+            free(ast->value.fix.name);
+            if (ast->value.fix.binders) {
+                for (size_t i = 0; i < ast->value.fix.binder_count; i++) {
+                    if (ast->value.fix.binders[i]) {
+                        free(ast->value.fix.binders[i]->name);
+                        free_ast(ast->value.fix.binders[i]->type);
+                        free(ast->value.fix.binders[i]);
+                    }
+                }
+                free(ast->value.fix.binders);
+            }
+            free(ast->value.fix.decreasing_arg_name);
+            free_ast(ast->value.fix.return_type);
+            free_ast(ast->value.fix.body);
+            break;
+
+        case AST_PATVAR:
+            free(ast->value.patvar.name);
+            break;
+
+        case AST_EXPR_REF:
+            free_tactic_value(ast->value.expr_ref.tval);
             break;
 
         case AST_TYPE:

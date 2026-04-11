@@ -138,6 +138,8 @@ typedef struct Command {
     } as;
 } Command;
 
+void free_command(Command *cmd);
+
 /**
  * <command> ::= <declaration> | <definition> | <statement> | <check>
  *

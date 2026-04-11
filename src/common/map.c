@@ -218,3 +218,18 @@ void map_clear_free_all(Map *m) {
 
     map_free(m);
 }
+
+void map_clear_apply_free(Map *m, void (*free_fn)(void *)) {
+    if (!m) {
+        return;
+    }
+
+    for (size_t i = 0; i < m->capacity; i++) {
+        MapEntry *e = &m->entries[i];
+        if (e->in_use) {
+            free_fn(e->value);
+        }
+    }
+
+    map_free(m);
+}

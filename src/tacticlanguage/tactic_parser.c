@@ -7,6 +7,7 @@
 #include "src/common/lexer.h"
 #include "src/common/parser_base.h"
 #include "src/tacticlanguage/tactic_ast.h"
+#include "src/termlanguage/ast_to_expression.h"
 
 char *tactic_tag_to_string(TacticTag tag) {
     switch (tag) {
@@ -269,7 +270,9 @@ static TacticExpr *_parse_tactic_atom(Parser *p) {
 
         TacticExpr *body = _parse_tactic_expr(p);
 
-        return tactic_expr_let(name, rhs, body);
+        TacticExpr *result = tactic_expr_let(name, rhs, body);
+        free(name);
+        return result;
     }
 
     // goal_type - returns the type of the current goal
@@ -541,7 +544,9 @@ static TacticExpr *_parse_tactic_atom(Parser *p) {
             args[arg_count++] = arg;
         }
 
-        return tactic_expr_call(name, args, arg_count);
+        TacticExpr *call = tactic_expr_call(name, args, arg_count);
+        free(name);
+        return call;
     }
 
     parser_error(p, "Unknown or unsupported tactic keyword");
@@ -574,3 +579,51 @@ TacticExpr *tactic_parse_proof_command(Parser *p) {
 }
 
 TacticExpr *tactic_parse_expr(Parser *p) { return _parse_tactic_expr(p); }
+
+void free_tactic(Tactic *tac) {
+    if (!tac) return;
+    switch (tac->tag) {
+        case TACTIC_INTRO:
+            free(tac->as.intro.name);
+            break;
+        case TACTIC_INTROS:
+            for (size_t i = 0; i < tac->as.intros.name_count; i++) {
+                free(tac->as.intros.names[i]);
+            }
+            free(tac->as.intros.names);
+            break;
+        case TACTIC_APPLY:
+            free_ast(tac->as.apply.lemma);
+            break;
+        case TACTIC_EAPPLY:
+            free_ast(tac->as.eapply.lemma);
+            break;
+        case TACTIC_EXACT:
+            free_ast(tac->as.exact.proof_term);
+            break;
+        case TACTIC_REWRITE:
+        case TACTIC_REWRITE_BACKWARD:
+        case TACTIC_EREWRITE:
+        case TACTIC_EREWRITE_BACKWARD:
+            free_ast(tac->as.rewrite.lemma);
+            free_ast(tac->as.rewrite.equiv_proof);
+            break;
+        case TACTIC_EXISTS:
+            free_ast(tac->as.exists.witness);
+            break;
+        case TACTIC_CBV:
+            for (int i = 0; i < tac->as.cbv.rules_count; i++) {
+                free(tac->as.cbv.rules[i]);
+            }
+            free(tac->as.cbv.rules);
+            break;
+        case TACTIC_ADMITTED:
+        case TACTIC_REFLEXIVITY:
+        case TACTIC_ASSUMPTION:
+        case TACTIC_SPLIT:
+        case TACTIC_LEFT:
+        case TACTIC_RIGHT:
+            break;
+    }
+    free(tac);
+}

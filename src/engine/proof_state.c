@@ -63,5 +63,5 @@ void proof_state_add_goals(ProofState *ps, DoublyLinkedList *new_goals) {
         return;
     }
 
-    dll_merge(ps->goals, new_goals);
+    ps->goals = dll_merge(ps->goals, new_goals);
 }

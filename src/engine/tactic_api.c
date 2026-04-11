@@ -30,10 +30,25 @@ TacticResult *init_tactic_result_value(TacticValue *value) {
     return result;
 }
 
-void free_tactic_result(TacticResult *result) {
-    if (!result) {
-        return;
+void free_tactic_value(TacticValue *tv) {
+    if (!tv) return;
+    if (tv->kind == TVAL_PAIR) {
+        free_tactic_value(tv->pair.fst);
+        free_tactic_value(tv->pair.snd);
     }
+    free(tv);
+}
+
+TacticValue *tactic_value_dup(TacticValue *tv) {
+    if (!tv) return NULL;
+    if (tv->kind == TVAL_EXPRESSION) return tactic_value_expr(tv->expr);
+    return tactic_value_pair(tactic_value_dup(tv->pair.fst), tactic_value_dup(tv->pair.snd));
+}
+
+void free_tactic_result(TacticResult *result) {
+    if (!result) return;
+    if (result->new_goals) dll_destroy(result->new_goals);
+    free_tactic_value(result->term_value);
     free(result);
 }
 

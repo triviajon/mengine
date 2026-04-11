@@ -39,12 +39,7 @@ Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a
             Context *new_ctx = x_bv_prime;
             Expression *body_prime = new_p_subst(new_ctx, body, old_exprs, new_exprs);
 
-            dll_remove_tail(old_exprs);
-            dll_remove_tail(old_exprs);
             dll_destroy(old_exprs);
-
-            dll_remove_tail(new_exprs);
-            dll_remove_tail(new_exprs);
             dll_destroy(new_exprs);
 
             return init_lambda_expression_wc(x_bv_prime, body_prime);
@@ -87,12 +82,7 @@ Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a
             Context *new_ctx = x_bv_prime;
             Expression *body_prime = new_p_subst(new_ctx, body, old_exprs, new_exprs);
 
-            dll_remove_tail(old_exprs);
-            dll_remove_tail(old_exprs);
             dll_destroy(old_exprs);
-
-            dll_remove_tail(new_exprs);
-            dll_remove_tail(new_exprs);
             dll_destroy(new_exprs);
 
             return init_forall_expression_wc(x_bv_prime, body_prime);
@@ -226,7 +216,12 @@ Expression *new_subst(Context *context, Expression *t, Expression *x, Expression
         final_context_c = get_expression_context(final_context_c);
     }
 
-    return new_p_subst(final_context, t, old_exprs, new_exprs);
+    Expression *result = new_p_subst(final_context, t, old_exprs, new_exprs);
+
+    dll_destroy(old_exprs);
+    dll_destroy(new_exprs);
+
+    return result;
 }
 
 Expression *_p_subst(Context *context, Expression *t, DoublyLinkedList *old_exprs,
@@ -280,8 +275,8 @@ Expression *_p_subst(Context *context, Expression *t, DoublyLinkedList *old_expr
             Context *new_ctx = x_bv_prime;
             Expression *body_prime = _p_subst(new_ctx, body, old_exprs, new_exprs);
 
-            dll_remove_tail(old_exprs);
-            dll_remove_tail(new_exprs);
+            free(dll_remove_tail(old_exprs));
+            free(dll_remove_tail(new_exprs));
 
             return init_lambda_expression_wc(x_bv_prime, body_prime);
         }
@@ -318,8 +313,8 @@ Expression *_p_subst(Context *context, Expression *t, DoublyLinkedList *old_expr
             Context *new_ctx = x_bv_prime;
             Expression *body_prime = _p_subst(new_ctx, body, old_exprs, new_exprs);
 
-            dll_remove_tail(old_exprs);
-            dll_remove_tail(new_exprs);
+            free(dll_remove_tail(old_exprs));
+            free(dll_remove_tail(new_exprs));
 
             return init_forall_expression_wc(x_bv_prime, body_prime);
         }
@@ -370,8 +365,8 @@ Expression *_p_subst(Context *context, Expression *t, DoublyLinkedList *old_expr
 
                 // Remove pattern variables from substitution lists
                 for (int j = 0; j < branch->pattern_var_count; j++) {
-                    dll_remove_tail(old_exprs);
-                    dll_remove_tail(new_exprs);
+                    free(dll_remove_tail(old_exprs));
+                    free(dll_remove_tail(new_exprs));
                 }
 
                 branches_prime[i] = branch_prime;
