@@ -408,6 +408,129 @@ static inline TacticExpr *tactic_expr_constr(AST *term) {
     return e;
 }
 
+/* --------------------------------------------------------------------------
+ * free_tactic_expr – recursively free a TacticExpr tree
+ * -------------------------------------------------------------------------- */
+
+void free_ast(AST *ast);      // forward declaration (defined in ast_to_expression.c)
+void free_tactic(Tactic *tac); // forward declaration (defined in tactic_parser.c)
+
+static inline void free_tactic_expr(TacticExpr *expr) {
+    if (!expr) return;
+    switch (expr->tag) {
+        case TAC_PRIMITIVE:
+            free_tactic(expr->as.primitive.tactic);
+            break;
+        case TAC_SEQ:
+            free_tactic_expr(expr->as.seq.left);
+            free_tactic_expr(expr->as.seq.right);
+            break;
+        case TAC_ORELSE:
+            free_tactic_expr(expr->as.orelse.left);
+            free_tactic_expr(expr->as.orelse.right);
+            break;
+        case TAC_TRY:
+            free_tactic_expr(expr->as.try_expr.body);
+            break;
+        case TAC_REPEAT:
+            free_tactic_expr(expr->as.repeat.body);
+            break;
+        case TAC_FIRST:
+            for (size_t i = 0; i < expr->as.first.count; i++) {
+                free_tactic_expr(expr->as.first.alternatives[i]);
+            }
+            free(expr->as.first.alternatives);
+            break;
+        case TAC_IDTAC:
+        case TAC_FAIL:
+        case TAC_GOAL_TYPE:
+        case TAC_CURRENT_GOAL:
+            break;
+        case TAC_CALL:
+            for (size_t i = 0; i < expr->as.call.arg_count; i++) {
+                free_ast(expr->as.call.args[i]);
+            }
+            free(expr->as.call.args);
+            free(expr->as.call.name);
+            break;
+        case TAC_MATCH_GOAL:
+            for (size_t i = 0; i < expr->as.match_goal.branch_count; i++) {
+                GoalBranch *b = &expr->as.match_goal.branches[i];
+                for (size_t j = 0; j < b->hyp_count; j++) {
+                    free(b->hyps[j].name);
+                    free_ast(b->hyps[j].type);
+                }
+                free(b->hyps);
+                free_ast(b->conclusion);
+                free_tactic_expr(b->body);
+            }
+            free(expr->as.match_goal.branches);
+            break;
+        case TAC_LET:
+            free(expr->as.let_expr.name);
+            free_tactic_expr(expr->as.let_expr.rhs);
+            free_tactic_expr(expr->as.let_expr.body);
+            break;
+        case TAC_TYPE_OF:
+            free_ast(expr->as.type_of.term);
+            break;
+        case TAC_MATCH_TERM:
+            free_ast(expr->as.match_term.scrutinee);
+            for (size_t i = 0; i < expr->as.match_term.branch_count; i++) {
+                free_ast(expr->as.match_term.branches[i].pattern);
+                free_tactic_expr(expr->as.match_term.branches[i].body);
+            }
+            free(expr->as.match_term.branches);
+            break;
+        case TAC_MK_HOLE:
+            free_ast(expr->as.mk_hole.type);
+            break;
+        case TAC_FILL:
+            free_ast(expr->as.fill.hole);
+            free_ast(expr->as.fill.term);
+            break;
+        case TAC_SUBST:
+            free_ast(expr->as.subst.new_term);
+            free_ast(expr->as.subst.body);
+            free_ast(expr->as.subst.old_var);
+            break;
+        case TAC_EUNIFY:
+            free_ast(expr->as.eunify.lemma);
+            break;
+        case TAC_INTRO_STEP:
+            if (expr->as.intro_step.name) free_ast(expr->as.intro_step.name);
+            break;
+        case TAC_PAIR:
+            free_ast(expr->as.pair.fst);
+            free_ast(expr->as.pair.snd);
+            break;
+        case TAC_FST:
+            free_ast(expr->as.fst.term);
+            break;
+        case TAC_SND:
+            free_ast(expr->as.snd.term);
+            break;
+        case TAC_APP_FUNC:
+            free_ast(expr->as.app_func.term);
+            break;
+        case TAC_APP_ARG:
+            free_ast(expr->as.app_arg.term);
+            break;
+        case TAC_EXPR_EQ:
+            free_ast(expr->as.expr_eq.left);
+            free_ast(expr->as.expr_eq.right);
+            break;
+        case TAC_REWRITE_UNIFY:
+            free_ast(expr->as.rewrite_unify.lemma);
+            free_ast(expr->as.rewrite_unify.target);
+            break;
+        case TAC_CONSTR:
+            free_ast(expr->as.constr.term);
+            break;
+    }
+    free(expr);
+}
+
 /* ============================================================================
  * Tactic definitions (stored in the tactic environment)
  * ============================================================================ */
@@ -438,8 +561,17 @@ static inline void tactic_env_add(TacticEnv *env, TacticDef *def) {
     for (size_t i = 0; i < env->count; i++) {
         if (strcmp(env->defs[i]->name, def->name) == 0 &&
             env->defs[i]->param_count == def->param_count) {
-            // TODO: free old def
+            TacticDef *old = env->defs[i];
             env->defs[i] = def;
+            free(old->name);
+            if (old->params) {
+                for (size_t j = 0; j < old->param_count; j++) {
+                    free(old->params[j]);
+                }
+                free(old->params);
+            }
+            free_tactic_expr(old->body);
+            free(old);
             return;
         }
     }
@@ -467,7 +599,20 @@ static inline void tactic_env_free(TacticEnv *env) {
     if (!env) {
         return;
     }
-    // TODO: deep-free definitions
+    for (size_t i = 0; i < env->count; i++) {
+        TacticDef *def = env->defs[i];
+        if (def) {
+            free(def->name);
+            if (def->params) {
+                for (size_t j = 0; j < def->param_count; j++) {
+                    free(def->params[j]);
+                }
+                free(def->params);
+            }
+            free_tactic_expr(def->body);
+            free(def);
+        }
+    }
     free(env->defs);
     free(env);
 }

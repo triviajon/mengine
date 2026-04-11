@@ -141,6 +141,9 @@ UnificationResult *init_unification_result(Expression *lemma_instantiation,
 
 void free_unification_result(UnificationResult *unification_result) {
     if (unification_result) {
+        if (unification_result->new_goals) {
+            dll_destroy(unification_result->new_goals);
+        }
         free(unification_result);
     }
 }

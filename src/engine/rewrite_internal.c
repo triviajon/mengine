@@ -132,6 +132,10 @@ Expression *_build_app_congruence_proof(RewriteResult *func_rwr, RewriteResult *
             H1, ctx),
         H2, ctx);
 
+    // Free the temporary f_x expression used only to compute B.
+    // B now has an uplink from the proof, so it won't be cascadingly freed.
+    free_expression(f_x);
+
     return proof;
 }
 
@@ -154,6 +158,9 @@ RewriteResult *init_rewrite_result(Expression *original, Expression *rewritten,
 void free_rewrite_result(RewriteResult *rwr) {
     if (!rwr) {
         return;
+    }
+    if (rwr->new_goals) {
+        dll_destroy(rwr->new_goals);
     }
     free(rwr);
 }
@@ -191,6 +198,7 @@ RewriteResult *rewrite_head(Expression *mid, Expression *lemma, Context *context
     }
 
     DoublyLinkedList *goals = unif_result->new_goals;
+    unif_result->new_goals = NULL;  // transferred to rewrite result
     free_unification_result(unif_result);
 
     return init_rewrite_result(mid, _get_rhs_eq(proof_type), goals, proof);
@@ -216,6 +224,8 @@ RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context
             expr, init_app_expression_wc(rwr_func->rewritten, rwr_arg->rewritten, context),
             dll_merge(rwr_func->new_goals, rwr_arg->new_goals),
             _build_app_congruence_proof(rwr_func, rwr_arg, context));
+        rwr_func->new_goals = NULL;  // transferred to mid_rwr
+        rwr_arg->new_goals = NULL;   // transferred to mid_rwr
     }
 
     RewriteResult *mid_result =
@@ -225,11 +235,17 @@ RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context
     if (rewrite_is_noop(mid_result)) {
         final_rwr = init_rewrite_result(expr, mid_rwr->rewritten, mid_rwr->new_goals,
                                         mid_rwr->original_to_rewritten_proof);
+        mid_rwr->new_goals = NULL;  // transferred to final_rwr
     } else {
         final_rwr = init_rewrite_result(expr, mid_result->rewritten,
                                         dll_merge(mid_rwr->new_goals, mid_result->new_goals),
                                         _build_transitivity_proof(mid_rwr, mid_result, context));
+        mid_rwr->new_goals = NULL;     // transferred to final_rwr
+        mid_result->new_goals = NULL;  // transferred to final_rwr
     }
+
+    free_rewrite_result(mid_rwr);
+    free_rewrite_result(mid_result);
 
     return final_rwr;
 }
@@ -271,7 +287,7 @@ RewriteResult *rewrite(Expression *expr, Expression *lemma, Context *context) {
     RewriteResult *rwr = _rewrite(expr, lemma, context, cached_rwr, false);
     map_del(cached_rwr,
             (void *)expr);  // remove it from the map so we don't accidently free the rwr
-    map_clear_free_values(cached_rwr);
+    map_clear_apply_free(cached_rwr, (void (*)(void *))free_rewrite_result);
     return rwr;
 }
 
@@ -280,7 +296,7 @@ RewriteResult *erewrite(Expression *expr, Expression *lemma, Context *context) {
     RewriteResult *rwr = _rewrite(expr, lemma, context, cached_rwr, true);
     map_del(cached_rwr,
             (void *)expr);  // remove it from the map so we don't accidently free the rwr
-    map_clear_free_values(cached_rwr);
+    map_clear_apply_free(cached_rwr, (void (*)(void *))free_rewrite_result);
     return rwr;
 }
 Expression *rewrite_result_get_original(RewriteResult *result) {

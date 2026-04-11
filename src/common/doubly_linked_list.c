@@ -20,11 +20,11 @@ void dll_destroy(DoublyLinkedList *list) {
 
     while (current) {
         next = current->next;
-        // free(current);
+        free(current);
         current = next;
     }
 
-    // free(list);
+    free(list);
 }
 
 DLLNode *dll_insert_at_tail(DoublyLinkedList *list, DLLNode *node) {
@@ -191,17 +191,23 @@ DLLNode *dll_new_node(void *val) {
  * @return: Pointer to the merged list (same as list1)
  */
 DoublyLinkedList *dll_merge(DoublyLinkedList *list1, DoublyLinkedList *list2) {
-    if (!list1 || !list2) {
+    if (!list1 && !list2) {
         return NULL;
+    }
+    if (!list1) {
+        return list2;
+    }
+    if (!list2) {
+        return list1;
     }
 
     if (!list1->head) {
-        // free(list1);
+        free(list1);
         return list2;
     }
 
     if (!list2->head) {
-        // free(list2);
+        free(list2);
         return list1;
     }
 
@@ -209,7 +215,7 @@ DoublyLinkedList *dll_merge(DoublyLinkedList *list1, DoublyLinkedList *list2) {
     list2->head->prev = list1->tail;
     list1->tail = list2->tail;
 
-    // free(list2);
+    free(list2);
     return list1;
 }
 

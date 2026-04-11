@@ -31,4 +31,7 @@ void map_clear_free_values(Map *m);
 // Assumes keys and values were heap-allocated.
 void map_clear_free_all(Map *m);
 
+// Apply a function to each value in the map, then free and destroy the map.
+void map_clear_apply_free(Map *m, void (*free_fn)(void *));
+
 #endif  // MAP_H

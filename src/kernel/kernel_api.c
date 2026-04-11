@@ -260,6 +260,22 @@ bool kernel_inductive_register(Expression *inductive_var, Expression **construct
 
 char *kernel_expr_to_string(Expression *expr) { return stringify_expression(expr); }
 
+void kernel_expr_free(Expression *expr) { free_expression(expr); }
+
+void kernel_free_filled_hole(Expression *hole) { free_filled_hole(hole); }
+
+void kernel_context_free(Context *ctx) {
+    free_expression_graph(ctx);
+}
+
+bool kernel_context_contains(Context *ctx, Expression *expr) {
+    while (ctx != NULL && !context_is_empty(ctx)) {
+        if (ctx == expr) return true;
+        ctx = get_expression_context(ctx);
+    }
+    return false;
+}
+
 char *kernel_context_to_string(Context *context) {
     return stringify_context(context, CTX_STRINGIFY_PRETTY_IND2);
 }

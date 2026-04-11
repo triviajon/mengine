@@ -55,6 +55,8 @@ struct TacticResult {
 TacticResult *init_tactic_result(bool success, DoublyLinkedList *new_goals, char *error_message);
 TacticResult *init_tactic_result_value(TacticValue *value);
 void free_tactic_result(TacticResult *result);
+void free_tactic_value(TacticValue *tv);
+TacticValue *tactic_value_dup(TacticValue *tv);
 
 /* Accessor functions */
 bool tactic_result_get_success(TacticResult *result);

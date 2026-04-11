@@ -86,11 +86,15 @@ void mengine_runtime_free(MEngineRuntime *rt) {
         return;
     }
 
+    if (rt->proof_state) {
+        engine_proof_state_free(rt->proof_state);
+        rt->proof_state = NULL;
+    }
+
     tactic_env_free(rt->tactic_env);
     relation_registry_free(rt->relation_registry);
 
-    // TODO: A memory management strategy...
-    // free_context(rt->ctx);
+    kernel_context_free(rt->ctx);
     free(rt);
 }
 
@@ -128,7 +132,7 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
                     break;
                 }
                 parser_flush_comments(&parser);
-                // TODO: free Command
+                free_command(cmd);
                 break;
             }
 
@@ -152,7 +156,7 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
                     }
                     // Print any comments that came after this command
                     parser_flush_comments(&parser);
-                    // TODO: free Command
+                    free_command(cmd);
                     break;
                 }
 
@@ -169,7 +173,7 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
                     break;
                 }
                 parser_flush_comments(&parser);
-                // TODO: free Tactic
+                free_tactic_expr(tactic);
                 break;
             }
         }
@@ -179,6 +183,7 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
         }
     }
 
+    parser_cleanup(&parser);
     return rc;
 }
 

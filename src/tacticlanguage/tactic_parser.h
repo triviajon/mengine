@@ -74,6 +74,7 @@ typedef struct Tactic {
 } Tactic;
 
 char *tactic_tag_to_string(TacticTag tag);
+void free_tactic(Tactic *tac);
 
 // Forward declaration - full definition in tactic_ast.h
 typedef struct TacticExpr TacticExpr;

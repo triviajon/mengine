@@ -7,6 +7,7 @@
 #include "src/common/lexer.h"
 #include "src/common/parser_base.h"
 #include "src/tacticlanguage/tactic_ast.h"
+#include "src/termlanguage/ast_to_expression.h"
 #include "src/termlanguage/parser.h"
 
 char *decl_keyword_to_string(DeclKeyword kw) {
@@ -570,4 +571,86 @@ Command *command_parse_register_relation(Parser *p) {
     cmd->as.register_relation.congr = congr;
 
     return cmd;
+}
+
+void free_command(Command *cmd) {
+    if (!cmd) return;
+
+    switch (cmd->tag) {
+        case CMD_SHOW:
+            break;
+        case CMD_CHECK:
+            free_ast(cmd->as.check.term);
+            break;
+        case CMD_PRINT:
+            free(cmd->as.print.name);
+            break;
+        case CMD_EVAL:
+            free_ast(cmd->as.eval.term);
+            break;
+        case CMD_DECLARATION:
+            free(cmd->as.decl.binder.name);
+            free_ast(cmd->as.decl.binder.type);
+            break;
+        case CMD_DEFINITION:
+            free(cmd->as.defn.name);
+            for (size_t i = 0; i < cmd->as.defn.param_count; i++) {
+                free(cmd->as.defn.params[i]->name);
+                free_ast(cmd->as.defn.params[i]->type);
+                free(cmd->as.defn.params[i]);
+            }
+            free(cmd->as.defn.params);
+            free_ast(cmd->as.defn.type);
+            free_ast(cmd->as.defn.body);
+            break;
+        case CMD_STATEMENT:
+            free(cmd->as.stmt.name);
+            free_ast(cmd->as.stmt.type);
+            break;
+        case CMD_INDUCTIVE: {
+            free(cmd->as.inductive.name);
+            for (size_t i = 0; i < cmd->as.inductive.param_count; i++) {
+                Binder *param = cmd->as.inductive.params[i];
+                free(param->name);
+                free_ast(param->type);
+                free(param);
+            }
+            free(cmd->as.inductive.params);
+            free_ast(cmd->as.inductive.type);
+            for (size_t i = 0; i < cmd->as.inductive.constructor_count; i++) {
+                InductiveConstructor *ctor = cmd->as.inductive.constructors[i];
+                free(ctor->name);
+                free_ast(ctor->type);
+                free(ctor);
+            }
+            free(cmd->as.inductive.constructors);
+            break;
+        }
+        case CMD_FIXPOINT: {
+            free(cmd->as.fixpoint.name);
+            for (size_t i = 0; i < cmd->as.fixpoint.binder_count; i++) {
+                Binder *binder = cmd->as.fixpoint.binders[i];
+                free(binder->name);
+                free_ast(binder->type);
+                free(binder);
+            }
+            free(cmd->as.fixpoint.binders);
+            free(cmd->as.fixpoint.decreasing_arg_name);
+            free_ast(cmd->as.fixpoint.return_type);
+            free_ast(cmd->as.fixpoint.body);
+            break;
+        }
+        case CMD_TACTIC_DEF:
+            // Ownership of name, params, and body is transferred to
+            // the tactic environment by _handle_tactic_def_command.
+            break;
+        case CMD_REGISTER_RELATION:
+            free_ast(cmd->as.register_relation.relation);
+            free_ast(cmd->as.register_relation.refl);
+            free_ast(cmd->as.register_relation.trans);
+            free_ast(cmd->as.register_relation.congr);
+            break;
+    }
+
+    free(cmd);
 }
