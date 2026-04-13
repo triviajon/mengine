@@ -335,7 +335,7 @@ DoublyLinkedList *topo_order(Expression *top_expr, LinearMap *expr_counts) {
     DoublyLinkedList *S = dll_create();  // Set of all nodes with no incoming edge
     dll_insert_at_head(S, dll_new_node(top_expr));
 
-    while (dll_len(S) != 0) {
+    while (S->head != NULL) {
         DLLNode *n = dll_remove_head(S);
         dll_insert_at_tail(L, n);
 
@@ -399,7 +399,8 @@ char *_stringify_expression_with_let(Expression *expression) {
             break;
 
         case LAMBDA_EXPRESSION: {
-            if (dll_len(get_expression_uplinks(expression)) > 1) {
+            if (get_expression_uplinks(expression)->head != NULL &&
+                expression->uplink_count > 1) {
                 char buf[(2 * sizeof(void *)) + 1];
                 snprintf(buf, sizeof(buf), "%p", (void *)expression);
                 result = strdup(str_concat("var", buf));
@@ -438,7 +439,8 @@ char *_stringify_expression_with_let(Expression *expression) {
             break;
         }
         case APP_EXPRESSION: {
-            if (dll_len(get_expression_uplinks(expression)) > 1) {
+            if (get_expression_uplinks(expression)->head != NULL &&
+                expression->uplink_count > 1) {
                 char buf[(2 * sizeof(void *)) + 1];
                 snprintf(buf, sizeof(buf), "%p", (void *)expression);
                 result = strdup(str_concat("var", buf));
@@ -466,7 +468,8 @@ char *_stringify_expression_with_let(Expression *expression) {
         }
 
         case FORALL_EXPRESSION: {
-            if (dll_len(get_expression_uplinks(expression)) > 1) {
+            if (get_expression_uplinks(expression)->head != NULL &&
+                expression->uplink_count > 1) {
                 char buf[(2 * sizeof(void *)) + 1];
                 snprintf(buf, sizeof(buf), "%p", (void *)expression);
                 result = strdup(str_concat("var", buf));
@@ -610,7 +613,7 @@ char *stringify_expression_with_let(Expression *expression) {
         DLLNode *node = dll_at(ordering, i);
         Expression *node_expr = (Expression *)node->data;
 
-        if (node_expr->tag != VAR_EXPRESSION && dll_len(get_expression_uplinks(node_expr)) > 1) {
+        if (node_expr->tag != VAR_EXPRESSION && node_expr->uplink_count > 1) {
             char *str_adr = _get_str_addr(node_expr);
             char *expr_string = _top_level_stringify_expression_with_let(node_expr);
             char *line = str_concat("let ", str_adr);

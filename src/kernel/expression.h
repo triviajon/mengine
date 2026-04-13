@@ -11,18 +11,6 @@
 typedef struct Expression Expression;
 typedef struct Expression Context;
 
-// Reference from an expression to a hole it (transitively) contains.
-typedef struct {
-    Expression *hole;        // The hole being referenced
-    DLLNode *backlink_node;  // Corresponding node in hole's evar_backlinks
-} EvarRef;
-
-// Backlink from a hole to an expression that references it.
-typedef struct {
-    Expression *owner;  // The expression that references this hole
-    DLLNode *ref_node;  // Corresponding node in owner's evar_refs
-} EvarBacklink;
-
 // Supported expression types for the Expression struct.
 typedef enum {
     VAR_EXPRESSION,
@@ -38,14 +26,14 @@ typedef enum {
 
 // Represents a parent-child relationship between expressions.
 typedef enum {
-    LAMBDA_BODY,               // expr->as.lambda.body
-    LAMBDA_BOUND_VAR,          // expr->as.lambda.bound_variable
-    APP_FUNC,                  // expr->as.app.func
-    APP_ARG,                   // expr->as.app.arg
-    FORALL_BODY,               // expr->as.forall.body
-    FORALL_BOUND_VAR,          // expr->as.forall.bound_variable
-    VAR_BODY,                  // expr->as.var.body
-    EXPR_TYPE,                 // expr->type
+    LAMBDA_BODY,       // expr->as.lambda.body
+    LAMBDA_BOUND_VAR,  // expr->as.lambda.bound_variable
+    APP_FUNC,          // expr->as.app.func
+    APP_ARG,           // expr->as.app.arg
+    FORALL_BODY,       // expr->as.forall.body
+    FORALL_BOUND_VAR,  // expr->as.forall.bound_variable
+    VAR_BODY,          // expr->as.var.body
+    EXPR_TYPE,         // expr->type
     // EXPR_CONTEXT removed: context is a non-owning edge
     MATCH_SCRUTINEE,           // expr->as.match.scrutinee
     MATCH_BRANCH_BODY,         // expr->as.match.branches[i]->body
@@ -112,9 +100,8 @@ static Expression *PROP = NULL;
 
 // A typed hole to be filled later.
 typedef struct {
-    char *name;                        // A user-friendly name for the hole. Not used internally.
-    DoublyLinkedList *evar_backlinks;  // List of EvarBacklink*: every expression that
-                                       // directly or indirectly references this hole.
+    char *name;          // A user-friendly name for the hole. Not used internally.
+    bool is_satisfied;   // Set to true by fill_hole; proof_state skips these goals.
 } HoleExpression;
 
 // A single branch in a match expression.
@@ -146,14 +133,15 @@ struct Expression {
     // Common fields
     ExpressionType tag;           // The kind of expression (VAR, LAMBDA, APP, etc.)
     DoublyLinkedList *uplinks;    // Uplinks where this expression is referenced
+    int uplink_count;             // Number of uplinks (O(1) alternative to dll_len(uplinks))
     Context *context;             // The minimal context this expression is valid in
                                   // NULL for TYPE and PROP
     int ctx_size;                 // Size of the context (0 for empty, 1+ for variables)
                                   // 0 for TYPE and PROP
     Expression *type;             // The type of this expression
                                   // NULL for TYPE and PROP
-    DoublyLinkedList *evar_refs;  // List of EvarRef*: holes this expression directly
-                                  // or indirectly references. Empty means evar-free.
+    bool has_evar;            // True if this expression transitively contains any unfilled hole.
+    Expression *g_alloc_next;     // Intrusive linked list for GC shutdown traversal
 
     union {
         VarExpression var;
@@ -185,13 +173,16 @@ void free_expression(Expression *expr);
 // Bulk-free every expression reachable from root via DFS (owning + context edges).
 // Used at shutdown to free the entire expression graph without cascading RC teardown.
 void free_expression_graph(Expression *root);
+void free_expressions_excluding_context(Expression *a, Expression *b, Expression *shared_ctx);
 void free_filled_hole(Expression *hole);
+
+// Free all allocated expressions at shutdown (deferred GC).
+void expression_gc_shutdown(void);
 
 // Create a new uplink describing how ptr relates.
 Uplink *new_uplink(void *ptr, Relation r);
 
-// Add evar references from child to parent. For each hole in child's evar_refs,
-// adds a cross-linked reference to parent's evar_refs and the hole's backlinks.
+// Set parent->has_evar = true if child contains any unfilled holes. O(1), no allocation.
 void propagate_evar_refs(Expression *parent, Expression *child);
 
 // Macros for setting Expression fields
@@ -199,8 +190,7 @@ void propagate_evar_refs(Expression *parent, Expression *child);
 
 #define SET_EXPR_UPLINKS(expr, value) (expr)->uplinks = (value);
 
-#define SET_EXPR_CONTEXT(expr, value) \
-    (expr)->context = (value);
+#define SET_EXPR_CONTEXT(expr, value) (expr)->context = (value);
 
 #define SET_EXPR_CTX_SIZE(expr, value) (expr)->ctx_size = (value);
 
@@ -245,26 +235,26 @@ void propagate_evar_refs(Expression *parent, Expression *child);
     add_to_parents((value), (expr), MATCH_SCRUTINEE)
 
 #define SET_MATCH_BRANCHES(expr, value)                                                       \
-    (expr)->as.match.branches = (value);                                                       \
-    for (int __i = 0; __i < (expr)->as.match.branch_count; __i++) {                            \
-        MatchBranch *branch = (expr)->as.match.branches[__i];                                  \
-        (expr)->as.match.branches[__i] = branch;                                               \
-        add_to_parents(branch->constructor, (expr), MATCH_BRANCH_CONSTRUCTOR);                 \
-        add_to_parents(branch->body, (expr), MATCH_BRANCH_BODY);                               \
-        for (int __j = 0; __j < branch->pattern_var_count; __j++) {                            \
-            add_to_parents(branch->pattern_variables[__j], (expr), MATCH_BRANCH_PATTERN_VAR);  \
-        }                                                                                      \
+    (expr)->as.match.branches = (value);                                                      \
+    for (int __i = 0; __i < (expr)->as.match.branch_count; __i++) {                           \
+        MatchBranch *branch = (expr)->as.match.branches[__i];                                 \
+        (expr)->as.match.branches[__i] = branch;                                              \
+        add_to_parents(branch->constructor, (expr), MATCH_BRANCH_CONSTRUCTOR);                \
+        add_to_parents(branch->body, (expr), MATCH_BRANCH_BODY);                              \
+        for (int __j = 0; __j < branch->pattern_var_count; __j++) {                           \
+            add_to_parents(branch->pattern_variables[__j], (expr), MATCH_BRANCH_PATTERN_VAR); \
+        }                                                                                     \
     }
 
 #define SET_FIX_RECURSIVE_VAR(expr, value)  \
     (expr)->as.fix.recursive_var = (value); \
     add_to_parents((value), (expr), FIX_RECURSIVE_VAR)
 
-#define SET_FIX_ARGS(expr, value)                                 \
-    (expr)->as.fix.args = (value);                                 \
-    for (int __i = 0; __i < (expr)->as.fix.arg_count; __i++) {     \
-        (expr)->as.fix.args[__i] = (value)[__i];                                   \
-        add_to_parents((value)[__i], (expr), FIX_ARG);                             \
+#define SET_FIX_ARGS(expr, value)                              \
+    (expr)->as.fix.args = (value);                             \
+    for (int __i = 0; __i < (expr)->as.fix.arg_count; __i++) { \
+        (expr)->as.fix.args[__i] = (value)[__i];               \
+        add_to_parents((value)[__i], (expr), FIX_ARG);         \
     }
 
 #define SET_FIX_ARG_COUNT(expr, value) (expr)->as.fix.arg_count = (value);

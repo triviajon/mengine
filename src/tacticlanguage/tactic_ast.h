@@ -8,34 +8,34 @@
 #include "src/tacticlanguage/tactic_parser.h"
 
 typedef enum {
-    TAC_PRIMITIVE,   // wraps an existing Tactic*
-    TAC_SEQ,         // tac1 ; tac2
-    TAC_ORELSE,      // tac1 || tac2
-    TAC_TRY,         // try tac
-    TAC_REPEAT,      // repeat tac
-    TAC_FIRST,       // first [ tac1 | tac2 | ... ]
-    TAC_IDTAC,       // idtac (identity, always succeeds)
-    TAC_FAIL,        // fail (always fails)
-    TAC_CALL,        // user-defined tactic call
-    TAC_MATCH_GOAL,  // match goal with | [ ... |- ... ] => tac end
-    TAC_LET,         // let x := <tactic_expr> in <tactic_expr>
-    TAC_GOAL_TYPE,   // goal_type - returns the type of the current goal
-    TAC_TYPE_OF,     // type_of <term> - returns the type of a term
-    TAC_MATCH_TERM,  // match <term> with | <pat> => tac ... end
-    TAC_MK_HOLE,     // mk_hole <type>        - creates a hole, returns it as term_value
-    TAC_FILL,        // fill <hole> <term>    - fills hole with term
-    TAC_SUBST,       // subst <new> <body> <old> - substitution body[old := new]
-    TAC_EUNIFY,          // eunify <lemma> <goal> - existential unification
-    TAC_CURRENT_GOAL,    // current_goal - returns the current goal hole as a term value
-    TAC_INTRO_STEP,      // intro_step [name] - introduce a forall-bound variable
-    TAC_PAIR,            // pair <term> <term> - create a tactic-level pair
-    TAC_FST,             // fst <term> - extract first element of a pair
-    TAC_SND,             // snd <term> - extract second element of a pair
-    TAC_APP_FUNC,        // app_func <term> - get function part of application
-    TAC_APP_ARG,         // app_arg <term> - get argument part of application
-    TAC_EXPR_EQ,         // expr_eq <term> <term> - pointer equality test
-    TAC_REWRITE_UNIFY,   // rewrite_unify <lemma> <target> - rewrite head unification
-    TAC_CONSTR,          // constr <term> - evaluate a term and return it as a value
+    TAC_PRIMITIVE,      // wraps an existing Tactic*
+    TAC_SEQ,            // tac1 ; tac2
+    TAC_ORELSE,         // tac1 || tac2
+    TAC_TRY,            // try tac
+    TAC_REPEAT,         // repeat tac
+    TAC_FIRST,          // first [ tac1 | tac2 | ... ]
+    TAC_IDTAC,          // idtac (identity, always succeeds)
+    TAC_FAIL,           // fail (always fails)
+    TAC_CALL,           // user-defined tactic call
+    TAC_MATCH_GOAL,     // match goal with | [ ... |- ... ] => tac end
+    TAC_LET,            // let x := <tactic_expr> in <tactic_expr>
+    TAC_GOAL_TYPE,      // goal_type - returns the type of the current goal
+    TAC_TYPE_OF,        // type_of <term> - returns the type of a term
+    TAC_MATCH_TERM,     // match <term> with | <pat> => tac ... end
+    TAC_MK_HOLE,        // mk_hole <type>        - creates a hole, returns it as term_value
+    TAC_FILL,           // fill <hole> <term>    - fills hole with term
+    TAC_SUBST,          // subst <new> <body> <old> - substitution body[old := new]
+    TAC_EUNIFY,         // eunify <lemma> <goal> - existential unification
+    TAC_CURRENT_GOAL,   // current_goal - returns the current goal hole as a term value
+    TAC_INTRO_STEP,     // intro_step [name] - introduce a forall-bound variable
+    TAC_PAIR,           // pair <term> <term> - create a tactic-level pair
+    TAC_FST,            // fst <term> - extract first element of a pair
+    TAC_SND,            // snd <term> - extract second element of a pair
+    TAC_APP_FUNC,       // app_func <term> - get function part of application
+    TAC_APP_ARG,        // app_arg <term> - get argument part of application
+    TAC_EXPR_EQ,        // expr_eq <term> <term> - pointer equality test
+    TAC_REWRITE_UNIFY,  // rewrite_unify <lemma> <target> - rewrite head unification
+    TAC_CONSTR,         // constr <term> - evaluate a term and return it as a value
 } TacticExprTag;
 
 typedef struct TacticExpr TacticExpr;
@@ -412,11 +412,11 @@ static inline TacticExpr *tactic_expr_constr(AST *term) {
  * free_tactic_expr – recursively free a TacticExpr tree
  * -------------------------------------------------------------------------- */
 
-void free_ast(AST *ast);      // forward declaration (defined in ast_to_expression.c)
-void free_tactic(Tactic *tac); // forward declaration (defined in tactic_parser.c)
+void free_ast(AST *ast);        // forward declaration (defined in ast_to_expression.c)
+// void free_tactic(Tactic *tac);  // forward declaration (defined in tactic_parser.c)
 
 static inline void free_tactic_expr(TacticExpr *expr) {
-    if (!expr) return;
+    if (!expr) { return; }
     switch (expr->tag) {
         case TAC_PRIMITIVE:
             free_tactic(expr->as.primitive.tactic);
@@ -498,7 +498,7 @@ static inline void free_tactic_expr(TacticExpr *expr) {
             free_ast(expr->as.eunify.lemma);
             break;
         case TAC_INTRO_STEP:
-            if (expr->as.intro_step.name) free_ast(expr->as.intro_step.name);
+            if (expr->as.intro_step.name) { free_ast(expr->as.intro_step.name); }
             break;
         case TAC_PAIR:
             free_ast(expr->as.pair.fst);
@@ -587,8 +587,7 @@ static inline TacticDef *tactic_env_lookup(TacticEnv *env, const char *name, siz
         return NULL;
     }
     for (size_t i = 0; i < env->count; i++) {
-        if (strcmp(env->defs[i]->name, name) == 0 &&
-            env->defs[i]->param_count == arg_count) {
+        if (strcmp(env->defs[i]->name, name) == 0 && env->defs[i]->param_count == arg_count) {
             return env->defs[i];
         }
     }

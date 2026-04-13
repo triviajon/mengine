@@ -120,6 +120,14 @@ void kernel_match_branch_free(void *branch);
 void kernel_expr_free(Expression *expr);
 
 /**
+ * Free an expression (and all its unique descendants) without touching nodes
+ * reachable from ctx.  Use instead of kernel_expr_free when the expression
+ * shares children (e.g. context variables) with the live context chain.
+ * Pass NULL for b when freeing a single expression.
+ */
+void kernel_expr_free_excluding_ctx(Expression *a, Expression *b, Context *ctx);
+
+/**
  * Free a filled hole expression without cascading into children.
  * Only safe to call on holes that have been filled via kernel_hole_fill.
  */
@@ -709,5 +717,14 @@ char *kernel_expr_to_string(Expression *expr);
  * @return
  */
 char *kernel_context_to_string(Context *context);
+
+/**
+ * Convert a context to a string, stopping at the given context.
+ * Time Complexity:
+ * @param context
+ * @param until
+ * @return
+ */
+char *kernel_context_to_string_until(Context *context, Context *until);
 
 #endif  // KERNEL_API_H

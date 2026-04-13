@@ -535,8 +535,8 @@ static TacticExpr *_parse_tactic_atom(Parser *p) {
             TokenType next = p->current->type;
             // Stop at combinator tokens, separators, and terminators
             if (next == TOK_SEMICOLON || next == TOK_DOUBLE_PIPE || next == TOK_DOT ||
-                next == TOK_RPAREN || next == TOK_RBRACKET || next == TOK_PIPE ||
-                next == TOK_END || next == TOK_IN) {
+                next == TOK_RPAREN || next == TOK_RBRACKET || next == TOK_PIPE || next == TOK_END ||
+                next == TOK_IN) {
                 break;
             }
             AST *arg = parse_atomic(p);
@@ -581,7 +581,7 @@ TacticExpr *tactic_parse_proof_command(Parser *p) {
 TacticExpr *tactic_parse_expr(Parser *p) { return _parse_tactic_expr(p); }
 
 void free_tactic(Tactic *tac) {
-    if (!tac) return;
+    if (!tac) { return; }
     switch (tac->tag) {
         case TACTIC_INTRO:
             free(tac->as.intro.name);

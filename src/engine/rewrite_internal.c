@@ -1,5 +1,7 @@
 #include "src/engine/rewrite_internal.h"
 
+#include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "src/common/doubly_linked_list.h"
@@ -8,10 +10,68 @@
 #include "src/runtime/core.h"
 
 /* ============================================================================
+ * Rewrite cache debug statistics
+ * ============================================================================ */
+
+static bool g_rewrite_debug = false;
+
+typedef struct {
+    long hits;             // cache hits in _rewrite
+    long misses;           // cache misses in _rewrite
+    long mid_result_hits;  // rewrite_head skipped via mid-result cache lookup
+    long calls;            // top-level rewrite()/erewrite() invocations
+    long total_hits;
+    long total_misses;
+    long total_mid_result_hits;
+    long total_calls;
+} RewriteCacheStats;
+
+static RewriteCacheStats g_rwr_stats = {0};
+
+void rewrite_set_debug(bool enabled) { g_rewrite_debug = enabled; }
+
+void rewrite_print_cumulative_stats(void) {
+    if (!g_rewrite_debug) return;
+    fprintf(stderr,
+            "[rewrite cache] cumulative: %ld calls, %ld hits, %ld misses "
+            "(hit rate %.1f%%), %ld mid-result hits (rewrite_head skipped)\n",
+            g_rwr_stats.total_calls, g_rwr_stats.total_hits, g_rwr_stats.total_misses,
+            g_rwr_stats.total_calls > 0
+                ? 100.0 * g_rwr_stats.total_hits /
+                      (g_rwr_stats.total_hits + g_rwr_stats.total_misses)
+                : 0.0,
+            g_rwr_stats.total_mid_result_hits);
+}
+
+static void _rwr_stats_begin_call(void) {
+    g_rwr_stats.hits = 0;
+    g_rwr_stats.misses = 0;
+    g_rwr_stats.mid_result_hits = 0;
+    g_rwr_stats.calls++;
+    g_rwr_stats.total_calls++;
+}
+
+static void _rwr_stats_print_call(void) {
+    if (!g_rewrite_debug) return;
+    long total = g_rwr_stats.hits + g_rwr_stats.misses;
+    fprintf(stderr,
+            "[rewrite cache] call #%ld: %ld hits / %ld lookups (%.1f%%), "
+            "%ld mid-result hits\n",
+            g_rwr_stats.calls, g_rwr_stats.hits, total,
+            total > 0 ? 100.0 * g_rwr_stats.hits / total : 0.0,
+            g_rwr_stats.mid_result_hits);
+    g_rwr_stats.total_hits += g_rwr_stats.hits;
+    g_rwr_stats.total_misses += g_rwr_stats.misses;
+    g_rwr_stats.total_mid_result_hits += g_rwr_stats.mid_result_hits;
+}
+
+/* ============================================================================
  * Relation Registry
  * ============================================================================ */
 
+#ifndef MAX_RELATIONS
 #define MAX_RELATIONS 64
+#endif
 
 struct RelationRegistry {
     RelationInfo entries[MAX_RELATIONS];
@@ -24,11 +84,15 @@ RelationRegistry *relation_registry_new(void) {
 }
 
 void relation_registry_free(RelationRegistry *reg) {
-    if (reg) free(reg);
+    if (reg) {
+        free(reg);
+    }
 }
 
 bool relation_registry_add(RelationRegistry *reg, RelationInfo info) {
-    if (!reg || reg->count >= MAX_RELATIONS) return false;
+    if (!reg || reg->count >= MAX_RELATIONS) {
+        return false;
+    }
     /* overwrite if relation already registered */
     for (int i = 0; i < reg->count; i++) {
         if (reg->entries[i].relation == info.relation) {
@@ -41,7 +105,9 @@ bool relation_registry_add(RelationRegistry *reg, RelationInfo info) {
 }
 
 RelationInfo *relation_registry_lookup(RelationRegistry *reg, Expression *relation) {
-    if (!reg) return NULL;
+    if (!reg) {
+        return NULL;
+    }
     for (int i = 0; i < reg->count; i++) {
         if (reg->entries[i].relation == relation) {
             return &reg->entries[i];
@@ -132,9 +198,15 @@ Expression *_build_app_congruence_proof(RewriteResult *func_rwr, RewriteResult *
             H1, ctx),
         H2, ctx);
 
-    // Free the temporary f_x expression used only to compute B.
-    // B now has an uplink from the proof, so it won't be cascadingly freed.
-    free_expression(f_x);
+    // Free f_x only if it is a fresh, unshared expression (uplinks == 0).
+    // With hash-consing, init_app_expression_wc may return a cached expression
+    // that is referenced by other parents (e.g., it IS the expr being rewritten).
+    // Unconditionally calling free_expression on a shared expression is unsound.
+    if (f_x->uplinks == NULL || f_x->uplink_count == 0) {
+        free_expression(f_x);
+    }
+    // else: f_x is a shared/interned expression; B remains live via the proof's
+    // reference and f_x will be freed by the uplink system when its parents are freed.
 
     return proof;
 }
@@ -185,7 +257,7 @@ RewriteResult *rewrite_head(Expression *mid, Expression *lemma, Context *context
         return init_rewrite_result(mid, mid, dll_create(), _build_reflexivity_proof(mid, context));
     }
 
-    if (!allow_unresolved_bindings && dll_len(unif_result->new_goals) > 0) {
+    if (!allow_unresolved_bindings && unif_result->new_goals->head != NULL) {
         free_unification_result(unif_result);
         return init_rewrite_result(mid, mid, dll_create(), _build_reflexivity_proof(mid, context));
     }
@@ -228,8 +300,25 @@ RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context
         rwr_arg->new_goals = NULL;   // transferred to mid_rwr
     }
 
+    // Optimization: if mid_rwr->rewritten is already in the cache (possible via
+    // hash-consing returning the same interned pointer as a previously-visited
+    // subterm), its full rewrite result is equivalent to what rewrite_head would
+    // produce — because the children of mid_rwr->rewritten are already fully
+    // rewritten, so the cached full-rewrite and the bare head-only rewrite coincide.
+#ifndef DISABLE_REWRITE_CACHE
+    bool mid_result_from_cache = false;
+    RewriteResult *mid_result = (RewriteResult *)map_get(cached_rwr, (void *)mid_rwr->rewritten);
+    if (mid_result) {
+        mid_result_from_cache = true;
+        g_rwr_stats.mid_result_hits++;
+    } else {
+        mid_result = rewrite_head(mid_rwr->rewritten, lemma, context, allow_unresolved_bindings);
+    }
+#else
+    bool mid_result_from_cache = false;
     RewriteResult *mid_result =
         rewrite_head(mid_rwr->rewritten, lemma, context, allow_unresolved_bindings);
+#endif
 
     RewriteResult *final_rwr;
     if (rewrite_is_noop(mid_result)) {
@@ -240,12 +329,16 @@ RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context
         final_rwr = init_rewrite_result(expr, mid_result->rewritten,
                                         dll_merge(mid_rwr->new_goals, mid_result->new_goals),
                                         _build_transitivity_proof(mid_rwr, mid_result, context));
-        mid_rwr->new_goals = NULL;     // transferred to final_rwr
-        mid_result->new_goals = NULL;  // transferred to final_rwr
+        mid_rwr->new_goals = NULL;  // transferred to final_rwr
+        if (!mid_result_from_cache) {
+            mid_result->new_goals = NULL;  // transferred to final_rwr; skip if cache-owned
+        }
     }
 
     free_rewrite_result(mid_rwr);
-    free_rewrite_result(mid_result);
+    if (!mid_result_from_cache) {
+        free_rewrite_result(mid_result);
+    }
 
     return final_rwr;
 }
@@ -258,12 +351,16 @@ RewriteResult *rewrite_var(Expression *expr, Expression *lemma, Context *context
 
 RewriteResult *_rewrite(Expression *expr, Expression *lemma, Context *context, Map *cached_rwr,
                         bool allow_unresolved_bindings) {
-    RewriteResult *result = (RewriteResult *)map_get(cached_rwr, (void *)expr);
-
-    if (result) {
-        return result;
+#ifndef DISABLE_REWRITE_CACHE
+    RewriteResult *cached = (RewriteResult *)map_get(cached_rwr, (void *)expr);
+    if (cached) {
+        g_rwr_stats.hits++;
+        return cached;
     }
+    g_rwr_stats.misses++;
+#endif
 
+    RewriteResult *result;
     switch (expr->tag) {
         case (APP_EXPRESSION): {
             result = rewrite_app(expr, lemma, context, cached_rwr, allow_unresolved_bindings);
@@ -277,26 +374,32 @@ RewriteResult *_rewrite(Expression *expr, Expression *lemma, Context *context, M
             return NULL;
     }
 
+#ifndef DISABLE_REWRITE_CACHE
     map_set(cached_rwr, (void *)expr, result);
+#endif
 
     return result;
 }
 
 RewriteResult *rewrite(Expression *expr, Expression *lemma, Context *context) {
+    _rwr_stats_begin_call();
     Map *cached_rwr = map_new();
     RewriteResult *rwr = _rewrite(expr, lemma, context, cached_rwr, false);
     map_del(cached_rwr,
             (void *)expr);  // remove it from the map so we don't accidently free the rwr
     map_clear_apply_free(cached_rwr, (void (*)(void *))free_rewrite_result);
+    _rwr_stats_print_call();
     return rwr;
 }
 
 RewriteResult *erewrite(Expression *expr, Expression *lemma, Context *context) {
+    _rwr_stats_begin_call();
     Map *cached_rwr = map_new();
     RewriteResult *rwr = _rewrite(expr, lemma, context, cached_rwr, true);
     map_del(cached_rwr,
             (void *)expr);  // remove it from the map so we don't accidently free the rwr
     map_clear_apply_free(cached_rwr, (void (*)(void *))free_rewrite_result);
+    _rwr_stats_print_call();
     return rwr;
 }
 Expression *rewrite_result_get_original(RewriteResult *result) {

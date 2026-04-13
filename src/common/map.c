@@ -5,11 +5,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "src/common/hash.c"
+#include "src/common/hash.h"
 
+#ifndef MAP_INITIAL_CAPACITY
 #define MAP_INITIAL_CAPACITY 16
+#endif
+#ifndef MAP_LOAD_FACTOR_NUM
 #define MAP_LOAD_FACTOR_NUM 7
+#endif
+#ifndef MAP_LOAD_FACTOR_DEN
 #define MAP_LOAD_FACTOR_DEN 10
+#endif
 
 typedef struct {
     void *key;

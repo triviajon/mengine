@@ -10,6 +10,7 @@
 #include "src/engine/engine_api.h"
 #include "src/engine/rewrite_internal.h"
 #include "src/kernel/kernel_api.h"
+#include "src/kernel/expression.h"
 #include "src/runtime/core.h"
 #include "src/tacticlanguage/tactic_ast.h"
 #include "src/tacticlanguage/tactic_exec.h"
@@ -78,6 +79,8 @@ MEngineRuntime *mengine_runtime_new(MEngineOptions *options) {
         fprintf(stderr, "Warning: could not load prelude/tactics.me\n");
     }
 
+    rewrite_set_debug(options->debug);
+
     return rt;
 }
 
@@ -87,15 +90,26 @@ void mengine_runtime_free(MEngineRuntime *rt) {
     }
 
     if (rt->proof_state) {
+        // Retrieve the pending theorem before freeing the proof state.
+        // It lives outside the context chain so we must free it explicitly.
+        Expression *pending = engine_proof_state_pending_theorem(rt->proof_state);
         engine_proof_state_free(rt->proof_state);
         rt->proof_state = NULL;
+        // pending shares context vars with rt->ctx — use the context-safe free.
+        if (pending) {
+            kernel_expr_free_excluding_ctx(pending, NULL, rt->ctx);
+        }
     }
 
     tactic_env_free(rt->tactic_env);
     relation_registry_free(rt->relation_registry);
 
+    rewrite_print_cumulative_stats();
+
     kernel_context_free(rt->ctx);
     free(rt);
+
+    expression_gc_shutdown();
 }
 
 int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
