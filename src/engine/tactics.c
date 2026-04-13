@@ -98,7 +98,7 @@ TacticResult *apply_tactic(Expression *goal, Expression *lemma) {
 
     // For apply, we do not allow the unification result to have any remaining
     // open holes.
-    if (dll_len(unif_result->new_goals) != 0) {
+    if (unif_result->new_goals->head != NULL) {
         free_unification_result(unif_result);
         return init_tactic_result(false, NULL, "Apply tactic does not allow remaining open holes");
     }
@@ -216,6 +216,12 @@ TacticResult *rewrite_tactic(Expression *goal, Expression *lemma) {
         return init_tactic_result(false, NULL, "Rewriting failed");
     }
 
+    // Check if the rewrite made no progress (noop)
+    if (rwr->original == rwr->rewritten) {
+        free_rewrite_result(rwr);
+        return init_tactic_result(false, NULL, "Rewriting made no progress");
+    }
+
     // rwr gives us eq A lhs lhs' with proof pf. We now need to build the proof
     // of eq relation_over lhs rhs. We'll just use eq_trans : (forall (A: Type),
     // (forall (x: A), (forall (y: A), (forall (z: A), (forall (_: (((eq A) x)
@@ -287,6 +293,12 @@ TacticResult *erewrite_tactic(Expression *goal, Expression *lemma) {
     RewriteResult *rwr = erewrite(relation_left_hand, lemma, operating_ctx);
     if (!rwr) {
         return init_tactic_result(false, NULL, "Rewriting failed");
+    }
+
+    // Check if the rewrite made no progress (noop)
+    if (rwr->original == rwr->rewritten) {
+        free_rewrite_result(rwr);
+        return init_tactic_result(false, NULL, "Rewriting made no progress");
     }
 
     // rwr gives us eq A lhs lhs' with proof pf. We now need to build the proof

@@ -33,11 +33,12 @@ static int _handle_declaration_command(MEngineRuntime *rt, DeclarationCmd *decl_
     }
     rt->ctx = new_var;
 
-    char *_type_str = kernel_expr_to_string(var_type);
-    MPRINT(rt->options->quiet, stdout, UI "%s " CRESET "%s : %s declared.\n",
-           decl_keyword_to_string(decl_cmd->kw), decl_cmd->binder.name,
-           _type_str);
-    free(_type_str);
+    if (!rt->options->quiet) {
+        char *_type_str = kernel_expr_to_string(var_type);
+        fprintf(stdout, UI "%s " CRESET "%s : %s declared.\n",
+                decl_keyword_to_string(decl_cmd->kw), decl_cmd->binder.name, _type_str);
+        free(_type_str);
+    }
     return 0;
 }
 
@@ -105,15 +106,18 @@ static int _handle_definition_command(MEngineRuntime *rt, DefinitionCmd *defn_cm
         fprintf(stderr, "  Inferred type: %s\n", _s2);
         free(_s1);
         free(_s2);
+        kernel_expr_free_excluding_ctx(expected_type_def_body, NULL, rendered_type_ctx);
         return 1;
     }
+    kernel_expr_free_excluding_ctx(expected_type_def_body, NULL, rendered_type_ctx);
 
     Expression *defn_var = kernel_var_create_with_body(defn_cmd->name, body, rt->ctx);
     rt->ctx = defn_var;
-    char *_type_str = kernel_expr_to_string(kernel_expr_type(defn_var));
-    MPRINT(rt->options->quiet, stdout, UI "Definition " CRESET "%s : %s defined.\n", name,
-           _type_str);
-    free(_type_str);
+    if (!rt->options->quiet) {
+        char *_type_str = kernel_expr_to_string(kernel_expr_type(defn_var));
+        fprintf(stdout, UI "Definition " CRESET "%s : %s defined.\n", name, _type_str);
+        free(_type_str);
+    }
     return 0;
 }
 
@@ -133,11 +137,12 @@ static int _handle_statement_command(MEngineRuntime *rt, StatementCmd *stmt_cmd)
         kernel_var_create_with_body(stmt_cmd->name, initial_goal, rt->ctx);
     mengine_runtime_proof_mode(rt, pending_theorem);
 
-    char *_type_str = kernel_expr_to_string(statement_type);
-    MPRINT(rt->options->quiet, stdout, UI "%s " CRESET "%s : %s stated.\n",
-           stmt_keyword_to_string(stmt_cmd->kw), stmt_cmd->name,
-           _type_str);
-    free(_type_str);
+    if (!rt->options->quiet) {
+        char *_type_str = kernel_expr_to_string(statement_type);
+        fprintf(stdout, UI "%s " CRESET "%s : %s stated.\n",
+                stmt_keyword_to_string(stmt_cmd->kw), stmt_cmd->name, _type_str);
+        free(_type_str);
+    }
 
     debug_print_mode(rt);
     return 0;
@@ -165,24 +170,28 @@ static int _handle_check_command(MEngineRuntime *rt, CheckCmd *check_cmd) {
         return 1;
     }
 
-    char *_s1 = kernel_expr_to_string(expr);
-    char *_s2 = kernel_expr_to_string(expr_type);
-    MPRINT(rt->options->quiet, stdout, DIMTEXT "%s\n\t: %s\n" CRESET, _s1, _s2);
-    free(_s1);
-    free(_s2);
+    if (!rt->options->quiet) {
+        char *_s1 = kernel_expr_to_string(expr);
+        char *_s2 = kernel_expr_to_string(expr_type);
+        fprintf(stdout, DIMTEXT "%s\n\t: %s\n" CRESET, _s1, _s2);
+        free(_s1);
+        free(_s2);
+    }
+    // expr shares children (context vars) with ctx — use the context-safe free.
+    kernel_expr_free_excluding_ctx(expr, NULL, ctx);
     return 0;
 }
 
 void _print_inductive_definition(MEngineRuntime *rt, Expression *expr) {
-    if (!expr) {
+    if (!expr || rt->options->quiet) {
         return;
     }
 
     // Inductive <name> : <type> :=
     char *_name_str = kernel_expr_to_string(expr);
     char *_type_str = kernel_expr_to_string(kernel_expr_type(expr));
-    MPRINT(rt->options->quiet, stdout,
-           DIMTEXT "Inductive " CRESET "%s : %s := ", _name_str, _type_str);
+    MPRINT(rt->options->quiet, stdout, DIMTEXT "Inductive " CRESET "%s : %s := ", _name_str,
+           _type_str);
     free(_name_str);
     free(_type_str);
 
@@ -238,13 +247,15 @@ static int _handle_print_command(MEngineRuntime *rt, PrintCmd *print_cmd) {
         return 1;
     }
 
-    char *_s1 = kernel_expr_to_string(expr);
-    char *_s2 = kernel_expr_to_string(expr_body);
-    char *_s3 = kernel_expr_to_string(expr_type);
-    MPRINT(rt->options->quiet, stdout, DIMTEXT "%s := %s\n\t: %s\n" CRESET, _s1, _s2, _s3);
-    free(_s1);
-    free(_s2);
-    free(_s3);
+    if (!rt->options->quiet) {
+        char *_s1 = kernel_expr_to_string(expr);
+        char *_s2 = kernel_expr_to_string(expr_body);
+        char *_s3 = kernel_expr_to_string(expr_type);
+        fprintf(stdout, DIMTEXT "%s := %s\n\t: %s\n" CRESET, _s1, _s2, _s3);
+        free(_s1);
+        free(_s2);
+        free(_s3);
+    }
     return 0;
 }
 
@@ -650,10 +661,11 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
         contexts[i] = ind_var;
     }
 
-    char *_ind_type_str = kernel_expr_to_string(ind_type);
-    MPRINT(rt->options->quiet, stdout, UI "Inductive " CRESET "%s : %s defined.\n", name,
-           _ind_type_str);
-    free(_ind_type_str);
+    if (!rt->options->quiet) {
+        char *_ind_type_str = kernel_expr_to_string(ind_type);
+        fprintf(stdout, UI "Inductive " CRESET "%s : %s defined.\n", name, _ind_type_str);
+        free(_ind_type_str);
+    }
 
     size_t ctor_count = ind_cmd->constructor_count;
 
@@ -710,10 +722,12 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
             contexts[j] = ctor_var;
         }
 
-        char *_ctor_type_str = kernel_expr_to_string(ctor_type);
-        MPRINT(rt->options->quiet, stdout, UI "Constructor " CRESET "%s : %s defined.\n",
-               ctor->name, _ctor_type_str);
-        free(_ctor_type_str);
+        if (!rt->options->quiet) {
+            char *_ctor_type_str = kernel_expr_to_string(ctor_type);
+            fprintf(stdout, UI "Constructor " CRESET "%s : %s defined.\n",
+                    ctor->name, _ctor_type_str);
+            free(_ctor_type_str);
+        }
     }
 
     char *ind_principle_name = malloc(strlen(name) + 5);
@@ -727,10 +741,12 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
         ind_principle_var = kernel_var_create(ind_principle_name, ind_principle_type, rt->ctx);
         rt->ctx = ind_principle_var;
 
-        char *_ind_p_str = kernel_expr_to_string(ind_principle_type);
-        MPRINT(rt->options->quiet, stdout, UI "Induction principle " CRESET "%s : %s generated.\n",
-               ind_principle_name, _ind_p_str);
-        free(_ind_p_str);
+        if (!rt->options->quiet) {
+            char *_ind_p_str = kernel_expr_to_string(ind_principle_type);
+            fprintf(stdout, UI "Induction principle " CRESET "%s : %s generated.\n",
+                    ind_principle_name, _ind_p_str);
+            free(_ind_p_str);
+        }
     }
 
     // Register the inductive type
@@ -773,10 +789,11 @@ static int _handle_fixpoint_command(MEngineRuntime *rt, FixpointCmd *fix_cmd) {
 
     rt->ctx = fixpoint_var;
 
-    char *_type_str = kernel_expr_to_string(kernel_expr_type(fixpoint_var));
-    MPRINT(rt->options->quiet, stdout, UI "Fixpoint " CRESET "%s : %s defined.\n", fix_cmd->name,
-           _type_str);
-    free(_type_str);
+    if (!rt->options->quiet) {
+        char *_type_str = kernel_expr_to_string(kernel_expr_type(fixpoint_var));
+        fprintf(stdout, UI "Fixpoint " CRESET "%s : %s defined.\n", fix_cmd->name, _type_str);
+        free(_type_str);
+    }
     return 0;
 }
 
@@ -836,11 +853,17 @@ static int _handle_eval_command(MEngineRuntime *rt, EvalCmd *eval_cmd) {
         return 1;
     }
 
-    char *_s1 = kernel_expr_to_string(result);
-    char *_s2 = kernel_expr_to_string(kernel_expr_type(result));
-    MPRINT(rt->options->quiet, stdout, DIMTEXT "\t= %s\n\t: %s\n" CRESET, _s1, _s2);
-    free(_s1);
-    free(_s2);
+    if (!rt->options->quiet) {
+        char *_s1 = kernel_expr_to_string(result);
+        char *_s2 = kernel_expr_to_string(kernel_expr_type(result));
+        fprintf(stdout, DIMTEXT "\t= %s\n\t: %s\n" CRESET, _s1, _s2);
+        free(_s1);
+        free(_s2);
+    }
+    // Free result and expr together (result may share sub-trees with expr).
+    // Both may also share context vars with ctx — use the context-safe free.
+    Expression *b = (result != expr) ? expr : NULL;
+    kernel_expr_free_excluding_ctx(result, b, ctx);
     return 0;
 }
 
@@ -879,12 +902,13 @@ static int _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
             Expression *pending_theorem = engine_proof_state_pending_theorem(rt->proof_state);
             Expression *pending_theorem_body = kernel_var_body(pending_theorem);
             Expression *pending_theorem_type = kernel_expr_type(pending_theorem);
-            char *_s1 = kernel_expr_to_string(pending_theorem_body);
-            char *_s2 = kernel_expr_to_string(pending_theorem_type);
-            MPRINT(rt->options->quiet, stdout, HEADER "Proof Term:" CRESET "\n%s : %s\n",
-                   _s1, _s2);
-            free(_s1);
-            free(_s2);
+            if (!rt->options->quiet) {
+                char *_s1 = kernel_expr_to_string(pending_theorem_body);
+                char *_s2 = kernel_expr_to_string(pending_theorem_type);
+                fprintf(stdout, HEADER "Proof Term:" CRESET "\n%s : %s\n", _s1, _s2);
+                free(_s1);
+                free(_s2);
+            }
             return 0;
         }
         case SHOW_KW_GOAL: {
@@ -907,15 +931,16 @@ static int _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
             }
 
             Context *goal_ctx = kernel_expr_context(current_goal);
-            if (goal_ctx) {
-                char *ctx_str = kernel_context_to_string(goal_ctx);
-                MPRINT(rt->options->quiet, stdout, HEADER "Goal Context:" CRESET "\n%s\n", ctx_str);
-                free(ctx_str);
+            if (!rt->options->quiet) {
+                if (goal_ctx) {
+                    char *ctx_str = kernel_context_to_string(goal_ctx);
+                    fprintf(stdout, HEADER "Goal Context:" CRESET "\n%s\n", ctx_str);
+                    free(ctx_str);
+                }
+                char *_goal_str = kernel_expr_to_string(kernel_expr_type(current_goal));
+                fprintf(stdout, HEADER "Goal:" CRESET "\n%s\n", _goal_str);
+                free(_goal_str);
             }
-            char *_goal_str = kernel_expr_to_string(kernel_expr_type(current_goal));
-            MPRINT(rt->options->quiet, stdout, HEADER "Goal:" CRESET "\n%s\n",
-                   _goal_str);
-            free(_goal_str);
             return 0;
         }
         case SHOW_KW_STATE: {
@@ -940,24 +965,24 @@ static int _handle_show_command(MEngineRuntime *rt, ShowCmd *show_cmd) {
             // Show proof term
             Expression *pending_theorem = engine_proof_state_pending_theorem(rt->proof_state);
             Expression *pending_theorem_body = kernel_var_body(pending_theorem);
-            char *_proof_str = kernel_expr_to_string(pending_theorem_body);
-            MPRINT(rt->options->quiet, stdout, HEADER "Proof Term:" CRESET "\n%s\n",
-                   _proof_str);
-            free(_proof_str);
+            if (!rt->options->quiet) {
+                char *_proof_str = kernel_expr_to_string(pending_theorem_body);
+                fprintf(stdout, HEADER "Proof Term:" CRESET "\n%s\n", _proof_str);
+                free(_proof_str);
 
-            // Show current goal context
-            Context *goal_ctx = kernel_expr_context(current_goal);
-            if (goal_ctx) {
-                char *ctx_str = kernel_context_to_string(goal_ctx);
-                MPRINT(rt->options->quiet, stdout, CYN "Goal Context:" CRESET "\n%s\n", ctx_str);
-                free(ctx_str);
+                // Show current goal context
+                Context *goal_ctx = kernel_expr_context(current_goal);
+                if (goal_ctx) {
+                    char *ctx_str = kernel_context_to_string(goal_ctx);
+                    fprintf(stdout, CYN "Goal Context:" CRESET "\n%s\n", ctx_str);
+                    free(ctx_str);
+                }
+
+                // Show goal
+                char *_goal_str = kernel_expr_to_string(kernel_expr_type(current_goal));
+                fprintf(stdout, CYN "Goal:" CRESET "\n%s\n", _goal_str);
+                free(_goal_str);
             }
-
-            // Show goal
-            char *_goal_str = kernel_expr_to_string(kernel_expr_type(current_goal));
-            MPRINT(rt->options->quiet, stdout, CYN "Goal:" CRESET "\n%s\n",
-                   _goal_str);
-            free(_goal_str);
             return 0;
         }
     }
@@ -993,8 +1018,7 @@ static int _handle_register_relation_command(MEngineRuntime *rt, RegisterRelatio
     }
 
     char *_rel_str = kernel_expr_to_string(relation);
-    MPRINT(rt->options->quiet, stdout, UI "Relation " CRESET "%s registered.\n",
-           _rel_str);
+    MPRINT(rt->options->quiet, stdout, UI "Relation " CRESET "%s registered.\n", _rel_str);
     free(_rel_str);
     return 0;
 }

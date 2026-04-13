@@ -6,22 +6,24 @@
 
 #include "src/common/doubly_linked_list.h"
 #include "src/engine/engine_api.h"
+#include "src/engine/unify.h"
 #include "src/kernel/context.h"
 #include "src/kernel/expression.h"
 #include "src/kernel/kernel_api.h"
 #include "src/kernel/normalize.h"
+#include "src/runtime/core.h"
 #include "src/runtime/runtime.h"
 #include "src/tacticlanguage/tactic_ast.h"
 #include "src/tacticlanguage/tactic_parser.h"
-#include "src/engine/unify.h"
-#include "src/runtime/core.h"
 #include "src/termlanguage/ast_to_expression.h"
 
 /* ============================================================================
  * Pattern bindings: maps pattern variable names -> Expression*
  * ============================================================================ */
 
+#ifndef MAX_PATTERN_BINDINGS
 #define MAX_PATTERN_BINDINGS 64
+#endif
 
 typedef struct {
     char *names[MAX_PATTERN_BINDINGS];
@@ -390,9 +392,8 @@ static TacticExpr *_tactic_expr_subst(TacticExpr *expr, char **params, AST **arg
             return tactic_expr_current_goal();
         case TAC_INTRO_STEP:
             return tactic_expr_intro_step(
-                expr->as.intro_step.name
-                    ? _ast_subst(expr->as.intro_step.name, params, args, count)
-                    : NULL);
+                expr->as.intro_step.name ? _ast_subst(expr->as.intro_step.name, params, args, count)
+                                         : NULL);
         case TAC_PAIR:
             return tactic_expr_pair(_ast_subst(expr->as.pair.fst, params, args, count),
                                     _ast_subst(expr->as.pair.snd, params, args, count));
@@ -476,11 +477,15 @@ static TacticValue *resolve_tactic_value(AST *ast, Context *ctx) {
         return tactic_value_dup(ast->value.expr_ref.tval);
     }
     Expression *e = ast_to_expression(ast, ctx);
-    if (!e) return NULL;
+    if (!e) {
+        return NULL;
+    }
     return tactic_value_expr(e);
 }
 
+#ifndef TAC_CALL_MAX_DEPTH
 #define TAC_CALL_MAX_DEPTH 1000
+#endif
 static int _tac_call_depth = 0;
 
 TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr *expr) {
@@ -637,8 +642,8 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             return init_tactic_result(false, NULL, "fail");
 
         case TAC_CALL: {
-            TacticDef *def = tactic_env_lookup(rt->tactic_env, expr->as.call.name,
-                                                 expr->as.call.arg_count);
+            TacticDef *def =
+                tactic_env_lookup(rt->tactic_env, expr->as.call.name, expr->as.call.arg_count);
             if (!def) {
                 char msg[256];
                 snprintf(msg, sizeof(msg), "Unknown tactic '%s'", expr->as.call.name);
@@ -670,7 +675,9 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             _tac_call_depth++;
             TacticResult *result = tactic_interpret(rt, goal, body);
             _tac_call_depth--;
-            if (body_is_copy) free_tactic_expr(body);
+            if (body_is_copy) {
+                free_tactic_expr(body);
+            }
             return result;
         }
 
@@ -787,7 +794,9 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                 bindings_free(&bindings);
 
                 TacticResult *match_result = tactic_interpret(rt, goal, body);
-                if (body_is_copy) free_tactic_expr(body);
+                if (body_is_copy) {
+                    free_tactic_expr(body);
+                }
                 return match_result;
             }
 
@@ -904,7 +913,9 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                 free(refs);
                 bindings_free(&bindings);
                 TacticResult *match_result = tactic_interpret(rt, goal, body);
-                if (body_is_copy) free_tactic_expr(body);
+                if (body_is_copy) {
+                    free_tactic_expr(body);
+                }
                 return match_result;
             }
 
@@ -1097,20 +1108,17 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             }
             UnificationResult *unif = bad_unify_for_eq(ctx, lemma, target);
             if (!unif) {
-                return init_tactic_result(false, NULL,
-                                          "rewrite_unify: unification failed");
+                return init_tactic_result(false, NULL, "rewrite_unify: unification failed");
             }
-            if (dll_len(unif->new_goals) > 0) {
+            if (unif->new_goals->head != NULL) {
                 free_unification_result(unif);
-                return init_tactic_result(false, NULL,
-                                          "rewrite_unify: unresolved bindings");
+                return init_tactic_result(false, NULL, "rewrite_unify: unresolved bindings");
             }
             Expression *inst = unif->lemma_instantiation;
             Expression *proof_type = get_expression_type(inst);
             if (!congruence(_get_lhs_eq(proof_type), target)) {
                 free_unification_result(unif);
-                return init_tactic_result(false, NULL,
-                                          "rewrite_unify: LHS does not match target");
+                return init_tactic_result(false, NULL, "rewrite_unify: LHS does not match target");
             }
             free_unification_result(unif);
             return init_tactic_result_value(tactic_value_expr(inst));

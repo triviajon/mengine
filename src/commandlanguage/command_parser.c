@@ -574,7 +574,9 @@ Command *command_parse_register_relation(Parser *p) {
 }
 
 void free_command(Command *cmd) {
-    if (!cmd) return;
+    if (!cmd) {
+        return;
+    }
 
     switch (cmd->tag) {
         case CMD_SHOW:

@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 
+#include "src/kernel/normalize.h"
 #include "src/kernel/subst.h"
 #include "src/runtime/core.h"
 
@@ -71,6 +72,9 @@ int num_holes(Expression *expr) {
 }
 
 Expression *_unify2(Expression *exprA, Expression *exprB, Expression *var_to_fill) {
+    exprA = normalize_whnf(exprA);
+    exprB = normalize_whnf(exprB);
+
     if (exprA == exprB) {
         return NULL;
     }
@@ -156,15 +160,15 @@ void free_unification_result(UnificationResult *unification_result) {
  */
 UnificationResult *eunify2(Expression *lemma, Expression *goal) {
     Context *goal_context = get_expression_context(goal);
-    Expression *expr = get_expression_type(goal);
+    Expression *expr = normalize_whnf(get_expression_type(goal));
 
     Expression *current_lemma_app = lemma;
     Expression *current_lemma_app_ty = get_expression_type(current_lemma_app);
     DoublyLinkedList *remaining_open = dll_create();
     while (current_lemma_app_ty->tag == FORALL_EXPRESSION) {
         Expression *bound_variable = current_lemma_app_ty->as.forall.bound_variable;
-        Expression *hole_subst =
-            _unify2(get_innermost_body(current_lemma_app_ty), expr, bound_variable);
+        Expression *lemma_target = normalize_whnf(get_innermost_body(current_lemma_app_ty));
+        Expression *hole_subst = _unify2(lemma_target, expr, bound_variable);
 
         if (hole_subst == NULL) {
             Expression *hole_to_fill = init_hole_expression(
@@ -177,6 +181,33 @@ UnificationResult *eunify2(Expression *lemma, Expression *goal) {
         }
         current_lemma_app_ty = get_expression_type(current_lemma_app);
     }
+
+    // Shelve holes that appear in other holes' types (evar-like arguments).
+    // These will be resolved via cascade fill when a dependent goal is solved.
+    DLLNode *node = remaining_open->head;
+    while (node != NULL) {
+        Expression *hole = (Expression *)node->data;
+        bool appears_in_other = false;
+        DLLNode *other = remaining_open->head;
+        while (other != NULL) {
+            if (other != node) {
+                Expression *other_hole = (Expression *)other->data;
+                Expression *other_type = get_expression_type(other_hole);
+                DoublyLinkedList *other_type_holes = list_holes(other_type);
+                if (dll_search(other_type_holes, hole) != NULL) {
+                    appears_in_other = true;
+                }
+                dll_destroy(other_type_holes);
+                if (appears_in_other) break;
+            }
+            other = other->next;
+        }
+        if (appears_in_other) {
+            hole->as.hole.is_satisfied = true;
+        }
+        node = node->next;
+    }
+
     return init_unification_result(current_lemma_app, remaining_open);
 }
 

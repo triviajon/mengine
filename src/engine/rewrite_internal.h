@@ -1,6 +1,8 @@
 #ifndef REWRITE_INTERNAL_H
 #define REWRITE_INTERNAL_H
 
+#include <stdbool.h>
+
 #include "src/kernel/expression.h"
 
 /* ============================================================================
@@ -47,5 +49,9 @@ DoublyLinkedList *rewrite_result_get_new_goals(RewriteResult *result);
 
 RewriteResult *rewrite(Expression *expr, Expression *lemma, Context *context);
 RewriteResult *erewrite(Expression *expr, Expression *lemma, Context *context);
+
+/* Debug stats */
+void rewrite_set_debug(bool enabled);
+void rewrite_print_cumulative_stats(void);
 
 #endif  // REWRITE_INTERNAL_H

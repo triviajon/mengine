@@ -35,11 +35,17 @@ Expression *proof_state_current(ProofState *ps) {
     if (!ps) {
         return NULL;
     }
-    if (ps->goal_index >=
-        /*todo: change spec of dll_len */ (size_t)dll_len(ps->goals)) {
-        return NULL;
+    size_t len = (size_t)dll_len(ps->goals);
+
+    // Skip over goals that have already been filled via cascade (is_satisfied).
+    while (ps->goal_index < len) {
+        Expression *goal = (Expression *)dll_at(ps->goals, ps->goal_index)->data;
+        if (goal->tag != HOLE_EXPRESSION || !goal->as.hole.is_satisfied) {
+            return goal;
+        }
+        ps->goal_index++;
     }
-    return (Expression *)dll_at(ps->goals, ps->goal_index)->data;
+    return NULL;
 }
 
 Expression *proof_state_pending_theorem(ProofState *ps) {
@@ -59,9 +65,28 @@ bool proof_state_next(ProofState *ps) {
 }
 
 void proof_state_add_goals(ProofState *ps, DoublyLinkedList *new_goals) {
-    if (!ps || !new_goals) {
+    if (!ps || !new_goals || !new_goals->head) {
         return;
     }
 
-    ps->goals = dll_merge(ps->goals, new_goals);
+    // Insert new goals right after the current goal position so that
+    // subgoals from the just-executed tactic are processed before
+    // previously-queued goals (e.g., continuation goals from eapply).
+    DLLNode *current = dll_at(ps->goals, ps->goal_index);
+    if (current) {
+        DLLNode *after = current->next;
+        // Splice new_goals list between current and after
+        current->next = new_goals->head;
+        new_goals->head->prev = current;
+        if (after) {
+            new_goals->tail->next = after;
+            after->prev = new_goals->tail;
+        } else {
+            ps->goals->tail = new_goals->tail;
+        }
+        free(new_goals);
+    } else {
+        // No current goal (e.g., empty list), just append
+        ps->goals = dll_merge(ps->goals, new_goals);
+    }
 }

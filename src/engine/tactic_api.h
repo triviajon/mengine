@@ -41,7 +41,9 @@ static inline TacticValue *tactic_value_pair(TacticValue *fst, TacticValue *snd)
 
 /* Unwrap a TacticValue to Expression*, or NULL if it's a pair. */
 static inline Expression *tactic_value_as_expr(TacticValue *tv) {
-    if (!tv || tv->kind != TVAL_EXPRESSION) return NULL;
+    if (!tv || tv->kind != TVAL_EXPRESSION) {
+        return NULL;
+    }
     return tv->expr;
 }
 
