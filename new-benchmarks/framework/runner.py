@@ -132,7 +132,9 @@ def run_benchmark(
         verbose: Print progress.
     """
     results_path = os.path.join(config.results_dir, f"{benchmark.name}.json")
-    results = {} if force else load_results(results_path)
+    # Always load existing results so --force can selectively overwrite only
+    # the keys being rerun, preserving other engines/strategies.
+    results = load_results(results_path)
 
     timeout = timeout_override or config.default_timeout
 
