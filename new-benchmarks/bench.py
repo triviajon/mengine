@@ -57,13 +57,15 @@ import tempfile
 # Make imports work when running from the new-benchmarks directory
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 from benchmarks.registry import ALL_BENCHMARKS
 from framework.benchmark import ParamSpec
 from framework.runner import RunConfig, run_benchmark, load_results
 from framework.plotter import plot_benchmark, plot_all_variants
 
 
-DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+DEFAULT_CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
 
 DEFAULT_CONFIG = {
     "mengine_path": "~/mengine/mengine",
@@ -89,6 +91,23 @@ def load_config():
     return dict(DEFAULT_CONFIG)
 
 
+def resolve_path_from_base(path_str):
+    """Resolve a potentially-relative path against this script's directory."""
+    expanded = os.path.expanduser(path_str)
+    if os.path.isabs(expanded):
+        return expanded
+    return os.path.normpath(os.path.join(BASE_DIR, expanded))
+
+
+def resolve_path_or_cmd(path_or_cmd):
+    """Keep bare executable names as-is; resolve path-like values from BASE_DIR."""
+    if not path_or_cmd:
+        return path_or_cmd
+    if os.path.sep not in path_or_cmd and not path_or_cmd.startswith("~") and not path_or_cmd.startswith("."):
+        return path_or_cmd
+    return resolve_path_from_base(path_or_cmd)
+
+
 def save_default_config():
     with open(DEFAULT_CONFIG_PATH, "w") as f:
         json.dump(DEFAULT_CONFIG, f, indent=2)
@@ -98,12 +117,12 @@ def save_default_config():
 
 def make_run_config(cfg, args):
     return RunConfig(
-        mengine_path=cfg["mengine_path"],
+        mengine_path=resolve_path_or_cmd(cfg["mengine_path"]),
         coq_path=cfg["coq_path"],
         lean_path=cfg["lean_path"],
-        coqutil_root=cfg.get("coqutil_root", ""),
-        mengine_root=cfg.get("mengine_root", ""),
-        results_dir=cfg["results_dir"],
+        coqutil_root=resolve_path_from_base(cfg.get("coqutil_root", "")) if cfg.get("coqutil_root", "") else "",
+        mengine_root=resolve_path_from_base(cfg.get("mengine_root", "")) if cfg.get("mengine_root", "") else "",
+        results_dir=resolve_path_from_base(cfg["results_dir"]),
         default_timeout=args.timeout or cfg["default_timeout"],
         max_consecutive_timeouts=args.max_timeouts if hasattr(args, "max_timeouts") and args.max_timeouts else cfg["max_consecutive_timeouts"],
         max_consecutive_failures=cfg["max_consecutive_failures"],
@@ -147,9 +166,10 @@ def cmd_list(args):
 def cmd_status(args):
     cfg = load_config()
     benchmarks = get_benchmarks(args)
+    results_dir = resolve_path_from_base(cfg["results_dir"])
 
     for name, bench in benchmarks.items():
-        results_path = os.path.join(cfg["results_dir"], f"{bench.name}.json")
+        results_path = os.path.join(results_dir, f"{bench.name}.json")
         results = load_results(results_path)
         
         total = len(results)
@@ -212,6 +232,8 @@ def cmd_plot(args):
     cfg = load_config()
     benchmarks = get_benchmarks(args)
     engines = args.engine.split(",") if args.engine else None
+    results_dir = resolve_path_from_base(cfg["results_dir"])
+    plots_dir = resolve_path_from_base(cfg.get("plots_dir", "plots"))
     
     fixed_params = {}
     if args.fixed:
@@ -221,8 +243,8 @@ def cmd_plot(args):
 
     for name, bench in benchmarks.items():
         kwargs = {
-            "results_dir": cfg["results_dir"],
-            "output_dir": cfg.get("plots_dir", "plots"),
+            "results_dir": results_dir,
+            "output_dir": plots_dir,
             "engines": engines,
             "fmt": args.format,
             "log_y": args.log_y,
