@@ -96,6 +96,24 @@ Map *map_new(void) {
     return m;
 }
 
+Map *map_new_with_capacity(size_t initial_capacity) {
+    Map *m = malloc(sizeof(Map));
+    if (!m) {
+        return NULL;
+    }
+
+    m->capacity = initial_capacity;
+    m->size = 0;
+    m->entries = map_entries_new(m->capacity);
+
+    if (!m->entries) {
+        free(m);
+        return NULL;
+    }
+
+    return m;
+}
+
 void *map_get(Map *m, void *key) {
     if (!m || m->size == 0) {
         return NULL;
@@ -192,6 +210,16 @@ void map_free(Map *m) {
 
     free(m->entries);
     free(m);
+}
+
+void map_reset(Map *m) {
+    if (!m || m->size == 0) return;
+    /* Scan only used slots: O(capacity) scan but each slot is a simple check.
+     * For our small maps (capacity 8-32), this is much cheaper than memset. */
+    for (size_t i = 0; i < m->capacity; i++) {
+        m->entries[i].in_use = 0;
+    }
+    m->size = 0;
 }
 
 void map_clear_free_values(Map *m) {

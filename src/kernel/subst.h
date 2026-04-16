@@ -39,4 +39,9 @@ Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a
 Expression *new_p_subst(Context *context, Expression *t, DoublyLinkedList *old_exprs,
                         DoublyLinkedList *new_exprs);
 
+// Like new_subst but skips the collect_subtree DFS.  Safe only when the
+// substitution target is a lambda bound variable with no accumulated uplinks
+// outside the expression being substituted into.  Use in beta_reduce.
+Expression *beta_subst(Context *context, Expression *t, Expression *x, Expression *a);
+
 #endif  // NEW_SUBST_H
