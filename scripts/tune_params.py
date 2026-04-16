@@ -5,9 +5,15 @@ Exhaustive compile-time parameter tuner for mengine.
 This script evaluates the cartesian product of a bounded parameter grid and
 reports the fastest TUNE_FLAGS for symbolic execution at a fixed size.
 
+Default scoring strategy:
+- Repeat each benchmark point 5 times.
+- Use the minimum observed time as the score (treating min as the best
+    estimate of machine noise-free runtime).
+
 Usage examples:
   python3 scripts/tune_params.py
-  python3 scripts/tune_params.py --n 100 --repeats 2
+    python3 scripts/tune_params.py --n 100
+    python3 scripts/tune_params.py --n 100 --repeats 5
   python3 scripts/tune_params.py --profile tiny
   python3 scripts/tune_params.py --profile small --dry-run
 
@@ -19,7 +25,6 @@ Notes:
 import argparse
 import itertools
 import os
-import statistics
 import subprocess
 import sys
 import tempfile
@@ -174,7 +179,7 @@ def evaluate_point(
             times.append(time_run(binary, input_file, timeout_s))
         except Exception:
             return float("inf")
-    return statistics.median(times)
+    return min(times)
 
 
 def iter_points(params: List[TuneParam]):
@@ -188,7 +193,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Exhaustive cartesian tuner for mengine compile-time parameters")
     parser.add_argument("--root", default=".", help="Path to mengine repo root (default: .)")
     parser.add_argument("--n", type=int, default=100, help="symbolic_execution size n (default: 100)")
-    parser.add_argument("--repeats", type=int, default=1, help="Timing repeats per point, median used (default: 1)")
+    parser.add_argument(
+        "--repeats",
+        type=int,
+        default=5,
+        help="Timing repeats per point; minimum time is used as score (default: 5)",
+    )
     parser.add_argument("--timeout", type=float, default=120.0, help="Per-run timeout seconds (default: 120)")
     parser.add_argument("--jobs", type=int, default=os.cpu_count() or 1, help="Parallel build jobs (default: nproc)")
     parser.add_argument("--profile", choices=["tiny", "small"], default="small", help="Candidate profile size")
