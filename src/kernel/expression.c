@@ -356,7 +356,7 @@ Expression *init_lambda_expression_wc(Expression *bound_variable, Expression *bo
     probe.as.lambda.bound_variable = bound_variable;
     probe.as.lambda.body = body;
 #ifndef DISABLE_HASH_CONSING
-    if (g_type_computation_depth == 0) {
+    {
         Expression *cached = expression_intern_lookup(&probe);
         if (cached) { return cached; }
     }
@@ -380,20 +380,22 @@ Expression *init_lambda_expression_wc(Expression *bound_variable, Expression *bo
     propagate_evar_refs(expr, body);
 
 #ifndef DISABLE_HASH_CONSING
-    if (g_type_computation_depth == 0) expression_intern_insert(expr);
+    expression_intern_insert(expr);
 #endif
     return expr;
 }
 
 Expression *init_app_expression_wc(Expression *func, Expression *arg, Context *context) {
     // Probe the intern table before doing any work.
+    // This is safe at any depth: we are only reading, never inserting.
+    // The depth guard on insertion (below) prevents incomplete entries.
     Expression probe = {0};
     probe.tag = APP_EXPRESSION;
     probe.context = context;
     probe.as.app.func = func;
     probe.as.app.arg = arg;
 #ifndef DISABLE_HASH_CONSING
-    if (g_type_computation_depth == 0) {
+    {
         Expression *cached = expression_intern_lookup(&probe);
         if (cached) { return cached; }
     }
@@ -433,7 +435,12 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg, Context *c
     propagate_evar_refs(expr, arg);
 
 #ifndef DISABLE_HASH_CONSING
-    if (g_type_computation_depth == 0) expression_intern_insert(expr);
+    // Don't intern if func or arg is a hole: fill_hole mutates App in place,
+    // which would corrupt the intern table entry (stale hash bucket). Instead,
+    // fill_hole will call expression_intern_insert after the mutation.
+    if (func->tag != HOLE_EXPRESSION && arg->tag != HOLE_EXPRESSION) {
+        expression_intern_insert(expr);
+    }
 #endif
     return expr;
 }
@@ -445,7 +452,7 @@ Expression *init_forall_expression_wc(Expression *bound_variable, Expression *bo
     probe.as.forall.bound_variable = bound_variable;
     probe.as.forall.body = body;
 #ifndef DISABLE_HASH_CONSING
-    if (g_type_computation_depth == 0) {
+    {
         Expression *cached = expression_intern_lookup(&probe);
         if (cached) { return cached; }
     }
@@ -480,7 +487,7 @@ Expression *init_forall_expression_wc(Expression *bound_variable, Expression *bo
     propagate_evar_refs(expr, body);
 
 #ifndef DISABLE_HASH_CONSING
-    if (g_type_computation_depth == 0) expression_intern_insert(expr);
+    expression_intern_insert(expr);
 #endif
     return expr;
 }
@@ -1371,6 +1378,14 @@ bool fill_hole(Expression *hole, Expression *term) {
     // Rewrite structural uplinks: replace hole with term in all direct parents.
     // The SET_* macros also call add_to_parents(term, parent, rel) so term's
     // uplinks are updated in the same step.
+    //
+    // For internable parent expressions (APP, LAMBDA, FORALL): we remove the
+    // old intern-table entry (keyed on the hole pointer) before mutating, then
+    // re-insert after mutation so future init_*_expression_wc calls for the
+    // same (func, filled_arg) pair return the existing expression rather than
+    // creating a fresh one.  This restores sharing lost when eapply creates
+    // App(f, hole) and the hole is later filled — without this, every filled
+    // hole produces a uniquely-keyed expression that can never be cache-hit.
     DoublyLinkedList *holepars = hole->uplinks;
     if (holepars) {
         DLLNode *ul = holepars->head;
@@ -1379,32 +1394,76 @@ bool fill_hole(Expression *hole, Expression *term) {
             switch (uplink->relation) {
                 case (LAMBDA_BODY): {
                     Expression *ptr = (Expression *)uplink->ptr;
+#ifndef DISABLE_HASH_CONSING
+                    expression_intern_remove(ptr);
+#endif
                     SET_LAMBDA_BODY(ptr, term);
+#ifndef DISABLE_HASH_CONSING
+                    if (term->tag != HOLE_EXPRESSION)
+                        expression_intern_insert(ptr);
+#endif
                     break;
                 }
                 case (LAMBDA_BOUND_VAR): {
                     Expression *ptr = (Expression *)uplink->ptr;
+#ifndef DISABLE_HASH_CONSING
+                    expression_intern_remove(ptr);
+#endif
                     SET_LAMBDA_BOUND_VAR(ptr, term);
+#ifndef DISABLE_HASH_CONSING
+                    if (term->tag != HOLE_EXPRESSION)
+                        expression_intern_insert(ptr);
+#endif
                     break;
                 }
                 case (APP_FUNC): {
                     Expression *ptr = (Expression *)uplink->ptr;
+#ifndef DISABLE_HASH_CONSING
+                    expression_intern_remove(ptr);
+#endif
                     SET_APP_FUNC(ptr, term);
+#ifndef DISABLE_HASH_CONSING
+                    if (term->tag != HOLE_EXPRESSION &&
+                        ptr->as.app.arg->tag != HOLE_EXPRESSION)
+                        expression_intern_insert(ptr);
+#endif
                     break;
                 }
                 case (APP_ARG): {
                     Expression *ptr = (Expression *)uplink->ptr;
+#ifndef DISABLE_HASH_CONSING
+                    expression_intern_remove(ptr);
+#endif
                     SET_APP_ARG(ptr, term);
+#ifndef DISABLE_HASH_CONSING
+                    if (term->tag != HOLE_EXPRESSION &&
+                        ptr->as.app.func->tag != HOLE_EXPRESSION)
+                        expression_intern_insert(ptr);
+#endif
                     break;
                 }
                 case (FORALL_BODY): {
                     Expression *ptr = (Expression *)uplink->ptr;
+#ifndef DISABLE_HASH_CONSING
+                    expression_intern_remove(ptr);
+#endif
                     SET_FORALL_BODY(ptr, term);
+#ifndef DISABLE_HASH_CONSING
+                    if (term->tag != HOLE_EXPRESSION)
+                        expression_intern_insert(ptr);
+#endif
                     break;
                 }
                 case (FORALL_BOUND_VAR): {
                     Expression *ptr = (Expression *)uplink->ptr;
+#ifndef DISABLE_HASH_CONSING
+                    expression_intern_remove(ptr);
+#endif
                     SET_FORALL_BOUND_VAR(ptr, term);
+#ifndef DISABLE_HASH_CONSING
+                    if (term->tag != HOLE_EXPRESSION)
+                        expression_intern_insert(ptr);
+#endif
                     break;
                 }
                 case (VAR_BODY): {

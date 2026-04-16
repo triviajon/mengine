@@ -105,7 +105,8 @@ void expression_intern_insert(Expression *expr) {
 }
 
 void expression_intern_remove(const Expression *expr) {
-    (void)expr; /* deferred GC: intern table freed at shutdown */
+    if (!expression_intern_table || !expr) return;
+    hashcons_map_remove(expression_intern_table, expr);
 }
 
 void expression_intern_table_free(void) {
