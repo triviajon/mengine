@@ -80,15 +80,27 @@ DEFAULT_CONFIG = {
     "max_consecutive_failures": 5,
 }
 
+_PATH_KEYS = {"mengine_path", "mengine_root", "coqutil_root", "results_dir", "plots_dir"}
+
 def load_config():
+    cfg = dict(DEFAULT_CONFIG)
     if os.path.exists(DEFAULT_CONFIG_PATH):
         with open(DEFAULT_CONFIG_PATH) as f:
-            cfg = json.load(f)
-        # Merge with defaults
-        merged = dict(DEFAULT_CONFIG)
-        merged.update(cfg)
-        return merged
-    return dict(DEFAULT_CONFIG)
+            loaded = json.load(f)
+        cfg.update(loaded)
+
+    # Normalize path-like config values once so all commands behave identically
+    # no matter where bench.py is launched from.
+    for key in _PATH_KEYS:
+        value = cfg.get(key, "")
+        if not value:
+            continue
+        if key == "mengine_path":
+            cfg[key] = resolve_path_or_cmd(value)
+        else:
+            cfg[key] = resolve_path_from_base(value)
+
+    return cfg
 
 
 def resolve_path_from_base(path_str):
@@ -117,12 +129,12 @@ def save_default_config():
 
 def make_run_config(cfg, args):
     return RunConfig(
-        mengine_path=resolve_path_or_cmd(cfg["mengine_path"]),
+        mengine_path=cfg["mengine_path"],
         coq_path=cfg["coq_path"],
         lean_path=cfg["lean_path"],
-        coqutil_root=resolve_path_from_base(cfg.get("coqutil_root", "")) if cfg.get("coqutil_root", "") else "",
-        mengine_root=resolve_path_from_base(cfg.get("mengine_root", "")) if cfg.get("mengine_root", "") else "",
-        results_dir=resolve_path_from_base(cfg["results_dir"]),
+        coqutil_root=cfg.get("coqutil_root", ""),
+        mengine_root=cfg.get("mengine_root", ""),
+        results_dir=cfg["results_dir"],
         default_timeout=args.timeout or cfg["default_timeout"],
         max_consecutive_timeouts=args.max_timeouts if hasattr(args, "max_timeouts") and args.max_timeouts else cfg["max_consecutive_timeouts"],
         max_consecutive_failures=cfg["max_consecutive_failures"],
@@ -166,7 +178,7 @@ def cmd_list(args):
 def cmd_status(args):
     cfg = load_config()
     benchmarks = get_benchmarks(args)
-    results_dir = resolve_path_from_base(cfg["results_dir"])
+    results_dir = cfg["results_dir"]
 
     for name, bench in benchmarks.items():
         results_path = os.path.join(results_dir, f"{bench.name}.json")
@@ -232,8 +244,8 @@ def cmd_plot(args):
     cfg = load_config()
     benchmarks = get_benchmarks(args)
     engines = args.engine.split(",") if args.engine else None
-    results_dir = resolve_path_from_base(cfg["results_dir"])
-    plots_dir = resolve_path_from_base(cfg.get("plots_dir", "plots"))
+    results_dir = cfg["results_dir"]
+    plots_dir = cfg.get("plots_dir", os.path.join(BASE_DIR, "plots"))
     
     fixed_params = {}
     if args.fixed:
