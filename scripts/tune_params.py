@@ -1,302 +1,273 @@
 #!/usr/bin/env python3
 """
-Compile-time parameter tuner for mengine.
+Exhaustive compile-time parameter tuner for mengine.
 
-Searches for optimal values of the performance constants in the mengine kernel
-using coordinate descent with random restarts. After each restart the script
-hill-climbs by cycling through parameters one at a time and picking the value
-that minimises the benchmark time. It repeats until no parameter improves.
+This script evaluates the cartesian product of a bounded parameter grid and
+reports the fastest TUNE_FLAGS for symbolic execution at a fixed size.
 
-Usage
------
-    # From the mengine root directory:
-    python3 scripts/tune_params.py
+Usage examples:
+  python3 scripts/tune_params.py
+  python3 scripts/tune_params.py --n 100 --repeats 2
+  python3 scripts/tune_params.py --profile tiny
+  python3 scripts/tune_params.py --profile small --dry-run
 
-    # Override benchmark targets (default: all examples/*.me files):
-    python3 scripts/tune_params.py --inputs examples/rewrite_expo.me examples/repeat_mod.me
-
-    # Control search budget:
-    python3 scripts/tune_params.py --restarts 5 --rounds 10
-
-    # Dry-run: just print what would be built/run:
-    python3 scripts/tune_params.py --dry-run
-
-Output
-------
-Best parameters are printed as a TUNE_FLAGS string you can paste into make:
-    make TUNE_FLAGS="-DHCMAP_INITIAL_CAPACITY=2048 -DMAP_LOAD_FACTOR_NUM=8"
+Notes:
+- The default profile is intentionally small so full cartesian search remains practical.
+- We force rebuilds for each parameter point (make -B) to ensure correctness.
 """
 
 import argparse
-import glob
-import math
+import itertools
 import os
-import random
+import statistics
 import subprocess
 import sys
+import tempfile
 import time
-from copy import deepcopy
-from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
-
-# ---------------------------------------------------------------------------
-# Parameter space
-# Each entry: (flag_name, default, candidates)
-# candidates is the ordered list of values to try during the search.
-# Add new entries here as more constants are identified.
-# ---------------------------------------------------------------------------
-
-PARAMS = [
-    # hashcons intern table
-    ("HCMAP_INITIAL_CAPACITY", 1024, [256, 512, 1024, 2048, 4096, 8192]),
-    ("HCMAP_LOAD_FACTOR_NUM",     7, [5, 6, 7, 8, 9]),
-    # generic map
-    ("MAP_INITIAL_CAPACITY",      16, [8, 16, 32, 64, 128]),
-    ("MAP_LOAD_FACTOR_NUM",        7, [5, 6, 7, 8, 9]),
-    # rewrite / tactic limits — correctness constraints, but exposing for tuning
-    ("MAX_RELATIONS",              64, [32, 64, 128, 256]),
-    ("MAX_PATTERN_BINDINGS",       64, [32, 64, 128]),
-    ("TAC_CALL_MAX_DEPTH",       1000, [500, 1000, 2000]),
-]
-
-# HCMAP_LOAD_FACTOR_DEN and MAP_LOAD_FACTOR_DEN are fixed at 10 so the ratio
-# NUM/DEN directly represents the target occupancy (e.g. 7/10 = 70 %).
-# MAP_HASH_SEED affects hash distribution in subtle ways; random search over
-# it is rarely productive so it is left as a separate manual exercise.
+from dataclasses import dataclass
+from typing import Dict, Iterable, List, Tuple
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class TuneParam:
+    name: str
+    kind: str  # "value" or "define"
+    candidates: Tuple[object, ...]
 
-def make_tune_flags(params_dict: dict) -> str:
-    return " ".join(f"-D{k}={v}" for k, v in params_dict.items())
+
+# All currently supported tunable compile-time knobs.
+# Keep this list aligned with code-level #ifndef defaults and Makefile docs.
+ALL_PARAMS: Tuple[TuneParam, ...] = (
+    TuneParam("HCMAP_INITIAL_CAPACITY", "value", (1024, 2048)),
+    TuneParam("HCMAP_LOAD_FACTOR_NUM", "value", (7,)),
+    TuneParam("HCMAP_LOAD_FACTOR_DEN", "value", (10,)),
+    TuneParam("MAP_INITIAL_CAPACITY", "value", (16, 32)),
+    TuneParam("MAP_LOAD_FACTOR_NUM", "value", (7, 8)),
+    TuneParam("MAP_LOAD_FACTOR_DEN", "value", (10,)),
+    TuneParam("MAP_HASH_SEED", "value", (0x6D656E67,)),
+    TuneParam("MAX_RELATIONS", "value", (64, 128)),
+    TuneParam("MAX_PATTERN_BINDINGS", "value", (64, 128)),
+    TuneParam("TAC_CALL_MAX_DEPTH", "value", (1000,)),
+    TuneParam("DISABLE_HASH_CONSING", "define", (False,)),
+    TuneParam("DISABLE_REWRITE_CACHE", "define", (False,)),
+)
 
 
-def build(tune_flags: str, dry_run: bool = False, root: str = ".") -> bool:
-    """(Re)build mengine with the given TUNE_FLAGS. Returns True on success."""
-    cmd = ["make", "-C", root, "mengine", f"TUNE_FLAGS={tune_flags}", "--no-print-directory"]
+PROFILE_OVERRIDES = {
+    # Fast smoke profile.
+    "tiny": {
+        "HCMAP_INITIAL_CAPACITY": (1024,),
+        "MAP_INITIAL_CAPACITY": (16,),
+        "MAP_LOAD_FACTOR_NUM": (7,),
+        "MAX_RELATIONS": (64,),
+        "MAX_PATTERN_BINDINGS": (64,),
+    },
+    # Practical default: 32 combinations.
+    "small": {
+        "HCMAP_INITIAL_CAPACITY": (1024, 2048),
+        "MAP_INITIAL_CAPACITY": (16, 32),
+        "MAP_LOAD_FACTOR_NUM": (7, 8),
+        "MAX_RELATIONS": (64, 128),
+        "MAX_PATTERN_BINDINGS": (64, 128),
+    },
+}
+
+
+def apply_profile(base: Iterable[TuneParam], profile: str) -> List[TuneParam]:
+    overrides = PROFILE_OVERRIDES.get(profile, {})
+    out = []
+    for p in base:
+        cand = overrides.get(p.name, p.candidates)
+        out.append(TuneParam(p.name, p.kind, tuple(cand)))
+    return out
+
+
+def format_tune_flags(point: Dict[str, object], params: List[TuneParam]) -> str:
+    parts: List[str] = []
+    for p in params:
+        val = point[p.name]
+        if p.kind == "value":
+            parts.append(f"-D{p.name}={val}")
+        else:
+            if bool(val):
+                parts.append(f"-D{p.name}")
+    return " ".join(parts)
+
+
+def product_size(params: List[TuneParam]) -> int:
+    total = 1
+    for p in params:
+        total *= len(p.candidates)
+    return total
+
+
+def render_symbolic_input(root: str, n: int) -> str:
+    fd, out_path = tempfile.mkstemp(prefix="mengine_symexec_", suffix=f"_n{n}.me")
+    os.close(fd)
+    cmd = [
+        sys.executable,
+        os.path.join(root, "new-benchmarks", "bench.py"),
+        "render",
+        "symbolic_execution",
+        "mengine",
+        f"n={n}",
+    ]
+    with open(out_path, "w", encoding="utf-8") as f:
+        proc = subprocess.run(cmd, stdout=f, stderr=subprocess.PIPE, text=True)
+    if proc.returncode != 0:
+        raise RuntimeError(f"Failed to render symbolic_execution input: {proc.stderr.strip()}")
+    return out_path
+
+
+def build_mengine(root: str, tune_flags: str, jobs: int, dry_run: bool = False) -> bool:
+    cmd = [
+        "make",
+        "-C",
+        root,
+        "-B",
+        "mengine",
+        f"TUNE_FLAGS={tune_flags}",
+        "--no-print-directory",
+        f"-j{jobs}",
+    ]
     if dry_run:
-        print(f"  [dry-run] {' '.join(cmd)}")
+        print("[dry-run]", " ".join(cmd))
         return True
-    result = subprocess.run(cmd, capture_output=True)
-    if result.returncode != 0:
-        print("  BUILD FAILED:", result.stderr.decode()[-400:], file=sys.stderr)
+
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    if proc.returncode != 0:
+        print("BUILD FAILED:", proc.stderr[-600:], file=sys.stderr)
         return False
     return True
 
 
-def run_benchmark(inputs: List[str], binary: str, dry_run: bool = False) -> Optional[float]:
-    """
-    Run the mengine binary on each input file and return the total wall time
-    in seconds. Returns None if any run fails.
-    """
+def time_run(binary: str, input_file: str, timeout_s: float) -> float:
+    t0 = time.perf_counter()
+    proc = subprocess.run([binary, input_file], capture_output=True, timeout=timeout_s)
+    t1 = time.perf_counter()
+    if proc.returncode != 0:
+        raise RuntimeError("mengine run failed")
+    return t1 - t0
+
+
+def evaluate_point(
+    root: str,
+    params: List[TuneParam],
+    point: Dict[str, object],
+    input_file: str,
+    repeats: int,
+    timeout_s: float,
+    jobs: int,
+    dry_run: bool,
+) -> float:
+    tune_flags = format_tune_flags(point, params)
+    if not build_mengine(root, tune_flags, jobs=jobs, dry_run=dry_run):
+        return float("inf")
+
     if dry_run:
-        return random.uniform(0.1, 2.0)
+        return 1.0
 
-    total = 0.0
-    for inp in inputs:
-        try:
-            t0 = time.perf_counter()
-            result = subprocess.run(
-                [binary, inp],
-                capture_output=True,
-                timeout=60,
-            )
-            t1 = time.perf_counter()
-            if result.returncode != 0:
-                print(f"  RUNTIME ERROR on {inp}:\n{result.stderr.decode()[-300:]}", file=sys.stderr)
-                return None
-            total += t1 - t0
-        except subprocess.TimeoutExpired:
-            print(f"  TIMEOUT on {inp}", file=sys.stderr)
-            return None
-    return total
-
-
-# ---------------------------------------------------------------------------
-# Search: coordinate descent with random restarts
-# ---------------------------------------------------------------------------
-
-def default_point() -> dict:
-    return {name: default for name, default, _ in PARAMS}
-
-
-def random_point() -> dict:
-    return {name: random.choice(candidates) for name, _, candidates in PARAMS}
-
-
-def candidates_for(name: str) -> list:
-    for n, _, c in PARAMS:
-        if n == name:
-            return c
-    raise KeyError(name)
-
-
-def evaluate(point: dict, inputs: List[str], binary: str,
-             repeats: int, dry_run: bool) -> Optional[float]:
-    tune_flags = make_tune_flags(point)
-    if not build(tune_flags, dry_run=dry_run):
-        return None
+    binary = os.path.join(root, "mengine")
     times = []
     for _ in range(repeats):
-        t = run_benchmark(inputs, binary, dry_run=dry_run)
-        if t is None:
-            return None
-        times.append(t)
-    # Use median to reduce noise
-    times.sort()
-    return times[len(times) // 2]
+        try:
+            times.append(time_run(binary, input_file, timeout_s))
+        except Exception:
+            return float("inf")
+    return statistics.median(times)
 
 
-def coordinate_descent(start: dict, inputs: List[str], binary: str,
-                        repeats: int, dry_run: bool, verbose: bool) -> Tuple[dict, float]:
-    current = deepcopy(start)
-    current_score = evaluate(current, inputs, binary, repeats, dry_run)
-    if current_score is None:
-        raise RuntimeError("Initial evaluation failed for starting point.")
-    if verbose:
-        print(f"  start score={current_score:.4f}s  flags={make_tune_flags(current)}")
-
-    improved = True
-    while improved:
-        improved = False
-        for name, _, _ in PARAMS:
-            best_val = current[name]
-            best_score = current_score
-            for val in candidates_for(name):
-                if val == current[name]:
-                    continue
-                candidate = deepcopy(current)
-                candidate[name] = val
-                score = evaluate(candidate, inputs, binary, repeats, dry_run)
-                if score is None:
-                    continue
-                if verbose:
-                    print(f"    {name}={val}  score={score:.4f}s", end="")
-                if score < best_score:
-                    best_score = score
-                    best_val = val
-                    if verbose:
-                        print(" *", end="")
-                if verbose:
-                    print()
-            if best_val != current[name]:
-                current[name] = best_val
-                current_score = best_score
-                improved = True
-                if verbose:
-                    print(f"  -> improved {name}={best_val}  score={current_score:.4f}s")
-
-    return current, current_score
+def iter_points(params: List[TuneParam]):
+    names = [p.name for p in params]
+    ranges = [p.candidates for p in params]
+    for values in itertools.product(*ranges):
+        yield dict(zip(names, values))
 
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Tune mengine compile-time performance constants via coordinate descent.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__,
-    )
-    parser.add_argument(
-        "--inputs", nargs="+", metavar="FILE",
-        help="Input .me files to benchmark (default: all examples/*.me)",
-    )
-    parser.add_argument(
-        "--restarts", type=int, default=3,
-        help="Number of random restarts (default: 3). More restarts = better coverage.",
-    )
-    parser.add_argument(
-        "--repeats", type=int, default=3,
-        help="Number of timed repetitions per evaluation (median is taken, default: 3).",
-    )
-    parser.add_argument(
-        "--root", default=".",
-        help="Path to the mengine root directory (default: current directory).",
-    )
-    parser.add_argument(
-        "--binary", default=None,
-        help="Path to the mengine binary (default: <root>/mengine).",
-    )
-    parser.add_argument(
-        "--seed", type=int, default=None,
-        help="RNG seed for reproducibility.",
-    )
-    parser.add_argument(
-        "--verbose", "-v", action="store_true",
-        help="Print per-step scores.",
-    )
-    parser.add_argument(
-        "--dry-run", action="store_true",
-        help="Simulate builds and benchmarks without actually running anything.",
-    )
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Exhaustive cartesian tuner for mengine compile-time parameters")
+    parser.add_argument("--root", default=".", help="Path to mengine repo root (default: .)")
+    parser.add_argument("--n", type=int, default=100, help="symbolic_execution size n (default: 100)")
+    parser.add_argument("--repeats", type=int, default=1, help="Timing repeats per point, median used (default: 1)")
+    parser.add_argument("--timeout", type=float, default=120.0, help="Per-run timeout seconds (default: 120)")
+    parser.add_argument("--jobs", type=int, default=os.cpu_count() or 1, help="Parallel build jobs (default: nproc)")
+    parser.add_argument("--profile", choices=["tiny", "small"], default="small", help="Candidate profile size")
+    parser.add_argument("--max-combinations", type=int, default=256, help="Safety cap for cartesian size")
+    parser.add_argument("--dry-run", action="store_true", help="Do not build/run; print planned search")
     args = parser.parse_args()
 
-    if args.seed is not None:
-        random.seed(args.seed)
-
     root = os.path.abspath(args.root)
-    binary = args.binary or os.path.join(root, "mengine")
+    params = apply_profile(ALL_PARAMS, args.profile)
+    total = product_size(params)
 
-    if args.inputs:
-        inputs = [os.path.abspath(p) for p in args.inputs]
-    else:
-        pattern = os.path.join(root, "examples", "*.me")
-        inputs = sorted(glob.glob(pattern))
-        if not inputs:
-            sys.exit(f"No *.me files found under {root}/examples/. Use --inputs.")
+    print(f"Root: {root}")
+    print(f"Benchmark: symbolic_execution n={args.n}")
+    print(f"Profile: {args.profile}")
+    print(f"Cartesian points: {total}")
 
-    print(f"Benchmark inputs ({len(inputs)} files):")
-    for f in inputs:
-        print(f"  {f}")
-    print(f"Restarts: {args.restarts}, Repeats per eval: {args.repeats}")
-    print()
+    if total > args.max_combinations:
+        print(
+            f"Refusing to run: {total} combinations exceeds --max-combinations={args.max_combinations}.",
+            file=sys.stderr,
+        )
+        return 2
 
-    global_best_point = default_point()
-    global_best_score = math.inf
+    for p in params:
+        print(f"  {p.name}: {list(p.candidates)}")
 
-    # Always include the default as one of the starting points
-    starting_points = [default_point()] + [random_point() for _ in range(args.restarts - 1)]
+    input_file = render_symbolic_input(root, args.n)
 
-    for restart_idx, start in enumerate(starting_points):
-        label = "defaults" if restart_idx == 0 else f"random restart {restart_idx}"
-        print(f"=== Restart {restart_idx + 1}/{args.restarts} ({label}) ===")
-        try:
-            point, score = coordinate_descent(
-                start, inputs, binary, args.repeats, args.dry_run, args.verbose
+    best_score = float("inf")
+    best_point: Dict[str, object] = {}
+    leaderboard: List[Tuple[float, Dict[str, object]]] = []
+
+    try:
+        for idx, point in enumerate(iter_points(params), start=1):
+            score = evaluate_point(
+                root=root,
+                params=params,
+                point=point,
+                input_file=input_file,
+                repeats=args.repeats,
+                timeout_s=args.timeout,
+                jobs=args.jobs,
+                dry_run=args.dry_run,
             )
-        except RuntimeError as e:
-            print(f"  Skipping: {e}", file=sys.stderr)
-            continue
 
-        print(f"  Local best: {score:.4f}s  flags={make_tune_flags(point)}")
-        if score < global_best_score:
-            global_best_score = score
-            global_best_point = point
-        print()
+            tune_flags = format_tune_flags(point, params)
+            if score == float("inf"):
+                print(f"[{idx:>3}/{total}] FAIL  {tune_flags}")
+                continue
 
-    print("=" * 60)
-    print(f"GLOBAL BEST SCORE: {global_best_score:.4f}s")
-    tune_flags_str = make_tune_flags(global_best_point)
-    print(f"TUNE_FLAGS=\"{tune_flags_str}\"")
-    print()
-    print("To build mengine with these settings:")
-    print(f"  make TUNE_FLAGS=\"{tune_flags_str}\"")
-    print()
-    print("To make permanent, add to Makefile or your environment:")
-    print(f"  export TUNE_FLAGS=\"{tune_flags_str}\"")
-    print()
+            print(f"[{idx:>3}/{total}] {score:8.4f}s  {tune_flags}")
+            leaderboard.append((score, dict(point)))
+            leaderboard.sort(key=lambda x: x[0])
+            leaderboard = leaderboard[:10]
 
-    changes = {k: v for k, v in global_best_point.items()
-               if v != dict(zip((n for n, _, _ in PARAMS), (d for _, d, _ in PARAMS)))[k]}
-    if changes:
-        print("Changed from defaults:", changes)
-    else:
-        print("No change from defaults — defaults are already optimal for this workload.")
+            if score < best_score:
+                best_score = score
+                best_point = dict(point)
+
+        if best_score == float("inf"):
+            print("No successful parameter point found.", file=sys.stderr)
+            return 1
+
+        best_flags = format_tune_flags(best_point, params)
+        print("\n=== BEST ===")
+        print(f"time: {best_score:.4f}s")
+        print(f"TUNE_FLAGS=\"{best_flags}\"")
+
+        print("\n=== TOP 10 ===")
+        for rank, (score, point) in enumerate(leaderboard, start=1):
+            print(f"{rank:>2}. {score:8.4f}s  {format_tune_flags(point, params)}")
+
+        return 0
+    finally:
+        try:
+            os.remove(input_file)
+        except OSError:
+            pass
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
