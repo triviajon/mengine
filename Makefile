@@ -1,5 +1,8 @@
 CC = clang
-CFLAGS = -Wall -Wextra -O0 -g -march=native -I.
+# Optional compile-time overrides, e.g.:
+# make TUNE_FLAGS="-DMAP_INITIAL_CAPACITY=32 -DHCMAP_INITIAL_CAPACITY=2048"
+TUNE_FLAGS ?=
+CFLAGS = -Wall -Wextra -O3 -g -march=native -I. $(TUNE_FLAGS)
 LDFLAGS =
 
 ENGINE_SRC := $(shell find src -name '*.c' ! -name 'main.c')
