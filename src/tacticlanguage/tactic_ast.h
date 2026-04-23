@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "src/tacticlanguage/tactic_parser.h"
+#include "src/termlanguage/ast_to_expression.h"
 
 typedef enum {
     TAC_PRIMITIVE,   // wraps an existing Tactic*
@@ -436,9 +437,6 @@ static inline TacticExpr *tactic_expr_constr(AST *term) {
 /* --------------------------------------------------------------------------
  * free_tactic_expr – recursively free a TacticExpr tree
  * -------------------------------------------------------------------------- */
-
-void free_ast(AST *ast);  // forward declaration (defined in ast_to_expression.c)
-// void free_tactic(Tactic *tac);  // forward declaration (defined in tactic_parser.c)
 
 static inline void free_tactic_expr(TacticExpr *expr) {
     if (!expr) {
