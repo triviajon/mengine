@@ -54,6 +54,7 @@ X("type_of", TOK_TYPE_OF, "TYPE_OF")
 X("current_goal", TOK_CURRENT_GOAL, "CURRENT_GOAL")
 
 X("mk_hole", TOK_MK_HOLE, "MK_HOLE")
+X("shelve", TOK_SHELVE, "SHELVE")
 X("fill", TOK_FILL, "FILL")
 X("subst", TOK_SUBST, "SUBST")
 X("eunify", TOK_EUNIFY, "EUNIFY")

@@ -6,7 +6,7 @@
 #include "src/kernel/expression.h"
 
 /* ============================================================================
- * Relation Registry — tracks (relation, refl, trans, congr) tuples
+ * Relation Registry - tracks (relation, refl, trans, congr) tuples
  * ============================================================================ */
 
 typedef struct {

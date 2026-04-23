@@ -25,11 +25,11 @@ static bool _defeq(Expression *a, Expression *b, LinearMap *mapping) {
 
         case VAR_EXPRESSION:
         case HOLE_EXPRESSION:
-            return (a == b) || (linear_map_get(mapping, a) == b);
+            return ((a == b) || (linear_map_get(mapping, a) == b)) != 0;
 
         case APP_EXPRESSION:
-            return _defeq(a->as.app.func, b->as.app.func, mapping) &&
-                   _defeq(a->as.app.arg, b->as.app.arg, mapping);
+            return (_defeq(a->as.app.func, b->as.app.func, mapping) &&
+                    _defeq(a->as.app.arg, b->as.app.arg, mapping)) != 0;
 
         case FORALL_EXPRESSION:
             linear_map_set(mapping, a->as.forall.bound_variable, b->as.forall.bound_variable);
@@ -93,7 +93,9 @@ static bool _defeq(Expression *a, Expression *b, LinearMap *mapping) {
 }
 
 bool definitional_equal(Expression *a, Expression *b) {
-    if (a == b) return true;
+    if (a == b) {
+        return true;
+    }
     LinearMap *mapping = linear_map_new();
     bool result = _defeq(a, b, mapping);
     free(mapping->items);
@@ -102,37 +104,28 @@ bool definitional_equal(Expression *a, Expression *b) {
 }
 
 /**
- * Checks whether two types are compatible under open-term (hole-aware)
- * matching. Identical to definitional_equal except: when a HOLE_EXPRESSION
- * appears on the *expected* (left-hand) side, it is treated as an unification
- * variable.
+ * Checks whether two types are compatible under hole-aware matching. Identical to
+ * definitional_equal except when a HOLE_EXPRESSION appears on the *expected* (left-hand) side, it
+ * is treated as an unification variable.
  *
- * `bv_map`  — bound-variable renaming (FORALL/LAMBDA/MATCH/FIX binders),
- *             internal to the traversal.
- * `holes`   — output map: hole → concrete value discovered during traversal.
- *             Caller-supplied; entries are appended (never cleared by this fn).
+ * bv_map - bound-variable renaming
+ * holes - output map: hole -> concrete value discovered during traversal.
  *
- * First occurrence of a hole `?v` on the expected side:
- *   - records holes[?v] = actual_subterm
- *   - checks definitional_equal(type(?v), type(actual_subterm))
- *
- * Subsequent occurrences of the same hole `?v`:
- *   - looks up holes[?v] to get the previously recorded actual_subterm
- *   - checks definitional_equal(recorded_actual, current_actual)
- *
- * This is a pure predicate — no holes are filled side-effectfully.
+ * no holes are filled "side-effect"-fully.
  */
-static bool _open_compat(Expression *expected, Expression *actual,
-                         LinearMap *bv_map, LinearMap *holes) {
+static bool _open_compat(Expression *expected, Expression *actual, LinearMap *bv_map,
+                         LinearMap *holes) {
     expected = normalize_whnf(expected);
     actual = normalize_whnf(actual);
 
-    if (expected == actual) return true;
+    if (expected == actual) {
+        return true;
+    }
 
     if (expected->tag == HOLE_EXPRESSION) {
         Expression *already_mapped = linear_map_get(holes, expected);
         if (already_mapped != NULL) {
-            // Seen this hole before — check the new actual is defeq to the
+            // Seen this hole before - check the new actual is defeq to the
             // value we already committed this hole to.
             return definitional_equal(already_mapped, actual);
         }
@@ -145,7 +138,9 @@ static bool _open_compat(Expression *expected, Expression *actual,
         return definitional_equal(get_expression_type(expected), get_expression_type(actual));
     }
 
-    if (expected->tag != actual->tag) return false;
+    if (expected->tag != actual->tag) {
+        return false;
+    }
 
     switch (expected->tag) {
         case TYPE_EXPRESSION:
@@ -153,11 +148,11 @@ static bool _open_compat(Expression *expected, Expression *actual,
             return true;
 
         case VAR_EXPRESSION:
-            return (expected == actual) || (linear_map_get(bv_map, expected) == actual);
+            return ((expected == actual) || (linear_map_get(bv_map, expected) == actual)) != 0;
 
         case APP_EXPRESSION:
-            return _open_compat(expected->as.app.func, actual->as.app.func, bv_map, holes) &&
-                   _open_compat(expected->as.app.arg, actual->as.app.arg, bv_map, holes);
+            return (_open_compat(expected->as.app.func, actual->as.app.func, bv_map, holes) &&
+                    _open_compat(expected->as.app.arg, actual->as.app.arg, bv_map, holes)) != 0;
 
         case FORALL_EXPRESSION:
             linear_map_set(bv_map, expected->as.forall.bound_variable,
@@ -170,29 +165,43 @@ static bool _open_compat(Expression *expected, Expression *actual,
             return _open_compat(expected->as.lambda.body, actual->as.lambda.body, bv_map, holes);
 
         case MATCH_EXPRESSION: {
-            if (!_open_compat(expected->as.match.scrutinee, actual->as.match.scrutinee,
-                              bv_map, holes))
+            if (!_open_compat(expected->as.match.scrutinee, actual->as.match.scrutinee, bv_map,
+                              holes)) {
                 return false;
-            if (expected->as.match.branch_count != actual->as.match.branch_count) return false;
+            }
+            if (expected->as.match.branch_count != actual->as.match.branch_count) {
+                return false;
+            }
             for (int i = 0; i < expected->as.match.branch_count; i++) {
                 MatchBranch *be = expected->as.match.branches[i];
                 MatchBranch *ba = actual->as.match.branches[i];
-                if (!_open_compat(be->constructor, ba->constructor, bv_map, holes)) return false;
-                if (be->pattern_var_count != ba->pattern_var_count) return false;
-                for (int j = 0; j < be->pattern_var_count; j++)
+                if (!_open_compat(be->constructor, ba->constructor, bv_map, holes)) {
+                    return false;
+                }
+                if (be->pattern_var_count != ba->pattern_var_count) {
+                    return false;
+                }
+                for (int j = 0; j < be->pattern_var_count; j++) {
                     linear_map_set(bv_map, be->pattern_variables[j], ba->pattern_variables[j]);
-                if (!_open_compat(be->body, ba->body, bv_map, holes)) return false;
+                }
+                if (!_open_compat(be->body, ba->body, bv_map, holes)) {
+                    return false;
+                }
             }
             return true;
         }
 
         case FIX_EXPRESSION:
             linear_map_set(bv_map, expected->as.fix.recursive_var, actual->as.fix.recursive_var);
-            if (expected->as.fix.arg_count != actual->as.fix.arg_count) return false;
-            if (expected->as.fix.decreasing_arg_index != actual->as.fix.decreasing_arg_index)
+            if (expected->as.fix.arg_count != actual->as.fix.arg_count) {
                 return false;
-            for (int i = 0; i < expected->as.fix.arg_count; i++)
+            }
+            if (expected->as.fix.decreasing_arg_index != actual->as.fix.decreasing_arg_index) {
+                return false;
+            }
+            for (int i = 0; i < expected->as.fix.arg_count; i++) {
                 linear_map_set(bv_map, expected->as.fix.args[i], actual->as.fix.args[i]);
+            }
             return _open_compat(expected->as.fix.body, actual->as.fix.body, bv_map, holes);
 
         default:
@@ -200,9 +209,10 @@ static bool _open_compat(Expression *expected, Expression *actual,
     }
 }
 
-bool open_types_compatible_collecting(Expression *expected, Expression *actual,
-                                      LinearMap *holes) {
-    if (expected == actual) return true;
+bool open_types_compatible_collecting(Expression *expected, Expression *actual, LinearMap *holes) {
+    if (expected == actual) {
+        return true;
+    }
     LinearMap *bv_map = linear_map_new();
     bool result = _open_compat(expected, actual, bv_map, holes);
     linear_map_clear_free(bv_map);

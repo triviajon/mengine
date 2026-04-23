@@ -1,4 +1,5 @@
 #include "src/common/hashcons_map.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -39,13 +40,17 @@ static bool hcmap_resize(HashconsMap *m, size_t new_capacity) {
     HashconsMapEntry *old_entries = m->entries;
     size_t old_capacity = m->capacity;
     HashconsMapEntry *new_entries = hcmap_entries_new(new_capacity);
-    if (!new_entries) return false;
+    if (!new_entries) {
+        return false;
+    }
     m->entries = new_entries;
     m->capacity = new_capacity;
     m->size = 0;
     for (size_t i = 0; i < old_capacity; i++) {
         HashconsMapEntry *e = &old_entries[i];
-        if (!e->in_use) continue;
+        if (!e->in_use) {
+            continue;
+        }
         size_t idx = e->hash & (new_capacity - 1);
         while (1) {
             HashconsMapEntry *dst = &new_entries[idx];
@@ -64,7 +69,9 @@ static bool hcmap_resize(HashconsMap *m, size_t new_capacity) {
 
 HashconsMap *hashcons_map_new(hash_fn_t hash_fn, eq_fn_t eq_fn) {
     HashconsMap *m = malloc(sizeof(HashconsMap));
-    if (!m) return NULL;
+    if (!m) {
+        return NULL;
+    }
     m->capacity = HCMAP_INITIAL_CAPACITY;
     m->size = 0;
     m->entries = hcmap_entries_new(m->capacity);
@@ -74,21 +81,31 @@ HashconsMap *hashcons_map_new(hash_fn_t hash_fn, eq_fn_t eq_fn) {
 }
 
 void *hashcons_map_get(HashconsMap *m, const void *key) {
-    if (!m || m->size == 0) return NULL;
+    if (!m || m->size == 0) {
+        return NULL;
+    }
     uint32_t hash = m->hash_fn(key);
     size_t idx = hash & (m->capacity - 1);
     while (1) {
         HashconsMapEntry *e = &m->entries[idx];
-        if (!e->in_use) return NULL;
-        if (e->hash == hash && m->eq_fn(e->key, key)) return e->value;
+        if (!e->in_use) {
+            return NULL;
+        }
+        if (e->hash == hash && m->eq_fn(e->key, key)) {
+            return e->value;
+        }
         idx = (idx + 1) & (m->capacity - 1);
     }
 }
 
 bool hashcons_map_set(HashconsMap *m, void *key, void *value) {
-    if (!m) return false;
+    if (!m) {
+        return false;
+    }
     if (hcmap_should_grow(m)) {
-        if (!hcmap_resize(m, m->capacity * 2)) return false;
+        if (!hcmap_resize(m, m->capacity * 2)) {
+            return false;
+        }
     }
     uint32_t hash = m->hash_fn(key);
     size_t idx = hash & (m->capacity - 1);
@@ -111,7 +128,9 @@ bool hashcons_map_set(HashconsMap *m, void *key, void *value) {
 }
 
 void hashcons_map_remove(HashconsMap *m, const void *key) {
-    if (!m || m->size == 0) return;
+    if (!m || m->size == 0) {
+        return;
+    }
     uint32_t hash = m->hash_fn(key);
     size_t cap = m->capacity;
     size_t idx = hash & (cap - 1);
@@ -119,8 +138,12 @@ void hashcons_map_remove(HashconsMap *m, const void *key) {
     // Locate the entry.
     while (1) {
         HashconsMapEntry *e = &m->entries[idx];
-        if (!e->in_use) return;  // not found
-        if (e->hash == hash && m->eq_fn(e->key, key)) break;
+        if (!e->in_use) {
+            return;
+        }  // not found
+        if (e->hash == hash && m->eq_fn(e->key, key)) {
+            break;
+        }
         idx = (idx + 1) & (cap - 1);
     }
 
@@ -145,7 +168,9 @@ void hashcons_map_remove(HashconsMap *m, const void *key) {
 }
 
 void hashcons_map_free(HashconsMap *m) {
-    if (!m) return;
+    if (!m) {
+        return;
+    }
     free(m->entries);
     free(m);
 }

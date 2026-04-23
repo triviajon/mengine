@@ -22,4 +22,4 @@ void expression_intern_remove(const Expression *expr);
 // Free the intern table at shutdown (call after expression_gc_shutdown).
 void expression_intern_table_free(void);
 
-#endif // EXPRESSION_HASH_H
+#endif  // EXPRESSION_HASH_H

@@ -1,5 +1,5 @@
 /*
- * subst.c — Uplink-based surgery substitution.
+ * subst.c - Uplink-based surgery substitution.
  *
  * Algorithm overview:
  *
@@ -24,11 +24,9 @@
  *        continue only along marked children.
  *
  *  Complexity: O(uplink_count * path_length_to_root) for the mark phase
- *  and O(spine_size) for the rebuild phase — proportional to the affected
+ *  and O(spine_size) for the rebuild phase - proportional to the affected
  *  spine, not the full tree size.
  */
-
-#include "src/kernel/subst.h"
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -38,6 +36,9 @@
 #include "src/kernel/beta_reduction.h"
 #include "src/kernel/context.h"
 #include "src/kernel/expression.h"
+#include "src/kernel/subst.h"
+
+#ifndef TUNE_SUBST_TOPDOWN
 
 /* =========================================================================
  * Map pool: reuse Map objects to avoid repeated malloc/calloc/free overhead.
@@ -183,8 +184,12 @@ static void mark_spine_from(Expression *start, Expression *root, Map *marked, in
  * or map_clear then map_del).
  */
 static void _collect_subtree_dfs(Expression *node, Map *set) {
-    if (!node) return;
-    if (map_get(set, node)) return; /* Already visited */
+    if (!node) {
+        return;
+    }
+    if (map_get(set, node)) {
+        return; /* Already visited */
+    }
     map_set(set, node, (void *)1);
 
     switch (node->tag) {
@@ -242,9 +247,13 @@ static void _collect_subtree_dfs(Expression *node, Map *set) {
 static Map *g_subtree_cache = NULL;
 
 static Map *collect_subtree(Expression *root) {
-    if (!g_subtree_cache) g_subtree_cache = map_new();
+    if (!g_subtree_cache) {
+        g_subtree_cache = map_new();
+    }
     Map *cached = (Map *)map_get(g_subtree_cache, root);
-    if (cached) return cached;
+    if (cached) {
+        return cached;
+    }
     Map *set = map_new();
     _collect_subtree_dfs(root, set);
     map_set(g_subtree_cache, root, set);
@@ -270,9 +279,9 @@ static Map *collect_subtree(Expression *root) {
  * each beta-reduction from O(n) down to O(spine).
  */
 static Map *build_marked_set(Expression *root, DoublyLinkedList *old_exprs,
-                              bool skip_collect_subtree) {
+                             bool skip_collect_subtree) {
     Map *marked = pool_map_alloc();
-    Map *root_subtree = skip_collect_subtree ? NULL : collect_subtree(root);
+    Map *root_subtree = (int)skip_collect_subtree ? NULL : collect_subtree(root);
 
     DLLNode *o = old_exprs->head;
     while (o != NULL) {
@@ -304,7 +313,7 @@ static Expression *spine_rebuild(Context *ctx, Expression *node, DoublyLinkedLis
  */
 static Expression *maybe_rebuild(Context *ctx, Expression *child, DoublyLinkedList *old_exprs,
                                  DoublyLinkedList *new_exprs, Map *marked, Map *memo) {
-    /* Direct substitution target — handled by spine_rebuild step 1. */
+    /* Direct substitution target - handled by spine_rebuild step 1. */
     /* Fall through to spine_rebuild if marked. */
     if (map_get(marked, child) != NULL) {
         return spine_rebuild(ctx, child, old_exprs, new_exprs, marked, memo);
@@ -328,13 +337,13 @@ static Expression *maybe_rebuild(Context *ctx, Expression *child, DoublyLinkedLi
 
 static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLinkedList *old_exprs,
                                  DoublyLinkedList *new_exprs, Map *marked, Map *memo) {
-    /* 1. Substitution map hit — return replacement directly. */
+    /* 1. Substitution map hit - return replacement directly. */
     Expression *replacement = subst_map_lookup(old_exprs, new_exprs, node);
     if (replacement != NULL) {
         return replacement;
     }
 
-    /* 2. Unmarked node — return unchanged unless its context is stale. */
+    /* 2. Unmarked node - return unchanged unless its context is stale. */
     if (map_get(marked, node) == NULL) {
         Context *nc = get_expression_context(node);
         bool stale = false;
@@ -407,11 +416,10 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
             // Reuse the existing bound variable when its type and context are
             // unchanged.  Creating a fresh var unconditionally cascades novel
             // pointers through the rebuilt body, breaking hash-consing sharing
-            // for all expressions that reference this binder — turning O(1)
+            // for all expressions that reference this binder - turning O(1)
             // substitution into O(body_size) novel expressions per call.
             Expression *x_bv2;
-            if (x_bv_type2 == x_bv_type &&
-                apps_ctx == (Context *)get_expression_context(x_bv)) {
+            if (x_bv_type2 == x_bv_type && apps_ctx == get_expression_context(x_bv)) {
                 x_bv2 = x_bv;  // unchanged: reuse the original bound variable
             } else {
                 x_bv2 = init_var_expression_wc(get_var_name(x_bv), x_bv_type2, apps_ctx);
@@ -452,7 +460,7 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
         }
 
         case FORALL_EXPRESSION: {
-            /* forall (x_bv : x_bv_type), body — same logic as LAMBDA. */
+            /* forall (x_bv : x_bv_type), body - same logic as LAMBDA. */
             Expression *x_bv = get_forall_bound_variable(node);
             Expression *x_bv_type = get_expression_type(x_bv);
             Expression *body = get_forall_body(node);
@@ -462,8 +470,7 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
             // Same reuse logic as LAMBDA: avoid fresh vars when type/context
             // are unchanged to preserve sharing across substitution calls.
             Expression *x_bv2;
-            if (x_bv_type2 == x_bv_type &&
-                apps_ctx == (Context *)get_expression_context(x_bv)) {
+            if (x_bv_type2 == x_bv_type && apps_ctx == get_expression_context(x_bv)) {
                 x_bv2 = x_bv;
             } else {
                 x_bv2 = init_var_expression_wc(get_var_name(x_bv), x_bv_type2, apps_ctx);
@@ -627,7 +634,7 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
  * ========================================================================= */
 
 /*
- * _uplink_p_subst — the actual implementation.
+ * _uplink_p_subst - the actual implementation.
  *
  * Runs Phase 1 (mark) then Phase 2 (rebuild) on `t`.
  *
@@ -683,7 +690,7 @@ static Expression *_uplink_p_subst(Context *context, Expression *t, DoublyLinked
  * ========================================================================= */
 
 /*
- * _p_subst — internal parallel substitution (called by callers that manage
+ * _p_subst - internal parallel substitution (called by callers that manage
  * context transformations manually, e.g. during recursion in this file).
  */
 Expression *_p_subst(Context *context, Expression *t, DoublyLinkedList *old_exprs,
@@ -692,7 +699,7 @@ Expression *_p_subst(Context *context, Expression *t, DoublyLinkedList *old_expr
 }
 
 /*
- * new_p_subst — public parallel substitution entry point.
+ * new_p_subst - public parallel substitution entry point.
  */
 Expression *new_p_subst(Context *context, Expression *t, DoublyLinkedList *old_exprs,
                         DoublyLinkedList *new_exprs) {
@@ -707,7 +714,7 @@ Expression *new_p_subst(Context *context, Expression *t, DoublyLinkedList *old_e
 }
 
 /*
- * _subst — single-variable substitution called from context_replace and by
+ * _subst - single-variable substitution called from context_replace and by
  * other callers that manage context transformations manually.
  */
 Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a) {
@@ -720,7 +727,8 @@ Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a
     dll_insert_at_tail(old_exprs, dll_new_node(x));
     dll_insert_at_tail(new_exprs, dll_new_node(a));
 
-    Expression *result = _uplink_p_subst(context, t, old_exprs, new_exprs, /*skip_collect_subtree=*/false);
+    Expression *result =
+        _uplink_p_subst(context, t, old_exprs, new_exprs, /*skip_collect_subtree=*/false);
 
     dll_destroy(old_exprs);
     dll_destroy(new_exprs);
@@ -729,7 +737,7 @@ Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a
 }
 
 /*
- * new_subst — public single-variable substitution entry point.
+ * new_subst - public single-variable substitution entry point.
  *
  * Performs the context cut (gamma, x:A, delta -> gamma, delta[x->a]) then
  * runs the uplink-based parallel substitution for x and the delta variables.
@@ -753,7 +761,8 @@ Expression *new_subst(Context *context, Expression *t, Expression *x, Expression
         final_context_c = get_expression_context(final_context_c);
     }
 
-    Expression *result = _uplink_p_subst(final_context, t, old_exprs, new_exprs, /*skip_collect_subtree=*/false);
+    Expression *result =
+        _uplink_p_subst(final_context, t, old_exprs, new_exprs, /*skip_collect_subtree=*/false);
 
     dll_destroy(old_exprs);
     dll_destroy(new_exprs);
@@ -762,13 +771,13 @@ Expression *new_subst(Context *context, Expression *t, Expression *x, Expression
 }
 
 /*
- * beta_subst — single-variable substitution for beta-reduction.
+ * beta_subst - single-variable substitution for beta-reduction.
  *
  * Like new_subst but skips the O(|subtree|) collect_subtree DFS.  Safe
  * because lambda bound variables are private: their uplinks are confined to
  * the lambda body being substituted into, so the uplink BFS never escapes
  * outside the root.  Extra nodes marked via the LAMBDA_BOUND_VAR uplink are
- * harmless — spine_rebuild only descends from the root and never visits them.
+ * harmless - spine_rebuild only descends from the root and never visits them.
  */
 Expression *beta_subst(Context *context, Expression *t, Expression *x, Expression *a) {
     Context *final_context = context_cut(context, x, a);
@@ -789,10 +798,13 @@ Expression *beta_subst(Context *context, Expression *t, Expression *x, Expressio
         final_context_c = get_expression_context(final_context_c);
     }
 
-    Expression *result = _uplink_p_subst(final_context, t, old_exprs, new_exprs, /*skip_collect_subtree=*/true);
+    Expression *result =
+        _uplink_p_subst(final_context, t, old_exprs, new_exprs, /*skip_collect_subtree=*/true);
 
     dll_destroy(old_exprs);
     dll_destroy(new_exprs);
 
     return result;
 }
+
+#endif  // TUNE_SUBST_TOPDOWN

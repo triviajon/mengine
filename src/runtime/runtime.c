@@ -9,8 +9,8 @@
 #include "src/common/options.h"
 #include "src/engine/engine_api.h"
 #include "src/engine/rewrite_internal.h"
-#include "src/kernel/kernel_api.h"
 #include "src/kernel/expression.h"
+#include "src/kernel/kernel_api.h"
 #include "src/runtime/core.h"
 #include "src/tacticlanguage/tactic_ast.h"
 #include "src/tacticlanguage/tactic_exec.h"
@@ -95,7 +95,7 @@ void mengine_runtime_free(MEngineRuntime *rt) {
         Expression *pending = engine_proof_state_pending_theorem(rt->proof_state);
         engine_proof_state_free(rt->proof_state);
         rt->proof_state = NULL;
-        // pending shares context vars with rt->ctx — use the context-safe free.
+        // pending shares context vars with rt->ctx - use the context-safe free.
         if (pending) {
             kernel_expr_free_excluding_ctx(pending, NULL, rt->ctx);
         }

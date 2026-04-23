@@ -3,7 +3,7 @@
 #include "src/kernel/subst.h"
 
 bool forms_beta_redex(Expression *app_func, Expression *app_arg) {
-    return app_func != NULL && (app_func->tag == LAMBDA_EXPRESSION) && app_arg != NULL;
+    return (app_func != NULL && (app_func->tag == LAMBDA_EXPRESSION) && app_arg != NULL) != 0;
 }
 
 Expression *beta_reduce(Context *gamma, Expression *app_func, Expression *app_arg) {

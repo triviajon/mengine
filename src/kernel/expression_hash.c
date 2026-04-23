@@ -8,13 +8,9 @@
 
 // Global intern table. Keys and values are both Expression*.
 // Only APP, LAMBDA, FORALL expressions are interned.
-// VAR and HOLE are mutable (bodies/fills can change) and are never interned.
+// VAR and HOLE are never interned.
 // TYPE and PROP are permanent singletons handled separately.
 static HashconsMap *expression_intern_table = NULL;
-
-// ---------------------------------------------------------------------------
-// Pointer hashing helpers
-// ---------------------------------------------------------------------------
 
 static uint32_t hash_ptr(const void *ptr) {
     uint64_t p = (uint64_t)(uintptr_t)ptr;
@@ -27,20 +23,15 @@ static uint32_t hash_ptr(const void *ptr) {
 }
 
 static uint32_t hash_combine(uint32_t h1, uint32_t h2) {
-    return h1 ^ (h2 * 2654435761u + 0x9e3779b9u + (h1 << 6) + (h1 >> 2));
+    return h1 ^ ((h2 * 2654435761U) + 0x9e3779b9U + (h1 << 6) + (h1 >> 2));
 }
 
-// ---------------------------------------------------------------------------
-// Hash and equality based solely on INPUT fields (not derived type/uplinks).
-//
-// Since all internable subexpressions (APP, LAMBDA, FORALL) are themselves
-// interned, pointer equality on subexpressions implies structural equality.
-// VAR and HOLE use identity (pointer) equality — each binding site is unique.
-// ---------------------------------------------------------------------------
+// Hash and equality based solely on input fields
+// Pointer equality on subexpressions implies structural equality.
 
 static uint32_t hash_inputs(const void *vexpr) {
     const Expression *expr = (const Expression *)vexpr;
-    uint32_t h = (uint32_t)expr->tag * 2654435761u;
+    uint32_t h = (uint32_t)expr->tag * 2654435761U;
     switch (expr->tag) {
         case APP_EXPRESSION:
             h = hash_combine(h, hash_ptr(expr->context));
@@ -57,7 +48,7 @@ static uint32_t hash_inputs(const void *vexpr) {
             h = hash_combine(h, hash_ptr(expr->as.forall.body));
             break;
         default:
-            // Non-internable types: use identity.
+            // Non-internable types
             h = hash_combine(h, hash_ptr(expr));
             break;
     }
@@ -67,26 +58,26 @@ static uint32_t hash_inputs(const void *vexpr) {
 static bool eq_inputs(const void *va, const void *vb) {
     const Expression *a = (const Expression *)va;
     const Expression *b = (const Expression *)vb;
-    if (a == b) return true;
-    if (!a || !b || a->tag != b->tag) return false;
+    if (a == b) {
+        return true;
+    }
+    if (!a || !b || a->tag != b->tag) {
+        return false;
+    }
     switch (a->tag) {
         case APP_EXPRESSION:
-            return a->context == b->context && a->as.app.func == b->as.app.func &&
-                   a->as.app.arg == b->as.app.arg;
+            return (a->context == b->context && a->as.app.func == b->as.app.func &&
+                    a->as.app.arg == b->as.app.arg) != 0;
         case LAMBDA_EXPRESSION:
-            return a->as.lambda.bound_variable == b->as.lambda.bound_variable &&
-                   a->as.lambda.body == b->as.lambda.body;
+            return (a->as.lambda.bound_variable == b->as.lambda.bound_variable &&
+                    a->as.lambda.body == b->as.lambda.body) != 0;
         case FORALL_EXPRESSION:
-            return a->as.forall.bound_variable == b->as.forall.bound_variable &&
-                   a->as.forall.body == b->as.forall.body;
+            return (a->as.forall.bound_variable == b->as.forall.bound_variable &&
+                    a->as.forall.body == b->as.forall.body) != 0;
         default:
             return a == b;
     }
 }
-
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
 
 void expression_intern_table_init(void) {
     if (!expression_intern_table) {
@@ -105,7 +96,9 @@ void expression_intern_insert(Expression *expr) {
 }
 
 void expression_intern_remove(const Expression *expr) {
-    if (!expression_intern_table || !expr) return;
+    if (!expression_intern_table || !expr) {
+        return;
+    }
     hashcons_map_remove(expression_intern_table, expr);
 }
 

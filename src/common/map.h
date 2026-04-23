@@ -15,7 +15,7 @@ Map *map_new_with_capacity(size_t initial_capacity);
 // Retrieve the value associated with key, or NULL if not present
 void *map_get(Map *m, void *key);
 
-// Insert or update key → value.
+// Insert or update key -> value.
 // Returns true on success, false on failure.
 bool map_set(Map *m, void *key, void *value);
 

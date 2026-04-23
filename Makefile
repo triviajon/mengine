@@ -1,8 +1,26 @@
 CC = clang
 # Optional compile-time overrides, e.g.:
 # make TUNE_FLAGS="-DMAP_INITIAL_CAPACITY=32 -DHCMAP_INITIAL_CAPACITY=2048"
+
+# Substitution implementation toggle:
+# default (top-down): make
+# old uplink implementation: make TUNE_SUBST_TOPDOWN=0
+# explicit top-down: make TUNE_SUBST_TOPDOWN=1
+TUNE_SUBST_TOPDOWN ?= 1
+
+# Hash-consing implementation toggle:
+# default (disabled): make
+# enabled: make TUNE_HASH_CONSING=1
+TUNE_HASH_CONSING ?= 0
+
 TUNE_FLAGS ?=
-CFLAGS = -Wall -Wextra -O3 -g -march=native -I. $(TUNE_FLAGS)
+
+# If hash-consing is disabled, we need to define DISABLE_HASH_CONSING
+ifeq ($(TUNE_HASH_CONSING), 0)
+	TUNE_FLAGS += -DDISABLE_HASH_CONSING
+endif
+
+CFLAGS = -Wall -Wextra -O0 -g -march=native -I. -DTUNE_SUBST_TOPDOWN=$(TUNE_SUBST_TOPDOWN) $(TUNE_FLAGS)
 LDFLAGS =
 
 ENGINE_SRC := $(shell find src -name '*.c' ! -name 'main.c')

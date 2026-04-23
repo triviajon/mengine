@@ -35,8 +35,8 @@ static int _handle_declaration_command(MEngineRuntime *rt, DeclarationCmd *decl_
 
     if (!rt->options->quiet) {
         char *_type_str = kernel_expr_to_string(var_type);
-        fprintf(stdout, UI "%s " CRESET "%s : %s declared.\n",
-                decl_keyword_to_string(decl_cmd->kw), decl_cmd->binder.name, _type_str);
+        fprintf(stdout, UI "%s " CRESET "%s : %s declared.\n", decl_keyword_to_string(decl_cmd->kw),
+                decl_cmd->binder.name, _type_str);
         free(_type_str);
     }
     return 0;
@@ -139,8 +139,8 @@ static int _handle_statement_command(MEngineRuntime *rt, StatementCmd *stmt_cmd)
 
     if (!rt->options->quiet) {
         char *_type_str = kernel_expr_to_string(statement_type);
-        fprintf(stdout, UI "%s " CRESET "%s : %s stated.\n",
-                stmt_keyword_to_string(stmt_cmd->kw), stmt_cmd->name, _type_str);
+        fprintf(stdout, UI "%s " CRESET "%s : %s stated.\n", stmt_keyword_to_string(stmt_cmd->kw),
+                stmt_cmd->name, _type_str);
         free(_type_str);
     }
 
@@ -177,7 +177,7 @@ static int _handle_check_command(MEngineRuntime *rt, CheckCmd *check_cmd) {
         free(_s1);
         free(_s2);
     }
-    // expr shares children (context vars) with ctx — use the context-safe free.
+    // expr shares children (context vars) with ctx - use the context-safe free.
     kernel_expr_free_excluding_ctx(expr, NULL, ctx);
     return 0;
 }
@@ -680,27 +680,85 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
     for (size_t i = 0; i < ctor_count; i++) {
         InductiveConstructor *ctor = ind_cmd->constructors[i];
 
-        Expression *ctor_core_type = ast_to_expression(ctor->type, c);
+        /* For parametric inductives, constructor types must reference both the
+         * inductive type (ind_var) and the parameters.  Since ind_var was added
+         * to the context AFTER the original params, the original param_vars are
+         * not accessible from c = ind_var (or the last ctor_var).  We create
+         * fresh copies of each parameter variable in order, anchored AFTER the
+         * current context (c), so that:
+         *   - the params are accessible by name when parsing the constructor type
+         *   - fresh_params[k].context is in the ancestor chain of ctor_core_type
+         *   - kernel_forall_create(fresh_params[k], ...) passes valid_in_context
+         * For non-parametric inductives (param_count == 0) this loop does nothing. */
+        Context *parse_ctx = c;
+        Expression **fresh_params = NULL;
+        if (param_count > 0) {
+            fresh_params = malloc(param_count * sizeof(Expression *));
+            if (!fresh_params) {
+                fprintf(stderr, ERROR "Failed to allocate fresh_params.\n" CRESET);
+                free(ctor_vars);
+                free(param_vars);
+                free(contexts);
+                return 1;
+            }
+            for (size_t k = 0; k < param_count; k++) {
+                Expression *fp_type = ast_to_expression(params[k]->type, parse_ctx);
+                if (!fp_type) {
+                    fprintf(stderr, ERROR "Failed to convert fresh param type for %s.\n" CRESET,
+                            params[k]->name);
+                    free(fresh_params);
+                    free(ctor_vars);
+                    free(param_vars);
+                    free(contexts);
+                    return 1;
+                }
+                Expression *fp = kernel_var_create(params[k]->name, fp_type, parse_ctx);
+                if (!fp) {
+                    fprintf(stderr, ERROR "Failed to create fresh param %s.\n" CRESET,
+                            params[k]->name);
+                    free(fresh_params);
+                    free(ctor_vars);
+                    free(param_vars);
+                    free(contexts);
+                    return 1;
+                }
+                fresh_params[k] = fp;
+                parse_ctx = fp;
+            }
+        }
+
+        Expression *ctor_core_type = ast_to_expression(ctor->type, parse_ctx);
         if (!ctor_core_type) {
             fprintf(stderr, ERROR "Failed to convert constructor type for %s\n" CRESET, ctor->name);
+            if (fresh_params) {
+                free(fresh_params);
+            }
+            free(ctor_vars);
             free(param_vars);
             free(contexts);
             return 1;
         }
 
+        /* Wrap the constructor type with foralls for each parameter, using the
+         * fresh param copies.  Because ctor_core_type was parsed in context
+         * parse_ctx (which descends from fresh_params[last]), valid_in_context
+         * holds at every wrapping step. */
         Expression *ctor_type = ctor_core_type;
         for (size_t j = param_count; j > 0; j--) {
-            ctor_type = kernel_forall_create(param_vars[j - 1], ctor_type);
+            ctor_type = kernel_forall_create(fresh_params[j - 1], ctor_type);
             if (!ctor_type) {
-                fprintf(stderr,
-                        ERROR
-                        "Failed to wrap constructor type with parameter "
-                        "%zu\n" CRESET,
+                fprintf(stderr, ERROR "Failed to wrap constructor type with parameter %zu\n" CRESET,
                         j - 1);
+                free(fresh_params);
+                free(ctor_vars);
                 free(param_vars);
                 free(contexts);
                 return 1;
             }
+        }
+        if (fresh_params) {
+            free(fresh_params);
+            fresh_params = NULL;
         }
 
         Expression *ctor_var = kernel_var_create(ctor->name, ctor_type, rt->ctx);
@@ -724,8 +782,8 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
 
         if (!rt->options->quiet) {
             char *_ctor_type_str = kernel_expr_to_string(ctor_type);
-            fprintf(stdout, UI "Constructor " CRESET "%s : %s defined.\n",
-                    ctor->name, _ctor_type_str);
+            fprintf(stdout, UI "Constructor " CRESET "%s : %s defined.\n", ctor->name,
+                    _ctor_type_str);
             free(_ctor_type_str);
         }
     }
@@ -733,8 +791,16 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
     char *ind_principle_name = malloc(strlen(name) + 5);
     sprintf(ind_principle_name, "%s_ind", name);
 
-    Expression *ind_principle_type =
-        _build_induction_principle_type(ind_cmd, ind_var, param_vars, param_count, contexts);
+    /* The induction principle builder uses the original param_vars, but
+     * constructor types now use fresh parameter copies.  The resulting case
+     * types would fail the subtypes() check (fresh_param != original_param).
+     * Skip the induction principle for parametric inductives; it is not needed
+     * by the tactics that use parametric types (e.g., sep_list in cancel). */
+    Expression *ind_principle_type = NULL;
+    if (param_count == 0) {
+        ind_principle_type =
+            _build_induction_principle_type(ind_cmd, ind_var, param_vars, param_count, contexts);
+    }
 
     Expression *ind_principle_var = NULL;
     if (ind_principle_type) {
@@ -861,7 +927,7 @@ static int _handle_eval_command(MEngineRuntime *rt, EvalCmd *eval_cmd) {
         free(_s2);
     }
     // Free result and expr together (result may share sub-trees with expr).
-    // Both may also share context vars with ctx — use the context-safe free.
+    // Both may also share context vars with ctx - use the context-safe free.
     Expression *b = (result != expr) ? expr : NULL;
     kernel_expr_free_excluding_ctx(result, b, ctx);
     return 0;

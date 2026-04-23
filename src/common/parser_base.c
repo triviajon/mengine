@@ -52,7 +52,7 @@ Token *parser_next(Parser *p) {
     return old_current;
 }
 
-bool parser_eof(Parser *p) { return p->current == NULL || p->current->type == TOK_EOF; }
+bool parser_eof(Parser *p) { return (p->current == NULL || p->current->type == TOK_EOF) != 0; }
 
 Token *parser_peek(Parser *p) { return p->current; }
 
@@ -66,7 +66,7 @@ bool parser_expect_consume(Parser *p, TokenType type) {
 }
 
 bool parser_expect_no_consume(Parser *p, TokenType type) {
-    return p->current && p->current->type == type;
+    return (p->current && p->current->type == type) != 0;
 }
 
 static void print_error_pointer(const char *source, int pos) {
