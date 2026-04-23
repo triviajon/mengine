@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "src/common/doubly_linked_list.h"
@@ -100,8 +101,8 @@ static Expression *PROP = NULL;
 
 // A typed hole to be filled later.
 typedef struct {
-    char *name;          // A user-friendly name for the hole. Not used internally.
-    bool is_satisfied;   // Set to true by fill_hole; proof_state skips these goals.
+    char *name;         // A user-friendly name for the hole. Not used internally.
+    bool is_satisfied;  // Set to true by fill_hole; proof_state skips these goals.
 } HoleExpression;
 
 // A single branch in a match expression.
@@ -131,17 +132,18 @@ typedef struct {
 // Represents a generic expression.
 struct Expression {
     // Common fields
-    ExpressionType tag;           // The kind of expression (VAR, LAMBDA, APP, etc.)
-    DoublyLinkedList *uplinks;    // Uplinks where this expression is referenced
-    int uplink_count;             // Number of uplinks (O(1) alternative to dll_len(uplinks))
-    Context *context;             // The minimal context this expression is valid in
-                                  // NULL for TYPE and PROP
-    int ctx_size;                 // Size of the context (0 for empty, 1+ for variables)
-                                  // 0 for TYPE and PROP
-    Expression *type;             // The type of this expression
-                                  // NULL for TYPE and PROP
-    bool has_evar;            // True if this expression transitively contains any unfilled hole.
-    Expression *g_alloc_next;     // Intrusive linked list for GC shutdown traversal
+    ExpressionType tag;         // The kind of expression (VAR, LAMBDA, APP, etc.)
+    DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced
+    int uplink_count;           // Number of uplinks (O(1) alternative to dll_len(uplinks))
+    Context *context;           // The minimal context this expression is valid in
+                                // NULL for TYPE and PROP
+    int ctx_size;               // Size of the context (0 for empty, 1+ for variables)
+                                // 0 for TYPE and PROP
+    Expression *type;           // The type of this expression
+                                // NULL for TYPE and PROP
+    bool has_evar;              // True if this expression transitively contains any unfilled hole.
+    uint64_t visit_gen;  // Generation stamp for occurs_in traversal (avoids visited-map alloc).
+    Expression *g_alloc_next;  // Intrusive linked list for GC shutdown traversal
 
     union {
         VarExpression var;

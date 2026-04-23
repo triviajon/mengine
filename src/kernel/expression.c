@@ -1,5 +1,4 @@
 #include "src/kernel/expression.h"
-#include "src/kernel/expression_hash.h"
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -8,23 +7,20 @@
 
 #include "src/common/color.h"
 #include "src/common/linear_map.h"
-#include "src/common/map.h"
 #include "src/kernel/beta_reduction.h"
 #include "src/kernel/context.h"
 #include "src/kernel/definitional_equal.h"
+#include "src/kernel/expression_hash.h"
 #include "src/kernel/inductive.h"
+#include "src/kernel/structural.h"
+#include "src/kernel/subst.h"
 
 // Tracks whether we're inside _construct_app_type (which calls new_subst).
-// Expressions built here are type annotations — private to one parent — and
-// must NOT be interned, because the intern table would let a second caller get
-// the same pointer without registering an uplink, making it impossible to
-// correctly reference-count the annotation.
+// Expressions built here are type annotations and should not be interned.
 static int g_type_computation_depth = 0;
 
 // Intrusive singly-linked list of all allocated Expressions for deferred GC shutdown.
 static Expression *g_expr_list_head = NULL;
-#include "src/kernel/structural.h"
-#include "src/kernel/subst.h"
 
 // Register a body to a recursive variable expression. WARNING: Mutator function, modifies the
 // expression in place and returns true if successful, false otherwise.
@@ -50,7 +46,7 @@ bool register_fix_body_to_expression(Context *recursive_var, Expression *body) {
 
     Expression *body_type = get_expression_type(body);
     Expression *expression_type = get_expression_type(recursive_var);
-    if (!(congruence(body_type, expression_type))) {
+    if (!definitional_equal(body_type, expression_type)) {
         fprintf(stderr, ERROR "Body type is not congruent to expression type.\n" CRESET);
         return false;
     }
@@ -70,7 +66,9 @@ void add_to_parents(Expression *expression, void *ptr, Relation r) {
 }
 
 void propagate_evar_refs(Expression *parent, Expression *child) {
-    if (child->has_evar) parent->has_evar = true;
+    if (child->has_evar) {
+        parent->has_evar = true;
+    }
 }
 
 Uplink *new_uplink(void *ptr, Relation r) {
@@ -121,28 +119,22 @@ void remove_uplink(Expression *expr, void *parent_ptr, Relation rel) {
     }
 }
 
-// --- Flat shutdown GC ---
+// Garbage Collection
 
-void free_expression(Expression *expr) {
-    (void)expr; /* deferred GC: freed at shutdown by expression_gc_shutdown */
-}
+void free_expression(Expression *expr) { (void)expr; }
 
 void free_expressions_excluding_context(Expression *a, Expression *b, Expression *shared_ctx) {
-    (void)a; (void)b; (void)shared_ctx; /* deferred GC */
+    (void)a;
+    (void)b;
+    (void)shared_ctx;
 }
 
-void free_expression_graph(Expression *root) {
-    (void)root; /* deferred GC: freed at shutdown by expression_gc_shutdown */
-}
+void free_expression_graph(Expression *root) { (void)root; }
 
-void free_filled_hole(Expression *hole) {
-    (void)hole; /* deferred GC: freed at shutdown by expression_gc_shutdown */
-}
+void free_filled_hole(Expression *hole) { (void)hole; }
 
 // Flat free of a single expression's non-expression heap allocations.
-// Does NOT follow child expression pointers (those are handled by the GC list).
 static void gc_free_node(Expression *expr) {
-    // Free uplinks list nodes and the list itself
     if (expr->uplinks) {
         DLLNode *node = expr->uplinks->head;
         while (node) {
@@ -233,16 +225,15 @@ Expression *_init_expression_base(ExpressionType tag, Context *context, int ctx_
         return NULL;
     }
 
-    // Track in global GC list (intrusive singly-linked list, prepend O(1))
+    // Track in global GC list
     expr->g_alloc_next = g_expr_list_head;
     g_expr_list_head = expr;
 
     SET_EXPR_TAG(expr, tag);
-    // uplinks: lazily allocated in add_to_parents; calloc already zeroed it
+    // uplinks are lazily allocated in add_to_parents
     SET_EXPR_CONTEXT(expr, context);
     SET_EXPR_CTX_SIZE(expr, ctx_size);
     SET_EXPR_TYPE(expr, type);
-    // has_evar: already false from calloc
 
     return expr;
 }
@@ -260,14 +251,10 @@ Expression *init_type_expression() {
     if (TYPE == NULL) {
         Context *context = context_create_empty();
         // Special case: Type's type is recursive, so we need to create it manually.
-        TYPE = malloc(sizeof(Expression));
+        TYPE = calloc(1, sizeof(Expression));
         if (!TYPE) {
             return NULL;
         }
-        // malloc does not zero: initialize GC/uplink fields explicitly
-        TYPE->uplinks = NULL;
-        TYPE->uplink_count = 0;
-        TYPE->has_evar = false;
         TYPE->g_alloc_next = g_expr_list_head;
         g_expr_list_head = TYPE;
 
@@ -350,15 +337,16 @@ Expression *init_var_expression_wc_with_body(const char *name, Expression *body,
 }
 
 Expression *init_lambda_expression_wc(Expression *bound_variable, Expression *body) {
-    // Probe the intern table before doing any work.
-    Expression probe = {0};
-    probe.tag = LAMBDA_EXPRESSION;
-    probe.as.lambda.bound_variable = bound_variable;
-    probe.as.lambda.body = body;
 #ifndef DISABLE_HASH_CONSING
     {
+        Expression probe = {0};
+        probe.tag = LAMBDA_EXPRESSION;
+        probe.as.lambda.bound_variable = bound_variable;
+        probe.as.lambda.body = body;
         Expression *cached = expression_intern_lookup(&probe);
-        if (cached) { return cached; }
+        if (cached) {
+            return cached;
+        }
     }
 #endif
 
@@ -386,18 +374,17 @@ Expression *init_lambda_expression_wc(Expression *bound_variable, Expression *bo
 }
 
 Expression *init_app_expression_wc(Expression *func, Expression *arg, Context *context) {
-    // Probe the intern table before doing any work.
-    // This is safe at any depth: we are only reading, never inserting.
-    // The depth guard on insertion (below) prevents incomplete entries.
-    Expression probe = {0};
-    probe.tag = APP_EXPRESSION;
-    probe.context = context;
-    probe.as.app.func = func;
-    probe.as.app.arg = arg;
 #ifndef DISABLE_HASH_CONSING
     {
+        Expression probe = {0};
+        probe.tag = APP_EXPRESSION;
+        probe.context = context;
+        probe.as.app.func = func;
+        probe.as.app.arg = arg;
         Expression *cached = expression_intern_lookup(&probe);
-        if (cached) { return cached; }
+        if (cached) {
+            return cached;
+        }
     }
 #endif
 
@@ -417,8 +404,6 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg, Context *c
         return NULL;
     }
 
-    // We perform the verification that type of the argument is a subtype of the
-    // function's bound variable type in the _construct_app_type helper.
     Expression *type = _construct_app_type(context, func, arg);
     if (!type) {
         return NULL;
@@ -435,26 +420,22 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg, Context *c
     propagate_evar_refs(expr, arg);
 
 #ifndef DISABLE_HASH_CONSING
-    // Don't intern if func or arg is a hole: fill_hole mutates App in place,
-    // which would corrupt the intern table entry (stale hash bucket). Instead,
-    // fill_hole will call expression_intern_insert after the mutation.
-    if (func->tag != HOLE_EXPRESSION && arg->tag != HOLE_EXPRESSION) {
-        expression_intern_insert(expr);
-    }
+    expression_intern_insert(expr);
 #endif
     return expr;
 }
 
 Expression *init_forall_expression_wc(Expression *bound_variable, Expression *body) {
-    // Probe the intern table before doing any work.
-    Expression probe = {0};
-    probe.tag = FORALL_EXPRESSION;
-    probe.as.forall.bound_variable = bound_variable;
-    probe.as.forall.body = body;
 #ifndef DISABLE_HASH_CONSING
     {
+        Expression probe = {0};
+        probe.tag = FORALL_EXPRESSION;
+        probe.as.forall.bound_variable = bound_variable;
+        probe.as.forall.body = body;
         Expression *cached = expression_intern_lookup(&probe);
-        if (cached) { return cached; }
+        if (cached) {
+            return cached;
+        }
     }
 #endif
 
@@ -580,11 +561,11 @@ Expression *init_match_expression_wc(Expression *scrutinee, MatchBranch **branch
             return NULL;
         }
 
-        // All branches must have the same type
+        // All branches must have the same type up to definitional equality.
         Expression *branch_body_type = get_expression_type(branch->body);
         if (match_type == NULL) {
             match_type = branch_body_type;
-        } else if (!congruence(branch_body_type, match_type)) {
+        } else if (!definitional_equal(branch_body_type, match_type)) {
             fprintf(stderr, ERROR "Branch body types do not match.\n" CRESET);
             free(constructor_covered);
             return NULL;
@@ -679,12 +660,12 @@ static bool check_all_recursive_calls_with_context(Expression *body, Expression 
             }
 
             // Recursively check subexpressions
-            return check_all_recursive_calls_with_context(get_app_func(body), rec_var,
-                                                          decreasing_arg, decreasing_idx,
-                                                          pattern_to_scrutinee) &&
-                   check_all_recursive_calls_with_context(get_app_arg(body), rec_var,
-                                                          decreasing_arg, decreasing_idx,
-                                                          pattern_to_scrutinee);
+            return (check_all_recursive_calls_with_context(get_app_func(body), rec_var,
+                                                           decreasing_arg, decreasing_idx,
+                                                           pattern_to_scrutinee) &&
+                    check_all_recursive_calls_with_context(get_app_arg(body), rec_var,
+                                                           decreasing_arg, decreasing_idx,
+                                                           pattern_to_scrutinee)) != 0;
         }
 
         case LAMBDA_EXPRESSION:
@@ -798,7 +779,9 @@ Expression *init_fix_expression_wc(Expression *recursive_var, Expression **args,
 
     // Copy args into a fresh heap allocation so gc_free_node can safely free it.
     Expression **args_copy = malloc(arg_count * sizeof(Expression *));
-    for (int i = 0; i < arg_count; i++) args_copy[i] = args[i];
+    for (int i = 0; i < arg_count; i++) {
+        args_copy[i] = args[i];
+    }
 
     SET_FIX_RECURSIVE_VAR(expr, recursive_var);
     SET_FIX_ARG_COUNT(expr, arg_count);
@@ -1060,8 +1043,8 @@ bool _congruence(Expression *a, Expression *b, LinearMap *mapping) {
         case (PROP_EXPRESSION):
             return true;
         case (APP_EXPRESSION):
-            return _congruence(a->as.app.func, b->as.app.func, mapping) &&
-                   _congruence(a->as.app.arg, b->as.app.arg, mapping);
+            return (_congruence(a->as.app.func, b->as.app.func, mapping) &&
+                    _congruence(a->as.app.arg, b->as.app.arg, mapping)) != 0;
         case (FORALL_EXPRESSION): {
             linear_map_set(mapping, a->as.forall.bound_variable, b->as.forall.bound_variable);
             return _congruence(a->as.forall.body, b->as.forall.body, mapping);
@@ -1071,10 +1054,10 @@ bool _congruence(Expression *a, Expression *b, LinearMap *mapping) {
             return _congruence(a->as.lambda.body, b->as.lambda.body, mapping);
         }
         case (VAR_EXPRESSION): {
-            return (a == b) || (linear_map_get(mapping, a) == b);
+            return ((a == b) || (linear_map_get(mapping, a) == b)) != 0;
         }
         case (HOLE_EXPRESSION): {
-            return (a == b) || (linear_map_get(mapping, a) == b);
+            return ((a == b) || (linear_map_get(mapping, a) == b)) != 0;
         }
         case (MATCH_EXPRESSION): {
             if (!_congruence(a->as.match.scrutinee, b->as.match.scrutinee, mapping)) {
@@ -1248,98 +1231,138 @@ static bool recompute_has_evar(Expression *expr) {
         case HOLE_EXPRESSION:
             return true;  // holes are always holey (even filled ones aren't reachable from parents)
         case VAR_EXPRESSION:
-            return expr->as.var.body && expr->as.var.body->has_evar;
+            return (expr->as.var.body && expr->as.var.body->has_evar) != 0;
         case LAMBDA_EXPRESSION:
-            return expr->as.lambda.body && expr->as.lambda.body->has_evar;
+            return (expr->as.lambda.body && expr->as.lambda.body->has_evar) != 0;
         case APP_EXPRESSION:
-            return (expr->as.app.func && expr->as.app.func->has_evar) ||
-                   (expr->as.app.arg && expr->as.app.arg->has_evar);
+            return ((expr->as.app.func && expr->as.app.func->has_evar) ||
+                    (expr->as.app.arg && expr->as.app.arg->has_evar)) != 0;
         case FORALL_EXPRESSION:
-            return expr->as.forall.body && expr->as.forall.body->has_evar;
+            return (expr->as.forall.body && expr->as.forall.body->has_evar) != 0;
         case MATCH_EXPRESSION: {
-            if (expr->as.match.scrutinee && expr->as.match.scrutinee->has_evar) return true;
+            if (expr->as.match.scrutinee && expr->as.match.scrutinee->has_evar) {
+                return true;
+            }
             for (int i = 0; i < expr->as.match.branch_count; i++) {
                 if (expr->as.match.branches[i]->body &&
-                    expr->as.match.branches[i]->body->has_evar)
+                    expr->as.match.branches[i]->body->has_evar) {
                     return true;
+                }
             }
             return false;
         }
         case FIX_EXPRESSION:
-            return expr->as.fix.body && expr->as.fix.body->has_evar;
+            return (expr->as.fix.body && expr->as.fix.body->has_evar) != 0;
         default:
             return false;
     }
 }
 
-bool _occurs_in(Expression *var_or_hole, Expression *term, LinearMap *visited) {
-    if (linear_map_get(visited, term) != NULL) {
+static uint64_t g_occurs_in_gen = 0;
+
+bool _occurs_in(Expression *var_or_hole, Expression *term, uint64_t gen) {
+    if (!term) {
         return false;
     }
-    linear_map_set(visited, term, term);
 
-    if (var_or_hole == term) {
-        return true;
+    size_t capacity = 64;
+    size_t top = 0;
+    Expression **stack = malloc(capacity * sizeof(Expression *));
+    if (!stack) {
+        return false;
     }
 
-    switch (term->tag) {
-        case TYPE_EXPRESSION:
-        case PROP_EXPRESSION:
-            return false;
-        case VAR_EXPRESSION:
-            return var_or_hole == term;
-        case APP_EXPRESSION:
-            return _occurs_in(var_or_hole, term->as.app.func, visited) ||
-                   _occurs_in(var_or_hole, term->as.app.arg, visited);
-        case LAMBDA_EXPRESSION:
-            return _occurs_in(var_or_hole, term->as.lambda.bound_variable, visited) ||
-                   _occurs_in(var_or_hole, term->as.lambda.body, visited);
-        case FORALL_EXPRESSION:
-            return _occurs_in(var_or_hole, term->as.forall.bound_variable, visited) ||
-                   _occurs_in(var_or_hole, term->as.forall.body, visited);
-        case HOLE_EXPRESSION:
-            return var_or_hole == term;
-        case MATCH_EXPRESSION: {
-            if (_occurs_in(var_or_hole, term->as.match.scrutinee, visited)) {
-                return true;
-            }
-            for (int i = 0; i < term->as.match.branch_count; i++) {
-                MatchBranch *branch = term->as.match.branches[i];
-                if (_occurs_in(var_or_hole, branch->constructor, visited)) {
-                    return true;
-                }
-                for (int j = 0; j < branch->pattern_var_count; j++) {
-                    if (_occurs_in(var_or_hole, branch->pattern_variables[j], visited)) {
-                        return true;
-                    }
-                }
-                if (_occurs_in(var_or_hole, branch->body, visited)) {
-                    return true;
-                }
-            }
-            return false;
+    stack[top++] = term;
+    while (top > 0) {
+        Expression *cur = stack[--top];
+        if (!cur || cur->visit_gen == gen) {
+            continue;
         }
-        case FIX_EXPRESSION:
-            if (_occurs_in(var_or_hole, term->as.fix.recursive_var, visited)) {
-                return true;
-            }
-            for (int i = 0; i < term->as.fix.arg_count; i++) {
-                if (_occurs_in(var_or_hole, term->as.fix.args[i], visited)) {
-                    return true;
+        cur->visit_gen = gen;
+
+        if (var_or_hole == cur) {
+            free(stack);
+            return true;
+        }
+
+#define OCCURS_PUSH(e)                                                                        \
+    do {                                                                                      \
+        Expression *_child = (e);                                                             \
+        if (_child != NULL && _child->visit_gen != gen) {                                     \
+            if (top == capacity) {                                                            \
+                size_t new_capacity = capacity * 2;                                           \
+                Expression **new_stack = realloc(stack, new_capacity * sizeof(Expression *)); \
+                if (!new_stack) {                                                             \
+                    free(stack);                                                              \
+                    return false;                                                             \
+                }                                                                             \
+                stack = new_stack;                                                            \
+                capacity = new_capacity;                                                      \
+            }                                                                                 \
+            stack[top++] = _child;                                                            \
+        }                                                                                     \
+    } while (0)
+
+        switch (cur->tag) {
+            case TYPE_EXPRESSION:
+            case PROP_EXPRESSION:
+            case VAR_EXPRESSION:
+            case HOLE_EXPRESSION:
+                break;
+
+            case APP_EXPRESSION:
+                OCCURS_PUSH(cur->as.app.arg);
+                OCCURS_PUSH(cur->as.app.func);
+                break;
+
+            case LAMBDA_EXPRESSION:
+                OCCURS_PUSH(cur->as.lambda.body);
+                OCCURS_PUSH(cur->as.lambda.bound_variable);
+                break;
+
+            case FORALL_EXPRESSION:
+                OCCURS_PUSH(cur->as.forall.body);
+                OCCURS_PUSH(cur->as.forall.bound_variable);
+                break;
+
+            case MATCH_EXPRESSION:
+                OCCURS_PUSH(cur->as.match.scrutinee);
+                for (int i = 0; i < cur->as.match.branch_count; i++) {
+                    MatchBranch *branch = cur->as.match.branches[i];
+                    OCCURS_PUSH(branch->body);
+                    for (int j = 0; j < branch->pattern_var_count; j++) {
+                        OCCURS_PUSH(branch->pattern_variables[j]);
+                    }
+                    OCCURS_PUSH(branch->constructor);
                 }
-            }
-            return _occurs_in(var_or_hole, term->as.fix.body, visited);
-        default:
-            fprintf(stderr, ERROR "Unknown expression type in occurs_in.\n" CRESET);
-            exit(EXIT_FAILURE);
+                break;
+
+            case FIX_EXPRESSION:
+                OCCURS_PUSH(cur->as.fix.body);
+                for (int i = 0; i < cur->as.fix.arg_count; i++) {
+                    OCCURS_PUSH(cur->as.fix.args[i]);
+                }
+                OCCURS_PUSH(cur->as.fix.recursive_var);
+                break;
+
+            default:
+                free(stack);
+                fprintf(stderr, ERROR "Unknown expression type in occurs_in.\n" CRESET);
+                exit(EXIT_FAILURE);
+        }
     }
+
+    free(stack);
+    return false;
 }
 
 bool occurs_in(Expression *var_or_hole, Expression *term) {
-    LinearMap *visited = linear_map_new();
-    bool result = _occurs_in(var_or_hole, term, visited);
-    linear_map_clear_free(visited);
-    return result;
+    uint64_t gen = ++g_occurs_in_gen;
+    if (gen == 0) {
+        // Reserve 0 as the "unvisited" stamp to avoid false hits after wraparound.
+        gen = ++g_occurs_in_gen;
+    }
+    return _occurs_in(var_or_hole, term, gen);
 }
 
 bool fill_hole(Expression *hole, Expression *term) {
@@ -1348,7 +1371,7 @@ bool fill_hole(Expression *hole, Expression *term) {
     }
 
     // Check preconditions:
-    //   1) type(term) == expected return type of hole (hole-aware check)
+    //   1) type(term) == expected return type of hole
     //   2) term is valid in hole's context
     //   3) term does not contain the hole (occurs check, only if term has holes)
     LinearMap *hole_assignments = linear_map_new();
@@ -1366,26 +1389,19 @@ bool fill_hole(Expression *hole, Expression *term) {
         return false;
     }
 
-    // Cascade: fill sub-holes discovered during the type compatibility check
-    // (e.g. when type(hole) contains ?v and type(term) reveals a concrete value
-    // for ?v, propagate that fill now so sibling goals see the concrete type).
+    // Cascade: fill sub-holes discovered during the open_types_compatible_collecting check
     for (int i = 0; i < hole_assignments->size; i++) {
         LinearMapItem *item = &hole_assignments->items[i];
-        if (item->key) fill_hole((Expression *)item->key, (Expression *)item->val);
+        if (item->key) {
+            fill_hole((Expression *)item->key, (Expression *)item->val);
+        }
     }
     linear_map_clear_free(hole_assignments);
 
     // Rewrite structural uplinks: replace hole with term in all direct parents.
-    // The SET_* macros also call add_to_parents(term, parent, rel) so term's
-    // uplinks are updated in the same step.
     //
-    // For internable parent expressions (APP, LAMBDA, FORALL): we remove the
-    // old intern-table entry (keyed on the hole pointer) before mutating, then
-    // re-insert after mutation so future init_*_expression_wc calls for the
-    // same (func, filled_arg) pair return the existing expression rather than
-    // creating a fresh one.  This restores sharing lost when eapply creates
-    // App(f, hole) and the hole is later filled — without this, every filled
-    // hole produces a uniquely-keyed expression that can never be cache-hit.
+    // For internable parent expressions: we remove the old intern-table entry (keyed on the hole
+    // pointer) before mutating, then re-insert after mutation
     DoublyLinkedList *holepars = hole->uplinks;
     if (holepars) {
         DLLNode *ul = holepars->head;
@@ -1399,8 +1415,9 @@ bool fill_hole(Expression *hole, Expression *term) {
 #endif
                     SET_LAMBDA_BODY(ptr, term);
 #ifndef DISABLE_HASH_CONSING
-                    if (term->tag != HOLE_EXPRESSION)
+                    if (term->tag != HOLE_EXPRESSION) {
                         expression_intern_insert(ptr);
+                    }
 #endif
                     break;
                 }
@@ -1411,8 +1428,9 @@ bool fill_hole(Expression *hole, Expression *term) {
 #endif
                     SET_LAMBDA_BOUND_VAR(ptr, term);
 #ifndef DISABLE_HASH_CONSING
-                    if (term->tag != HOLE_EXPRESSION)
+                    if (term->tag != HOLE_EXPRESSION) {
                         expression_intern_insert(ptr);
+                    }
 #endif
                     break;
                 }
@@ -1423,9 +1441,9 @@ bool fill_hole(Expression *hole, Expression *term) {
 #endif
                     SET_APP_FUNC(ptr, term);
 #ifndef DISABLE_HASH_CONSING
-                    if (term->tag != HOLE_EXPRESSION &&
-                        ptr->as.app.arg->tag != HOLE_EXPRESSION)
+                    if (term->tag != HOLE_EXPRESSION && ptr->as.app.arg->tag != HOLE_EXPRESSION) {
                         expression_intern_insert(ptr);
+                    }
 #endif
                     break;
                 }
@@ -1436,9 +1454,9 @@ bool fill_hole(Expression *hole, Expression *term) {
 #endif
                     SET_APP_ARG(ptr, term);
 #ifndef DISABLE_HASH_CONSING
-                    if (term->tag != HOLE_EXPRESSION &&
-                        ptr->as.app.func->tag != HOLE_EXPRESSION)
+                    if (term->tag != HOLE_EXPRESSION && ptr->as.app.func->tag != HOLE_EXPRESSION) {
                         expression_intern_insert(ptr);
+                    }
 #endif
                     break;
                 }
@@ -1449,8 +1467,9 @@ bool fill_hole(Expression *hole, Expression *term) {
 #endif
                     SET_FORALL_BODY(ptr, term);
 #ifndef DISABLE_HASH_CONSING
-                    if (term->tag != HOLE_EXPRESSION)
+                    if (term->tag != HOLE_EXPRESSION) {
                         expression_intern_insert(ptr);
+                    }
 #endif
                     break;
                 }
@@ -1461,8 +1480,9 @@ bool fill_hole(Expression *hole, Expression *term) {
 #endif
                     SET_FORALL_BOUND_VAR(ptr, term);
 #ifndef DISABLE_HASH_CONSING
-                    if (term->tag != HOLE_EXPRESSION)
+                    if (term->tag != HOLE_EXPRESSION) {
                         expression_intern_insert(ptr);
+                    }
 #endif
                     break;
                 }
@@ -1476,7 +1496,6 @@ bool fill_hole(Expression *hole, Expression *term) {
                     SET_EXPR_TYPE(ptr, term);
                     break;
                 }
-                // EXPR_CONTEXT removed: context is non-owning, no uplinks to rewrite
                 default:
                     fprintf(stderr, WARNING "todo: fill_hole for relation %d.\n" CRESET,
                             uplink->relation);
@@ -1487,11 +1506,9 @@ bool fill_hole(Expression *hole, Expression *term) {
     }
 
     // BFS upward through structural uplinks to recompute has_evar on ancestors.
-    // We stop propagating from any node whose has_evar didn't change (still has
-    // other holes, so parents are unaffected).  No visited set needed: duplicate
-    // visits are harmless (idempotent) and the stopping condition prevents
-    // exponential blowup — a node whose flag didn't change never re-enqueues
-    // its parents a second time.
+    // We stop propagating from any node whose has_evar didn't change.
+    // The stopping condition prevents exponential blowup:
+    // a node whose flag didn't change never re-enqueues its parents a second time.
     if (holepars && holepars->head) {
         DoublyLinkedList *queue = dll_create();
 
@@ -1551,8 +1568,8 @@ bool _congruence2(Expression *a, Expression *b, LinearMap *mapping) {
             case (PROP_EXPRESSION):
                 return true;
             case (APP_EXPRESSION):
-                return _congruence2(a->as.app.func, b->as.app.func, mapping) &&
-                       _congruence2(a->as.app.arg, b->as.app.arg, mapping);
+                return (_congruence2(a->as.app.func, b->as.app.func, mapping) &&
+                        _congruence2(a->as.app.arg, b->as.app.arg, mapping)) != 0;
             case (FORALL_EXPRESSION): {
                 linear_map_set(mapping, a->as.forall.bound_variable, b->as.forall.bound_variable);
                 return _congruence2(a->as.forall.body, b->as.forall.body, mapping);
@@ -1562,10 +1579,10 @@ bool _congruence2(Expression *a, Expression *b, LinearMap *mapping) {
                 return _congruence2(a->as.lambda.body, b->as.lambda.body, mapping);
             }
             case (VAR_EXPRESSION): {
-                return (a == b) || (linear_map_get(mapping, a) == b);
+                return ((a == b) || (linear_map_get(mapping, a) == b)) != 0;
             }
             case (HOLE_EXPRESSION): {
-                return (a == b) || (linear_map_get(mapping, a) == b);
+                return ((a == b) || (linear_map_get(mapping, a) == b)) != 0;
             }
             case (MATCH_EXPRESSION): {
                 if (!_congruence2(a->as.match.scrutinee, b->as.match.scrutinee, mapping)) {

@@ -1,6 +1,7 @@
 #include "src/kernel/utils.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "src/common/linear_map.h"
 #include "src/kernel/context.h"
@@ -168,7 +169,6 @@ char *stringify_expression(Expression *expression) {
             free(hole_name);
             break;
         }
-
     }
 
     return result;
@@ -205,7 +205,7 @@ char *stringify_context(Context *context, ContextStringifyOptions opts) {
 
     free(var_str);
     free(type_str);
-    // parent_str was consumed by the first str_concat_free call — do not free again
+    // parent_str was consumed by the first str_concat_free call - do not free again
 
     return result;
 }
@@ -241,7 +241,7 @@ char *stringify_context_until(Context *context, Context *until, ContextStringify
 
     free(var_str);
     free(type_str);
-    // parent_str was consumed by the first str_concat_free call — do not free again
+    // parent_str was consumed by the first str_concat_free call - do not free again
 
     return result;
 }
@@ -399,8 +399,7 @@ char *_stringify_expression_with_let(Expression *expression) {
             break;
 
         case LAMBDA_EXPRESSION: {
-            if (get_expression_uplinks(expression)->head != NULL &&
-                expression->uplink_count > 1) {
+            if (get_expression_uplinks(expression)->head != NULL && expression->uplink_count > 1) {
                 char buf[(2 * sizeof(void *)) + 1];
                 snprintf(buf, sizeof(buf), "%p", (void *)expression);
                 result = strdup(str_concat("var", buf));
@@ -439,8 +438,7 @@ char *_stringify_expression_with_let(Expression *expression) {
             break;
         }
         case APP_EXPRESSION: {
-            if (get_expression_uplinks(expression)->head != NULL &&
-                expression->uplink_count > 1) {
+            if (get_expression_uplinks(expression)->head != NULL && expression->uplink_count > 1) {
                 char buf[(2 * sizeof(void *)) + 1];
                 snprintf(buf, sizeof(buf), "%p", (void *)expression);
                 result = strdup(str_concat("var", buf));
@@ -468,8 +466,7 @@ char *_stringify_expression_with_let(Expression *expression) {
         }
 
         case FORALL_EXPRESSION: {
-            if (get_expression_uplinks(expression)->head != NULL &&
-                expression->uplink_count > 1) {
+            if (get_expression_uplinks(expression)->head != NULL && expression->uplink_count > 1) {
                 char buf[(2 * sizeof(void *)) + 1];
                 snprintf(buf, sizeof(buf), "%p", (void *)expression);
                 result = strdup(str_concat("var", buf));

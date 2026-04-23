@@ -43,12 +43,14 @@ int mengine_execute_tactic(MEngineRuntime *rt, TacticExpr *tac) {
     engine_tactic_result_free(result);
 
     // The tactic filled the current goal, detaching it from the expression tree.
-    // Free the now-orphaned hole expression (shallow — don't cascade into children).
+    // Free the now-orphaned hole expression (shallow - don't cascade into children).
     kernel_free_filled_hole(goal);
 
-    // Advance to the next goal
-    if (!engine_proof_state_next_goal(rt->proof_state)) {
-        // No more goals - proof is complete!
+    // Advance to the next goal, skipping satisfied evar holes
+    bool has_next = engine_proof_state_next_goal(rt->proof_state);
+    Expression *next_active = engine_proof_state_current_goal(rt->proof_state);
+    if (!has_next || !next_active) {
+        // No more active goals - proof is complete!
         Expression *thm = rt->pending_theorem;
         rt->ctx = thm;
 

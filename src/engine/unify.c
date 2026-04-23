@@ -118,6 +118,9 @@ Expression *_unify2(Expression *exprA, Expression *exprB, Expression *var_to_fil
 Expression *instantiate_lemma_with_bindings(Expression *lemma, Expression *lemma_ty,
                                             LinearMap *binders) {
     Expression *final_expr = lemma;
+    // Walk the original forall chain structurally instead of substituting at each step.
+    // init_app_expression_wc already computes the correct type via _construct_app_type;
+    // the redundant explicit new_subst for curr_forall is eliminated.
     Expression *curr_forall = lemma_ty;
     while (curr_forall->tag == FORALL_EXPRESSION) {
         Expression *binding_var = curr_forall->as.forall.bound_variable;
@@ -128,9 +131,7 @@ Expression *instantiate_lemma_with_bindings(Expression *lemma, Expression *lemma
                                ? final_expr_ctx
                                : binding_result_ctx;
         final_expr = init_app_expression_wc(final_expr, binding_result, app_ctx);
-        Expression *curr_forall_body = curr_forall->as.forall.body;
-        // curr_forall_body is closed under context(binding_var), which contains binding_var
-        curr_forall = new_subst(binding_var, curr_forall_body, binding_var, binding_result);
+        curr_forall = curr_forall->as.forall.body;  // structural advance, no substitution
     }
     return final_expr;
 }
@@ -152,12 +153,6 @@ void free_unification_result(UnificationResult *unification_result) {
     }
 }
 
-/**
- * Tries to unify a given lemma with an expression by instantiating the
- * universally quantified variables and attempting to find appropriate
- * substitutions. Returns a list of any remaining unfilled holes and the lemma
- * instantiation.
- */
 UnificationResult *eunify2(Expression *lemma, Expression *goal) {
     Context *goal_context = get_expression_context(goal);
     Expression *expr = normalize_whnf(get_expression_type(goal));
@@ -198,7 +193,9 @@ UnificationResult *eunify2(Expression *lemma, Expression *goal) {
                     appears_in_other = true;
                 }
                 dll_destroy(other_type_holes);
-                if (appears_in_other) break;
+                if (appears_in_other) {
+                    break;
+                }
             }
             other = other->next;
         }

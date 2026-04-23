@@ -13,11 +13,11 @@ ProofState *proof_state_new(Expression *pending_theorem) {
 
     ps->pending_theorem = pending_theorem;
     ps->goals = dll_create();
-    ps->goal_index = 0;
 
     Expression *initial_goal = get_expression_body(pending_theorem);
     DLLNode *n = dll_new_node(initial_goal);
     dll_insert_at_tail(ps->goals, n);
+    ps->current_node = n;
 
     return ps;
 }
@@ -35,15 +35,13 @@ Expression *proof_state_current(ProofState *ps) {
     if (!ps) {
         return NULL;
     }
-    size_t len = (size_t)dll_len(ps->goals);
-
-    // Skip over goals that have already been filled via cascade (is_satisfied).
-    while (ps->goal_index < len) {
-        Expression *goal = (Expression *)dll_at(ps->goals, ps->goal_index)->data;
+    // Advance past any satisfied holes (cascade-filled evars).
+    while (ps->current_node) {
+        Expression *goal = (Expression *)ps->current_node->data;
         if (goal->tag != HOLE_EXPRESSION || !goal->as.hole.is_satisfied) {
             return goal;
         }
-        ps->goal_index++;
+        ps->current_node = ps->current_node->next;
     }
     return NULL;
 }
@@ -56,11 +54,10 @@ Expression *proof_state_pending_theorem(ProofState *ps) {
 }
 
 bool proof_state_next(ProofState *ps) {
-    size_t len = dll_len(ps->goals);
-    if (ps->goal_index + 1 >= len) {
+    if (!ps->current_node || !ps->current_node->next) {
         return false;
     }
-    ps->goal_index += 1;
+    ps->current_node = ps->current_node->next;
     return true;
 }
 
@@ -72,7 +69,7 @@ void proof_state_add_goals(ProofState *ps, DoublyLinkedList *new_goals) {
     // Insert new goals right after the current goal position so that
     // subgoals from the just-executed tactic are processed before
     // previously-queued goals (e.g., continuation goals from eapply).
-    DLLNode *current = dll_at(ps->goals, ps->goal_index);
+    DLLNode *current = ps->current_node;
     if (current) {
         DLLNode *after = current->next;
         // Splice new_goals list between current and after

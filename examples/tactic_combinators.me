@@ -28,7 +28,8 @@ intro P; intro H; first [ apply zero | exact H ].
 
 (* Orelse: try two alternatives *)
 Theorem orelse_example : forall (P : Prop), forall (H : P), P.
-intros P H.
+intro P.
+intro H.
 apply zero || exact H.
 
 (* Nested combinators *)

@@ -69,7 +69,7 @@ static Tactic *_parse_rewrite(Parser *p) {
     debug_print_ast(p, equiv_proof);
 
     Tactic *tactic = malloc(sizeof(Tactic));
-    tactic->tag = backward ? TACTIC_REWRITE_BACKWARD : TACTIC_REWRITE;
+    tactic->tag = (int)backward ? TACTIC_REWRITE_BACKWARD : TACTIC_REWRITE;
     tactic->as.rewrite.lemma = lemma;
     tactic->as.rewrite.equiv_proof = equiv_proof;
     tactic->as.rewrite.backward = backward;
@@ -97,7 +97,7 @@ static Tactic *_parse_erewrite(Parser *p) {
     debug_print_ast(p, equiv_proof);
 
     Tactic *tactic = malloc(sizeof(Tactic));
-    tactic->tag = backward ? TACTIC_EREWRITE_BACKWARD : TACTIC_EREWRITE;
+    tactic->tag = (int)backward ? TACTIC_EREWRITE_BACKWARD : TACTIC_EREWRITE;
     tactic->as.rewrite.lemma = lemma;
     tactic->as.rewrite.equiv_proof = equiv_proof;
     tactic->as.rewrite.backward = backward;
@@ -186,8 +186,33 @@ static TacticExpr *_parse_tactic_seq(Parser *p) {
 
     while (parser_expect_no_consume(p, TOK_SEMICOLON)) {
         parser_expect_consume(p, TOK_SEMICOLON);
-        TacticExpr *right = _parse_tactic_atom(p);
-        left = tactic_expr_seq(left, right);
+
+        // Dispatch syntax: tac ; [ tac1 | tac2 | ... ]
+        if (parser_expect_no_consume(p, TOK_LBRACKET)) {
+            parser_expect_consume(p, TOK_LBRACKET);
+            TacticExpr **branches = NULL;
+            size_t branch_count = 0;
+
+            // Parse first branch (no leading |)
+            branches = realloc(branches, sizeof(TacticExpr *) * (branch_count + 1));
+            branches[branch_count++] = _parse_tactic_expr(p);
+
+            // Parse remaining branches separated by |
+            while (parser_expect_no_consume(p, TOK_PIPE)) {
+                parser_expect_consume(p, TOK_PIPE);
+                branches = realloc(branches, sizeof(TacticExpr *) * (branch_count + 1));
+                branches[branch_count++] = _parse_tactic_expr(p);
+            }
+
+            if (!parser_expect_consume(p, TOK_RBRACKET)) {
+                parser_error(p, "Expected ']' after dispatch branches");
+            }
+
+            left = tactic_expr_dispatch(left, branches, branch_count);
+        } else {
+            TacticExpr *right = _parse_tactic_atom(p);
+            left = tactic_expr_seq(left, right);
+        }
     }
 
     return left;
@@ -288,11 +313,17 @@ static TacticExpr *_parse_tactic_atom(Parser *p) {
         return tactic_expr_type_of(term);
     }
 
-    // mk_hole <type> - creates a hole of the given type, returns it
+    // mk_hole <type> - creates a hole of the given type, returns it AND adds to goals
     if (tok == TOK_MK_HOLE) {
         parser_expect_consume(p, TOK_MK_HOLE);
         AST *type = parse_atomic(p);
         return tactic_expr_mk_hole(type);
+    }
+
+    // shelve - moves the current goal to the back of the active goal queue
+    if (tok == TOK_SHELVE) {
+        parser_expect_consume(p, TOK_SHELVE);
+        return tactic_expr_shelve();
     }
 
     // fill <hole> <term> - fills a hole with a term
@@ -581,7 +612,9 @@ TacticExpr *tactic_parse_proof_command(Parser *p) {
 TacticExpr *tactic_parse_expr(Parser *p) { return _parse_tactic_expr(p); }
 
 void free_tactic(Tactic *tac) {
-    if (!tac) { return; }
+    if (!tac) {
+        return;
+    }
     switch (tac->tag) {
         case TACTIC_INTRO:
             free(tac->as.intro.name);

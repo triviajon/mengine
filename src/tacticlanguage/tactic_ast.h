@@ -8,24 +8,26 @@
 #include "src/tacticlanguage/tactic_parser.h"
 
 typedef enum {
-    TAC_PRIMITIVE,      // wraps an existing Tactic*
-    TAC_SEQ,            // tac1 ; tac2
-    TAC_ORELSE,         // tac1 || tac2
-    TAC_TRY,            // try tac
-    TAC_REPEAT,         // repeat tac
-    TAC_FIRST,          // first [ tac1 | tac2 | ... ]
-    TAC_IDTAC,          // idtac (identity, always succeeds)
-    TAC_FAIL,           // fail (always fails)
-    TAC_CALL,           // user-defined tactic call
-    TAC_MATCH_GOAL,     // match goal with | [ ... |- ... ] => tac end
-    TAC_LET,            // let x := <tactic_expr> in <tactic_expr>
-    TAC_GOAL_TYPE,      // goal_type - returns the type of the current goal
-    TAC_TYPE_OF,        // type_of <term> - returns the type of a term
-    TAC_MATCH_TERM,     // match <term> with | <pat> => tac ... end
-    TAC_MK_HOLE,        // mk_hole <type>        - creates a hole, returns it as term_value
-    TAC_FILL,           // fill <hole> <term>    - fills hole with term
-    TAC_SUBST,          // subst <new> <body> <old> - substitution body[old := new]
-    TAC_EUNIFY,         // eunify <lemma> <goal> - existential unification
+    TAC_PRIMITIVE,   // wraps an existing Tactic*
+    TAC_SEQ,         // tac1 ; tac2
+    TAC_ORELSE,      // tac1 || tac2
+    TAC_TRY,         // try tac
+    TAC_REPEAT,      // repeat tac
+    TAC_FIRST,       // first [ tac1 | tac2 | ... ]
+    TAC_DISPATCH,    // tac ; [ tac1 | tac2 | ... ] - per-goal focusing
+    TAC_IDTAC,       // idtac (identity, always succeeds)
+    TAC_FAIL,        // fail (always fails)
+    TAC_CALL,        // user-defined tactic call
+    TAC_MATCH_GOAL,  // match goal with | [ ... |- ... ] => tac end
+    TAC_LET,         // let x := <tactic_expr> in <tactic_expr>
+    TAC_GOAL_TYPE,   // goal_type - returns the type of the current goal
+    TAC_TYPE_OF,     // type_of <term> - returns the type of a term
+    TAC_MATCH_TERM,  // match <term> with | <pat> => tac ... end
+    TAC_MK_HOLE,  // mk_hole <type>        - creates a hole, adds to goals, returns it as term_value
+    TAC_SHELVE,   // shelve                - moves current goal to back (removes from active queue)
+    TAC_FILL,     // fill <hole> <term>    - fills hole with term
+    TAC_SUBST,    // subst <new> <body> <old> - substitution body[old := new]
+    TAC_EUNIFY,   // eunify <lemma> <goal> - existential unification
     TAC_CURRENT_GOAL,   // current_goal - returns the current goal hole as a term value
     TAC_INTRO_STEP,     // intro_step [name] - introduce a forall-bound variable
     TAC_PAIR,           // pair <term> <term> - create a tactic-level pair
@@ -66,6 +68,12 @@ typedef struct {
     TacticExpr **alternatives;
     size_t count;
 } FirstTacticExpr;
+
+typedef struct {
+    TacticExpr *left;       // tactic that produces multiple subgoals
+    TacticExpr **branches;  // per-subgoal tactics (length == expected subgoal count)
+    size_t branch_count;
+} DispatchTacticExpr;
 
 typedef struct {
     char *name;        // tactic name
@@ -178,6 +186,7 @@ struct TacticExpr {
         TryTacticExpr try_expr;
         RepeatTacticExpr repeat;
         FirstTacticExpr first;
+        DispatchTacticExpr dispatch;
         CallTacticExpr call;
         MatchGoalTacticExpr match_goal;
         LetTacticExpr let_expr;
@@ -241,6 +250,16 @@ static inline TacticExpr *tactic_expr_first(TacticExpr **alternatives, size_t co
     e->tag = TAC_FIRST;
     e->as.first.alternatives = alternatives;
     e->as.first.count = count;
+    return e;
+}
+
+static inline TacticExpr *tactic_expr_dispatch(TacticExpr *left, TacticExpr **branches,
+                                               size_t branch_count) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_DISPATCH;
+    e->as.dispatch.left = left;
+    e->as.dispatch.branches = branches;
+    e->as.dispatch.branch_count = branch_count;
     return e;
 }
 
@@ -309,6 +328,12 @@ static inline TacticExpr *tactic_expr_mk_hole(AST *type) {
     TacticExpr *e = malloc(sizeof(TacticExpr));
     e->tag = TAC_MK_HOLE;
     e->as.mk_hole.type = type;
+    return e;
+}
+
+static inline TacticExpr *tactic_expr_shelve(void) {
+    TacticExpr *e = malloc(sizeof(TacticExpr));
+    e->tag = TAC_SHELVE;
     return e;
 }
 
@@ -412,11 +437,13 @@ static inline TacticExpr *tactic_expr_constr(AST *term) {
  * free_tactic_expr – recursively free a TacticExpr tree
  * -------------------------------------------------------------------------- */
 
-void free_ast(AST *ast);        // forward declaration (defined in ast_to_expression.c)
+void free_ast(AST *ast);  // forward declaration (defined in ast_to_expression.c)
 // void free_tactic(Tactic *tac);  // forward declaration (defined in tactic_parser.c)
 
 static inline void free_tactic_expr(TacticExpr *expr) {
-    if (!expr) { return; }
+    if (!expr) {
+        return;
+    }
     switch (expr->tag) {
         case TAC_PRIMITIVE:
             free_tactic(expr->as.primitive.tactic);
@@ -440,6 +467,13 @@ static inline void free_tactic_expr(TacticExpr *expr) {
                 free_tactic_expr(expr->as.first.alternatives[i]);
             }
             free(expr->as.first.alternatives);
+            break;
+        case TAC_DISPATCH:
+            free_tactic_expr(expr->as.dispatch.left);
+            for (size_t i = 0; i < expr->as.dispatch.branch_count; i++) {
+                free_tactic_expr(expr->as.dispatch.branches[i]);
+            }
+            free(expr->as.dispatch.branches);
             break;
         case TAC_IDTAC:
         case TAC_FAIL:
@@ -485,6 +519,8 @@ static inline void free_tactic_expr(TacticExpr *expr) {
         case TAC_MK_HOLE:
             free_ast(expr->as.mk_hole.type);
             break;
+        case TAC_SHELVE:
+            break;
         case TAC_FILL:
             free_ast(expr->as.fill.hole);
             free_ast(expr->as.fill.term);
@@ -498,7 +534,9 @@ static inline void free_tactic_expr(TacticExpr *expr) {
             free_ast(expr->as.eunify.lemma);
             break;
         case TAC_INTRO_STEP:
-            if (expr->as.intro_step.name) { free_ast(expr->as.intro_step.name); }
+            if (expr->as.intro_step.name) {
+                free_ast(expr->as.intro_step.name);
+            }
             break;
         case TAC_PAIR:
             free_ast(expr->as.pair.fst);

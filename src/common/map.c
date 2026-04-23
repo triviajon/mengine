@@ -213,9 +213,9 @@ void map_free(Map *m) {
 }
 
 void map_reset(Map *m) {
-    if (!m || m->size == 0) return;
-    /* Scan only used slots: O(capacity) scan but each slot is a simple check.
-     * For our small maps (capacity 8-32), this is much cheaper than memset. */
+    if (!m || m->size == 0) {
+        return;
+    }
     for (size_t i = 0; i < m->capacity; i++) {
         m->entries[i].in_use = 0;
     }

@@ -1,5 +1,5 @@
-#ifndef NEW_SUBST_H
-#define NEW_SUBST_H
+#ifndef SUBST_H
+#define SUBST_H
 
 #include "src/common/doubly_linked_list.h"
 #include "src/kernel/expression.h"
@@ -44,4 +44,4 @@ Expression *new_p_subst(Context *context, Expression *t, DoublyLinkedList *old_e
 // outside the expression being substituted into.  Use in beta_reduce.
 Expression *beta_subst(Context *context, Expression *t, Expression *x, Expression *a);
 
-#endif  // NEW_SUBST_H
+#endif  // SUBST_H

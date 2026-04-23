@@ -444,8 +444,8 @@ bool is_atomic_start(Token *t) {
     if (!t) {
         return false;
     }
-    return t->type == TOK_IDENT || t->type == TOK_LPAREN || t->type == TOK_TYPE ||
-           t->type == TOK_PROP;
+    return (t->type == TOK_IDENT || t->type == TOK_LPAREN || t->type == TOK_TYPE ||
+            t->type == TOK_PROP) != 0;
 }
 
 AST *parse_application(Parser *p) {
@@ -519,8 +519,8 @@ AST *parse_atomic(Parser *p) {
  * Term pattern parsing (for match goal)
  *
  * Like normal term parsing but additionally handles:
- *   - ?X  → AST_PATVAR("X") — pattern variable that matches any term
- *   - _   → AST_PATVAR("_") — wildcard (matches any term, no binding)
+ *   - ?X  -> AST_PATVAR("X") - pattern variable that matches any term
+ *   - _   -> AST_PATVAR("_") - wildcard (matches any term, no binding)
  * ============================================================================ */
 
 static AST *_parse_pattern_atomic(Parser *p);
@@ -530,8 +530,8 @@ static bool _is_pattern_atomic_start(Token *t) {
     if (!t) {
         return false;
     }
-    return t->type == TOK_IDENT || t->type == TOK_LPAREN || t->type == TOK_TYPE ||
-           t->type == TOK_PROP || t->type == TOK_QUESTION;
+    return (t->type == TOK_IDENT || t->type == TOK_LPAREN || t->type == TOK_TYPE ||
+            t->type == TOK_PROP || t->type == TOK_QUESTION) != 0;
 }
 
 static AST *_parse_pattern_prefix(Parser *p) {
@@ -589,7 +589,7 @@ static AST *_parse_pattern_application(Parser *p) {
 }
 
 static AST *_parse_pattern_atomic(Parser *p) {
-    // ?X → pattern variable
+    // ?X -> pattern variable
     if (parser_expect_no_consume(p, TOK_QUESTION)) {
         parser_expect_consume(p, TOK_QUESTION);
         if (!parser_expect_no_consume(p, TOK_IDENT)) {
@@ -603,7 +603,7 @@ static AST *_parse_pattern_atomic(Parser *p) {
         return patvar;
     }
 
-    // identifiers — treat "_" as wildcard pattern variable
+    // identifiers - treat "_" as wildcard pattern variable
     if (parser_peek(p) && parser_peek(p)->type == TOK_IDENT) {
         Token *ident_token = parser_next(p);
         if (strcmp(ident_token->lexeme, "_") == 0) {

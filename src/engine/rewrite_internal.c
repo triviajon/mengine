@@ -23,7 +23,7 @@ typedef struct {
     long rewrite_head_calls;
     long rewrite_head_successes;
     long lemma_noop_hits;
-    long calls;            // top-level rewrite()/erewrite() invocations
+    long calls;  // top-level rewrite()/erewrite() invocations
     long total_hits;
     long total_misses;
     long total_mid_result_hits;
@@ -59,21 +59,31 @@ static Map *s_active_noop_cache = NULL;  // inner map for current call
 // Returns NULL if the head cannot be determined or is a VAR (non-rigid).
 static Expression *_compute_lemma_lhs_head(Expression *lemma) {
     Expression *ty = get_expression_type(lemma);
-    if (!ty) return NULL;
+    if (!ty) {
+        return NULL;
+    }
     Expression *body = get_innermost_body(ty);
-    if (!body) return NULL;
+    if (!body) {
+        return NULL;
+    }
     Expression *lhs = _get_lhs_eq(body);
-    if (!lhs) return NULL;
+    if (!lhs) {
+        return NULL;
+    }
     Expression *head = get_head(lhs);
     // Only use for rigid (non-VAR) heads: a VAR head could unify with anything.
-    if (!head || head->tag == VAR_EXPRESSION) return NULL;
+    if (!head || head->tag == VAR_EXPRESSION) {
+        return NULL;
+    }
     return head;
 }
 
 void rewrite_set_debug(bool enabled) { g_rewrite_debug = enabled; }
 
 void rewrite_print_cumulative_stats(void) {
-    if (!g_rewrite_debug) return;
+    if (!g_rewrite_debug) {
+        return;
+    }
     fprintf(stderr,
             "[rewrite cache] cumulative: %ld calls, %ld hits, %ld misses "
             "(hit rate %.1f%%), %ld mid-result hits (rewrite_head skipped), "
@@ -98,7 +108,9 @@ static void _rwr_stats_begin_call(void) {
 }
 
 static void _rwr_stats_print_call(void) {
-    if (!g_rewrite_debug) return;
+    if (!g_rewrite_debug) {
+        return;
+    }
     long total = g_rwr_stats.hits + g_rwr_stats.misses;
     fprintf(stderr,
             "[rewrite cache] call #%ld: %ld hits / %ld lookups (%.1f%%), "
@@ -221,12 +233,10 @@ Expression *_build_app_congruence_proof(RewriteResult *func_rwr, RewriteResult *
     // Noop results may carry a NULL proof to defer the hash-cons allocation;
     // when one sibling has an actual rewrite, we need the other's proof here.
     if (func_rwr->original_to_rewritten_proof == NULL) {
-        func_rwr->original_to_rewritten_proof =
-            _build_reflexivity_proof(func_rwr->original, ctx);
+        func_rwr->original_to_rewritten_proof = _build_reflexivity_proof(func_rwr->original, ctx);
     }
     if (arg_rwr->original_to_rewritten_proof == NULL) {
-        arg_rwr->original_to_rewritten_proof =
-            _build_reflexivity_proof(arg_rwr->original, ctx);
+        arg_rwr->original_to_rewritten_proof = _build_reflexivity_proof(arg_rwr->original, ctx);
     }
 
     Expression *A_implies_B = get_app_arg(
@@ -361,8 +371,7 @@ RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context
         if (s_lemma_lhs_head != NULL && get_head(expr) != s_lemma_lhs_head) {
             return init_rewrite_result(expr, expr, NULL, NULL);
         }
-        mid_rwr =
-            init_rewrite_result(expr, expr, NULL, _build_reflexivity_proof(expr, context));
+        mid_rwr = init_rewrite_result(expr, expr, NULL, _build_reflexivity_proof(expr, context));
     } else {
         // Materialize any lazy noop proofs (NULL) before building congruence.
         if (rwr_func->original_to_rewritten_proof == NULL) {
@@ -384,7 +393,7 @@ RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context
     // Optimization: if mid_rwr->rewritten is already in the cache (possible via
     // hash-consing returning the same interned pointer as a previously-visited
     // subterm), its full rewrite result is equivalent to what rewrite_head would
-    // produce — because the children of mid_rwr->rewritten are already fully
+    // produce - because the children of mid_rwr->rewritten are already fully
     // rewritten, so the cached full-rewrite and the bare head-only rewrite coincide.
 #ifndef DISABLE_REWRITE_CACHE
     bool mid_result_from_cache = false;
@@ -392,11 +401,10 @@ RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context
     if (mid_result) {
         mid_result_from_cache = true;
         g_rwr_stats.mid_result_hits++;
-    } else if (s_lemma_lhs_head != NULL &&
-               get_head(mid_rwr->rewritten) != s_lemma_lhs_head) {
+    } else if (s_lemma_lhs_head != NULL && get_head(mid_rwr->rewritten) != s_lemma_lhs_head) {
         // Head mismatch: the reconstituted expression's outermost function is not
         // the lemma LHS head, so top-level unification is guaranteed to fail.
-        // Use NULL proof — mid_result is noop and its proof is never accessed.
+        // Use NULL proof - mid_result is noop and its proof is never accessed.
         mid_result = init_rewrite_result(mid_rwr->rewritten, mid_rwr->rewritten, NULL, NULL);
     } else {
         mid_result = rewrite_head(mid_rwr->rewritten, lemma, context, allow_unresolved_bindings);
@@ -404,12 +412,10 @@ RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context
 #else
     bool mid_result_from_cache = false;
     RewriteResult *mid_result;
-    if (s_lemma_lhs_head != NULL &&
-        get_head(mid_rwr->rewritten) != s_lemma_lhs_head) {
+    if (s_lemma_lhs_head != NULL && get_head(mid_rwr->rewritten) != s_lemma_lhs_head) {
         mid_result = init_rewrite_result(mid_rwr->rewritten, mid_rwr->rewritten, NULL, NULL);
     } else {
-        mid_result =
-            rewrite_head(mid_rwr->rewritten, lemma, context, allow_unresolved_bindings);
+        mid_result = rewrite_head(mid_rwr->rewritten, lemma, context, allow_unresolved_bindings);
     }
 #endif
 
@@ -439,7 +445,7 @@ RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context
 RewriteResult *rewrite_var(Expression *expr, Expression *lemma, Context *context, Map *_,
                            bool allow_unresolved_bindings) {
     // Early exit: if the lemma LHS has a rigid (non-VAR) head, a bare VAR
-    // cannot unify with it at the top level — return a lazy noop immediately.
+    // cannot unify with it at the top level - return a lazy noop immediately.
     if (s_lemma_lhs_head != NULL) {
         return init_rewrite_result(expr, expr, NULL, NULL);
     }
@@ -481,7 +487,7 @@ RewriteResult *_rewrite(Expression *expr, Expression *lemma, Context *context, M
         }
         default:
             // For unsupported expression types (FORALL, LAMBDA, TYPE, PROP, etc.),
-            // return a lazy noop — proof is NULL and will be built on demand if
+            // return a lazy noop - proof is NULL and will be built on demand if
             // this node ever ends up as a sibling of a non-noop rewrite.
             result = init_rewrite_result(expr, expr, NULL, NULL);
             break;
@@ -502,8 +508,9 @@ RewriteResult *_rewrite(Expression *expr, Expression *lemma, Context *context, M
 RewriteResult *rewrite(Expression *expr, Expression *lemma, Context *context) {
     _rwr_stats_begin_call();
     // Bind the active per-lemma/per-context noop cache for rewrite() mode.
-    if (s_noop_by_lemma == NULL)
+    if (s_noop_by_lemma == NULL) {
         s_noop_by_lemma = map_new_with_capacity(16);
+    }
     Map *noop_by_context = map_get(s_noop_by_lemma, (void *)lemma);
     if (noop_by_context == NULL) {
         noop_by_context = map_new_with_capacity(16);
@@ -527,8 +534,9 @@ RewriteResult *rewrite(Expression *expr, Expression *lemma, Context *context) {
 RewriteResult *erewrite(Expression *expr, Expression *lemma, Context *context) {
     _rwr_stats_begin_call();
     // Bind the active per-lemma/per-context noop cache for erewrite() mode.
-    if (s_enoop_by_lemma == NULL)
+    if (s_enoop_by_lemma == NULL) {
         s_enoop_by_lemma = map_new_with_capacity(16);
+    }
     Map *noop_by_context = map_get(s_enoop_by_lemma, (void *)lemma);
     if (noop_by_context == NULL) {
         noop_by_context = map_new_with_capacity(16);

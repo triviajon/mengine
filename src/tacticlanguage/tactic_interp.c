@@ -43,7 +43,7 @@ static Expression *bindings_lookup(PatternBindings *b, const char *name) {
 }
 
 static bool bindings_add(PatternBindings *b, const char *name, Expression *val) {
-    // Check for existing binding — must be consistent
+    // Check for existing binding - must be consistent
     Expression *existing = bindings_lookup(b, name);
     if (existing) {
         return existing == val;
@@ -96,8 +96,8 @@ static bool _match_pattern(AST *pattern, Expression *expr, PatternBindings *bind
             if (expr->tag != APP_EXPRESSION) {
                 return false;
             }
-            return _match_pattern(pattern->value.app.func, get_app_func(expr), bindings) &&
-                   _match_pattern(pattern->value.app.arg, get_app_arg(expr), bindings);
+            return (_match_pattern(pattern->value.app.func, get_app_func(expr), bindings) &&
+                    _match_pattern(pattern->value.app.arg, get_app_arg(expr), bindings)) != 0;
 
         case AST_FORALL:
             if (expr->tag != FORALL_EXPRESSION) {
@@ -288,7 +288,7 @@ static Tactic *_tactic_subst(Tactic *tac, char **params, AST **args, size_t coun
             }
             break;
         default:
-            // TACTIC_ADMITTED — no AST fields
+            // TACTIC_ADMITTED - no AST fields
             break;
     }
 
@@ -414,6 +414,9 @@ static TacticExpr *_tactic_expr_subst(TacticExpr *expr, char **params, AST **arg
                 _ast_subst(expr->as.rewrite_unify.target, params, args, count));
         case TAC_CONSTR:
             return tactic_expr_constr(_ast_subst(expr->as.constr.term, params, args, count));
+        case TAC_DISPATCH:
+        case TAC_SHELVE:
+            break;
     }
 
     return expr;
@@ -426,8 +429,7 @@ static TacticExpr *_tactic_expr_subst(TacticExpr *expr, char **params, AST **arg
  * bridge from the parsed tactic to the kernel/engine layer.
  * ============================================================================ */
 
-static TacticResult *_interpret_primitive(MEngineRuntime *rt, Expression *goal, Tactic *tac) {
-    (void)rt;
+static TacticResult *_interpret_primitive(MEngineRuntime *_, Expression *goal, Tactic *tac) {
     Context *ctx = kernel_expr_context(goal);
 
     switch (tac->tag) {
@@ -524,7 +526,8 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                     // NULL new_goals means the tactic produced a pure value without touching
                     // the goal (e.g. TAC_PAIR, TAC_FST, TAC_SND). An empty DLL means the
                     // subgoal was actually filled with no remaining subgoals.
-                    bool subgoal_filled = right_goals != NULL && !dll_search(right_goals, subgoal);
+                    bool subgoal_filled =
+                        (right_goals != NULL && !dll_search(right_goals, subgoal)) != 0;
                     if (right_goals) {
                         all_goals = dll_merge(all_goals, right_goals);
                         right_result->new_goals = NULL;  // consumed by merge
@@ -579,7 +582,13 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             dll_insert_at_tail(current_goals, dll_new_node(goal));
 
             bool made_progress = true;
+            int _repeat_iter = 0;
             while (made_progress) {
+                _repeat_iter++;
+                if (_repeat_iter > 1000000) {
+                    fprintf(stderr, "[repeat] EXCEEDED 1M iterations, aborting\n");
+                    break;
+                }
                 made_progress = false;
                 DoublyLinkedList *next_goals = dll_create();
 
@@ -593,7 +602,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                         DoublyLinkedList *new_goals = tactic_result_get_goals(result);
                         // NULL new_goals means pure value computation, g not filled.
                         // An empty DLL means g was filled with no remaining subgoals.
-                        bool g_filled = new_goals != NULL && !dll_search(new_goals, g);
+                        bool g_filled = (new_goals != NULL && !dll_search(new_goals, g)) != 0;
                         if (new_goals) {
                             next_goals = dll_merge(next_goals, new_goals);
                             result->new_goals = NULL;  // consumed by merge
@@ -714,7 +723,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                         PatternBindings trial = bindings;
                         // Try matching this hypothesis type
                         if (_match_pattern(hp->type, hyp_type, &trial)) {
-                            // Match succeeded — record the binding
+                            // Match succeeded - record the binding
                             bindings = trial;
                             hyp_param_names =
                                 realloc(hyp_param_names, sizeof(char *) * (hyp_param_count + 1));
@@ -1132,6 +1141,9 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             }
             return init_tactic_result_value(tactic_value_expr(term));
         }
+        case TAC_DISPATCH:
+        case TAC_SHELVE:
+            break;
     }
 
     return init_tactic_result(false, NULL, "Unknown tactic expression");

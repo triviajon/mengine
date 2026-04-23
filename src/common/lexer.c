@@ -93,13 +93,13 @@ char *skip_comment(Lexer *lx) {
 
 char next_char(Lexer *lx) { return lx->src[lx->pos++]; }
 
-bool is_alpha(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); }
+bool is_alpha(char c) { return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) != 0; }
 
-bool is_digit(char c) { return (c >= '0' && c <= '9'); }
+bool is_digit(char c) { return (c >= '0' && c <= '9') != 0; }
 
-bool is_ident_start(char c) { return is_alpha(c) || c == '_' || c == '\''; }
+bool is_ident_start(char c) { return (is_alpha(c) || c == '_' || c == '\'') != 0; }
 
-bool is_ident_continue(char c) { return is_ident_start(c) || is_digit(c); }
+bool is_ident_continue(char c) { return (is_ident_start(c) || is_digit(c)) != 0; }
 
 Token *make_token(TokenType type, int pos, char *lexeme) {
     Token *token = (Token *)malloc(sizeof(Token));
