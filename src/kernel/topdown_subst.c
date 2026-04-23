@@ -1,459 +1,231 @@
-
-#include <limits.h>
-#include <stddef.h>
 #include <stdlib.h>
 
 #include "src/common/doubly_linked_list.h"
 #include "src/kernel/beta_reduction.h"
 #include "src/kernel/context.h"
 #include "src/kernel/expression.h"
-#include "src/kernel/expression_hash.h"
 #include "src/kernel/subst.h"
 
-#ifdef TUNE_SUBST_TOPDOWN
+// #ifdef TUNE_SUBST_TOPDOWN
 
-/* =========================================================================
- * Substitution map: a parallel list of (old -> new) pairs.
- * We push/pop by manipulating the DLL tails directly.
- * ========================================================================= */
+/*
+ * _p_subst - substitute old_exprs[i] -> new_exprs[i] in t.
+ *
+ * context  : the result context (already cut / transformed by caller)
+ * t        : expression to substitute into
+ * old_exprs, new_exprs : parallel lists of equal length
+ *
+ * Early-exit optimisation: before descending, check whether any substitution
+ * target appears in t's context chain. If none do, no target is in scope
+ * anywhere in the subtree and we return t unchanged.
+ */
+static Expression *_p_subst(Context *context, Expression *t, DoublyLinkedList *old_exprs,
+                            DoublyLinkedList *new_exprs);
 
-static Expression *subst_map_lookup(DoublyLinkedList *old_exprs, DoublyLinkedList *new_exprs,
-                                    Expression *node) {
-    DLLNode *o = old_exprs->head;
-    DLLNode *n = new_exprs->head;
-    while (o != NULL) {
-        if ((Expression *)o->data == node) {
-            return (Expression *)n->data;
+static Expression *_p_subst(Context *context, Expression *t, DoublyLinkedList *old_exprs,
+                            DoublyLinkedList *new_exprs) {
+    /* 1. Direct hit - t itself is a substitution target. */
+    DLLNode *curr_old = old_exprs->head;
+    DLLNode *curr_new = new_exprs->head;
+    bool any_in_scope = false;
+    Context *t_ctx = get_expression_context(t);
+
+    while (curr_old != NULL) {
+        if (t == (Expression *)curr_old->data) {
+            return (Expression *)curr_new->data;
         }
-        o = o->next;
-        n = n->next;
-    }
-    return NULL;
-}
-
-/* Compute the minimum ctx_size across all entries in old_exprs. */
-static int subst_map_min_depth(DoublyLinkedList *old_exprs) {
-    int min = INT_MAX;
-    DLLNode *n = old_exprs->head;
-    while (n != NULL) {
-        int d = ((Expression *)n->data)->ctx_size;
-        if (d < min) {
-            min = d;
+        if (!any_in_scope && context_find(t_ctx, (Expression *)curr_old->data) != NULL) {
+            any_in_scope = true;
         }
-        n = n->next;
-    }
-    return min == INT_MAX ? 0 : min;
-}
-
-/* =========================================================================
- * Core recursive substitution
- * ========================================================================= */
-
-/* min_depth: minimum ctx_size across all current substitution targets.
- * If node->ctx_size < min_depth, no target is in scope in this subtree. */
-static Expression *_td_p_subst(Context *ctx, Expression *node, DoublyLinkedList *old_exprs,
-                               DoublyLinkedList *new_exprs, int min_depth);
-
-static Expression *_td_p_subst(Context *ctx, Expression *node, DoublyLinkedList *old_exprs,
-                               DoublyLinkedList *new_exprs, int min_depth) {
-    if (node == NULL) {
-        return NULL;
+        curr_old = curr_old->next;
+        curr_new = curr_new->next;
     }
 
-    /* 1. Depth early exit: no target is in scope in this subtree. */
-    if (node->ctx_size < min_depth) {
-        return node;
+    /* 2. Early exit - no target is in scope in this subtree. */
+    if (!any_in_scope) {
+        return t;
     }
 
-    /* 2. Substitution target? */
-    Expression *repl = subst_map_lookup(old_exprs, new_exprs, node);
-    if (repl != NULL) {
-        return repl;
-    }
-
-    switch (node->tag) {
-        case APP_EXPRESSION: {
-            Expression *func = node->as.app.func;
-            Expression *arg = node->as.app.arg;
-            Expression *func2 = _td_p_subst(ctx, func, old_exprs, new_exprs, min_depth);
-            Expression *arg2 = _td_p_subst(ctx, arg, old_exprs, new_exprs, min_depth);
-            if (func2 == NULL || arg2 == NULL) {
-                return NULL;
-            }
-
-            /* Fast-path: if the canonical (minimum-valid) context version of
-             * APP(func2, arg2) already exists in the intern table, reuse it.
-             * This restores structural sharing lost when new_subst creates APP
-             * nodes with inner-binder contexts instead of the shallowest valid
-             * context.  The canonical entry (built with a shallower context)
-             * has a smaller ctx_size, which lets the early-exit fire correctly
-             * for future new_subst calls. */
-#ifndef DISABLE_HASH_CONSING
-            {
-                Expression probe = {0};
-                probe.tag = APP_EXPRESSION;
-                probe.context = ctx;
-                probe.as.app.func = func2;
-                probe.as.app.arg = arg2;
-                Expression *cached = expression_intern_lookup(&probe);
-                if (cached != NULL) {
-                    return cached;
-                }
-            }
-#endif
-
-            Context *app_ctx = ctx;
-            if (!valid_in_context(func2, app_ctx) || !valid_in_context(arg2, app_ctx)) {
-                Context *node_ctx = get_expression_context(node);
-                Expression *mapped_node_ctx_expr =
-                    subst_map_lookup(old_exprs, new_exprs, (Expression *)node_ctx);
-                Context *mapped_node_ctx = (Context *)mapped_node_ctx_expr;
-
-                if (mapped_node_ctx != NULL && valid_in_context(func2, mapped_node_ctx) &&
-                    valid_in_context(arg2, mapped_node_ctx)) {
-                    app_ctx = mapped_node_ctx;
-                } else if (valid_in_context(func2, node_ctx) && valid_in_context(arg2, node_ctx)) {
-                    app_ctx = node_ctx;
-                } else {
-                    Context *arg_ctx = get_expression_context(arg2);
-                    Context *func_ctx = get_expression_context(func2);
-                    if (valid_in_context(func2, arg_ctx) && valid_in_context(arg2, arg_ctx)) {
-                        app_ctx = arg_ctx;
-                    } else if (valid_in_context(func2, func_ctx) &&
-                               valid_in_context(arg2, func_ctx)) {
-                        app_ctx = func_ctx;
-                    } else {
-                        return NULL;
-                    }
-                }
-            }
-
-            if (func2 == func && arg2 == arg && app_ctx == get_expression_context(node)) {
-                return node;
-            }
-            if (forms_beta_redex(func2, arg2)) {
-                return beta_reduce(app_ctx, func2, arg2);
-            }
-            return init_app_expression_wc(func2, arg2, app_ctx);
-        }
+    switch (t->tag) {
+        case VAR_EXPRESSION:
+        case HOLE_EXPRESSION:
+            return t;
 
         case LAMBDA_EXPRESSION: {
-            Expression *bv = node->as.lambda.bound_variable;
-            Expression *bv_type = get_expression_type(bv);
-            Expression *body = node->as.lambda.body;
+            Expression *x_bv = get_lambda_bound_variable(t);
+            Expression *x_bv_type = get_expression_type(x_bv);
+            Expression *body = get_lambda_body(t);
 
-            Expression *bv_type2 = _td_p_subst(ctx, bv_type, old_exprs, new_exprs, min_depth);
-            if (bv_type2 == NULL) {
-                return NULL;
-            }
+            Expression *x_bv_type2 = _p_subst(context, x_bv_type, old_exprs, new_exprs);
+            Expression *x_bv2 = init_var_expression_wc(get_var_name(x_bv), x_bv_type2, context);
 
-            Expression *bv2;
-            bool bv_changed;
-            if (bv_type2 == bv_type && ctx == get_expression_context(bv)) {
-                bv2 = bv;
-                bv_changed = false;
-            } else {
-                bv2 = init_var_expression_wc(get_var_name(bv), bv_type2, ctx);
-                bv_changed = (bv2 != bv);
-            }
+            /* Extend substitution map with binder renaming. */
+            dll_insert_at_tail(old_exprs, dll_new_node(x_bv));
+            dll_insert_at_tail(new_exprs, dll_new_node(x_bv2));
 
-            int body_min = min_depth;
-            if (bv_changed) {
-                dll_insert_at_tail(old_exprs, dll_new_node(bv));
-                dll_insert_at_tail(new_exprs, dll_new_node(bv2));
-                if (bv->ctx_size < body_min) {
-                    body_min = bv->ctx_size;
-                }
-            }
-            Expression *body2 = _td_p_subst((Context *)bv2, body, old_exprs, new_exprs, body_min);
-            if (bv_changed) {
-                free(dll_remove_tail(old_exprs));
-                free(dll_remove_tail(new_exprs));
-            }
+            Expression *body2 = _p_subst((Context *)x_bv2, body, old_exprs, new_exprs);
 
-            if (body2 == NULL) {
-                return NULL;
-            }
+            dll_remove_tail(old_exprs);
+            dll_remove_tail(new_exprs);
 
-            if (!bv_changed && body2 == body) {
-                return node;
+            if (x_bv2 == x_bv && body2 == body) {
+                return t;
             }
-            return init_lambda_expression_wc(bv2, body2);
+            return init_lambda_expression_wc(x_bv2, body2);
         }
 
         case FORALL_EXPRESSION: {
-            Expression *bv = node->as.forall.bound_variable;
-            Expression *bv_type = get_expression_type(bv);
-            Expression *body = node->as.forall.body;
+            Expression *x_bv = get_forall_bound_variable(t);
+            Expression *x_bv_type = get_expression_type(x_bv);
+            Expression *body = get_forall_body(t);
 
-            Expression *bv_type2 = _td_p_subst(ctx, bv_type, old_exprs, new_exprs, min_depth);
-            if (bv_type2 == NULL) {
-                return NULL;
-            }
+            Expression *x_bv_type2 = _p_subst(context, x_bv_type, old_exprs, new_exprs);
+            Expression *x_bv2 = init_var_expression_wc(get_var_name(x_bv), x_bv_type2, context);
 
-            Expression *bv2;
-            bool bv_changed;
-            if (bv_type2 == bv_type && ctx == get_expression_context(bv)) {
-                bv2 = bv;
-                bv_changed = false;
-            } else {
-                bv2 = init_var_expression_wc(get_var_name(bv), bv_type2, ctx);
-                bv_changed = (bv2 != bv);
-            }
+            dll_insert_at_tail(old_exprs, dll_new_node(x_bv));
+            dll_insert_at_tail(new_exprs, dll_new_node(x_bv2));
 
-            int body_min = min_depth;
-            if (bv_changed) {
-                dll_insert_at_tail(old_exprs, dll_new_node(bv));
-                dll_insert_at_tail(new_exprs, dll_new_node(bv2));
-                if (bv->ctx_size < body_min) {
-                    body_min = bv->ctx_size;
-                }
-            }
-            Expression *body2 = _td_p_subst((Context *)bv2, body, old_exprs, new_exprs, body_min);
-            if (bv_changed) {
-                free(dll_remove_tail(old_exprs));
-                free(dll_remove_tail(new_exprs));
-            }
+            Expression *body2 = _p_subst((Context *)x_bv2, body, old_exprs, new_exprs);
 
-            if (body2 == NULL) {
-                return NULL;
-            }
+            dll_remove_tail(old_exprs);
+            dll_remove_tail(new_exprs);
 
-            if (!bv_changed && body2 == body) {
-                return node;
+            if (x_bv2 == x_bv && body2 == body) {
+                return t;
             }
-            return init_forall_expression_wc(bv2, body2);
+            return init_forall_expression_wc(x_bv2, body2);
         }
 
-        case FIX_EXPRESSION: {
-            Expression *rec_var = node->as.fix.recursive_var;
-            Expression *rec_var_type = get_expression_type(rec_var);
-            int arg_count = node->as.fix.arg_count;
+        case APP_EXPRESSION: {
+            Expression *func = get_app_func(t);
+            Expression *arg = get_app_arg(t);
+            Expression *func2 = _p_subst(context, func, old_exprs, new_exprs);
+            Expression *arg2 = _p_subst(context, arg, old_exprs, new_exprs);
 
-            Expression *rec_var_type2 =
-                _td_p_subst(ctx, rec_var_type, old_exprs, new_exprs, min_depth);
-            if (rec_var_type2 == NULL) {
-                return NULL;
+            if (func2 == func && arg2 == arg && valid_in_context(t, context)) {
+                return t;
             }
-            Expression *rec_var2 =
-                (rec_var_type2 == rec_var_type && ctx == get_expression_context(rec_var))
-                    ? rec_var
-                    : init_var_expression_wc(get_var_name(rec_var), rec_var_type2, ctx);
-            if (rec_var2 == NULL) {
-                return NULL;
+            if (forms_beta_redex(func2, arg2)) {
+                return beta_reduce(context, func2, arg2);
             }
-            bool rv_changed = (rec_var2 != rec_var);
-            int fix_min = min_depth;
-            if (rv_changed) {
-                dll_insert_at_tail(old_exprs, dll_new_node(rec_var));
-                dll_insert_at_tail(new_exprs, dll_new_node(rec_var2));
-                if (rec_var->ctx_size < fix_min) {
-                    fix_min = rec_var->ctx_size;
-                }
-            }
-
-            Expression **args2 = malloc(arg_count * sizeof(Expression *));
-            bool any_arg_changed = false;
-            Context *extended_ctx = (Context *)rec_var2;
-            for (int i = 0; i < arg_count; i++) {
-                Expression *old_arg = node->as.fix.args[i];
-                Expression *old_arg_type = get_expression_type(old_arg);
-                Expression *new_arg_type =
-                    _td_p_subst(extended_ctx, old_arg_type, old_exprs, new_exprs, fix_min);
-                if (new_arg_type == NULL) {
-                    free(args2);
-                    if (rv_changed) {
-                        free(dll_remove_tail(old_exprs));
-                        free(dll_remove_tail(new_exprs));
-                    }
-                    return NULL;
-                }
-                Expression *new_arg =
-                    (new_arg_type == old_arg_type &&
-                     extended_ctx == get_expression_context(old_arg))
-                        ? old_arg
-                        : init_var_expression_wc(get_var_name(old_arg), new_arg_type, extended_ctx);
-                if (new_arg == NULL) {
-                    free(args2);
-                    if (rv_changed) {
-                        free(dll_remove_tail(old_exprs));
-                        free(dll_remove_tail(new_exprs));
-                    }
-                    return NULL;
-                }
-                args2[i] = new_arg;
-                if (new_arg != old_arg) {
-                    any_arg_changed = true;
-                    dll_insert_at_tail(old_exprs, dll_new_node(old_arg));
-                    dll_insert_at_tail(new_exprs, dll_new_node(new_arg));
-                    if (old_arg->ctx_size < fix_min) {
-                        fix_min = old_arg->ctx_size;
-                    }
-                }
-                extended_ctx = (Context *)new_arg;
-            }
-
-            Expression *body2 =
-                _td_p_subst(extended_ctx, node->as.fix.body, old_exprs, new_exprs, fix_min);
-
-            for (int i = arg_count - 1; i >= 0; i--) {
-                if (args2[i] != node->as.fix.args[i]) {
-                    free(dll_remove_tail(old_exprs));
-                    free(dll_remove_tail(new_exprs));
-                }
-            }
-            if (rv_changed) {
-                free(dll_remove_tail(old_exprs));
-                free(dll_remove_tail(new_exprs));
-            }
-
-            if (body2 == NULL) {
-                free(args2);
-                return NULL;
-            }
-
-            if (!rv_changed && !any_arg_changed && body2 == node->as.fix.body) {
-                free(args2);
-                return node;
-            }
-            return init_fix_expression_wc(rec_var2, args2, arg_count,
-                                          node->as.fix.decreasing_arg_index, body2);
+            return init_app_expression_wc(func2, arg2, context);
         }
 
         case MATCH_EXPRESSION: {
-            Expression *scrutinee = node->as.match.scrutinee;
-            int branch_cnt = node->as.match.branch_count;
+            Expression *scrutinee2 = _p_subst(context, t->as.match.scrutinee, old_exprs, new_exprs);
+            int branch_count = t->as.match.branch_count;
+            MatchBranch **branches2 = malloc(branch_count * sizeof(MatchBranch *));
+            bool any_changed = (scrutinee2 != t->as.match.scrutinee);
 
-            Expression *scrutinee2 = _td_p_subst(ctx, scrutinee, old_exprs, new_exprs, min_depth);
-            if (scrutinee2 == NULL) {
-                return NULL;
-            }
-
-            MatchBranch **branches2 = malloc(branch_cnt * sizeof(MatchBranch *));
-            bool any_branch_changed = (scrutinee2 != scrutinee);
-
-            for (int i = 0; i < branch_cnt; i++) {
-                MatchBranch *br = node->as.match.branches[i];
+            for (int i = 0; i < branch_count; i++) {
+                MatchBranch *br = t->as.match.branches[i];
                 MatchBranch *br2 = malloc(sizeof(MatchBranch));
 
-                br2->constructor =
-                    _td_p_subst(ctx, br->constructor, old_exprs, new_exprs, min_depth);
-                if (br2->constructor == NULL) {
-                    free(br2);
-                    for (int k = 0; k < i; k++) {
-                        free(branches2[k]->pattern_variables);
-                        free(branches2[k]);
-                    }
-                    free(branches2);
-                    return NULL;
-                }
+                br2->constructor = _p_subst(context, br->constructor, old_exprs, new_exprs);
                 br2->pattern_var_count = br->pattern_var_count;
                 br2->pattern_variables = malloc(br->pattern_var_count * sizeof(Expression *));
-                Context *branch_ctx = ctx;
-                int branch_min = min_depth;
 
+                Context *ext_ctx = context;
                 for (int j = 0; j < br->pattern_var_count; j++) {
                     Expression *old_pv = br->pattern_variables[j];
                     Expression *old_pv_type = get_expression_type(old_pv);
-                    Expression *new_pv_type =
-                        _td_p_subst(branch_ctx, old_pv_type, old_exprs, new_exprs, branch_min);
-                    if (new_pv_type == NULL) {
-                        free(br2->pattern_variables);
-                        free(br2);
-                        for (int k = 0; k < i; k++) {
-                            free(branches2[k]->pattern_variables);
-                            free(branches2[k]);
-                        }
-                        free(branches2);
-                        return NULL;
-                    }
+                    Expression *new_pv_type = _p_subst(ext_ctx, old_pv_type, old_exprs, new_exprs);
                     Expression *new_pv =
-                        (new_pv_type == old_pv_type && branch_ctx == get_expression_context(old_pv))
-                            ? old_pv
-                            : init_var_expression_wc(get_var_name(old_pv), new_pv_type, branch_ctx);
-                    if (new_pv == NULL) {
-                        free(br2->pattern_variables);
-                        free(br2);
-                        for (int k = 0; k < i; k++) {
-                            free(branches2[k]->pattern_variables);
-                            free(branches2[k]);
-                        }
-                        free(branches2);
-                        return NULL;
-                    }
+                        init_var_expression_wc(get_var_name(old_pv), new_pv_type, ext_ctx);
                     br2->pattern_variables[j] = new_pv;
-                    if (new_pv != old_pv) {
-                        dll_insert_at_tail(old_exprs, dll_new_node(old_pv));
-                        dll_insert_at_tail(new_exprs, dll_new_node(new_pv));
-                        if (old_pv->ctx_size < branch_min) {
-                            branch_min = old_pv->ctx_size;
-                        }
-                    }
-                    branch_ctx = (Context *)new_pv;
+
+                    dll_insert_at_tail(old_exprs, dll_new_node(old_pv));
+                    dll_insert_at_tail(new_exprs, dll_new_node(new_pv));
+                    ext_ctx = (Context *)new_pv;
                 }
 
-                br2->body = _td_p_subst(branch_ctx, br->body, old_exprs, new_exprs, branch_min);
-                if (br2->body == NULL) {
-                    for (int j = br->pattern_var_count - 1; j >= 0; j--) {
-                        if (br2->pattern_variables[j] != br->pattern_variables[j]) {
-                            free(dll_remove_tail(old_exprs));
-                            free(dll_remove_tail(new_exprs));
-                        }
-                    }
-                    free(br2->pattern_variables);
-                    free(br2);
-                    for (int k = 0; k < i; k++) {
-                        free(branches2[k]->pattern_variables);
-                        free(branches2[k]);
-                    }
-                    free(branches2);
-                    return NULL;
-                }
+                br2->body = _p_subst(ext_ctx, br->body, old_exprs, new_exprs);
 
-                for (int j = br->pattern_var_count - 1; j >= 0; j--) {
-                    if (br2->pattern_variables[j] != br->pattern_variables[j]) {
-                        free(dll_remove_tail(old_exprs));
-                        free(dll_remove_tail(new_exprs));
-                    }
+                /* Pop the pattern variable entries we pushed. */
+                for (int j = 0; j < br->pattern_var_count; j++) {
+                    dll_remove_tail(old_exprs);
+                    dll_remove_tail(new_exprs);
                 }
 
                 if (br2->constructor != br->constructor || br2->body != br->body) {
-                    any_branch_changed = true;
+                    any_changed = true;
                 }
                 for (int j = 0; j < br->pattern_var_count; j++) {
                     if (br2->pattern_variables[j] != br->pattern_variables[j]) {
-                        any_branch_changed = true;
+                        any_changed = true;
                         break;
                     }
                 }
                 branches2[i] = br2;
             }
 
-            if (!any_branch_changed) {
-                for (int i = 0; i < branch_cnt; i++) {
+            if (!any_changed) {
+                for (int i = 0; i < branch_count; i++) {
                     free(branches2[i]->pattern_variables);
                     free(branches2[i]);
                 }
                 free(branches2);
-                return node;
+                return t;
             }
-            return init_match_expression_wc(scrutinee2, branches2, branch_cnt, ctx);
+            return init_match_expression_wc(scrutinee2, branches2, branch_count, context);
+        }
+
+        case FIX_EXPRESSION: {
+            Expression *rec_var = t->as.fix.recursive_var;
+            Expression *rec_var_type2 =
+                _p_subst(context, get_expression_type(rec_var), old_exprs, new_exprs);
+            Expression *rec_var2 =
+                init_var_expression_wc(get_var_name(rec_var), rec_var_type2, context);
+
+            dll_insert_at_tail(old_exprs, dll_new_node(rec_var));
+            dll_insert_at_tail(new_exprs, dll_new_node(rec_var2));
+
+            int arg_count = t->as.fix.arg_count;
+            Expression **args2 = malloc(arg_count * sizeof(Expression *));
+            Context *ext_ctx = (Context *)rec_var2;
+
+            for (int i = 0; i < arg_count; i++) {
+                Expression *old_arg = t->as.fix.args[i];
+                Expression *new_arg_type =
+                    _p_subst(ext_ctx, get_expression_type(old_arg), old_exprs, new_exprs);
+                Expression *new_arg =
+                    init_var_expression_wc(get_var_name(old_arg), new_arg_type, ext_ctx);
+                args2[i] = new_arg;
+                dll_insert_at_tail(old_exprs, dll_new_node(old_arg));
+                dll_insert_at_tail(new_exprs, dll_new_node(new_arg));
+                ext_ctx = (Context *)new_arg;
+            }
+
+            Expression *body2 = _p_subst(ext_ctx, t->as.fix.body, old_exprs, new_exprs);
+
+            /* Pop args + rec_var entries. */
+            for (int i = 0; i < arg_count; i++) {
+                dll_remove_tail(old_exprs);
+                dll_remove_tail(new_exprs);
+            }
+            dll_remove_tail(old_exprs);
+            dll_remove_tail(new_exprs);
+
+            if (rec_var2 == rec_var && body2 == t->as.fix.body) {
+                bool args_same = true;
+                for (int i = 0; i < arg_count; i++) {
+                    if (args2[i] != t->as.fix.args[i]) {
+                        args_same = false;
+                        break;
+                    }
+                }
+                if (args_same) {
+                    free(args2);
+                    return t;
+                }
+            }
+            return init_fix_expression_wc(rec_var2, args2, arg_count,
+                                          t->as.fix.decreasing_arg_index, body2);
         }
 
         default:
-            /* VAR, TYPE, PROP, HOLE: leaves - not the target, return unchanged. */
-            return node;
+            return t;
     }
-}
-
-/* =========================================================================
- * Public API (same signatures as the uplink version)
- * ========================================================================= */
-
-Expression *_p_subst(Context *context, Expression *t, DoublyLinkedList *old_exprs,
-                     DoublyLinkedList *new_exprs) {
-    int min_depth = subst_map_min_depth(old_exprs);
-    return _td_p_subst(context, t, old_exprs, new_exprs, min_depth);
 }
 
 Expression *new_p_subst(Context *context, Expression *t, DoublyLinkedList *old_exprs,
@@ -465,24 +237,36 @@ Expression *new_p_subst(Context *context, Expression *t, DoublyLinkedList *old_e
     if (n == 0) {
         return t;
     }
-    int min_depth = subst_map_min_depth(old_exprs);
-    return _td_p_subst(context, t, old_exprs, new_exprs, min_depth);
+    return _p_subst(context, t, old_exprs, new_exprs);
 }
 
+/*
+ * _subst - single substitution t[x->a].
+ * Caller is responsible for context cutting; context here is the result context.
+ */
 Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a) {
     if (t == x) {
         return a;
     }
+
     DoublyLinkedList *old_exprs = dll_create();
     DoublyLinkedList *new_exprs = dll_create();
     dll_insert_at_tail(old_exprs, dll_new_node(x));
     dll_insert_at_tail(new_exprs, dll_new_node(a));
-    Expression *result = _td_p_subst(context, t, old_exprs, new_exprs, x->ctx_size);
+
+    Expression *result = _p_subst(context, t, old_exprs, new_exprs);
+
     dll_destroy(old_exprs);
     dll_destroy(new_exprs);
     return result;
 }
 
+/*
+ * new_subst - single substitution with automatic context cutting.
+ *
+ * Decomposes context into gamma, x:A, delta, computes delta[x->a],
+ * then performs the full parallel substitution t[x->a, d_i->d_i'].
+ */
 Expression *new_subst(Context *context, Expression *t, Expression *x, Expression *a) {
     Context *final_context = context_cut(context, x, a);
 
@@ -492,6 +276,7 @@ Expression *new_subst(Context *context, Expression *t, Expression *x, Expression
     dll_insert_at_tail(old_exprs, dll_new_node(x));
     dll_insert_at_tail(new_exprs, dll_new_node(a));
 
+    /* Walk both context spines in parallel to collect delta -> delta' pairs. */
     Context *orig = context;
     Context *fin = final_context;
     while (orig != fin && orig != x) {
@@ -501,18 +286,22 @@ Expression *new_subst(Context *context, Expression *t, Expression *x, Expression
         fin = get_expression_context(fin);
     }
 
-    int min_depth = subst_map_min_depth(old_exprs);
-    Expression *result = _td_p_subst(final_context, t, old_exprs, new_exprs, min_depth);
+    Expression *result = _p_subst(final_context, t, old_exprs, new_exprs);
 
     dll_destroy(old_exprs);
     dll_destroy(new_exprs);
     return result;
 }
 
+/*
+ * beta_subst - like new_subst but for beta reduction.
+ *
+ * The bound variable being substituted away is private to the lambda body
+ * (no external uplinks), so context_cut is equivalent to new_subst here.
+ * Kept as a separate entry point to make call sites self-documenting.
+ */
 Expression *beta_subst(Context *context, Expression *t, Expression *x, Expression *a) {
-    /* For beta reduction the bound variable is always private to the lambda
-       body, so new_subst and beta_subst are equivalent here. */
     return new_subst(context, t, x, a);
 }
 
-#endif  // TUNE_SUBST_TOPDOWN
+// #endif  // TUNE_SUBST_TOPDOWN
