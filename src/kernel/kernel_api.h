@@ -114,6 +114,38 @@ void *kernel_match_branch_create(Expression *constructor, Expression **pattern_v
 void kernel_match_branch_free(void *branch);
 
 /**
+ * Free a kernel expression via the uplink-based ref-counting teardown.
+ * Suitable for freeing the top-level runtime context on shutdown.
+ */
+void kernel_expr_free(Expression *expr);
+
+/**
+ * Free an expression (and all its unique descendants) without touching nodes
+ * reachable from ctx.  Use instead of kernel_expr_free when the expression
+ * shares children (e.g. context variables) with the live context chain.
+ * Pass NULL for b when freeing a single expression.
+ */
+void kernel_expr_free_excluding_ctx(Expression *a, Expression *b, Context *ctx);
+
+/**
+ * Free a filled hole expression without cascading into children.
+ * Only safe to call on holes that have been filled via kernel_hole_fill.
+ */
+void kernel_free_filled_hole(Expression *hole);
+
+/**
+ * Free the context chain from leaf to root. Since context is a non-owning
+ * edge, the chain must be freed explicitly. Stops at EMPTY_CONTEXT.
+ */
+void kernel_context_free(Context *ctx);
+
+/**
+ * Return true if expr is one of the nodes directly in the context chain,
+ * i.e. reachable from ctx by following ->context pointers.
+ */
+bool kernel_context_contains(Context *ctx, Expression *expr);
+
+/**
  * Create a match expression from a scrutinee and a list of branches.
  * Time Complexity:
  *
@@ -685,5 +717,14 @@ char *kernel_expr_to_string(Expression *expr);
  * @return
  */
 char *kernel_context_to_string(Context *context);
+
+/**
+ * Convert a context to a string, stopping at the given context.
+ * Time Complexity:
+ * @param context
+ * @param until
+ * @return
+ */
+char *kernel_context_to_string_until(Context *context, Context *until);
 
 #endif  // KERNEL_API_H

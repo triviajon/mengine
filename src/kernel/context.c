@@ -1,5 +1,7 @@
 #include "src/kernel/context.h"
 
+#include <stdlib.h>
+
 #include "src/kernel/expression.h"
 #include "src/kernel/subst.h"
 
@@ -54,10 +56,6 @@ bool context_is_ancestor(Expression *contextA, Expression *contextB) {
 }
 
 Expression *context_find(Expression *context, Expression *var) {
-    /**
-     * @very future me, I think a vEB tree could be used to do this in O(1)
-     */
-
     Expression *curr = context;
     while (!context_is_empty(curr)) {
         if (curr == var) {

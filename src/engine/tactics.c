@@ -32,7 +32,9 @@ static Expression *intro_step(Expression *goal, char *name, char **error_out) {
     Expression *A = kernel_expr_type(x);
     Expression *B = kernel_forall_body(goal_ty);
 
-    Expression *x_prime = kernel_var_create(name, A, kernel_expr_context(goal));
+    // If no name provided, use the bound variable name from the forall type
+    char *intro_name = name ? name : kernel_var_name(x);
+    Expression *x_prime = kernel_var_create(intro_name, A, kernel_expr_context(goal));
     Expression *B_prime = kernel_subst(x_prime, B, x, x_prime);
     Context *new_context = x_prime;
     Expression *new_goal = kernel_hole_create((char *)"Goal", B_prime, new_context);
@@ -96,7 +98,7 @@ TacticResult *apply_tactic(Expression *goal, Expression *lemma) {
 
     // For apply, we do not allow the unification result to have any remaining
     // open holes.
-    if (dll_len(unif_result->new_goals) != 0) {
+    if (unif_result->new_goals->head != NULL) {
         free_unification_result(unif_result);
         return init_tactic_result(false, NULL, "Apply tactic does not allow remaining open holes");
     }
@@ -112,6 +114,7 @@ TacticResult *apply_tactic(Expression *goal, Expression *lemma) {
     DoublyLinkedList *new_goals = unif_result->new_goals;
     TacticResult *result = init_tactic_result(true, new_goals, NULL);
 
+    unif_result->new_goals = NULL;  // transferred to tactic result
     free_unification_result(unif_result);
     return result;
 }
@@ -138,7 +141,8 @@ TacticResult *eapply_tactic(Expression *goal, Expression *lemma) {
     DoublyLinkedList *new_goals = unif_result->new_goals;
     TacticResult *result = init_tactic_result(true, new_goals, NULL);
 
-    free(unif_result);
+    unif_result->new_goals = NULL;  // transferred to tactic result
+    free_unification_result(unif_result);
 
     return result;
 }
@@ -212,6 +216,12 @@ TacticResult *rewrite_tactic(Expression *goal, Expression *lemma) {
         return init_tactic_result(false, NULL, "Rewriting failed");
     }
 
+    // Check if the rewrite made no progress (noop)
+    if (rwr->original == rwr->rewritten) {
+        free_rewrite_result(rwr);
+        return init_tactic_result(false, NULL, "Rewriting made no progress");
+    }
+
     // rwr gives us eq A lhs lhs' with proof pf. We now need to build the proof
     // of eq relation_over lhs rhs. We'll just use eq_trans : (forall (A: Type),
     // (forall (x: A), (forall (y: A), (forall (z: A), (forall (_: (((eq A) x)
@@ -234,7 +244,10 @@ TacticResult *rewrite_tactic(Expression *goal, Expression *lemma) {
 
     DoublyLinkedList *new_goals = dll_create();
     dll_insert_at_tail(new_goals, dll_new_node(new_goal));
-    new_goals = dll_merge(new_goals, rwr->new_goals);
+    if (rwr->new_goals) {
+        new_goals = dll_merge(new_goals, rwr->new_goals);
+        rwr->new_goals = NULL;  // transferred ownership
+    }
 
     if (!kernel_hole_fill(goal, proof_of_goal)) {
         free_rewrite_result(rwr);
@@ -282,6 +295,12 @@ TacticResult *erewrite_tactic(Expression *goal, Expression *lemma) {
         return init_tactic_result(false, NULL, "Rewriting failed");
     }
 
+    // Check if the rewrite made no progress (noop)
+    if (rwr->original == rwr->rewritten) {
+        free_rewrite_result(rwr);
+        return init_tactic_result(false, NULL, "Rewriting made no progress");
+    }
+
     // rwr gives us eq A lhs lhs' with proof pf. We now need to build the proof
     // of eq relation_over lhs rhs. We'll just use eq_trans : (forall (A: Type),
     // (forall (x: A), (forall (y: A), (forall (z: A), (forall (_: (((eq A) x)
@@ -304,7 +323,10 @@ TacticResult *erewrite_tactic(Expression *goal, Expression *lemma) {
 
     DoublyLinkedList *new_goals = dll_create();
     dll_insert_at_tail(new_goals, dll_new_node(new_goal));
-    new_goals = dll_merge(new_goals, rwr->new_goals);
+    if (rwr->new_goals) {
+        new_goals = dll_merge(new_goals, rwr->new_goals);
+        rwr->new_goals = NULL;  // transferred ownership
+    }
 
     if (!kernel_hole_fill(goal, proof_of_goal)) {
         free_rewrite_result(rwr);
@@ -350,5 +372,51 @@ TacticResult *cbv_tactic(Expression *goal, char **rules, int rule_count) {
 
     DoublyLinkedList *new_goals = dll_create();
     dll_insert_at_tail(new_goals, dll_new_node(new_goal));
+    return init_tactic_result(true, new_goals, NULL);
+}
+
+TacticResult *reflexivity_tactic(Expression *goal) { return apply_tactic(goal, eq_refl); }
+
+TacticResult *split_tactic(Expression *goal) { return eapply_tactic(goal, prop_conj); }
+
+TacticResult *left_tactic(Expression *goal) { return eapply_tactic(goal, or_introl); }
+
+TacticResult *right_tactic(Expression *goal) { return eapply_tactic(goal, or_intror); }
+
+TacticResult *exists_tactic(Expression *goal, Expression *witness) {
+    if (!kernel_expr_is_hole(goal)) {
+        return init_tactic_result(false, NULL, "Goal is not a hole");
+    }
+
+    Expression *goal_ty = kernel_expr_type(goal);
+    Context *ctx = kernel_expr_context(goal);
+
+    /* goal_ty should be  ex A P  i.e.  (ex A) P */
+    Expression *ex_A = kernel_app_func(goal_ty);
+    if (!ex_A) {
+        return init_tactic_result(false, NULL, "Goal type is not an application");
+    }
+    Expression *P = kernel_app_arg(goal_ty);
+    Expression *A = kernel_app_arg(ex_A);
+    if (!A || !P) {
+        return init_tactic_result(false, NULL, "Goal type is not a binary application");
+    }
+
+    /* Build subgoal: P witness */
+    Expression *P_witness = kernel_app_create(P, witness, ctx);
+    Expression *subgoal = kernel_hole_create("_", P_witness, ctx);
+
+    /* Build proof term: ex_intro A P witness subgoal */
+    Expression *proof = kernel_app_create(
+        kernel_app_create(kernel_app_create(kernel_app_create(ex_intro, A, ctx), P, ctx), witness,
+                          ctx),
+        subgoal, ctx);
+
+    if (!kernel_hole_fill(goal, proof)) {
+        return init_tactic_result(false, NULL, "Cannot fill goal with exists proof term");
+    }
+
+    DoublyLinkedList *new_goals = dll_create();
+    dll_insert_at_tail(new_goals, dll_new_node(subgoal));
     return init_tactic_result(true, new_goals, NULL);
 }

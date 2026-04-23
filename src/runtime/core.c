@@ -26,6 +26,16 @@ Expression *eq_sym = NULL;
 Expression *eq_trans = NULL;
 Expression *eq_subst = NULL;
 
+Expression *prop_and = NULL;
+Expression *prop_conj = NULL;
+
+Expression *prop_or = NULL;
+Expression *or_introl = NULL;
+Expression *or_intror = NULL;
+
+Expression *prop_ex = NULL;
+Expression *ex_intro = NULL;
+
 static Context *init_Equivalence(Context *c) {
     // Reflexive : forall (A : Type) (R : A -> A -> Prop), Prop.
     // Reflexive_Definition : forall (A : Type) (R : A -> A -> Prop), Reflexive
@@ -467,6 +477,105 @@ Expression *_get_rhs_eq(Expression *eq_expression) {
     return kernel_app_arg(eq_expression);
 }
 
+static Context *init_and_or_ex(Context *c) {
+    // and : Prop -> Prop -> Prop.
+    {
+        Expression *and_type = kernel_arrow_create(
+            kernel_prop_create(),
+            kernel_arrow_create(kernel_prop_create(), kernel_prop_create(), c), c);
+        prop_and = kernel_var_create("and", and_type, c);
+    }
+    c = prop_and;
+
+    // conj : forall (A B : Prop), A -> B -> and A B.
+    {
+        Expression *A = kernel_var_create("A", kernel_prop_create(), c);
+        Context *ctx_A = A;
+        Expression *B = kernel_var_create("B", kernel_prop_create(), ctx_A);
+        Context *ctx_B = B;
+
+        Expression *and_A_B = kernel_app_create(kernel_app_create(prop_and, A, ctx_B), B, ctx_B);
+        Expression *conj_body =
+            kernel_arrow_create(A, kernel_arrow_create(B, and_A_B, ctx_B), ctx_B);
+        Expression *conj_type = kernel_forall_create(A, kernel_forall_create(B, conj_body));
+        prop_conj = kernel_var_create("conj", conj_type, c);
+    }
+    c = prop_conj;
+
+    // or : Prop -> Prop -> Prop.
+    {
+        Expression *or_type = kernel_arrow_create(
+            kernel_prop_create(),
+            kernel_arrow_create(kernel_prop_create(), kernel_prop_create(), c), c);
+        prop_or = kernel_var_create("or", or_type, c);
+    }
+    c = prop_or;
+
+    // or_introl : forall (A B : Prop), A -> or A B.
+    {
+        Expression *A = kernel_var_create("A", kernel_prop_create(), c);
+        Context *ctx_A = A;
+        Expression *B = kernel_var_create("B", kernel_prop_create(), ctx_A);
+        Context *ctx_B = B;
+
+        Expression *or_A_B = kernel_app_create(kernel_app_create(prop_or, A, ctx_B), B, ctx_B);
+        Expression *or_introl_body = kernel_arrow_create(A, or_A_B, ctx_B);
+        Expression *or_introl_type =
+            kernel_forall_create(A, kernel_forall_create(B, or_introl_body));
+        or_introl = kernel_var_create("or_introl", or_introl_type, c);
+    }
+    c = or_introl;
+
+    // or_intror : forall (A B : Prop), B -> or A B.
+    {
+        Expression *A = kernel_var_create("A", kernel_prop_create(), c);
+        Context *ctx_A = A;
+        Expression *B = kernel_var_create("B", kernel_prop_create(), ctx_A);
+        Context *ctx_B = B;
+
+        Expression *or_A_B = kernel_app_create(kernel_app_create(prop_or, A, ctx_B), B, ctx_B);
+        Expression *or_intror_body = kernel_arrow_create(B, or_A_B, ctx_B);
+        Expression *or_intror_type =
+            kernel_forall_create(A, kernel_forall_create(B, or_intror_body));
+        or_intror = kernel_var_create("or_intror", or_intror_type, c);
+    }
+    c = or_intror;
+
+    // ex : forall (A : Type) (P : A -> Prop), Prop.
+    {
+        Expression *A = kernel_var_create("A", kernel_type_create(), c);
+        Context *ctx_A = A;
+        Expression *P =
+            kernel_var_create("P", kernel_arrow_create(A, kernel_prop_create(), ctx_A), ctx_A);
+
+        Expression *ex_type =
+            kernel_forall_create(A, kernel_forall_create(P, kernel_prop_create()));
+        prop_ex = kernel_var_create("ex", ex_type, c);
+    }
+    c = prop_ex;
+
+    // ex_intro : forall (A : Type) (P : A -> Prop) (x : A), P x -> ex A P.
+    {
+        Expression *A = kernel_var_create("A", kernel_type_create(), c);
+        Context *ctx_A = A;
+        Expression *P =
+            kernel_var_create("P", kernel_arrow_create(A, kernel_prop_create(), ctx_A), ctx_A);
+        Context *ctx_P = P;
+        Expression *x = kernel_var_create("x", A, ctx_P);
+        Context *ctx_x = x;
+
+        Expression *P_x = kernel_app_create(P, x, ctx_x);
+        Expression *ex_A_P = kernel_app_create(kernel_app_create(prop_ex, A, ctx_x), P, ctx_x);
+        Expression *ex_intro_body = kernel_arrow_create(P_x, ex_A_P, ctx_x);
+        Expression *ex_intro_type = kernel_forall_create(
+            A, kernel_forall_create(P, kernel_forall_create(x, ex_intro_body)));
+        ex_intro = kernel_var_create("ex_intro", ex_intro_type, c);
+    }
+    c = ex_intro;
+
+    return c;
+}
+
 void init_core(Context **ctx) {
     if (*ctx == NULL) {
         *ctx = kernel_context_empty();
@@ -474,4 +583,5 @@ void init_core(Context **ctx) {
     *ctx = init_Equivalence(*ctx);
     *ctx = init_Eq(*ctx);
     *ctx = init_bad_app_congruence(*ctx);
+    *ctx = init_and_or_ex(*ctx);
 }

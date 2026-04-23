@@ -1,0 +1,38 @@
+(* prop_tactics.me - demonstrates reflexivity, split, left, right, exists *)
+
+(* ── reflexivity ─────────────────────────────────────── *)
+
+Axiom A : Type.
+Axiom a : A.
+
+Theorem refl_example : eq A a a.
+reflexivity.
+
+(* ── split (conjunction) ─────────────────────────────── *)
+
+Axiom P : Prop.
+Axiom Q : Prop.
+Axiom hp : P.
+Axiom hq : Q.
+
+Theorem and_intro : and P Q.
+split; first [ exact hp | exact hq ].
+
+(* ── left / right (disjunction) ─────────────────────── *)
+
+Theorem or_left : or P Q.
+left; exact hp.
+
+Theorem or_right : or P Q.
+right; exact hq.
+
+(* ── exists ──────────────────────────────────────────── *)
+
+Axiom N : Type.
+Axiom z : N.
+Axiom R : forall (_: N), Prop.
+Axiom hr : R z.
+
+Theorem ex_example : ex N R.
+exists z.
+exact hr.

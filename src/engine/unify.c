@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 
+#include "src/kernel/normalize.h"
 #include "src/kernel/subst.h"
 #include "src/runtime/core.h"
 
@@ -71,6 +72,9 @@ int num_holes(Expression *expr) {
 }
 
 Expression *_unify2(Expression *exprA, Expression *exprB, Expression *var_to_fill) {
+    exprA = normalize_whnf(exprA);
+    exprB = normalize_whnf(exprB);
+
     if (exprA == exprB) {
         return NULL;
     }
@@ -114,6 +118,9 @@ Expression *_unify2(Expression *exprA, Expression *exprB, Expression *var_to_fil
 Expression *instantiate_lemma_with_bindings(Expression *lemma, Expression *lemma_ty,
                                             LinearMap *binders) {
     Expression *final_expr = lemma;
+    // Walk the original forall chain structurally instead of substituting at each step.
+    // init_app_expression_wc already computes the correct type via _construct_app_type;
+    // the redundant explicit new_subst for curr_forall is eliminated.
     Expression *curr_forall = lemma_ty;
     while (curr_forall->tag == FORALL_EXPRESSION) {
         Expression *binding_var = curr_forall->as.forall.bound_variable;
@@ -124,9 +131,7 @@ Expression *instantiate_lemma_with_bindings(Expression *lemma, Expression *lemma
                                ? final_expr_ctx
                                : binding_result_ctx;
         final_expr = init_app_expression_wc(final_expr, binding_result, app_ctx);
-        Expression *curr_forall_body = curr_forall->as.forall.body;
-        // curr_forall_body is closed under context(binding_var), which contains binding_var
-        curr_forall = new_subst(binding_var, curr_forall_body, binding_var, binding_result);
+        curr_forall = curr_forall->as.forall.body;  // structural advance, no substitution
     }
     return final_expr;
 }
@@ -141,27 +146,24 @@ UnificationResult *init_unification_result(Expression *lemma_instantiation,
 
 void free_unification_result(UnificationResult *unification_result) {
     if (unification_result) {
+        if (unification_result->new_goals) {
+            dll_destroy(unification_result->new_goals);
+        }
         free(unification_result);
     }
 }
 
-/**
- * Tries to unify a given lemma with an expression by instantiating the
- * universally quantified variables and attempting to find appropriate
- * substitutions. Returns a list of any remaining unfilled holes and the lemma
- * instantiation.
- */
 UnificationResult *eunify2(Expression *lemma, Expression *goal) {
     Context *goal_context = get_expression_context(goal);
-    Expression *expr = get_expression_type(goal);
+    Expression *expr = normalize_whnf(get_expression_type(goal));
 
     Expression *current_lemma_app = lemma;
     Expression *current_lemma_app_ty = get_expression_type(current_lemma_app);
     DoublyLinkedList *remaining_open = dll_create();
     while (current_lemma_app_ty->tag == FORALL_EXPRESSION) {
         Expression *bound_variable = current_lemma_app_ty->as.forall.bound_variable;
-        Expression *hole_subst =
-            _unify2(get_innermost_body(current_lemma_app_ty), expr, bound_variable);
+        Expression *lemma_target = normalize_whnf(get_innermost_body(current_lemma_app_ty));
+        Expression *hole_subst = _unify2(lemma_target, expr, bound_variable);
 
         if (hole_subst == NULL) {
             Expression *hole_to_fill = init_hole_expression(
@@ -174,6 +176,35 @@ UnificationResult *eunify2(Expression *lemma, Expression *goal) {
         }
         current_lemma_app_ty = get_expression_type(current_lemma_app);
     }
+
+    // Shelve holes that appear in other holes' types (evar-like arguments).
+    // These will be resolved via cascade fill when a dependent goal is solved.
+    DLLNode *node = remaining_open->head;
+    while (node != NULL) {
+        Expression *hole = (Expression *)node->data;
+        bool appears_in_other = false;
+        DLLNode *other = remaining_open->head;
+        while (other != NULL) {
+            if (other != node) {
+                Expression *other_hole = (Expression *)other->data;
+                Expression *other_type = get_expression_type(other_hole);
+                DoublyLinkedList *other_type_holes = list_holes(other_type);
+                if (dll_search(other_type_holes, hole) != NULL) {
+                    appears_in_other = true;
+                }
+                dll_destroy(other_type_holes);
+                if (appears_in_other) {
+                    break;
+                }
+            }
+            other = other->next;
+        }
+        if (appears_in_other) {
+            hole->as.hole.is_satisfied = true;
+        }
+        node = node->next;
+    }
+
     return init_unification_result(current_lemma_app, remaining_open);
 }
 

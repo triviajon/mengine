@@ -1,6 +1,7 @@
 #include "src/kernel/utils.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "src/common/linear_map.h"
 #include "src/kernel/context.h"
@@ -11,6 +12,15 @@ char *str_concat(const char *s1, const char *s2) {
     char *result = (char *)malloc(strlen(s1) + strlen(s2) + 1);
     strcpy(result, s1);
     strcat(result, s2);
+    return result;
+}
+
+// Like str_concat but frees s1 (use when s1 is a heap-allocated intermediate)
+static char *str_concat_free(char *s1, const char *s2) {
+    char *result = (char *)malloc(strlen(s1) + strlen(s2) + 1);
+    strcpy(result, s1);
+    strcat(result, s2);
+    free(s1);
     return result;
 }
 
@@ -38,10 +48,10 @@ char *stringify_expression(Expression *expression) {
                 stringify_expression(get_expression_type(get_lambda_bound_variable(expression)));
             char *body_str = stringify_expression(get_lambda_body(expression));
             result = str_concat("fun (", var_str);
-            result = str_concat(result, ": ");
-            result = str_concat(result, type_str);
-            result = str_concat(result, ") => ");
-            result = str_concat(result, body_str);
+            result = str_concat_free(result, ": ");
+            result = str_concat_free(result, type_str);
+            result = str_concat_free(result, ") => ");
+            result = str_concat_free(result, body_str);
             free(var_str);
             free(type_str);
             free(body_str);
@@ -52,7 +62,7 @@ char *stringify_expression(Expression *expression) {
             char *arg_str = stringify_expression(get_app_arg(expression));
 
             char *app_str = str_concat(func_str, " ");
-            app_str = str_concat(app_str, arg_str);
+            app_str = str_concat_free(app_str, arg_str);
 
             result = parenthesize_and_free(app_str);
             free(func_str);
@@ -66,10 +76,10 @@ char *stringify_expression(Expression *expression) {
                 stringify_expression(get_expression_type(get_forall_bound_variable(expression)));
             char *body_str = stringify_expression(get_forall_body(expression));
             result = str_concat("forall (", var_str);
-            result = str_concat(result, ": ");
-            result = str_concat(result, type_str);
-            result = str_concat(result, "), ");
-            result = str_concat(result, body_str);
+            result = str_concat_free(result, ": ");
+            result = str_concat_free(result, type_str);
+            result = str_concat_free(result, "), ");
+            result = str_concat_free(result, body_str);
             free(var_str);
             free(type_str);
             free(body_str);
@@ -79,31 +89,31 @@ char *stringify_expression(Expression *expression) {
         case MATCH_EXPRESSION: {
             char *scrutinee_str = stringify_expression(expression->as.match.scrutinee);
             result = str_concat("match ", scrutinee_str);
-            result = str_concat(result, " with");
+            result = str_concat_free(result, " with");
             free(scrutinee_str);
 
             for (int i = 0; i < expression->as.match.branch_count; i++) {
                 MatchBranch *branch = expression->as.match.branches[i];
-                result = str_concat(result, " | ");
+                result = str_concat_free(result, " | ");
 
                 char *ctor_str = stringify_expression(branch->constructor);
-                result = str_concat(result, ctor_str);
+                result = str_concat_free(result, ctor_str);
                 free(ctor_str);
 
                 for (int j = 0; j < branch->pattern_var_count; j++) {
-                    result = str_concat(result, " ");
+                    result = str_concat_free(result, " ");
                     char *var_str = stringify_expression(branch->pattern_variables[j]);
-                    result = str_concat(result, var_str);
+                    result = str_concat_free(result, var_str);
                     free(var_str);
                 }
 
-                result = str_concat(result, " => ");
+                result = str_concat_free(result, " => ");
                 char *body_str = stringify_expression(branch->body);
-                result = str_concat(result, body_str);
+                result = str_concat_free(result, body_str);
                 free(body_str);
             }
 
-            result = str_concat(result, " end");
+            result = str_concat_free(result, " end");
             break;
         }
 
@@ -113,34 +123,34 @@ char *stringify_expression(Expression *expression) {
             free(rec_var_str);
 
             for (int i = 0; i < expression->as.fix.arg_count; i++) {
-                result = str_concat(result, " (");
+                result = str_concat_free(result, " (");
                 char *arg_str = stringify_expression(expression->as.fix.args[i]);
-                result = str_concat(result, arg_str);
-                result = str_concat(result, ": ");
+                result = str_concat_free(result, arg_str);
+                result = str_concat_free(result, ": ");
                 char *arg_type_str =
                     stringify_expression(get_expression_type(expression->as.fix.args[i]));
-                result = str_concat(result, arg_type_str);
-                result = str_concat(result, ")");
+                result = str_concat_free(result, arg_type_str);
+                result = str_concat_free(result, ")");
                 free(arg_str);
                 free(arg_type_str);
             }
 
-            result = str_concat(result, " {struct ");
+            result = str_concat_free(result, " {struct ");
             char *decreasing_arg_str = stringify_expression(
                 expression->as.fix.args[expression->as.fix.decreasing_arg_index]);
-            result = str_concat(result, decreasing_arg_str);
-            result = str_concat(result, "}");
+            result = str_concat_free(result, decreasing_arg_str);
+            result = str_concat_free(result, "}");
             free(decreasing_arg_str);
 
-            result = str_concat(result, " : ");
+            result = str_concat_free(result, " : ");
             char *return_type_str =
                 stringify_expression(get_expression_type(expression->as.fix.body));
-            result = str_concat(result, return_type_str);
+            result = str_concat_free(result, return_type_str);
             free(return_type_str);
 
-            result = str_concat(result, " := ");
+            result = str_concat_free(result, " := ");
             char *body_str = stringify_expression(expression->as.fix.body);
-            result = str_concat(result, body_str);
+            result = str_concat_free(result, body_str);
             free(body_str);
             break;
         }
@@ -153,9 +163,12 @@ char *stringify_expression(Expression *expression) {
             result = strdup("Prop");
             break;
 
-        case HOLE_EXPRESSION:
-            result = str_concat("?", strdup(get_hole_name(expression)));
+        case HOLE_EXPRESSION: {
+            char *hole_name = strdup(get_hole_name(expression));
+            result = str_concat("?", hole_name);
+            free(hole_name);
             break;
+        }
     }
 
     return result;
@@ -176,23 +189,23 @@ char *stringify_context(Context *context, ContextStringifyOptions opts) {
     // Handle indent option
     if (opts.indent > 0) {
         for (int i = 0; i < opts.indent; i++) {
-            result = str_concat(result, " ");
+            result = str_concat_free(result, " ");
         }
     }
 
     // Handle print_prefix option
     if (opts.print_prefix) {
-        result = str_concat(result, "Variable ");
+        result = str_concat_free(result, "Variable ");
     }
 
-    result = str_concat(result, var_str);
-    result = str_concat(result, " : ");
-    result = str_concat(result, type_str);
-    result = str_concat(result, ".\n");
+    result = str_concat_free(result, var_str);
+    result = str_concat_free(result, " : ");
+    result = str_concat_free(result, type_str);
+    result = str_concat_free(result, ".\n");
 
     free(var_str);
     free(type_str);
-    free(parent_str);
+    // parent_str was consumed by the first str_concat_free call - do not free again
 
     return result;
 }
@@ -212,23 +225,23 @@ char *stringify_context_until(Context *context, Context *until, ContextStringify
     // Handle indent option
     if (opts.indent > 0) {
         for (int i = 0; i < opts.indent; i++) {
-            result = str_concat(result, " ");
+            result = str_concat_free(result, " ");
         }
     }
 
     // Handle print_prefix option
     if (opts.print_prefix) {
-        result = str_concat(result, "Variable ");
+        result = str_concat_free(result, "Variable ");
     }
 
-    result = str_concat(result, var_str);
-    result = str_concat(result, " : ");
-    result = str_concat(result, type_str);
-    result = str_concat(result, ".\n");
+    result = str_concat_free(result, var_str);
+    result = str_concat_free(result, " : ");
+    result = str_concat_free(result, type_str);
+    result = str_concat_free(result, ".\n");
 
     free(var_str);
     free(type_str);
-    free(parent_str);
+    // parent_str was consumed by the first str_concat_free call - do not free again
 
     return result;
 }
@@ -322,7 +335,7 @@ DoublyLinkedList *topo_order(Expression *top_expr, LinearMap *expr_counts) {
     DoublyLinkedList *S = dll_create();  // Set of all nodes with no incoming edge
     dll_insert_at_head(S, dll_new_node(top_expr));
 
-    while (dll_len(S) != 0) {
+    while (S->head != NULL) {
         DLLNode *n = dll_remove_head(S);
         dll_insert_at_tail(L, n);
 
@@ -386,7 +399,7 @@ char *_stringify_expression_with_let(Expression *expression) {
             break;
 
         case LAMBDA_EXPRESSION: {
-            if (dll_len(get_expression_uplinks(expression)) > 1) {
+            if (get_expression_uplinks(expression)->head != NULL && expression->uplink_count > 1) {
                 char buf[(2 * sizeof(void *)) + 1];
                 snprintf(buf, sizeof(buf), "%p", (void *)expression);
                 result = strdup(str_concat("var", buf));
@@ -425,7 +438,7 @@ char *_stringify_expression_with_let(Expression *expression) {
             break;
         }
         case APP_EXPRESSION: {
-            if (dll_len(get_expression_uplinks(expression)) > 1) {
+            if (get_expression_uplinks(expression)->head != NULL && expression->uplink_count > 1) {
                 char buf[(2 * sizeof(void *)) + 1];
                 snprintf(buf, sizeof(buf), "%p", (void *)expression);
                 result = strdup(str_concat("var", buf));
@@ -453,7 +466,7 @@ char *_stringify_expression_with_let(Expression *expression) {
         }
 
         case FORALL_EXPRESSION: {
-            if (dll_len(get_expression_uplinks(expression)) > 1) {
+            if (get_expression_uplinks(expression)->head != NULL && expression->uplink_count > 1) {
                 char buf[(2 * sizeof(void *)) + 1];
                 snprintf(buf, sizeof(buf), "%p", (void *)expression);
                 result = strdup(str_concat("var", buf));
@@ -597,7 +610,7 @@ char *stringify_expression_with_let(Expression *expression) {
         DLLNode *node = dll_at(ordering, i);
         Expression *node_expr = (Expression *)node->data;
 
-        if (node_expr->tag != VAR_EXPRESSION && dll_len(get_expression_uplinks(node_expr)) > 1) {
+        if (node_expr->tag != VAR_EXPRESSION && node_expr->uplink_count > 1) {
             char *str_adr = _get_str_addr(node_expr);
             char *expr_string = _top_level_stringify_expression_with_let(node_expr);
             char *line = str_concat("let ", str_adr);

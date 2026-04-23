@@ -1,0 +1,29 @@
+(* Test scripted rewrite algorithm *)
+
+Axiom T : Type.
+Axiom t : T.
+Axiom f : forall (_: T), T.
+Axiom g : forall (_: T), T.
+Lemma f_t_t : eq T (f t) t.
+Admitted.
+
+(* Simple head rewrite: f t -> t *)
+Theorem test1 : eq T (f t) t.
+  rewrite_s f_t_t.
+  apply eq_refl.
+
+(* Nested rewrite: f (f t) -> t, single rewrite pass *)
+Theorem test2 : eq T (f (f t)) t.
+  rewrite_s f_t_t.
+  apply eq_refl.
+
+(* Deep nested: f (f (f t)) -> t, single pass *)
+Theorem test3 : eq T (f (f (f t))) t.
+  rewrite_s f_t_t.
+  apply eq_refl.
+
+(* Rewrite under function application: g (f t) -> g t *)
+Theorem test4 : eq T (g (f t)) (g t).
+  rewrite_s f_t_t.
+  apply eq_refl.
+

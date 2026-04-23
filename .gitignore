@@ -40,3 +40,22 @@ tests/**/*.dSYM/
 tests/**/test_*
 !tests/**/test_*.c
 !tests/**/test_*.h
+
+# External/local clones not part of this repo.
+bedrock2/
+coqutil/
+mengine-benchmarks/
+
+# Benchmark outputs and caches.
+new-benchmarks/results/
+new-benchmarks/plots/
+new-benchmarks/**/__pycache__/
+new-benchmarks/perf.data*
+plots/
+results/
+
+# Local profiling and packaging artifacts.
+flame*.svg
+callgrind*.out
+gmon.out
+mengine-language/*.vsix

@@ -12,7 +12,7 @@ static inline uint32_t murmur_32_scramble(uint32_t k) {
     return k;
 }
 
-static uint32_t murmur3_32(const uint8_t *key, size_t len, uint32_t seed) {
+uint32_t murmur3_32(const uint8_t *key, size_t len, uint32_t seed) {
     uint32_t h = seed;
     uint32_t k;
 
@@ -42,7 +42,18 @@ static uint32_t murmur3_32(const uint8_t *key, size_t len, uint32_t seed) {
     return h;
 }
 
+
+#ifndef MAP_HASH_SEED
 #define MAP_HASH_SEED 0x6D656E67
+#endif
+
+uint32_t hash_bytes(const void *data, size_t len, uint32_t seed) {
+    return murmur3_32((const uint8_t *)data, len, seed);
+}
+
+uint32_t hash_string(const char *s, uint32_t seed) {
+    return hash_bytes(s, strlen(s), seed);
+}
 
 uint32_t map_hash_key(void *key) {
     /*

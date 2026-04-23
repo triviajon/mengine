@@ -91,6 +91,14 @@ void fprint_ast(FILE *stream, AST *ast) {
             fprintf(stream, ")");
             return;
 
+        case AST_PATVAR:
+            fprintf(stream, "PATVAR(?%s)", ast->value.patvar.name);
+            return;
+
+        case AST_EXPR_REF:
+            fprintf(stream, "EXPR_REF(%p)", (void *)ast->value.expr_ref.tval);
+            return;
+
         default:
             fprintf(stream, "UNKNOWN");
             return;
@@ -436,8 +444,8 @@ bool is_atomic_start(Token *t) {
     if (!t) {
         return false;
     }
-    return t->type == TOK_IDENT || t->type == TOK_LPAREN || t->type == TOK_TYPE ||
-           t->type == TOK_PROP;
+    return (t->type == TOK_IDENT || t->type == TOK_LPAREN || t->type == TOK_TYPE ||
+            t->type == TOK_PROP) != 0;
 }
 
 AST *parse_application(Parser *p) {
@@ -506,3 +514,132 @@ AST *parse_atomic(Parser *p) {
 
     return NULL;
 }
+
+/* ============================================================================
+ * Term pattern parsing (for match goal)
+ *
+ * Like normal term parsing but additionally handles:
+ *   - ?X  -> AST_PATVAR("X") - pattern variable that matches any term
+ *   - _   -> AST_PATVAR("_") - wildcard (matches any term, no binding)
+ * ============================================================================ */
+
+static AST *_parse_pattern_atomic(Parser *p);
+static AST *_parse_pattern_application(Parser *p);
+
+static bool _is_pattern_atomic_start(Token *t) {
+    if (!t) {
+        return false;
+    }
+    return (t->type == TOK_IDENT || t->type == TOK_LPAREN || t->type == TOK_TYPE ||
+            t->type == TOK_PROP || t->type == TOK_QUESTION) != 0;
+}
+
+static AST *_parse_pattern_prefix(Parser *p) {
+    if (parser_expect_no_consume(p, TOK_FORALL)) {
+        parser_expect_consume(p, TOK_FORALL);
+        // Pattern forall: forall (x : <pat>) , <pat>
+        if (!parser_expect_consume(p, TOK_LPAREN)) {
+            parser_error(p, "Expected '(' after 'forall' in pattern");
+        }
+        // Parse binder with pattern-aware type
+        if (!parser_expect_no_consume(p, TOK_IDENT)) {
+            parser_error(p, "Expected identifier in forall pattern binder");
+        }
+        Token *name_tok = parser_next(p);
+        char *binder_name = strdup(name_tok->lexeme);
+        lexer_free_token(name_tok);
+        if (!parser_expect_consume(p, TOK_COLON)) {
+            parser_error(p, "Expected ':' in forall pattern binder");
+        }
+        AST *binder_type = parse_term_pattern(p);
+        if (!parser_expect_consume(p, TOK_RPAREN)) {
+            parser_error(p, "Expected ')' after binder in forall pattern");
+        }
+        if (!parser_expect_consume(p, TOK_COMMA)) {
+            parser_error(p, "Expected ',' after forall binder in pattern");
+        }
+        AST *body = parse_term_pattern(p);
+        AST *forall_ast = malloc(sizeof(AST));
+        forall_ast->tag = AST_FORALL;
+        forall_ast->value.forall.binder.name = binder_name;
+        forall_ast->value.forall.binder.type = binder_type;
+        forall_ast->value.forall.body = body;
+        return forall_ast;
+    }
+    return _parse_pattern_application(p);
+}
+
+static AST *_parse_pattern_application(Parser *p) {
+    AST *func = _parse_pattern_atomic(p);
+
+    while (true) {
+        Token *next_token = parser_peek(p);
+        if (!next_token || !_is_pattern_atomic_start(next_token)) {
+            break;
+        }
+        AST *arg = _parse_pattern_atomic(p);
+        AST *app_ast = malloc(sizeof(AST));
+        app_ast->tag = AST_APP;
+        app_ast->value.app.func = func;
+        app_ast->value.app.arg = arg;
+        func = app_ast;
+    }
+
+    return func;
+}
+
+static AST *_parse_pattern_atomic(Parser *p) {
+    // ?X -> pattern variable
+    if (parser_expect_no_consume(p, TOK_QUESTION)) {
+        parser_expect_consume(p, TOK_QUESTION);
+        if (!parser_expect_no_consume(p, TOK_IDENT)) {
+            parser_error(p, "Expected identifier after '?' in pattern");
+        }
+        Token *ident_token = parser_next(p);
+        AST *patvar = malloc(sizeof(AST));
+        patvar->tag = AST_PATVAR;
+        patvar->value.patvar.name = strdup(ident_token->lexeme);
+        lexer_free_token(ident_token);
+        return patvar;
+    }
+
+    // identifiers - treat "_" as wildcard pattern variable
+    if (parser_peek(p) && parser_peek(p)->type == TOK_IDENT) {
+        Token *ident_token = parser_next(p);
+        if (strcmp(ident_token->lexeme, "_") == 0) {
+            AST *patvar = malloc(sizeof(AST));
+            patvar->tag = AST_PATVAR;
+            patvar->value.patvar.name = strdup("_");
+            lexer_free_token(ident_token);
+            return patvar;
+        }
+        AST *var_ast = malloc(sizeof(AST));
+        var_ast->tag = AST_VAR;
+        var_ast->value.var.name = strdup(ident_token->lexeme);
+        lexer_free_token(ident_token);
+        return var_ast;
+    }
+
+    if (parser_expect_consume(p, TOK_TYPE)) {
+        AST *type_ast = malloc(sizeof(AST));
+        type_ast->tag = AST_TYPE;
+        return type_ast;
+    }
+    if (parser_expect_consume(p, TOK_PROP)) {
+        AST *prop_ast = malloc(sizeof(AST));
+        prop_ast->tag = AST_PROP;
+        return prop_ast;
+    }
+    if (parser_expect_consume(p, TOK_LPAREN)) {
+        AST *inner = parse_term_pattern(p);
+        if (!parser_expect_consume(p, TOK_RPAREN)) {
+            parser_error(p, "Expected ')' in pattern expression");
+        }
+        return inner;
+    }
+
+    parser_error(p, "Unexpected token in pattern expression");
+    return NULL;
+}
+
+AST *parse_term_pattern(Parser *p) { return _parse_pattern_prefix(p); }

@@ -17,8 +17,8 @@ erewrite nonsense with eq.
 apply eq_refl.
 Show Proof.
 (* 
-    our rewrite uses a bottom-up recursive algorithm that applies at every node, 
-    in this case, it ended up applying twice so we need to prove `nat` twice
+	our rewrite uses a bottom-up recursive algorithm that applies at every node, 
+	in this case, it ended up applying twice so we need to prove `nat` twice
 *)
 exact O.
-exact (S O). 
+exact (S O).

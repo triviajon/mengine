@@ -1,0 +1,94 @@
+(* match_goal.me — Goal pattern matching in tactics *)
+
+Axiom A : Prop.
+Axiom B : Prop.
+Axiom a : A.
+Axiom b : B.
+
+(* --- Basic conclusion matching --- *)
+
+(* Match on conclusion to dispatch tactics *)
+Theorem match_concl_forall : forall (x : A), A.
+match Goal with
+| [ |- forall (y : _) , _ ] => intro
+end.
+assumption.
+
+(* Match with wildcard conclusion *)
+Theorem match_concl_wild : A.
+match Goal with
+| [ |- _ ] => exact a
+end.
+
+(* --- Hypothesis matching --- *)
+
+(* Find a hypothesis matching the goal type *)
+Theorem match_hyp_simple : forall (x : A), A.
+intro.
+match Goal with
+| [ H : A |- A ] => exact H
+end.
+
+(* Match any hypothesis of a specific type *)
+Theorem match_hyp_patvar : forall (x : A), A.
+intro.
+match Goal with
+| [ H : ?P |- ?P ] => exact H
+end.
+
+(* --- Multiple hypotheses --- *)
+
+Theorem match_multi_hyp : forall (x : A), forall (y : B), B.
+intro.
+intro.
+match Goal with
+| [ H1 : A , H2 : B |- B ] => exact H2
+end.
+
+(* --- match Goal inside named tactics --- *)
+
+Tactic find_hyp := match Goal with
+| [ H : ?P |- ?P ] => exact H
+end.
+
+Theorem use_find_hyp1 : forall (x : A), A.
+intro; find_hyp.
+
+Theorem use_find_hyp2 : forall (x : B), B.
+intro; find_hyp.
+
+(* Auto-intro then find hypothesis *)
+Tactic auto_solve := repeat intro; find_hyp.
+
+Theorem use_auto_solve : forall (x : A), forall (y : B), A.
+auto_solve.
+
+(* --- match Goal with combinators --- *)
+
+(* Try match, fall back *)
+Theorem match_with_fallback : A.
+(match Goal with
+| [ H : ?P |- ?P ] => exact H
+end) || exact a.
+
+(* Match in first alternatives *)
+Theorem match_in_first : forall (x : A), A.
+intro.
+first [
+  match Goal with
+  | [ H : B |- B ] => exact H
+  end
+| match Goal with
+  | [ H : A |- A ] => exact H
+  end
+].
+
+(* --- Intro-on-forall tactic via match --- *)
+
+Tactic auto_intro := match Goal with
+| [ |- forall (x : _) , _ ] => intro
+end.
+
+Theorem use_auto_intro : forall (x : A), forall (y : B), A.
+repeat auto_intro.
+assumption.

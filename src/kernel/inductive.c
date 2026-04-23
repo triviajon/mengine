@@ -5,6 +5,7 @@
 
 #include "src/common/color.h"
 #include "src/common/linear_map.h"
+#include "src/kernel/expression.h"
 
 // Global registry mapping Expression* -> InductiveDefinition*
 static LinearMap *inductive_registry = NULL;
@@ -63,7 +64,23 @@ bool is_inductive(Expression *expr) {
         return false;
     }
 
-    return linear_map_get(inductive_registry, expr) != NULL;
+    // For direct inductive vars, check registry
+    if (linear_map_get(inductive_registry, expr) != NULL) {
+        return true;
+    }
+
+    // For parametric inductive applications like (sep_list A), extract the head
+    Expression *head = expr;
+    while (head != NULL && head->tag == APP_EXPRESSION) {
+        head = get_app_func(head);
+    }
+
+    // Check if the head is an inductive
+    if (head != NULL && head != expr) {
+        return linear_map_get(inductive_registry, head) != NULL;
+    }
+
+    return false;
 }
 
 Expression **get_constructors(Expression *inductive_var, int *out_count) {
@@ -112,7 +129,25 @@ InductiveDefinition *get_inductive_definition(Expression *inductive_var) {
         return NULL;
     }
 
-    return (InductiveDefinition *)linear_map_get(inductive_registry, inductive_var);
+    // Try direct lookup first
+    InductiveDefinition *def =
+        (InductiveDefinition *)linear_map_get(inductive_registry, inductive_var);
+    if (def != NULL) {
+        return def;
+    }
+
+    // For parametric inductive applications like (sep_list A), extract the head
+    Expression *head = inductive_var;
+    while (head != NULL && head->tag == APP_EXPRESSION) {
+        head = get_app_func(head);
+    }
+
+    // Check if the head is an inductive definition
+    if (head != NULL && head != inductive_var) {
+        return (InductiveDefinition *)linear_map_get(inductive_registry, head);
+    }
+
+    return NULL;
 }
 
 bool is_constructor_of(Expression *expr, Expression *inductive_var) {

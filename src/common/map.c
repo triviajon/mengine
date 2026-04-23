@@ -5,11 +5,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "src/common/hash.c"
+#include "src/common/hash.h"
 
+#ifndef MAP_INITIAL_CAPACITY
 #define MAP_INITIAL_CAPACITY 16
+#endif
+#ifndef MAP_LOAD_FACTOR_NUM
 #define MAP_LOAD_FACTOR_NUM 7
+#endif
+#ifndef MAP_LOAD_FACTOR_DEN
 #define MAP_LOAD_FACTOR_DEN 10
+#endif
 
 typedef struct {
     void *key;
@@ -79,6 +85,24 @@ Map *map_new(void) {
     }
 
     m->capacity = MAP_INITIAL_CAPACITY;
+    m->size = 0;
+    m->entries = map_entries_new(m->capacity);
+
+    if (!m->entries) {
+        free(m);
+        return NULL;
+    }
+
+    return m;
+}
+
+Map *map_new_with_capacity(size_t initial_capacity) {
+    Map *m = malloc(sizeof(Map));
+    if (!m) {
+        return NULL;
+    }
+
+    m->capacity = initial_capacity;
     m->size = 0;
     m->entries = map_entries_new(m->capacity);
 
@@ -188,6 +212,16 @@ void map_free(Map *m) {
     free(m);
 }
 
+void map_reset(Map *m) {
+    if (!m || m->size == 0) {
+        return;
+    }
+    for (size_t i = 0; i < m->capacity; i++) {
+        m->entries[i].in_use = 0;
+    }
+    m->size = 0;
+}
+
 void map_clear_free_values(Map *m) {
     if (!m) {
         return;
@@ -213,6 +247,21 @@ void map_clear_free_all(Map *m) {
         if (e->in_use) {
             free(e->key);
             free(e->value);
+        }
+    }
+
+    map_free(m);
+}
+
+void map_clear_apply_free(Map *m, void (*free_fn)(void *)) {
+    if (!m) {
+        return;
+    }
+
+    for (size_t i = 0; i < m->capacity; i++) {
+        MapEntry *e = &m->entries[i];
+        if (e->in_use) {
+            free_fn(e->value);
         }
     }
 

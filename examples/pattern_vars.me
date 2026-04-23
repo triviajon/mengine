@@ -1,0 +1,38 @@
+(* Test: pattern variable propagation from match Goal into body *)
+
+Axiom A : Prop.
+Axiom B : Prop.
+Axiom a : A.
+Axiom b : B.
+
+(* Pattern variable in exact: ?P matches goal type, H is hypothesis name *)
+Theorem patvar_hyp : forall (x : A), A.
+intro x.
+match Goal with
+| [ H : ?P |- ?P ] => exact H
+end.
+
+(* Multiple pattern variables in conclusion *)
+Axiom id_A : forall (x : A), A.
+
+Theorem patvar_apply : A.
+match Goal with
+| [ |- ?P ] => exact (id_A a)
+end.
+
+(* Pattern variable matched from forall, used in body for exact *)
+Theorem patvar_forall : forall (x : A), A.
+intro x.
+match Goal with
+| [ |- ?P ] => exact x
+end.
+
+(* Use pattern variable ?T as a term in exact —
+   In the body, refer to pattern vars as plain identifiers (like Coq Ltac).
+   match substitutes T -> AST_EXPR_REF(matched_expr) before interpretation. *)
+Axiom refl_lemma : forall (P : Prop), forall (p : P), P.
+
+Theorem patvar_as_term : A.
+match Goal with
+| [ |- ?T ] => exact (refl_lemma T a)
+end.

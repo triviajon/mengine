@@ -1,5 +1,6 @@
 #include "src/kernel/expression.h"
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,9 +10,17 @@
 #include "src/kernel/beta_reduction.h"
 #include "src/kernel/context.h"
 #include "src/kernel/definitional_equal.h"
+#include "src/kernel/expression_hash.h"
 #include "src/kernel/inductive.h"
 #include "src/kernel/structural.h"
 #include "src/kernel/subst.h"
+
+// Tracks whether we're inside _construct_app_type (which calls new_subst).
+// Expressions built here are type annotations and should not be interned.
+static int g_type_computation_depth = 0;
+
+// Intrusive singly-linked list of all allocated Expressions for deferred GC shutdown.
+static Expression *g_expr_list_head = NULL;
 
 // Register a body to a recursive variable expression. WARNING: Mutator function, modifies the
 // expression in place and returns true if successful, false otherwise.
@@ -37,7 +46,7 @@ bool register_fix_body_to_expression(Context *recursive_var, Expression *body) {
 
     Expression *body_type = get_expression_type(body);
     Expression *expression_type = get_expression_type(recursive_var);
-    if (!(congruence(body_type, expression_type))) {
+    if (!definitional_equal(body_type, expression_type)) {
         fprintf(stderr, ERROR "Body type is not congruent to expression type.\n" CRESET);
         return false;
     }
@@ -48,36 +57,17 @@ bool register_fix_body_to_expression(Context *recursive_var, Expression *body) {
 }
 
 void add_to_parents(Expression *expression, void *ptr, Relation r) {
+    if (expression->uplinks == NULL) {
+        expression->uplinks = dll_create();
+    }
     Uplink *uplink = new_uplink(ptr, r);
     dll_insert_at_head(expression->uplinks, dll_new_node(uplink));
-}
-
-// Create a cross-linked evar reference: adds hole to parent's evar_refs and
-// parent to hole's evar_backlinks.
-static void add_evar_ref(Expression *parent, Expression *hole) {
-    EvarRef *ref = malloc(sizeof(EvarRef));
-    ref->hole = hole;
-    ref->backlink_node = NULL;
-
-    DLLNode *ref_node = dll_new_node(ref);
-    dll_insert_at_head(parent->evar_refs, ref_node);
-
-    EvarBacklink *bl = malloc(sizeof(EvarBacklink));
-    bl->owner = parent;
-    bl->ref_node = ref_node;
-
-    DLLNode *bl_node = dll_new_node(bl);
-    dll_insert_at_head(hole->as.hole.evar_backlinks, bl_node);
-
-    ref->backlink_node = bl_node;
+    expression->uplink_count++;
 }
 
 void propagate_evar_refs(Expression *parent, Expression *child) {
-    DLLNode *node = child->evar_refs->head;
-    while (node) {
-        EvarRef *child_ref = (EvarRef *)node->data;
-        add_evar_ref(parent, child_ref->hole);
-        node = node->next;
+    if (child->has_evar) {
+        parent->has_evar = true;
     }
 }
 
@@ -121,6 +111,7 @@ void remove_uplink(Expression *expr, void *parent_ptr, Relation rel) {
 
             free(uplink);
             free(current);
+            expr->uplink_count--;
             return;
         }
         prev = current;
@@ -128,122 +119,69 @@ void remove_uplink(Expression *expr, void *parent_ptr, Relation rel) {
     }
 }
 
-// Forward declaration
-static void free_expression_field(Expression *parent, Expression *child, Relation rel);
+// Garbage Collection
 
-void free_expression(Expression *expr) {
-    // Never free globals
-    if (expr == NULL || expr == TYPE || expr == PROP || expr == EMPTY_CONTEXT) {
-        return;
+void free_expression(Expression *expr) { (void)expr; }
+
+void free_expressions_excluding_context(Expression *a, Expression *b, Expression *shared_ctx) {
+    (void)a;
+    (void)b;
+    (void)shared_ctx;
+}
+
+void free_expression_graph(Expression *root) { (void)root; }
+
+void free_filled_hole(Expression *hole) { (void)hole; }
+
+// Flat free of a single expression's non-expression heap allocations.
+static void gc_free_node(Expression *expr) {
+    if (expr->uplinks) {
+        DLLNode *node = expr->uplinks->head;
+        while (node) {
+            DLLNode *next = node->next;
+            free(node->data);  // Uplink*
+            free(node);
+            node = next;
+        }
+        free(expr->uplinks);
     }
 
-    // Remove this expression from all its children's uplink lists
-    free_expression_field(expr, expr->type, EXPR_TYPE);
-    free_expression_field(expr, expr->context, EXPR_CONTEXT);
-
-    // Handle expression-specific fields
+    // Free tag-specific non-expression allocations
     switch (expr->tag) {
         case VAR_EXPRESSION:
-            if (expr->as.var.body != NULL) {
-                free_expression_field(expr, expr->as.var.body, VAR_BODY);
-            }
             free(expr->as.var.name);
             break;
-        case LAMBDA_EXPRESSION:
-            free_expression_field(expr, expr->as.lambda.bound_variable, LAMBDA_BOUND_VAR);
-            free_expression_field(expr, expr->as.lambda.body, LAMBDA_BODY);
-            break;
-        case APP_EXPRESSION:
-            free_expression_field(expr, expr->as.app.func, APP_FUNC);
-            free_expression_field(expr, expr->as.app.arg, APP_ARG);
-            break;
-        case FORALL_EXPRESSION:
-            free_expression_field(expr, expr->as.forall.bound_variable, FORALL_BOUND_VAR);
-            free_expression_field(expr, expr->as.forall.body, FORALL_BODY);
-            break;
         case MATCH_EXPRESSION:
-            free_expression_field(expr, expr->as.match.scrutinee, MATCH_SCRUTINEE);
             for (int i = 0; i < expr->as.match.branch_count; i++) {
                 MatchBranch *branch = expr->as.match.branches[i];
-                free_expression_field(expr, branch->constructor, MATCH_BRANCH_CONSTRUCTOR);
-                free_expression_field(expr, branch->body, MATCH_BRANCH_BODY);
-                for (int j = 0; j < branch->pattern_var_count; j++) {
-                    free_expression_field(expr, branch->pattern_variables[j],
-                                          MATCH_BRANCH_PATTERN_VAR);
-                }
                 free(branch->pattern_variables);
                 free(branch);
             }
             free(expr->as.match.branches);
             break;
         case FIX_EXPRESSION:
-            free_expression_field(expr, expr->as.fix.recursive_var, FIX_RECURSIVE_VAR);
-            for (int i = 0; i < expr->as.fix.arg_count; i++) {
-                free_expression_field(expr, expr->as.fix.args[i], FIX_ARG);
-            }
             free(expr->as.fix.args);
-            free_expression_field(expr, expr->as.fix.body, FIX_BODY);
             break;
         case HOLE_EXPRESSION:
             free(expr->as.hole.name);
-            // Clean up backlinks: remove this hole from all owners' evar_refs
-            {
-                DLLNode *bl_node = expr->as.hole.evar_backlinks->head;
-                while (bl_node) {
-                    DLLNode *next = bl_node->next;
-                    EvarBacklink *bl = (EvarBacklink *)bl_node->data;
-                    if (bl->owner != expr) {
-                        dll_remove_node(bl->owner->evar_refs, bl->ref_node);
-                        free(bl->ref_node->data);
-                        free(bl->ref_node);
-                    }
-                    free(bl);
-                    free(bl_node);
-                    bl_node = next;
-                }
-                dll_destroy(expr->as.hole.evar_backlinks);
-            }
             break;
-        case TYPE_EXPRESSION:
-        case PROP_EXPRESSION:
+        default:
             break;
     }
 
-    // Clean up evar_refs: remove this expression from each hole's backlinks
-    {
-        DLLNode *ref_node = expr->evar_refs->head;
-        while (ref_node) {
-            DLLNode *next = ref_node->next;
-            EvarRef *ref = (EvarRef *)ref_node->data;
-            Expression *hole = ref->hole;
-            if (hole != expr && hole->tag == HOLE_EXPRESSION) {
-                dll_remove_node(hole->as.hole.evar_backlinks, ref->backlink_node);
-                free(ref->backlink_node->data);
-                free(ref->backlink_node);
-            }
-            free(ref);
-            free(ref_node);
-            ref_node = next;
-        }
-        dll_destroy(expr->evar_refs);
-    }
-
-    dll_destroy(expr->uplinks);
     free(expr);
 }
 
-static void free_expression_field(Expression *parent, Expression *child, Relation rel) {
-    if (child == NULL) {
-        return;
+// Walk the intrusive GC list and flat-free every tracked expression.
+void expression_gc_shutdown(void) {
+    Expression *expr = g_expr_list_head;
+    while (expr) {
+        Expression *next = expr->g_alloc_next;
+        gc_free_node(expr);
+        expr = next;
     }
-
-    // Remove parent from child's uplinks
-    remove_uplink(child, parent, rel);
-
-    // Check if child is now unreachable (no more uplinks)
-    if (dll_len(child->uplinks) == 0) {
-        free_expression(child);
-    }
+    g_expr_list_head = NULL;
+    expression_intern_table_free();
 }
 
 // Helper to construct a lambda type from a bound variable and body.
@@ -255,10 +193,12 @@ Expression *_construct_lambda_type(Expression *bound_variable, Expression *body)
 // Helper to construct a app type from a function and argument.
 // Assumes all inputs are valid.
 Expression *_construct_app_type(Context *context, Expression *func, Expression *arg) {
+    g_type_computation_depth++;
     Expression *func_type = get_expression_type(func);  // Forall x: A, B
     Expression *weak_func_type = weak_head_normalize(func_type);
     if (weak_func_type->tag != FORALL_EXPRESSION) {
         fprintf(stderr, ERROR "Trying to apply a non-function.\n" CRESET);
+        g_type_computation_depth--;
         return NULL;
     }
     Expression *variable = get_forall_bound_variable(weak_func_type);  // x
@@ -266,14 +206,16 @@ Expression *_construct_app_type(Context *context, Expression *func, Expression *
     Expression *actual_arg_type = get_expression_type(arg);            // A?
     Expression *return_type = get_forall_body(weak_func_type);         // B
 
+    Expression *result = NULL;
     if (subtypes(actual_arg_type, expected_arg_type)) {
         // return_type (B) is closed under context(variable) extended with variable
         // context must include both variable and all of arg's dependencies
-        return new_subst(context, return_type, variable, arg);  // B[x -> arg]
+        result = new_subst(context, return_type, variable, arg);  // B[x -> arg]
+    } else {
+        fprintf(stderr, ERROR "Application does not type check.\n" CRESET);
     }
-
-    fprintf(stderr, ERROR "Application does not type check.\n" CRESET);
-    return NULL;
+    g_type_computation_depth--;
+    return result;
 }
 
 Expression *_init_expression_base(ExpressionType tag, Context *context, int ctx_size,
@@ -283,12 +225,15 @@ Expression *_init_expression_base(ExpressionType tag, Context *context, int ctx_
         return NULL;
     }
 
+    // Track in global GC list
+    expr->g_alloc_next = g_expr_list_head;
+    g_expr_list_head = expr;
+
     SET_EXPR_TAG(expr, tag);
-    SET_EXPR_UPLINKS(expr, dll_create());
+    // uplinks are lazily allocated in add_to_parents
     SET_EXPR_CONTEXT(expr, context);
     SET_EXPR_CTX_SIZE(expr, ctx_size);
     SET_EXPR_TYPE(expr, type);
-    expr->evar_refs = dll_create();
 
     return expr;
 }
@@ -306,16 +251,17 @@ Expression *init_type_expression() {
     if (TYPE == NULL) {
         Context *context = context_create_empty();
         // Special case: Type's type is recursive, so we need to create it manually.
-        TYPE = malloc(sizeof(Expression));
+        TYPE = calloc(1, sizeof(Expression));
         if (!TYPE) {
             return NULL;
         }
+        TYPE->g_alloc_next = g_expr_list_head;
+        g_expr_list_head = TYPE;
+
         SET_EXPR_TAG(TYPE, TYPE_EXPRESSION);
-        SET_EXPR_UPLINKS(TYPE, dll_create());
         SET_EXPR_CONTEXT(TYPE, context);
         SET_EXPR_CTX_SIZE(TYPE, 0);
         SET_EXPR_TYPE(TYPE, init_type_expression());
-        TYPE->evar_refs = dll_create();
     }
     return TYPE;
 }
@@ -337,8 +283,7 @@ Expression *init_hole_expression(char *name, Expression *type, Context *gamma) {
                                              /* type */ type);
 
     SET_HOLE_NAME(expr, strdup(name));
-    expr->as.hole.evar_backlinks = dll_create();
-    add_evar_ref(expr, expr);  // A hole references itself
+    expr->has_evar = true;  // A hole always contains itself
     return expr;
 }
 
@@ -392,6 +337,19 @@ Expression *init_var_expression_wc_with_body(const char *name, Expression *body,
 }
 
 Expression *init_lambda_expression_wc(Expression *bound_variable, Expression *body) {
+#ifndef DISABLE_HASH_CONSING
+    {
+        Expression probe = {0};
+        probe.tag = LAMBDA_EXPRESSION;
+        probe.as.lambda.bound_variable = bound_variable;
+        probe.as.lambda.body = body;
+        Expression *cached = expression_intern_lookup(&probe);
+        if (cached) {
+            return cached;
+        }
+    }
+#endif
+
     Context *gamma = get_expression_context(bound_variable);
     Context *extended_with_bound_variable = bound_variable;
 
@@ -409,10 +367,27 @@ Expression *init_lambda_expression_wc(Expression *bound_variable, Expression *bo
     SET_LAMBDA_BODY(expr, body);
     propagate_evar_refs(expr, body);
 
+#ifndef DISABLE_HASH_CONSING
+    expression_intern_insert(expr);
+#endif
     return expr;
 }
 
 Expression *init_app_expression_wc(Expression *func, Expression *arg, Context *context) {
+#ifndef DISABLE_HASH_CONSING
+    {
+        Expression probe = {0};
+        probe.tag = APP_EXPRESSION;
+        probe.context = context;
+        probe.as.app.func = func;
+        probe.as.app.arg = arg;
+        Expression *cached = expression_intern_lookup(&probe);
+        if (cached) {
+            return cached;
+        }
+    }
+#endif
+
     if (!valid_in_context(func, context)) {
         fprintf(stderr, ERROR "Function is not valid in context.\n" CRESET);
         return NULL;
@@ -429,8 +404,6 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg, Context *c
         return NULL;
     }
 
-    // We perform the verification that type of the argument is a subtype of the
-    // function's bound variable type in the _construct_app_type helper.
     Expression *type = _construct_app_type(context, func, arg);
     if (!type) {
         return NULL;
@@ -446,10 +419,26 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg, Context *c
     propagate_evar_refs(expr, func);
     propagate_evar_refs(expr, arg);
 
+#ifndef DISABLE_HASH_CONSING
+    expression_intern_insert(expr);
+#endif
     return expr;
 }
 
 Expression *init_forall_expression_wc(Expression *bound_variable, Expression *body) {
+#ifndef DISABLE_HASH_CONSING
+    {
+        Expression probe = {0};
+        probe.tag = FORALL_EXPRESSION;
+        probe.as.forall.bound_variable = bound_variable;
+        probe.as.forall.body = body;
+        Expression *cached = expression_intern_lookup(&probe);
+        if (cached) {
+            return cached;
+        }
+    }
+#endif
+
     Context *gamma = get_expression_context(bound_variable);
     Context *extended_with_bound_variable = bound_variable;
 
@@ -478,6 +467,9 @@ Expression *init_forall_expression_wc(Expression *bound_variable, Expression *bo
     SET_FORALL_BODY(expr, body);
     propagate_evar_refs(expr, body);
 
+#ifndef DISABLE_HASH_CONSING
+    expression_intern_insert(expr);
+#endif
     return expr;
 }
 
@@ -563,27 +555,17 @@ Expression *init_match_expression_wc(Expression *scrutinee, MatchBranch **branch
         }
 
         Expression *branch_body_bound = branch->body;
-        for (int j = branch->pattern_var_count - 1; j >= 0; j--) {
-            branch_body_bound =
-                init_lambda_expression_wc(branch->pattern_variables[j], branch_body_bound);
-            if (!branch_body_bound) {
-                fprintf(stderr, ERROR "Failed to create branch body bound.\n" CRESET);
-                free(constructor_covered);
-                return NULL;
-            }
-        }
-
-        if (!valid_in_context(branch_body_bound, context)) {
+        if (branch->pattern_var_count == 0 && !valid_in_context(branch_body_bound, context)) {
             fprintf(stderr, ERROR "Branch body is not valid in context.\n" CRESET);
             free(constructor_covered);
             return NULL;
         }
 
-        // All branches must have the same type
+        // All branches must have the same type up to definitional equality.
         Expression *branch_body_type = get_expression_type(branch->body);
         if (match_type == NULL) {
             match_type = branch_body_type;
-        } else if (!congruence(branch_body_type, match_type)) {
+        } else if (!definitional_equal(branch_body_type, match_type)) {
             fprintf(stderr, ERROR "Branch body types do not match.\n" CRESET);
             free(constructor_covered);
             return NULL;
@@ -678,12 +660,12 @@ static bool check_all_recursive_calls_with_context(Expression *body, Expression 
             }
 
             // Recursively check subexpressions
-            return check_all_recursive_calls_with_context(get_app_func(body), rec_var,
-                                                          decreasing_arg, decreasing_idx,
-                                                          pattern_to_scrutinee) &&
-                   check_all_recursive_calls_with_context(get_app_arg(body), rec_var,
-                                                          decreasing_arg, decreasing_idx,
-                                                          pattern_to_scrutinee);
+            return (check_all_recursive_calls_with_context(get_app_func(body), rec_var,
+                                                           decreasing_arg, decreasing_idx,
+                                                           pattern_to_scrutinee) &&
+                    check_all_recursive_calls_with_context(get_app_arg(body), rec_var,
+                                                           decreasing_arg, decreasing_idx,
+                                                           pattern_to_scrutinee)) != 0;
         }
 
         case LAMBDA_EXPRESSION:
@@ -795,9 +777,15 @@ Expression *init_fix_expression_wc(Expression *recursive_var, Expression **args,
                                              /* ctx_size */ gamma->ctx_size,
                                              /* type */ get_expression_type(recursive_var));
 
+    // Copy args into a fresh heap allocation so gc_free_node can safely free it.
+    Expression **args_copy = malloc(arg_count * sizeof(Expression *));
+    for (int i = 0; i < arg_count; i++) {
+        args_copy[i] = args[i];
+    }
+
     SET_FIX_RECURSIVE_VAR(expr, recursive_var);
-    SET_FIX_ARGS(expr, args);
     SET_FIX_ARG_COUNT(expr, arg_count);
+    SET_FIX_ARGS(expr, args_copy);
     SET_FIX_DECREASING_ARG_INDEX(expr, decreasing_arg_index);
     SET_FIX_BODY(expr, body);
     propagate_evar_refs(expr, body);
@@ -1055,8 +1043,8 @@ bool _congruence(Expression *a, Expression *b, LinearMap *mapping) {
         case (PROP_EXPRESSION):
             return true;
         case (APP_EXPRESSION):
-            return _congruence(a->as.app.func, b->as.app.func, mapping) &&
-                   _congruence(a->as.app.arg, b->as.app.arg, mapping);
+            return (_congruence(a->as.app.func, b->as.app.func, mapping) &&
+                    _congruence(a->as.app.arg, b->as.app.arg, mapping)) != 0;
         case (FORALL_EXPRESSION): {
             linear_map_set(mapping, a->as.forall.bound_variable, b->as.forall.bound_variable);
             return _congruence(a->as.forall.body, b->as.forall.body, mapping);
@@ -1066,10 +1054,10 @@ bool _congruence(Expression *a, Expression *b, LinearMap *mapping) {
             return _congruence(a->as.lambda.body, b->as.lambda.body, mapping);
         }
         case (VAR_EXPRESSION): {
-            return (a == b) || (linear_map_get(mapping, a) == b);
+            return ((a == b) || (linear_map_get(mapping, a) == b)) != 0;
         }
         case (HOLE_EXPRESSION): {
-            return (a == b) || (linear_map_get(mapping, a) == b);
+            return ((a == b) || (linear_map_get(mapping, a) == b)) != 0;
         }
         case (MATCH_EXPRESSION): {
             if (!_congruence(a->as.match.scrutinee, b->as.match.scrutinee, mapping)) {
@@ -1141,7 +1129,7 @@ bool subtypes(Expression *a, Expression *b) {
         return true;
     }
 
-    return congruence(a, b);
+    return definitional_equal(a, b);
 }
 
 void _match_and_subst(Expression *a, Expression *b, LinearMap *mapping) {
@@ -1232,75 +1220,149 @@ Expression *match_and_subst(Expression *a, Expression *b, Expression *to_subst) 
     return result;
 }
 
-bool has_holes(Expression *expr) { return expr->evar_refs->head != NULL; }
+bool has_holes(Expression *expr) { return expr->has_evar; }
 
 bool is_hole(Expression *expr) { return expr->tag == HOLE_EXPRESSION; }
 
-bool _occurs_in(Expression *var_or_hole, Expression *term, LinearMap *visited) {
-    if (linear_map_get(visited, term) != NULL) {
-        return false;
-    }
-    linear_map_set(visited, term, term);
-
-    if (var_or_hole == term) {
-        return true;
-    }
-
-    switch (term->tag) {
-        case TYPE_EXPRESSION:
-        case PROP_EXPRESSION:
-            return false;
-        case VAR_EXPRESSION:
-            return var_or_hole == term;
-        case APP_EXPRESSION:
-            return _occurs_in(var_or_hole, term->as.app.func, visited) ||
-                   _occurs_in(var_or_hole, term->as.app.arg, visited);
-        case LAMBDA_EXPRESSION:
-            return _occurs_in(var_or_hole, term->as.lambda.bound_variable, visited) ||
-                   _occurs_in(var_or_hole, term->as.lambda.body, visited);
-        case FORALL_EXPRESSION:
-            return _occurs_in(var_or_hole, term->as.forall.bound_variable, visited) ||
-                   _occurs_in(var_or_hole, term->as.forall.body, visited);
+// Recompute has_evar for a single expression from its current children.
+// Mirrors exactly which children propagate_evar_refs propagated from.
+static bool recompute_has_evar(Expression *expr) {
+    switch (expr->tag) {
         case HOLE_EXPRESSION:
-            return var_or_hole == term;
+            return true;  // holes are always holey (even filled ones aren't reachable from parents)
+        case VAR_EXPRESSION:
+            return (expr->as.var.body && expr->as.var.body->has_evar) != 0;
+        case LAMBDA_EXPRESSION:
+            return (expr->as.lambda.body && expr->as.lambda.body->has_evar) != 0;
+        case APP_EXPRESSION:
+            return ((expr->as.app.func && expr->as.app.func->has_evar) ||
+                    (expr->as.app.arg && expr->as.app.arg->has_evar)) != 0;
+        case FORALL_EXPRESSION:
+            return (expr->as.forall.body && expr->as.forall.body->has_evar) != 0;
         case MATCH_EXPRESSION: {
-            if (_occurs_in(var_or_hole, term->as.match.scrutinee, visited)) {
+            if (expr->as.match.scrutinee && expr->as.match.scrutinee->has_evar) {
                 return true;
             }
-            for (int i = 0; i < term->as.match.branch_count; i++) {
-                MatchBranch *branch = term->as.match.branches[i];
-                if (_occurs_in(var_or_hole, branch->constructor, visited)) {
-                    return true;
-                }
-                for (int j = 0; j < branch->pattern_var_count; j++) {
-                    if (_occurs_in(var_or_hole, branch->pattern_variables[j], visited)) {
-                        return true;
-                    }
-                }
-                if (_occurs_in(var_or_hole, branch->body, visited)) {
+            for (int i = 0; i < expr->as.match.branch_count; i++) {
+                if (expr->as.match.branches[i]->body &&
+                    expr->as.match.branches[i]->body->has_evar) {
                     return true;
                 }
             }
             return false;
         }
         case FIX_EXPRESSION:
-            if (_occurs_in(var_or_hole, term->as.fix.recursive_var, visited)) {
-                return true;
-            }
-            for (int i = 0; i < term->as.fix.arg_count; i++) {
-                if (_occurs_in(var_or_hole, term->as.fix.args[i], visited)) {
-                    return true;
-                }
-            }
-            return _occurs_in(var_or_hole, term->as.fix.body, visited);
+            return (expr->as.fix.body && expr->as.fix.body->has_evar) != 0;
         default:
-            fprintf(stderr, ERROR "Unknown expression type in occurs_in.\n" CRESET);
-            exit(EXIT_FAILURE);
+            return false;
     }
 }
 
+static uint64_t g_occurs_in_gen = 0;
+
+bool _occurs_in(Expression *var_or_hole, Expression *term, uint64_t gen) {
+    if (!term) {
+        return false;
+    }
+
+    size_t capacity = 64;
+    size_t top = 0;
+    Expression **stack = malloc(capacity * sizeof(Expression *));
+    if (!stack) {
+        return false;
+    }
+
+    stack[top++] = term;
+    while (top > 0) {
+        Expression *cur = stack[--top];
+        if (!cur || cur->visit_gen == gen) {
+            continue;
+        }
+        cur->visit_gen = gen;
+
+        if (var_or_hole == cur) {
+            free(stack);
+            return true;
+        }
+
+#define OCCURS_PUSH(e)                                                                        \
+    do {                                                                                      \
+        Expression *_child = (e);                                                             \
+        if (_child != NULL && _child->visit_gen != gen) {                                     \
+            if (top == capacity) {                                                            \
+                size_t new_capacity = capacity * 2;                                           \
+                Expression **new_stack = realloc(stack, new_capacity * sizeof(Expression *)); \
+                if (!new_stack) {                                                             \
+                    free(stack);                                                              \
+                    return false;                                                             \
+                }                                                                             \
+                stack = new_stack;                                                            \
+                capacity = new_capacity;                                                      \
+            }                                                                                 \
+            stack[top++] = _child;                                                            \
+        }                                                                                     \
+    } while (0)
+
+        switch (cur->tag) {
+            case TYPE_EXPRESSION:
+            case PROP_EXPRESSION:
+            case VAR_EXPRESSION:
+            case HOLE_EXPRESSION:
+                break;
+
+            case APP_EXPRESSION:
+                OCCURS_PUSH(cur->as.app.arg);
+                OCCURS_PUSH(cur->as.app.func);
+                break;
+
+            case LAMBDA_EXPRESSION:
+                OCCURS_PUSH(cur->as.lambda.body);
+                OCCURS_PUSH(cur->as.lambda.bound_variable);
+                break;
+
+            case FORALL_EXPRESSION:
+                OCCURS_PUSH(cur->as.forall.body);
+                OCCURS_PUSH(cur->as.forall.bound_variable);
+                break;
+
+            case MATCH_EXPRESSION:
+                OCCURS_PUSH(cur->as.match.scrutinee);
+                for (int i = 0; i < cur->as.match.branch_count; i++) {
+                    MatchBranch *branch = cur->as.match.branches[i];
+                    OCCURS_PUSH(branch->body);
+                    for (int j = 0; j < branch->pattern_var_count; j++) {
+                        OCCURS_PUSH(branch->pattern_variables[j]);
+                    }
+                    OCCURS_PUSH(branch->constructor);
+                }
+                break;
+
+            case FIX_EXPRESSION:
+                OCCURS_PUSH(cur->as.fix.body);
+                for (int i = 0; i < cur->as.fix.arg_count; i++) {
+                    OCCURS_PUSH(cur->as.fix.args[i]);
+                }
+                OCCURS_PUSH(cur->as.fix.recursive_var);
+                break;
+
+            default:
+                free(stack);
+                fprintf(stderr, ERROR "Unknown expression type in occurs_in.\n" CRESET);
+                exit(EXIT_FAILURE);
+        }
+    }
+
+    free(stack);
+    return false;
+}
+
 bool occurs_in(Expression *var_or_hole, Expression *term) {
-    return _occurs_in(var_or_hole, term, linear_map_new());
+    uint64_t gen = ++g_occurs_in_gen;
+    if (gen == 0) {
+        // Reserve 0 as the "unvisited" stamp to avoid false hits after wraparound.
+        gen = ++g_occurs_in_gen;
+    }
+    return _occurs_in(var_or_hole, term, gen);
 }
 
 bool fill_hole(Expression *hole, Expression *term) {
@@ -1311,101 +1373,175 @@ bool fill_hole(Expression *hole, Expression *term) {
     // Check preconditions:
     //   1) type(term) == expected return type of hole
     //   2) term is valid in hole's context
-    //   3) term does not contain the hole (occurs check, skipped if term is evar-free)
-    if (!definitional_equal(get_expression_type(hole), get_expression_type(term))) {
+    //   3) term does not contain the hole (occurs check, only if term has holes)
+    LinearMap *hole_assignments = linear_map_new();
+    if (!open_types_compatible_collecting(get_expression_type(hole), get_expression_type(term),
+                                          hole_assignments)) {
+        linear_map_clear_free(hole_assignments);
         return false;
     }
     if (!valid_in_context(term, get_expression_context(hole))) {
+        linear_map_clear_free(hole_assignments);
         return false;
     }
-    if (term->evar_refs->head != NULL && occurs_in(hole, term)) {
+    if (term->has_evar && occurs_in(hole, term)) {
+        linear_map_clear_free(hole_assignments);
         return false;
     }
 
-    // Update evar_refs: for every expression that references this hole,
-    // remove that reference and (if term has holes) add term's holes instead.
-    DLLNode *bl_node = hole->as.hole.evar_backlinks->head;
-    while (bl_node) {
-        DLLNode *next_bl = bl_node->next;
-        EvarBacklink *bl = (EvarBacklink *)bl_node->data;
-        Expression *owner = bl->owner;
-
-        // Remove the hole's ref from owner's evar_refs
-        DLLNode *ref_node = bl->ref_node;
-        dll_remove_node(owner->evar_refs, ref_node);
-        free(ref_node->data);
-        free(ref_node);
-
-        // If owner is the hole itself, skip propagation (hole is being replaced)
-        if (owner != hole) {
-            // Add term's evar refs to owner
-            propagate_evar_refs(owner, term);
+    // Cascade: fill sub-holes discovered during the open_types_compatible_collecting check
+    for (int i = 0; i < hole_assignments->size; i++) {
+        LinearMapItem *item = &hole_assignments->items[i];
+        if (item->key) {
+            fill_hole((Expression *)item->key, (Expression *)item->val);
         }
-
-        // Free the backlink
-        free(bl);
-        free(bl_node);
-        bl_node = next_bl;
     }
-    hole->as.hole.evar_backlinks->head = NULL;
-    hole->as.hole.evar_backlinks->tail = NULL;
+    linear_map_clear_free(hole_assignments);
 
-    // Rewrite structural uplinks: replace hole with term in all parents
+    // Rewrite structural uplinks: replace hole with term in all direct parents.
+    //
+    // For internable parent expressions: we remove the old intern-table entry (keyed on the hole
+    // pointer) before mutating, then re-insert after mutation
     DoublyLinkedList *holepars = hole->uplinks;
-    for (int i = 0; i < dll_len(holepars); i++) {
-        Uplink *uplink = dll_at(holepars, i)->data;
-        switch (uplink->relation) {
-            case (LAMBDA_BODY): {
-                Expression *ptr = (Expression *)uplink->ptr;
-                SET_LAMBDA_BODY(ptr, term);
-                break;
+    if (holepars) {
+        DLLNode *ul = holepars->head;
+        while (ul) {
+            Uplink *uplink = (Uplink *)ul->data;
+            switch (uplink->relation) {
+                case (LAMBDA_BODY): {
+                    Expression *ptr = (Expression *)uplink->ptr;
+#ifndef DISABLE_HASH_CONSING
+                    expression_intern_remove(ptr);
+#endif
+                    SET_LAMBDA_BODY(ptr, term);
+#ifndef DISABLE_HASH_CONSING
+                    if (term->tag != HOLE_EXPRESSION) {
+                        expression_intern_insert(ptr);
+                    }
+#endif
+                    break;
+                }
+                case (LAMBDA_BOUND_VAR): {
+                    Expression *ptr = (Expression *)uplink->ptr;
+#ifndef DISABLE_HASH_CONSING
+                    expression_intern_remove(ptr);
+#endif
+                    SET_LAMBDA_BOUND_VAR(ptr, term);
+#ifndef DISABLE_HASH_CONSING
+                    if (term->tag != HOLE_EXPRESSION) {
+                        expression_intern_insert(ptr);
+                    }
+#endif
+                    break;
+                }
+                case (APP_FUNC): {
+                    Expression *ptr = (Expression *)uplink->ptr;
+#ifndef DISABLE_HASH_CONSING
+                    expression_intern_remove(ptr);
+#endif
+                    SET_APP_FUNC(ptr, term);
+#ifndef DISABLE_HASH_CONSING
+                    if (term->tag != HOLE_EXPRESSION && ptr->as.app.arg->tag != HOLE_EXPRESSION) {
+                        expression_intern_insert(ptr);
+                    }
+#endif
+                    break;
+                }
+                case (APP_ARG): {
+                    Expression *ptr = (Expression *)uplink->ptr;
+#ifndef DISABLE_HASH_CONSING
+                    expression_intern_remove(ptr);
+#endif
+                    SET_APP_ARG(ptr, term);
+#ifndef DISABLE_HASH_CONSING
+                    if (term->tag != HOLE_EXPRESSION && ptr->as.app.func->tag != HOLE_EXPRESSION) {
+                        expression_intern_insert(ptr);
+                    }
+#endif
+                    break;
+                }
+                case (FORALL_BODY): {
+                    Expression *ptr = (Expression *)uplink->ptr;
+#ifndef DISABLE_HASH_CONSING
+                    expression_intern_remove(ptr);
+#endif
+                    SET_FORALL_BODY(ptr, term);
+#ifndef DISABLE_HASH_CONSING
+                    if (term->tag != HOLE_EXPRESSION) {
+                        expression_intern_insert(ptr);
+                    }
+#endif
+                    break;
+                }
+                case (FORALL_BOUND_VAR): {
+                    Expression *ptr = (Expression *)uplink->ptr;
+#ifndef DISABLE_HASH_CONSING
+                    expression_intern_remove(ptr);
+#endif
+                    SET_FORALL_BOUND_VAR(ptr, term);
+#ifndef DISABLE_HASH_CONSING
+                    if (term->tag != HOLE_EXPRESSION) {
+                        expression_intern_insert(ptr);
+                    }
+#endif
+                    break;
+                }
+                case (VAR_BODY): {
+                    Expression *ptr = (Expression *)uplink->ptr;
+                    SET_VAR_BODY(ptr, term);
+                    break;
+                }
+                case (EXPR_TYPE): {
+                    Expression *ptr = (Expression *)uplink->ptr;
+                    SET_EXPR_TYPE(ptr, term);
+                    break;
+                }
+                default:
+                    fprintf(stderr, WARNING "todo: fill_hole for relation %d.\n" CRESET,
+                            uplink->relation);
+                    break;
             }
-            case (LAMBDA_BOUND_VAR): {
-                Expression *ptr = (Expression *)uplink->ptr;
-                SET_LAMBDA_BOUND_VAR(ptr, term);
-                break;
-            }
-            case (APP_FUNC): {
-                Expression *ptr = (Expression *)uplink->ptr;
-                SET_APP_FUNC(ptr, term);
-                break;
-            }
-            case (APP_ARG): {
-                Expression *ptr = (Expression *)uplink->ptr;
-                SET_APP_ARG(ptr, term);
-                break;
-            }
-            case (FORALL_BODY): {
-                Expression *ptr = (Expression *)uplink->ptr;
-                SET_FORALL_BODY(ptr, term);
-                break;
-            }
-            case (FORALL_BOUND_VAR): {
-                Expression *ptr = (Expression *)uplink->ptr;
-                SET_FORALL_BOUND_VAR(ptr, term);
-                break;
-            }
-            case (VAR_BODY): {
-                Expression *ptr = (Expression *)uplink->ptr;
-                SET_VAR_BODY(ptr, term);
-                break;
-            }
-            case (EXPR_TYPE): {
-                Expression *ptr = (Expression *)uplink->ptr;
-                SET_EXPR_TYPE(ptr, term);
-                break;
-            }
-            case (EXPR_CONTEXT): {
-                Expression *ptr = (Expression *)uplink->ptr;
-                SET_EXPR_CONTEXT(ptr, term);
-                break;
-            }
-            default:
-                fprintf(stderr, WARNING "todo: fill_hole for relation %d.\n" CRESET,
-                        uplink->relation);
-                break;
+            ul = ul->next;
         }
     }
+
+    // BFS upward through structural uplinks to recompute has_evar on ancestors.
+    // We stop propagating from any node whose has_evar didn't change.
+    // The stopping condition prevents exponential blowup:
+    // a node whose flag didn't change never re-enqueues its parents a second time.
+    if (holepars && holepars->head) {
+        DoublyLinkedList *queue = dll_create();
+
+        DLLNode *ul = holepars->head;
+        while (ul) {
+            Expression *par = (Expression *)((Uplink *)ul->data)->ptr;
+            dll_insert_at_tail(queue, dll_new_node(par));
+            ul = ul->next;
+        }
+
+        while (queue->head) {
+            DLLNode *n = dll_remove_head(queue);
+            Expression *p = (Expression *)n->data;
+            free(n);
+
+            bool old_val = p->has_evar;
+            bool new_val = recompute_has_evar(p);
+            p->has_evar = new_val;
+
+            if (new_val != old_val && p->uplinks) {
+                DLLNode *pul = p->uplinks->head;
+                while (pul) {
+                    Expression *pp = (Expression *)((Uplink *)pul->data)->ptr;
+                    dll_insert_at_tail(queue, dll_new_node(pp));
+                    pul = pul->next;
+                }
+            }
+        }
+
+        dll_destroy(queue);
+    }
+
+    hole->as.hole.is_satisfied = true;
     return true;
 }
 
@@ -1432,8 +1568,8 @@ bool _congruence2(Expression *a, Expression *b, LinearMap *mapping) {
             case (PROP_EXPRESSION):
                 return true;
             case (APP_EXPRESSION):
-                return _congruence2(a->as.app.func, b->as.app.func, mapping) &&
-                       _congruence2(a->as.app.arg, b->as.app.arg, mapping);
+                return (_congruence2(a->as.app.func, b->as.app.func, mapping) &&
+                        _congruence2(a->as.app.arg, b->as.app.arg, mapping)) != 0;
             case (FORALL_EXPRESSION): {
                 linear_map_set(mapping, a->as.forall.bound_variable, b->as.forall.bound_variable);
                 return _congruence2(a->as.forall.body, b->as.forall.body, mapping);
@@ -1443,10 +1579,10 @@ bool _congruence2(Expression *a, Expression *b, LinearMap *mapping) {
                 return _congruence2(a->as.lambda.body, b->as.lambda.body, mapping);
             }
             case (VAR_EXPRESSION): {
-                return (a == b) || (linear_map_get(mapping, a) == b);
+                return ((a == b) || (linear_map_get(mapping, a) == b)) != 0;
             }
             case (HOLE_EXPRESSION): {
-                return (a == b) || (linear_map_get(mapping, a) == b);
+                return ((a == b) || (linear_map_get(mapping, a) == b)) != 0;
             }
             case (MATCH_EXPRESSION): {
                 if (!_congruence2(a->as.match.scrutinee, b->as.match.scrutinee, mapping)) {

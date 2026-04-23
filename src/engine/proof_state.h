@@ -10,7 +10,7 @@ typedef struct ProofState ProofState;
 struct ProofState {
     Expression *pending_theorem;
     DoublyLinkedList *goals;  // list of Expression* representing proof obligations
-    size_t goal_index;        // current goal index
+    DLLNode *current_node;    // pointer to current (or last-visited) node; NULL = exhausted
 };
 
 /**
