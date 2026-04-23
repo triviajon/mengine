@@ -1,0 +1,17 @@
+Inductive True : Type := | I : True. 
+
+Inductive nat : Type := | O : nat | S : forall (_: nat), nat.
+Fixpoint add (n : nat) (m : nat) {struct n} : nat := match n with | O => m | S n' => S (add n' m) end.
+Fixpoint mul (n : nat) (m : nat) {struct n} : nat := match n with | O => O | S n' => add m (mul n' m) end. 
+
+Definition Let_In (A : Type) (P: forall (_: A), Type) (v : A) (f : forall (x: A), P x) : P v := let x: A := v in f x.
+
+Fixpoint big (a : nat) (sz : nat) { struct sz } : nat := match sz with
+    | O => a
+    | S sz' => Let_In (nat) (fun (_ : nat) => nat) (mul a a) (fun (a': nat) => big a' sz')
+    end.
+
+
+Definition test_term : nat := big (S O) (S (S (S (S O)))).
+
+Theorem test_big : forall (n: nat), eq nat test_term n.

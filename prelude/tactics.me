@@ -1,0 +1,159 @@
+(* prelude/tactics.me — Standard tactic library loaded at startup *)
+
+(* Register the built-in equality relation for generalized rewriting *)
+Register Relation eq eq_refl eq_trans Bad_App_Congruence.
+
+(* ── Core tactics (migrated from C) ─────────────────── *)
+
+(* Introduce a forall-bound variable with a given name *)
+Tactic intro name := intro_step name.
+
+(* Introduce a forall-bound variable with default name *)
+Tactic intro := intro_step.
+
+(* Introduce all forall-bound variables *)
+Tactic intros := repeat intro.
+
+(* Provide an exact proof term for the goal *)
+Tactic exact t :=
+  let g := current_goal in
+  fill g t.
+
+(* Unify a lemma with the goal and fill *)
+Tactic apply lemma :=
+  let g := current_goal in
+  let inst := eunify lemma in
+  fill g inst.
+
+(* Same as apply — eunify already handles existential variables *)
+Tactic eapply lemma :=
+  let g := current_goal in
+  let inst := eunify lemma in
+  fill g inst.
+
+(* Close a goal of the form eq A x x *)
+Tactic reflexivity := match Goal with
+| [ |- (((eq ?A) ?x) ?x) ] => exact ((eq_refl A) x)
+end.
+
+(* Find a hypothesis whose type matches the goal *)
+Tactic assumption := match Goal with
+| [ H : ?P |- ?P ] => exact H
+end.
+
+(* Split a conjunction goal into two subgoals *)
+Tactic split := match Goal with
+| [ |- ((and ?A) ?B) ] => eapply (((conj A) B))
+end.
+
+(* Prove left disjunct *)
+Tactic left := match Goal with
+| [ |- ((or ?A) ?B) ] => eapply (((or_introl A) B))
+end.
+
+(* Prove right disjunct *)
+Tactic right := match Goal with
+| [ |- ((or ?A) ?B) ] => eapply (((or_intror A) B))
+end.
+
+(* Provide a witness for an existential *)
+Tactic exists w := match Goal with
+| [ |- ((ex ?A) ?P) ] => eapply ((((ex_intro A) P) w))
+end.
+
+(* ── Convenience tactics ─────────────────────────────── *)
+
+(* Introduce all forall-bound variables *)
+Tactic intro_all := repeat intro.
+
+(* Try to close the goal automatically *)
+Tactic auto := repeat intro; try assumption; try reflexivity.
+
+(* ── Bottom-up rewrite algorithm ─────────────────────── *)
+
+(* Try head-rewriting: unify lemma's LHS with mid.
+   Returns pair mid (pair rewritten proof). *)
+Tactic _rewrite_head mid lemma :=
+  first [
+    (let inst := rewrite_unify lemma mid in
+     let inst_ty := type_of inst in
+     match inst_ty with
+     | (((eq ?_) ?_) ?r) =>
+       let inner := pair r inst in
+       pair mid inner
+     end)
+  |
+    (let RT := type_of mid in
+     let refl := constr ((eq_refl RT) mid) in
+     let inner := pair mid refl in
+     pair mid inner)
+  ].
+
+(* Bottom-up rewrite of an expression.
+   Returns pair original (pair rewritten proof)
+   where proof : eq type(original) original rewritten. *)
+Tactic _rewrite_expr expr lemma :=
+  match expr with
+  | (?f ?a) =>
+    let rwr_f := _rewrite_expr f lemma in
+    let f_tail := snd rwr_f in
+    let f_new := fst f_tail in
+    let f_proof := snd f_tail in
+    let rwr_a := _rewrite_expr a lemma in
+    let a_tail := snd rwr_a in
+    let a_new := fst a_tail in
+    let a_proof := snd a_tail in
+    (* Build mid result: congruence or noop *)
+    let mid_rwr := first [
+      (expr_eq f f_new; expr_eq a a_new;
+       let RT := type_of expr in
+       let refl := constr ((eq_refl RT) expr) in
+       let inner := pair expr refl in
+       pair expr inner)
+    |
+      (let mid_expr := constr (f_new a_new) in
+       let A := type_of a in
+       let B := type_of expr in
+       let congr_proof := constr ((((((((Bad_App_Congruence A) B) f) f_new) a) a_new) f_proof) a_proof) in
+       let inner := pair mid_expr congr_proof in
+       pair expr inner)
+    ] in
+    let mid_tail := snd mid_rwr in
+    let mid_new := fst mid_tail in
+    let mid_proof := snd mid_tail in
+    (* Try head rewrite on mid *)
+    let head_rwr := _rewrite_head mid_new lemma in
+    let head_tail := snd head_rwr in
+    let head_new := fst head_tail in
+    let head_proof := snd head_tail in
+    (* Combine: noop or transitivity *)
+    first [
+      (expr_eq mid_new head_new;
+       let inner := pair mid_new mid_proof in
+       pair expr inner)
+    |
+      (let RT := type_of expr in
+       let trans_proof := constr ((((((eq_trans RT) expr) mid_new) head_new) mid_proof) head_proof) in
+       let inner := pair head_new trans_proof in
+       pair expr inner)
+    ]
+  | ?v =>
+    _rewrite_head v lemma
+  end.
+
+(* Top-level scripted rewrite tactic *)
+Tactic rewrite_s lemma :=
+  match Goal with
+  | [ |- (((eq ?A) ?L) ?R) ] =>
+    let rwr := _rewrite_expr L lemma in
+    let rwr_tail := snd rwr in
+    let rewritten := fst rwr_tail in
+    let proof := snd rwr_tail in
+    let g := current_goal in
+    let new_goal_type := constr (((eq A) rewritten) R) in
+    let new_goal := mk_hole new_goal_type in
+    let proof_term := constr ((((((eq_trans A) L) rewritten) R) proof) new_goal) in
+    fill g proof_term
+  end.
+
+

@@ -88,4 +88,11 @@ void parser_error(Parser *p, const char *msg);
  */
 void parser_flush_comments(Parser *p);
 
+/**
+ * Clean up parser resources: free the current token, pending comments, etc.
+ *
+ * @param p Pointer to the Parser.
+ */
+void parser_cleanup(Parser *p);
+
 #endif  // PARSER_BASE_H

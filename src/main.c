@@ -1,5 +1,6 @@
 #include <argp.h>
 #include <stdio.h>
+#include <sys/resource.h>
 
 #include "src/common/color.h"
 #include "src/common/options.h"
@@ -67,6 +68,30 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 
 static struct argp argp = {options, parse_opt, args_doc, doc, children, 0, 0};
 
+static void raise_stack_limit(void) {
+    struct rlimit rl;
+    if (getrlimit(RLIMIT_STACK, &rl) != 0) {
+        return;
+    }
+
+    const rlim_t target = (rlim_t)64 * 1024 * 1024;  // 64 MiB
+    if (rl.rlim_cur >= target) {
+        return;
+    }
+
+    rlim_t new_cur = target;
+    if (rl.rlim_max != RLIM_INFINITY && new_cur > rl.rlim_max) {
+        new_cur = rl.rlim_max;
+    }
+    if (new_cur <= rl.rlim_cur) {
+        return;
+    }
+
+    struct rlimit updated = rl;
+    updated.rlim_cur = new_cur;
+    (void)setrlimit(RLIMIT_STACK, &updated);
+}
+
 MEngineOptions build_options(struct arguments *args) {
     MEngineOptions options;
     options.debug = args->debug;
@@ -124,6 +149,8 @@ int load_and_repl_mode(MEngineOptions options, char *filename) {
 
 int main(int argc, char **argv) {
     struct arguments arguments;
+
+    raise_stack_limit();
 
     // Default values
     arguments.quiet = false;

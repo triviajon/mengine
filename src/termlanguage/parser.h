@@ -8,6 +8,10 @@
 // Forward declaration of the AST.
 typedef struct AST AST;
 
+// Forward declaration of kernel Expression (used by AST_EXPR_REF).
+typedef struct Expression Expression;
+typedef struct TacticValue TacticValue;
+
 typedef struct {
     char *name;  // identifier name
     AST *type;   // AST node representing the type
@@ -29,12 +33,22 @@ typedef enum {
     AST_FIX,
     AST_MATCHBRANCH,
     AST_MATCH,
-    AST_APP
+    AST_APP,
+    AST_PATVAR,
+    AST_EXPR_REF,  // wraps a kernel Expression* (injected by tactic interpreter)
 } ASTTag;
 
 typedef struct {
     char *name;
 } VarAST;
+
+typedef struct {
+    char *name;
+} PatVarAST;
+
+typedef struct {
+    TacticValue *tval;  // tactic value (not owned by AST)
+} ExprRefAST;
 
 typedef struct {
     char *name;
@@ -87,6 +101,7 @@ struct AST {
     union {
         VarAST var;
         HoleAST hole;
+        PatVarAST patvar;
         LambdaAST lambda;
         ForallAST forall;
         LetAST let;
@@ -94,6 +109,7 @@ struct AST {
         MatchBranchAST matchbranch;
         MatchAST match;
         FixAST fix;
+        ExprRefAST expr_ref;
     } value;
 };
 
@@ -138,7 +154,8 @@ AST *parse_lambda(Parser *p);
 AST *parse_forall(Parser *p);
 
 /**
- * <fix_expr> ::= "fix" <identifier> { "(" <binder> ")" } <decreasing_arg_annotation> ":" <term> ":=" <term>
+ * <fix_expr> ::= "fix" <identifier> { "(" <binder> ")" } <decreasing_arg_annotation> ":" <term>
+ * ":=" <term>
  *
  * @param p Pointer to the Parser.
  * @return AST node representing the parsed fix expression.
@@ -212,6 +229,14 @@ AST *parse_application(Parser *p);
  * @return AST node representing the parsed atomic term.
  */
 AST *parse_atomic(Parser *p);
+
+/**
+ * Parse a term pattern (like parse_term but also handles ?X pattern variables).
+ *
+ * @param p Pointer to the Parser.
+ * @return AST node representing the parsed term pattern.
+ */
+AST *parse_term_pattern(Parser *p);
 
 /**
  * Print an AST node to a file stream (for debugging).

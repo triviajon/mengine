@@ -10,19 +10,32 @@ static inline char peek_char(Lexer *lx) { return lx->src[lx->pos]; }
 
 static const char *token_type_name(TokenType t) {
     static const char *names[NUM_TOKEN_TYPES] = {
-        [TOK_IDENT] = "IDENT",           [TOK_LPAREN] = "LPAREN", [TOK_RPAREN] = "RPAREN",
-        [TOK_LBRACE] = "LBRACE",         [TOK_RBRACE] = "RBRACE", [TOK_COLON] = "COLON",
-        [TOK_COLON_EQ] = "COLON_EQ",     [TOK_COMMA] = "COMMA",   [TOK_DOT] = "DOT",
+        [TOK_IDENT] = "IDENT",
+        [TOK_LPAREN] = "LPAREN",
+        [TOK_RPAREN] = "RPAREN",
+        [TOK_LBRACE] = "LBRACE",
+        [TOK_RBRACE] = "RBRACE",
+        [TOK_COLON] = "COLON",
+        [TOK_COLON_EQ] = "COLON_EQ",
+        [TOK_COMMA] = "COMMA",
+        [TOK_DOT] = "DOT",
 
-        [TOK_DARROW] = "DARROW",         [TOK_PIPE] = "PIPE",
+        [TOK_DARROW] = "DARROW",
+        [TOK_PIPE] = "PIPE",
 
 #define X(lexeme, tok, dbg) [tok] = dbg,
 #include "src/common/token_keywords.def"
 #undef X
 
         [TOK_LEFT_ARROW] = "LEFT_ARROW",
+        [TOK_SEMICOLON] = "SEMICOLON",
+        [TOK_DOUBLE_PIPE] = "DOUBLE_PIPE",
+        [TOK_LBRACKET] = "LBRACKET",
+        [TOK_RBRACKET] = "RBRACKET",
 
-        [TOK_COMMENT] = "COMMENT",       [TOK_EOF] = "EOF",       [TOK_ERROR] = "ERROR",
+        [TOK_COMMENT] = "COMMENT",
+        [TOK_EOF] = "EOF",
+        [TOK_ERROR] = "ERROR",
     };
 
     if ((unsigned)t >= (unsigned)NUM_TOKEN_TYPES || names[t] == NULL) {
@@ -80,13 +93,13 @@ char *skip_comment(Lexer *lx) {
 
 char next_char(Lexer *lx) { return lx->src[lx->pos++]; }
 
-bool is_alpha(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); }
+bool is_alpha(char c) { return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) != 0; }
 
-bool is_digit(char c) { return (c >= '0' && c <= '9'); }
+bool is_digit(char c) { return (c >= '0' && c <= '9') != 0; }
 
-bool is_ident_start(char c) { return is_alpha(c) || c == '_' || c == '\''; }
+bool is_ident_start(char c) { return (is_alpha(c) || c == '_' || c == '\'') != 0; }
 
-bool is_ident_continue(char c) { return is_ident_start(c) || is_digit(c); }
+bool is_ident_continue(char c) { return (is_ident_start(c) || is_digit(c)) != 0; }
 
 Token *make_token(TokenType type, int pos, char *lexeme) {
     Token *token = (Token *)malloc(sizeof(Token));
@@ -174,7 +187,34 @@ Token *lexer_next_token(Lexer *lx) {
             break;
         }
         case '|': {
+            char next = peek_char(lx);
+            if (next == '|') {
+                next_char(lx);
+                token = make_token(TOK_DOUBLE_PIPE, lx->pos - 2, NULL);
+                break;
+            }
+            if (next == '-') {
+                next_char(lx);
+                token = make_token(TOK_TURNSTILE, lx->pos - 2, NULL);
+                break;
+            }
             token = make_token(TOK_PIPE, lx->pos - 1, NULL);
+            break;
+        }
+        case ';': {
+            token = make_token(TOK_SEMICOLON, lx->pos - 1, NULL);
+            break;
+        }
+        case '[': {
+            token = make_token(TOK_LBRACKET, lx->pos - 1, NULL);
+            break;
+        }
+        case ']': {
+            token = make_token(TOK_RBRACKET, lx->pos - 1, NULL);
+            break;
+        }
+        case '?': {
+            token = make_token(TOK_QUESTION, lx->pos - 1, NULL);
             break;
         }
         case '<': {

@@ -1,0 +1,72 @@
+(* let_bindings.me — Phase 4: let-bindings and kernel primitives *)
+
+Axiom A : Prop.
+Axiom B : Prop.
+Axiom a : A.
+Axiom b : B.
+
+(* --- goal_type: extract the type of the current goal --- *)
+
+Axiom id_prop : forall (P : Prop), forall (p : P), P.
+
+(* Use goal_type via let-binding to pass the goal's type explicitly *)
+Theorem let_goal_type : A.
+let T := goal_type in exact (id_prop T a).
+
+(* --- type_of: extract the type of a term --- *)
+
+(* Use type_of to compute the type of a hypothesis *)
+Theorem let_type_of : A.
+let T := type_of a in exact (id_prop T a).
+
+(* --- let inside match Goal --- *)
+
+(* Combine let with match Goal for more flexible tactics *)
+Theorem let_in_match : forall (x : A), A.
+intro x.
+match Goal with
+| [ H : ?P |- ?P ] =>
+    let T := goal_type in exact (id_prop T H)
+end.
+
+(* --- Named tactics with let-bindings --- *)
+
+(* Define a tactic that uses let to inspect the goal *)
+Tactic solve_with_id := let T := goal_type in exact (id_prop T a).
+
+Theorem use_solve_with_id : A.
+solve_with_id.
+
+(* --- Pattern variables injected as terms --- *)
+
+(* Pattern variable ?T is injected as AST_EXPR_REF into the body *)
+Theorem patvar_as_expr_ref : A.
+match Goal with
+| [ |- ?T ] => exact (id_prop T a)
+end.
+
+(* Pattern variables in apply context *)
+Axiom transport : forall (P : Prop), forall (Q : Prop), forall (p : P), Q.
+
+Theorem patvar_transport : B.
+match Goal with
+| [ |- ?Q ] => exact (transport A Q a)
+end.
+
+(* --- Chaining let-bindings --- *)
+
+Theorem chained_let : A.
+let T := goal_type in
+    let U := type_of a in
+        exact (id_prop T a).
+
+(* --- let + named tactic + match Goal --- *)
+
+Tactic reflect :=
+  match Goal with
+  | [ |- ?P ] =>
+      let T := goal_type in exact (id_prop T a)
+  end.
+
+Theorem test_reflect : A.
+reflect.

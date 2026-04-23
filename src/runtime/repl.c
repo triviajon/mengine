@@ -49,7 +49,7 @@ static void print_proof_state(MEngineRuntime *rt) {
     }
 
     Context *goal_ctx = kernel_expr_context(goal);
-    char *ctx_str = kernel_context_to_string(goal_ctx);
+    char *ctx_str = kernel_context_to_string_until(goal_ctx, rt_ctx);
     char *goal_str = kernel_expr_to_string(kernel_expr_type(goal));
 
     // Header

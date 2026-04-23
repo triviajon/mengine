@@ -7,6 +7,7 @@
 #include "src/common/color.h"
 #include "src/common/doubly_linked_list.h"
 #include "src/common/lexer.h"
+#include "src/engine/tactic_api.h"
 #include "src/kernel/kernel_api.h"
 #include "src/termlanguage/parser.h"
 
@@ -28,7 +29,8 @@ typedef struct LetBinding {
  * substitutions.
  * @return The converted Expression, or NULL on failure.
  */
-static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedList *letbindings);
+static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedList *letbindings,
+                                      TacticEnvEntry *tac_env);
 
 /**
  * Helper to look up a let binding by name.
@@ -67,7 +69,8 @@ static void letbindings_set(DoublyLinkedList *letbindings, const char *name, Exp
     dll_insert_at_tail(letbindings, dll_new_node(binding));
 }
 
-static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedList *letbindings) {
+static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedList *letbindings,
+                                      TacticEnvEntry *tac_env) {
     if (!ast) {
         return NULL;
     }
@@ -77,6 +80,13 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
             Expression *letbinding = letbindings_get(letbindings, ast->value.var.name);
             if (letbinding) {
                 return letbinding;
+            }
+
+            // Check tactic let-binding environment (from TAC_LET / TAC_MATCH_*)
+            for (TacticEnvEntry *e = tac_env; e; e = e->next) {
+                if (strcmp(e->name, ast->value.var.name) == 0) {
+                    return e->expr;
+                }
             }
 
             Expression *val = kernel_context_lookup(context, ast->value.var.name);
@@ -94,9 +104,12 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
         case AST_PROP:
             return kernel_prop_create();
 
+        case AST_EXPR_REF:
+            return tactic_value_as_expr(ast->value.expr_ref.tval);
+
         case AST_LAMBDA: {
             Expression *binder_type =
-                _ast_to_expression(ast->value.lambda.binder.type, context, letbindings);
+                _ast_to_expression(ast->value.lambda.binder.type, context, letbindings, tac_env);
             if (!binder_type) {
                 fprintf(stderr, ERROR "Failed to create lambda binder type.\n" CRESET);
                 return NULL;
@@ -117,7 +130,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
             }
 
             Expression *body =
-                _ast_to_expression(ast->value.lambda.body, extended_context, letbindings);
+                _ast_to_expression(ast->value.lambda.body, extended_context, letbindings, tac_env);
             if (!body) {
                 fprintf(stderr, ERROR "Failed to create lambda body.\n" CRESET);
                 return NULL;
@@ -128,7 +141,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
 
         case AST_FORALL: {
             Expression *binder_type =
-                _ast_to_expression(ast->value.forall.binder.type, context, letbindings);
+                _ast_to_expression(ast->value.forall.binder.type, context, letbindings, tac_env);
             if (!binder_type) {
                 fprintf(stderr, ERROR "Failed to create forall binder type.\n" CRESET);
                 return NULL;
@@ -149,7 +162,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
             }
 
             Expression *body =
-                _ast_to_expression(ast->value.forall.body, extended_context, letbindings);
+                _ast_to_expression(ast->value.forall.body, extended_context, letbindings, tac_env);
             if (!body) {
                 fprintf(stderr, ERROR "Failed to create forall body.\n" CRESET);
                 return NULL;
@@ -159,13 +172,14 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
         }
 
         case AST_APP: {
-            Expression *func = _ast_to_expression(ast->value.app.func, context, letbindings);
+            Expression *func =
+                _ast_to_expression(ast->value.app.func, context, letbindings, tac_env);
             if (!func) {
                 fprintf(stderr, ERROR "Failed to create app func.\n" CRESET);
                 return NULL;
             }
 
-            Expression *arg = _ast_to_expression(ast->value.app.arg, context, letbindings);
+            Expression *arg = _ast_to_expression(ast->value.app.arg, context, letbindings, tac_env);
             if (!arg) {
                 fprintf(stderr, ERROR "Failed to create app arg.\n" CRESET);
                 return NULL;
@@ -175,13 +189,15 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
         }
 
         case AST_LET: {
-            Expression *type = _ast_to_expression(ast->value.let.type, context, letbindings);
+            Expression *type =
+                _ast_to_expression(ast->value.let.type, context, letbindings, tac_env);
             if (!type) {
                 fprintf(stderr, ERROR "Failed to create let type.\n" CRESET);
                 return NULL;
             }
 
-            Expression *value = _ast_to_expression(ast->value.let.value, context, letbindings);
+            Expression *value =
+                _ast_to_expression(ast->value.let.value, context, letbindings, tac_env);
             if (!value) {
                 fprintf(stderr, ERROR "Failed to create let value.\n" CRESET);
                 return NULL;
@@ -197,12 +213,12 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
 
             letbindings_set(letbindings, ast->value.let.name, value);
 
-            return _ast_to_expression(ast->value.let.body, context, letbindings);
+            return _ast_to_expression(ast->value.let.body, context, letbindings, tac_env);
         }
 
         case AST_MATCH: {
             Expression *scrutinee =
-                _ast_to_expression(ast->value.match.scrutinee, context, letbindings);
+                _ast_to_expression(ast->value.match.scrutinee, context, letbindings, tac_env);
             if (!scrutinee) {
                 return NULL;
             }
@@ -235,30 +251,71 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                     Expression *ctor_type = kernel_expr_type(constructor);
                     Context *extended_context = context;
 
+                    /* For parametric inductives, the first few foralls in the
+                     * constructor type are type-parameter binders (e.g., A in
+                     * sl_cons : ∀(A:Type). ∀(h:A). ...).  When matching on a
+                     * scrutinee of type (sep_list A_fix), the type argument A_fix
+                     * is already determined by the scrutinee.  We extract the type
+                     * arguments from the scrutinee's type so that subsequent pattern
+                     * variables get types that reference A_fix (via a delta-reducible
+                     * alias), making `comb h` type-check correctly. */
+                    Expression *scrutinee_type = kernel_expr_type(scrutinee);
+                    DoublyLinkedList *type_args = dll_create();
+                    {
+                        Expression *head = scrutinee_type;
+                        while (head != NULL && kernel_app_func(head) != NULL) {
+                            dll_insert_at_head(type_args, dll_new_node(kernel_app_arg(head)));
+                            head = kernel_app_func(head);
+                        }
+                    }
+                    int scrutinee_param_count = dll_len(type_args);
+
                     for (int j = 0; j < pattern_var_count; j++) {
                         Expression *bound_var = kernel_forall_var(ctor_type);
                         if (!bound_var) {
                             fprintf(stderr, ERROR
                                     "Constructor has fewer parameters than pattern.\n" CRESET);
+                            dll_destroy(type_args);
                             free(pattern_variables);
                             free(branches);
                             return NULL;
                         }
 
-                        Expression *param_type = kernel_expr_type(bound_var);
-
-                        Expression *pattern_var = kernel_var_create(pattern->argument_names[j],
-                                                                    param_type, extended_context);
+                        Expression *pattern_var;
+                        if (j < scrutinee_param_count) {
+                            /* Type-parameter slot: create a delta-reducible alias that
+                             * expands to the corresponding type argument from the
+                             * scrutinee.  This makes definitional_equal(alias, type_arg)
+                             * true so that subsequent pattern variables' types unify with
+                             * the outer type parameter used by functions like `comb`. */
+                            Expression *type_arg = (Expression *)dll_at(type_args, j)->data;
+                            pattern_var = kernel_var_create_with_body(pattern->argument_names[j],
+                                                                      type_arg, extended_context);
+                        } else {
+                            Expression *param_type = kernel_expr_type(bound_var);
+                            pattern_var = kernel_var_create(pattern->argument_names[j], param_type,
+                                                            extended_context);
+                        }
 
                         pattern_variables[j] = pattern_var;
-
                         extended_context = pattern_var;
-
                         ctor_type = kernel_forall_body(ctor_type);
+
+                        /* Substitute bound_var -> pattern_var in the remaining constructor type.
+                         * Essential for parametric constructors where later arg types
+                         * reference earlier bound vars (type parameters). */
+                        if (pattern_var && ctor_type) {
+                            Expression *subst_ctor =
+                                kernel_subst(extended_context, ctor_type, bound_var, pattern_var);
+                            if (subst_ctor) {
+                                ctor_type = subst_ctor;
+                            }
+                        }
                     }
+                    dll_destroy(type_args);
 
                     Expression *body = _ast_to_expression(branch_ast->value.matchbranch.body,
-                                                          extended_context, letbindings);
+                                                          extended_context, letbindings, tac_env);
                     if (!body) {
                         fprintf(stderr, ERROR "Failed to create match branch body.\n" CRESET);
                         free(pattern_variables);
@@ -270,7 +327,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                                                              pattern_var_count, body);
                 } else {
                     Expression *body = _ast_to_expression(branch_ast->value.matchbranch.body,
-                                                          context, letbindings);
+                                                          context, letbindings, tac_env);
                     if (!body) {
                         fprintf(stderr, ERROR "Failed to create match branch body.\n" CRESET);
                         free(branches);
@@ -317,7 +374,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                 contexts[0] = context;
                 for (int i = 0; i < binder_count; i++) {
                     Expression *binder_type = _ast_to_expression(ast->value.fix.binders[i]->type,
-                                                                 contexts[i], letbindings);
+                                                                 contexts[i], letbindings, tac_env);
                     if (!binder_type) {
                         fprintf(stderr,
                                 ERROR "Failed to convert binder type in fix expression.\n" CRESET);
@@ -337,8 +394,8 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                     contexts[i + 1] = binder;
                 }
 
-                Expression *return_type = _ast_to_expression(ast->value.fix.return_type,
-                                                             contexts[binder_count], letbindings);
+                Expression *return_type = _ast_to_expression(
+                    ast->value.fix.return_type, contexts[binder_count], letbindings, tac_env);
                 if (!return_type) {
                     fprintf(stderr,
                             ERROR "Failed to convert return type in fix expression.\n" CRESET);
@@ -364,6 +421,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                     free(contexts);
                     return NULL;
                 }
+                free(contexts);
             }
             // Next, make the fix expression
 
@@ -378,7 +436,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                 contexts[0] = recursive_var;
                 for (int i = 0; i < binder_count; i++) {
                     Expression *binder_type = _ast_to_expression(ast->value.fix.binders[i]->type,
-                                                                 contexts[i], letbindings);
+                                                                 contexts[i], letbindings, tac_env);
                     if (!binder_type) {
                         fprintf(stderr,
                                 ERROR "Failed to convert binder type in fix expression.\n" CRESET);
@@ -398,8 +456,8 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                     contexts[i + 1] = binder;
                 }
 
-                Expression *body =
-                    _ast_to_expression(ast->value.fix.body, contexts[binder_count], letbindings);
+                Expression *body = _ast_to_expression(ast->value.fix.body, contexts[binder_count],
+                                                      letbindings, tac_env);
                 if (!body) {
                     fprintf(stderr, ERROR "Failed to convert body in fix expression.\n" CRESET);
                     free(contexts);
@@ -432,9 +490,9 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
 
                 fix_expr = kernel_fix_create(recursive_var, contexts + 1, binder_count, body,
                                              decreasing_arg_index, contexts[0]);
+                free(contexts);
                 if (!fix_expr) {
                     fprintf(stderr, ERROR "Failed to create fix expression.\n" CRESET);
-                    free(contexts);
                     return NULL;
                 }
             }
@@ -454,9 +512,33 @@ Expression *ast_to_expression(AST *ast, Context *context) {
     }
 
     DoublyLinkedList *letbindings = dll_create();
-    Expression *result = _ast_to_expression(ast, context, letbindings);
+    Expression *result = _ast_to_expression(ast, context, letbindings, NULL);
 
     // Free the letbindings list and its contents
+    if (letbindings) {
+        DLLNode *current = letbindings->head;
+        while (current) {
+            LetBinding *binding = (LetBinding *)current->data;
+            if (binding) {
+                free(binding->name);
+                free(binding);
+            }
+            current = current->next;
+        }
+        dll_destroy(letbindings);
+    }
+
+    return result;
+}
+
+Expression *ast_to_expression_env(AST *ast, Context *context, TacticEnvEntry *env) {
+    if (!ast || !context) {
+        return NULL;
+    }
+
+    DoublyLinkedList *letbindings = dll_create();
+    Expression *result = _ast_to_expression(ast, context, letbindings, env);
+
     if (letbindings) {
         DLLNode *current = letbindings->head;
         while (current) {
@@ -528,6 +610,9 @@ void free_ast(AST *ast) {
         case AST_MATCH:
             free_ast(ast->value.match.scrutinee);
             if (ast->value.match.branches) {
+                for (size_t i = 0; i < ast->value.match.branch_count; i++) {
+                    free_ast(ast->value.match.branches[i]);
+                }
                 free(ast->value.match.branches);
             }
             break;
@@ -542,6 +627,38 @@ void free_ast(AST *ast) {
                 free(ast->value.matchbranch.pattern);
             }
             free_ast(ast->value.matchbranch.body);
+            break;
+
+        case AST_LET:
+            free(ast->value.let.name);
+            free_ast(ast->value.let.type);
+            free_ast(ast->value.let.value);
+            free_ast(ast->value.let.body);
+            break;
+
+        case AST_FIX:
+            free(ast->value.fix.name);
+            if (ast->value.fix.binders) {
+                for (size_t i = 0; i < ast->value.fix.binder_count; i++) {
+                    if (ast->value.fix.binders[i]) {
+                        free(ast->value.fix.binders[i]->name);
+                        free_ast(ast->value.fix.binders[i]->type);
+                        free(ast->value.fix.binders[i]);
+                    }
+                }
+                free(ast->value.fix.binders);
+            }
+            free(ast->value.fix.decreasing_arg_name);
+            free_ast(ast->value.fix.return_type);
+            free_ast(ast->value.fix.body);
+            break;
+
+        case AST_PATVAR:
+            free(ast->value.patvar.name);
+            break;
+
+        case AST_EXPR_REF:
+            free_tactic_value(ast->value.expr_ref.tval);
             break;
 
         case AST_TYPE:

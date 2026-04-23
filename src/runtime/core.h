@@ -32,6 +32,16 @@ extern Expression *eq_sym;
 extern Expression *eq_trans;
 extern Expression *eq_subst;
 
+extern Expression *prop_and;
+extern Expression *prop_conj;
+
+extern Expression *prop_or;
+extern Expression *or_introl;
+extern Expression *or_intror;
+
+extern Expression *prop_ex;
+extern Expression *ex_intro;
+
 Expression *_get_lhs_eq(Expression *eq_expression);
 
 Expression *_get_rhs_eq(Expression *eq_expression);

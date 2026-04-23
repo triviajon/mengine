@@ -14,7 +14,8 @@ Admitted.
 Theorem chained_modulo : forall (b: nat), forall (p: nat), eq nat 
     (mod (mod (mod (mod (mod (mod b p) p) p) p) p) p)
     (mod b p).
-intros b p.
+intro b.
+intro p.
 (* Note: This notation is temporary *)
 rewrite mod_mod with eq.
 apply eq_refl.

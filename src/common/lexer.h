@@ -25,7 +25,13 @@ typedef enum {
     TOK_DOT,         // .
     TOK_DARROW,      // =>
     TOK_PIPE,        // |
-    TOK_LEFT_ARROW,  // <-
+    TOK_LEFT_ARROW,    // <-
+    TOK_SEMICOLON,     // ;
+    TOK_DOUBLE_PIPE,   // ||
+    TOK_LBRACKET,      // [
+    TOK_RBRACKET,      // ]
+    TOK_QUESTION,      // ?
+    TOK_TURNSTILE,     // |-
 
     TOK_COMMENT,
     TOK_EOF,
