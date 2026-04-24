@@ -129,14 +129,15 @@ apply eq_refl.
             expr = "a"
             for _ in range(n):
                 expr = f"f ({expr})"
-            content = f"""set_option maxRecDepth 4096
+            content = f"""set_option maxHeartbeats 0
+set_option maxRecDepth 4096
 
 section Test
 
-variable (nat : Type)
-variable (f : nat → nat)
-variable (eq_fa_a : ∀ x : nat, f x = x)
-variable (a : nat)
+axiom nat : Type
+axiom f : nat → nat
+axiom a : nat
+axiom eq_fa_a : ∀ x : nat, f x = x
 
 theorem bench : ({expr}) = a := by
   repeat rw [eq_fa_a]

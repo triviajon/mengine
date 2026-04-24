@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-bench.py — Unified benchmark CLI for MEngine vs Rocq vs Lean.
+bench.py - Unified benchmark CLI for MEngine vs Rocq vs Lean.
 
 Usage:
   bench.py list                           List all benchmarks
