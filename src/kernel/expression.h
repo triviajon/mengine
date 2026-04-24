@@ -12,6 +12,16 @@
 typedef struct Expression Expression;
 typedef struct Expression Context;
 
+#ifdef ORDER_USE_RELABELING
+/* A token in the single Euler-tour doubly-linked list.
+ * Each Expression owns two: order_in (entry) and order_out (exit). */
+typedef struct OrderToken {
+    uint64_t tag;
+    struct OrderToken *prev;
+    struct OrderToken *next;
+} OrderToken;
+#endif
+
 // Supported expression types for the Expression struct.
 typedef enum {
     VAR_EXPRESSION,
@@ -144,6 +154,11 @@ struct Expression {
     bool has_evar;              // True if this expression transitively contains any unfilled hole.
     uint64_t visit_gen;  // Generation stamp for occurs_in traversal (avoids visited-map alloc).
     Expression *g_alloc_next;  // Intrusive linked list for GC shutdown traversal
+
+#ifdef ORDER_USE_RELABELING
+    OrderToken order_in;   /* DFS in-time  token (preorder)  */
+    OrderToken order_out;  /* DFS out-time token (postorder) */
+#endif
 
     union {
         VarExpression var;
