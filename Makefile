@@ -13,11 +13,24 @@ TUNE_SUBST_TOPDOWN ?= 1
 # enabled: make TUNE_HASH_CONSING=1
 TUNE_HASH_CONSING ?= 0
 
+# Order data structure implementation toggle:
+# tag-range relabeling: make 
+# linked-list: make TUNE_USE_RELABELING=0
+TUNE_USE_RELABELING ?= 1
+
 TUNE_FLAGS ?=
 
 # If hash-consing is disabled, we need to define DISABLE_HASH_CONSING
 ifeq ($(TUNE_HASH_CONSING), 0)
 	TUNE_FLAGS += -DDISABLE_HASH_CONSING
+endif
+
+ifeq ($(ORDER_IMPL), ds)
+	TUNE_FLAGS += -DORDER_IMPL_DS
+endif
+
+ifeq ($(TUNE_USE_RELABELING), 1)
+	TUNE_FLAGS += -DORDER_USE_RELABELING
 endif
 
 CFLAGS = -Wall -Wextra -O0 -g -march=native -I. -DTUNE_SUBST_TOPDOWN=$(TUNE_SUBST_TOPDOWN) $(TUNE_FLAGS)
