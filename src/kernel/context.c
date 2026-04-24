@@ -3,11 +3,15 @@
 #include <stdlib.h>
 
 #include "src/kernel/expression.h"
+#include "src/kernel/order.h"
 #include "src/kernel/subst.h"
 
 Context *context_create_empty() {
     if (EMPTY_CONTEXT == NULL) {
         EMPTY_CONTEXT = calloc(1, sizeof(Context));
+#ifdef ORDER_USE_RELABELING
+        EMPTY_CONTEXT->order_out.tag = UINT64_MAX;
+#endif
     }
     return EMPTY_CONTEXT;
 }
@@ -43,26 +47,18 @@ bool context_is_ancestor(Expression *contextA, Expression *contextB) {
     if (context_is_empty(contextA)) {
         return true;
     }
-
-    Expression *curr_ctxB = contextB;
-    while (!context_is_empty(curr_ctxB)) {
-        if (contextA == curr_ctxB) {
-            return true;
-        }
-        curr_ctxB = get_expression_context(curr_ctxB);
+    if (context_is_empty(contextB)) {
+        return false;
     }
-
-    return false;
+    return order_precedes(contextA, contextB);
 }
 
 Expression *context_find(Expression *context, Expression *var) {
-    Expression *curr = context;
-    while (!context_is_empty(curr)) {
-        if (curr == var) {
-            return curr;
-        }
-
-        curr = get_expression_context(curr);
+    if (context_is_empty(var)) {
+        return NULL;
+    }
+    if (order_precedes(var, context) || var == context) {
+        return var;
     }
     return NULL;
 }

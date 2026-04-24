@@ -12,6 +12,7 @@
 #include "src/kernel/definitional_equal.h"
 #include "src/kernel/expression_hash.h"
 #include "src/kernel/inductive.h"
+#include "src/kernel/order.h"
 #include "src/kernel/structural.h"
 #include "src/kernel/subst.h"
 
@@ -149,6 +150,7 @@ static void gc_free_node(Expression *expr) {
     // Free tag-specific non-expression allocations
     switch (expr->tag) {
         case VAR_EXPRESSION:
+            order_on_delete(expr);
             free(expr->as.var.name);
             break;
         case MATCH_EXPRESSION:
@@ -304,6 +306,7 @@ Expression *init_var_expression_wc(const char *name, Expression *type, Context *
                                              /* type */ type);
 
     SET_VAR_NAME(expr, strdup(name));
+    order_on_insert(gamma, expr);
     return expr;
 }
 
@@ -332,7 +335,7 @@ Expression *init_var_expression_wc_with_body(const char *name, Expression *body,
     SET_VAR_NAME(expr, strdup(name));
     SET_VAR_BODY(expr, body);
     propagate_evar_refs(expr, body);
-
+    order_on_insert(gamma, expr);
     return expr;
 }
 
