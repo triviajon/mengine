@@ -113,8 +113,9 @@ End Test.
             content = f"""set_option maxHeartbeats 0
 set_option maxRecDepth 100000
 
-variable (nat : Type)
-variable (b p : nat)
+axiom nat : Type
+axiom b : nat
+axiom p : nat
 axiom mod : nat → nat → nat
 axiom mod_mod : ∀ (a n : nat), mod (mod a n) n = mod a n
 

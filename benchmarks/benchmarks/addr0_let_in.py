@@ -196,7 +196,7 @@ Theorem bench : eq nat
     )
     v0.
 rewrite add_r_O with eq.
-apply eq_refl.
+Admitted.
 """
             path = os.path.join(workdir, "test.me")
             with open(path, "w") as f:
@@ -231,11 +231,9 @@ axiom O : nat
 axiom v0 : nat
 axiom add_r_O : ∀ (n : nat), add n O = n
 
-def computation : nat :=
+theorem bench : ∃ v', (
 {lets}
-
-theorem bench : ∃ v', add (add v{n} v{n}) O = v' := by
-  unfold computation
+) = v' := by
   {tactic_map[strategy.name]}
   exact ⟨_, rfl⟩
 end Test

@@ -6,7 +6,7 @@
   "coqutil_root": "~/coqutil",
   "results_dir": "results",
   "plots_dir": "plots",
-  "default_timeout": 30,
+  "default_timeout": 20,
   "max_consecutive_timeouts": 3,
-  "max_consecutive_failures": 5
+  "max_consecutive_failures": 2
 }

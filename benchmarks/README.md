@@ -45,23 +45,23 @@ Show what results exist, broken down by engine.
 Run benchmarks. Results are saved incrementally to `results/`.
 
 Options:
-- `--engine mengine,coq,lean` — restrict to specific engines
-- `--override n=1:500:10` — override parameter range
-- `--timeout 60` — per-run timeout in seconds
-- `--max-timeouts 5` — consecutive timeouts before retiring a strategy
-- `--force` — re-run even if results already exist
+- `--engine mengine,coq,lean` - restrict to specific engines
+- `--override n=1:500:10` - override parameter range
+- `--timeout 60` - per-run timeout in seconds
+- `--max-timeouts 5` - consecutive timeouts before retiring a strategy
+- `--force` - re-run even if results already exist
 
 ### `bench.py plot [BENCHMARK] [OPTIONS]`
 Generate plots from results.
 
 Options:
-- `--engine mengine,coq` — only plot certain engines
-- `--format pdf` — output format (png/pdf/svg)
-- `--fixed m=3` — for multi-parameter benchmarks, fix a parameter
-- `--xlim 0:1000`, `--ylim 0:10` — axis limits
-- `--log-y`, `--log-x` — use log scale
-- `--title "Custom Title"` — override title
-- `--show-failures` — mark timeout/failed points on plot
+- `--engine mengine,coq` - only plot certain engines
+- `--format pdf` - output format (png/pdf/svg)
+- `--fixed m=3` - for multi-parameter benchmarks, fix a parameter
+- `--xlim 0:1000`, `--ylim 0:10` - axis limits
+- `--log-y`, `--log-x` - use log scale
+- `--title "Custom Title"` - override title
+- `--show-failures` - mark timeout/failed points on plot
 
 ## Benchmarks
 
@@ -105,4 +105,4 @@ python3 bench.py plot rewrite_fa --format pdf --ylim 0:5 --title "Rewriting Perf
 ## Adding a New Benchmark
 
 1. Create `benchmarks/my_new_benchmark.py` with a concrete class extending `Benchmark`
-2. That's it — the registry auto-discovers benchmark subclasses in `benchmarks/`, and the CLI and plotter pick them up automatically
+2. That's it - the registry auto-discovers benchmark subclasses in `benchmarks/`, and the CLI and plotter pick them up automatically

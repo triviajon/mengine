@@ -5,7 +5,7 @@ Verifies imperative programs with n repeated set+sub operations
 using partial map reasoning.
 
 All three engines use the same approach:
-  - Python generates ONLY n (a concrete nat) — everything else is static
+  - Python generates ONLY n (a concrete nat) - everything else is static
   - A Fixpoint/def `repeated_cmds n` defines the n-step command
   - The proof uses reduction (cbv/cbn/simp) to unfold the fixpoint
   - Then a tactic loop (`repeat_exec`) symbolically executes each step
@@ -231,7 +231,7 @@ Tactic repeat_exec :=
    Python generates only the concrete command term below.
    repeat_exec symbolically executes each instruction: O(n) proof work.
    Postcondition: memory is unchanged (eq m2 m).
-   The proof script is fully static — only the command term changes with n. *)
+   The proof script is fully static - only the command term changes with n. *)
 Theorem sym_exec :
     forall (m : pmap word byte), forall (l : pmap string word),
     exec
@@ -395,7 +395,7 @@ End A.
         return path
 
     def _generate_lean(self, n, workdir):
-        # Build concrete command term (fully unrolled, same as MEngine — no fixpoint/induction)
+        # Build concrete command term (fully unrolled, same as MEngine - no fixpoint/induction)
         concrete_repeated = "cmd_skip"
         for _ in range(n):
             concrete_repeated = (
@@ -409,7 +409,7 @@ End A.
             f" {concrete_repeated}))"
         )
 
-        # Build the explicit step-by-step tactic proof — no induction, no helper lemmas.
+        # Build the explicit step-by-step tactic proof - no induction, no helper lemmas.
         # After exec_input + the initial exec_set "a" := v, the local env is
         #   l0 = pmap_put (pmap_put l "b" v) "a" v
         # Each add-sub pair maintains this invariant via pmap_put_put_same.
@@ -439,7 +439,7 @@ End A.
 
         content = f"""-- Symbolic execution benchmark (Lean 4) - n={n}
 -- Python generates the concrete {n}-step command (fully unrolled, same as MEngine).
--- The proof steps through each instruction explicitly — no induction, no helper lemmas.
+-- The proof steps through each instruction explicitly - no induction, no helper lemmas.
 
 set_option maxHeartbeats 0
 set_option maxRecDepth 100000

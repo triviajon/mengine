@@ -199,7 +199,7 @@ class SeparationLogic(Benchmark):
     #
     # Embeds a static Lean 4 cancel tactic implemented via Lean.Elab.Tactic,
     # mirroring the mengine approach exactly.  Python only generates the axioms,
-    # predicates, and theorem statement — the proof is always just `cancel`.
+    # predicates, and theorem statement - the proof is always just `cancel`.
 
     _LEAN_CANCEL_TACTIC = """\
 import Lean
