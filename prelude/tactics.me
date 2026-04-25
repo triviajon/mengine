@@ -1,4 +1,4 @@
-(* prelude/tactics.me — Standard tactic library loaded at startup *)
+(* prelude/tactics.me - Standard tactic library loaded at startup *)
 
 (* Register the built-in equality relation for generalized rewriting *)
 Register Relation eq eq_refl eq_trans Bad_App_Congruence.
@@ -25,7 +25,7 @@ Tactic apply lemma :=
   let inst := eunify lemma in
   fill g inst.
 
-(* Same as apply — eunify already handles existential variables *)
+(* Same as apply - eunify already handles existential variables *)
 Tactic eapply lemma :=
   let g := current_goal in
   let inst := eunify lemma in

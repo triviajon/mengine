@@ -183,6 +183,8 @@ void expression_gc_shutdown(void) {
         expr = next;
     }
     g_expr_list_head = NULL;
+    TYPE = NULL;
+    PROP = NULL;
     expression_intern_table_free();
 }
 

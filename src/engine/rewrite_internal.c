@@ -272,15 +272,9 @@ Expression *_build_app_congruence_proof(RewriteResult *func_rwr, RewriteResult *
         H2, ctx);
 
     // Free f_x only if it is a fresh, unshared expression (uplinks == 0).
-    // With hash-consing, init_app_expression_wc may return a cached expression
-    // that is referenced by other parents (e.g., it IS the expr being rewritten).
-    // Unconditionally calling free_expression on a shared expression is unsound.
     if (f_x->uplinks == NULL || f_x->uplink_count == 0) {
         free_expression(f_x);
     }
-    // else: f_x is a shared/interned expression; B remains live via the proof's
-    // reference and f_x will be freed by the uplink system when its parents are freed.
-
     return proof;
 }
 
@@ -314,17 +308,6 @@ RewriteResult *rewrite_head(Expression *mid, Expression *lemma, Context *context
                             bool allow_unresolved_bindings) {
     g_rwr_stats.rewrite_head_calls++;
 
-    // This part of rewriting is literally just a call to the apply tactic.
-    // We're creating a hole with expected return type `mid` and defining
-    // context `context`, and attempting to apply the lemma to it. Expression
-    // *hole = init_hole_expression("Rewrite_Hole", mid, context);
-
-    // // TODO: Temporary, until the hole fill bug is fixed.
-    // Expression *holder =
-    // init_lambda_expression_wc(init_var_expression_wc("t",
-    // init_type_expression(), context),
-    //      hole, context);
-
     // TODO: We shouldn't need to use this function
     UnificationResult *unif_result = bad_unify_for_eq(context, lemma, mid);
 
@@ -355,6 +338,13 @@ RewriteResult *rewrite_head(Expression *mid, Expression *lemma, Context *context
 RewriteResult *_rewrite(Expression *expr, Expression *lemma, Context *context, Map *cached_rwr,
                         bool allow_unresolved_bindings);
 
+static RewriteResult *rewrite_result_take_copy(RewriteResult *src) {
+    RewriteResult *copy = malloc(sizeof(RewriteResult));
+    *copy = *src;
+    src->new_goals = NULL;
+    return copy;
+}
+
 RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context, Map *cached_rwr,
                            bool allow_unresolved_bindings) {
     Expression *func = get_app_func(expr);
@@ -373,21 +363,25 @@ RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context
         }
         mid_rwr = init_rewrite_result(expr, expr, NULL, _build_reflexivity_proof(expr, context));
     } else {
-        // Materialize any lazy noop proofs (NULL) before building congruence.
-        if (rwr_func->original_to_rewritten_proof == NULL) {
-            rwr_func->original_to_rewritten_proof =
-                _build_reflexivity_proof(rwr_func->original, context);
+        // Make owned copies so cache-owned rwr_func/rwr_arg are never mutated.
+        RewriteResult *rwr_func_own = rewrite_result_take_copy(rwr_func);
+        RewriteResult *rwr_arg_own = rewrite_result_take_copy(rwr_arg);
+        if (rwr_func_own->original_to_rewritten_proof == NULL) {
+            rwr_func_own->original_to_rewritten_proof =
+                _build_reflexivity_proof(rwr_func_own->original, context);
         }
-        if (rwr_arg->original_to_rewritten_proof == NULL) {
-            rwr_arg->original_to_rewritten_proof =
-                _build_reflexivity_proof(rwr_arg->original, context);
+        if (rwr_arg_own->original_to_rewritten_proof == NULL) {
+            rwr_arg_own->original_to_rewritten_proof =
+                _build_reflexivity_proof(rwr_arg_own->original, context);
         }
         mid_rwr = init_rewrite_result(
-            expr, init_app_expression_wc(rwr_func->rewritten, rwr_arg->rewritten, context),
-            dll_merge(rwr_func->new_goals, rwr_arg->new_goals),
-            _build_app_congruence_proof(rwr_func, rwr_arg, context));
-        rwr_func->new_goals = NULL;  // transferred to mid_rwr
-        rwr_arg->new_goals = NULL;   // transferred to mid_rwr
+            expr, init_app_expression_wc(rwr_func_own->rewritten, rwr_arg_own->rewritten, context),
+            dll_merge(rwr_func_own->new_goals, rwr_arg_own->new_goals),
+            _build_app_congruence_proof(rwr_func_own, rwr_arg_own, context));
+        rwr_func_own->new_goals = NULL;
+        rwr_arg_own->new_goals = NULL;
+        free_rewrite_result(rwr_func_own);
+        free_rewrite_result(rwr_arg_own);
     }
 
     // Optimization: if mid_rwr->rewritten is already in the cache (possible via
