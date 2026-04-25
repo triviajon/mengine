@@ -224,7 +224,7 @@ Expression *_construct_app_type(Context *context, Expression *func, Expression *
     Expression *return_type = get_forall_body(weak_func_type);         // B
 
     Expression *result = NULL;
-    if (subtypes(actual_arg_type, expected_arg_type)) {
+    if (actual_arg_type == expected_arg_type || subtypes(actual_arg_type, expected_arg_type)) {
         // return_type (B) is closed under context(variable) extended with variable
         // context must include both variable and all of arg's dependencies
         result = new_subst(context, return_type, variable, arg);  // B[x -> arg]
@@ -363,6 +363,16 @@ Expression *init_lambda_expression_wc(Expression *bound_variable, Expression *bo
         probe.as.lambda.body = body;
         Expression *cached = expression_intern_lookup(&probe);
         if (cached) {
+            // Re-establish child uplink tracking if it was cleared by path-copying
+            // (bottom-up substitution removes uplinks before calling init_*_wc).
+            if (!cached->as.lambda.bound_variable_uplink_node) {
+                cached->as.lambda.bound_variable_uplink_node =
+                    add_to_parents(bound_variable, cached, LAMBDA_BOUND_VAR);
+            }
+            if (!cached->as.lambda.body_uplink_node) {
+                cached->as.lambda.body_uplink_node =
+                    add_to_parents(body, cached, LAMBDA_BODY);
+            }
             return cached;
         }
     }
@@ -392,6 +402,11 @@ Expression *init_lambda_expression_wc(Expression *bound_variable, Expression *bo
 }
 
 Expression *init_app_expression_wc(Expression *func, Expression *arg, Context *context) {
+    if (!func || !arg || !context) {
+        fprintf(stderr, ERROR "Application input is NULL.\n" CRESET);
+        return NULL;
+    }
+
 #ifndef DISABLE_HASH_CONSING
     {
         Expression probe = {0};
@@ -401,6 +416,15 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg, Context *c
         probe.as.app.arg = arg;
         Expression *cached = expression_intern_lookup(&probe);
         if (cached) {
+            // Re-establish child uplink tracking if it was cleared by path-copying.
+            if (!cached->as.app.func_uplink_node) {
+                cached->as.app.func_uplink_node =
+                    add_to_parents(func, cached, APP_FUNC);
+            }
+            if (!cached->as.app.arg_uplink_node) {
+                cached->as.app.arg_uplink_node =
+                    add_to_parents(arg, cached, APP_ARG);
+            }
             return cached;
         }
     }
@@ -452,6 +476,15 @@ Expression *init_forall_expression_wc(Expression *bound_variable, Expression *bo
         probe.as.forall.body = body;
         Expression *cached = expression_intern_lookup(&probe);
         if (cached) {
+            // Re-establish child uplink tracking if it was cleared by path-copying.
+            if (!cached->as.forall.bound_variable_uplink_node) {
+                cached->as.forall.bound_variable_uplink_node =
+                    add_to_parents(bound_variable, cached, FORALL_BOUND_VAR);
+            }
+            if (!cached->as.forall.body_uplink_node) {
+                cached->as.forall.body_uplink_node =
+                    add_to_parents(body, cached, FORALL_BODY);
+            }
             return cached;
         }
     }

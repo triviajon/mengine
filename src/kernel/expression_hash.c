@@ -1,14 +1,14 @@
 #include "src/kernel/expression_hash.h"
 
 #include <stdint.h>
-#include <string.h>
 
 #include "src/common/hashcons_map.h"
 #include "src/kernel/expression.h"
 
 // Global intern table. Keys and values are both Expression*.
 // Only APP, LAMBDA, FORALL expressions are interned.
-// VAR and HOLE are never interned.
+// VAR and HOLE are never interned: VARs are unique per binding site (pointer IS identity);
+// HOLE nodes are unique unresolved goals.
 // TYPE and PROP are permanent singletons handled separately.
 static HashconsMap *expression_intern_table = NULL;
 

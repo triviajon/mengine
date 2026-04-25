@@ -10,6 +10,25 @@
 
 #ifndef TUNE_SUBST_TOPDOWN
 
+#ifdef DISABLE_HASH_CONSING
+#define CLEAR_CHILD_UPLINK(child_expr, uplink_field)         \
+    do {                                                      \
+        remove_uplink_by_node((child_expr), (uplink_field)); \
+        (uplink_field) = NULL;                                \
+    } while (0)
+#else
+/*
+ * With hash-consing enabled, canonical nodes may be shared by many parents.
+ * Clearing child-uplink back-pointers during path-copying can disconnect
+ * still-live shared nodes. Keep these links intact in this mode.
+ */
+#define CLEAR_CHILD_UPLINK(child_expr, uplink_field) \
+    do {                                             \
+        (void)(child_expr);                          \
+        (void)(uplink_field);                        \
+    } while (0)
+#endif
+
 #define MAP_POOL_CAPACITY 64
 static Map *g_map_pool[MAP_POOL_CAPACITY];
 static int g_map_pool_size = 0;
@@ -334,11 +353,9 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
             Expression *func2 = maybe_rebuild(apps_ctx, func, old_exprs, new_exprs, marked, memo, subtree_gen);
             Expression *arg2 = maybe_rebuild(apps_ctx, arg, old_exprs, new_exprs, marked, memo, subtree_gen);
 
-            // Remove stale uplinks from children to the now-dead old parent
-            remove_uplink_by_node(func, node->as.app.func_uplink_node);
-            node->as.app.func_uplink_node = NULL;
-            remove_uplink_by_node(arg, node->as.app.arg_uplink_node);
-            node->as.app.arg_uplink_node = NULL;
+            // Remove stale uplinks only in non-hash-consed mode.
+            CLEAR_CHILD_UPLINK(func, node->as.app.func_uplink_node);
+            CLEAR_CHILD_UPLINK(arg, node->as.app.arg_uplink_node);
 
             if (forms_beta_redex(func2, arg2)) {
                 result = beta_reduce(apps_ctx, func2, arg2);
@@ -380,11 +397,9 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
                 free(dll_remove_tail(new_exprs));
             }
 
-            // Remove stale uplinks (idempotent via NULL guard).
-            remove_uplink_by_node(x_bv, node->as.lambda.bound_variable_uplink_node);
-            node->as.lambda.bound_variable_uplink_node = NULL;
-            remove_uplink_by_node(body, node->as.lambda.body_uplink_node);
-            node->as.lambda.body_uplink_node = NULL;
+            // Remove stale uplinks only in non-hash-consed mode.
+            CLEAR_CHILD_UPLINK(x_bv, node->as.lambda.bound_variable_uplink_node);
+            CLEAR_CHILD_UPLINK(body, node->as.lambda.body_uplink_node);
 
             result = init_lambda_expression_wc(x_bv2, body2);
             break;
@@ -421,11 +436,9 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
                 free(dll_remove_tail(new_exprs));
             }
 
-            // Remove stale uplinks
-            remove_uplink_by_node(x_bv, node->as.forall.bound_variable_uplink_node);
-            node->as.forall.bound_variable_uplink_node = NULL;
-            remove_uplink_by_node(body, node->as.forall.body_uplink_node);
-            node->as.forall.body_uplink_node = NULL;
+            // Remove stale uplinks only in non-hash-consed mode.
+            CLEAR_CHILD_UPLINK(x_bv, node->as.forall.bound_variable_uplink_node);
+            CLEAR_CHILD_UPLINK(body, node->as.forall.body_uplink_node);
 
             result = init_forall_expression_wc(x_bv2, body2);
             break;
@@ -484,19 +497,15 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
                 branches2[i] = br2;
             }
 
-            // Remove stale uplinks
-            remove_uplink_by_node(scrutinee, node->as.match.scrutinee_uplink_node);
-            node->as.match.scrutinee_uplink_node = NULL;
+            // Remove stale uplinks only in non-hash-consed mode.
+            CLEAR_CHILD_UPLINK(scrutinee, node->as.match.scrutinee_uplink_node);
             for (int i = 0; i < branch_cnt; i++) {
                 MatchBranch *br = node->as.match.branches[i];
-                remove_uplink_by_node(br->constructor, br->constructor_uplink_node);
-                br->constructor_uplink_node = NULL;
-                remove_uplink_by_node(br->body, br->body_uplink_node);
-                br->body_uplink_node = NULL;
+                CLEAR_CHILD_UPLINK(br->constructor, br->constructor_uplink_node);
+                CLEAR_CHILD_UPLINK(br->body, br->body_uplink_node);
                 for (int j = 0; j < br->pattern_var_count; j++) {
-                    remove_uplink_by_node(br->pattern_variables[j],
-                                         br->pattern_variables_uplink_nodes[j]);
-                    br->pattern_variables_uplink_nodes[j] = NULL;
+                    CLEAR_CHILD_UPLINK(br->pattern_variables[j],
+                                       br->pattern_variables_uplink_nodes[j]);
                 }
             }
 
@@ -560,15 +569,12 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
                 free(dll_remove_tail(new_exprs));
             }
 
-            // Remove stale uplinks
-            remove_uplink_by_node(rec_var, node->as.fix.recursive_var_uplink_node);
-            node->as.fix.recursive_var_uplink_node = NULL;
+            // Remove stale uplinks only in non-hash-consed mode.
+            CLEAR_CHILD_UPLINK(rec_var, node->as.fix.recursive_var_uplink_node);
             for (int i = 0; i < arg_count; i++) {
-                remove_uplink_by_node(node->as.fix.args[i], node->as.fix.args_uplink_nodes[i]);
-                node->as.fix.args_uplink_nodes[i] = NULL;
+                CLEAR_CHILD_UPLINK(node->as.fix.args[i], node->as.fix.args_uplink_nodes[i]);
             }
-            remove_uplink_by_node(node->as.fix.body, node->as.fix.body_uplink_node);
-            node->as.fix.body_uplink_node = NULL;
+            CLEAR_CHILD_UPLINK(node->as.fix.body, node->as.fix.body_uplink_node);
 
             result = init_fix_expression_wc(rec_var2, args2, arg_count,
                                             node->as.fix.decreasing_arg_index, body2);
