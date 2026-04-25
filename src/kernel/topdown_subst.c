@@ -6,7 +6,7 @@
 #include "src/kernel/expression.h"
 #include "src/kernel/subst.h"
 
-// #ifdef TUNE_SUBST_TOPDOWN
+#ifdef TUNE_SUBST_TOPDOWN
 
 /*
  * _p_subst - substitute old_exprs[i] -> new_exprs[i] in t.
@@ -304,4 +304,4 @@ Expression *beta_subst(Context *context, Expression *t, Expression *x, Expressio
     return new_subst(context, t, x, a);
 }
 
-// #endif  // TUNE_SUBST_TOPDOWN
+#endif  // TUNE_SUBST_TOPDOWN

@@ -27,7 +27,7 @@ match Goal with
 | [ |- ?P ] => exact x
 end.
 
-(* Use pattern variable ?T as a term in exact —
+(* Use pattern variable ?T as a term in exact -
    In the body, refer to pattern vars as plain identifiers (like Coq Ltac).
    match substitutes T -> AST_EXPR_REF(matched_expr) before interpretation. *)
 Axiom refl_lemma : forall (P : Prop), forall (p : P), P.
