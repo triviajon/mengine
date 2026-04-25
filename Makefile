@@ -2,38 +2,36 @@ CC = clang
 # Optional compile-time overrides, e.g.:
 # make TUNE_FLAGS="-DMAP_INITIAL_CAPACITY=32 -DHCMAP_INITIAL_CAPACITY=2048"
 
-# Substitution implementation toggle:
-# default (top-down): make
-# old uplink implementation: make TUNE_SUBST_TOPDOWN=0
-# explicit top-down: make TUNE_SUBST_TOPDOWN=1
+# Substitution toggle
+# - top-down substitution (default): TUNE_SUBST_TOPDOWN=1
+# - bottom-up/uplink based substitution: TUNE_SUBST_TOPDOWN=0
 TUNE_SUBST_TOPDOWN ?= 1
 
-# Hash-consing implementation toggle:
-# default (disabled): make
-# enabled: make TUNE_HASH_CONSING=1
+# Hash-consing toggle:
+# - enabled: TUNE_HASH_CONSING=1
+# - disabled (default): TUNE_HASH_CONSING=0
 TUNE_HASH_CONSING ?= 0
 
-# Order data structure implementation toggle:
-# tag-range relabeling: make 
-# linked-list: make TUNE_USE_RELABELING=0
+# Order data structure toggle:
+# - tag-range relabeling (default): TUNE_USE_RELABELING=1
+# - linked-list: TUNE_USE_RELABELING=0
 TUNE_USE_RELABELING ?= 1
 
 TUNE_FLAGS ?=
 
-# If hash-consing is disabled, we need to define DISABLE_HASH_CONSING
-ifeq ($(TUNE_HASH_CONSING), 0)
-	TUNE_FLAGS += -DDISABLE_HASH_CONSING
+ifeq ($(TUNE_SUBST_TOPDOWN), 1)
+	TUNE_FLAGS += -DTUNE_SUBST_TOPDOWN=1
 endif
 
-ifeq ($(ORDER_IMPL), ds)
-	TUNE_FLAGS += -DORDER_IMPL_DS
+ifeq ($(TUNE_HASH_CONSING), 0)
+	TUNE_FLAGS += -DDISABLE_HASH_CONSING=1
 endif
 
 ifeq ($(TUNE_USE_RELABELING), 1)
-	TUNE_FLAGS += -DORDER_USE_RELABELING
+	TUNE_FLAGS += -DORDER_USE_RELABELING=1
 endif
 
-CFLAGS = -Wall -Wextra -O0 -g -march=native -I. -DTUNE_SUBST_TOPDOWN=$(TUNE_SUBST_TOPDOWN) $(TUNE_FLAGS)
+CFLAGS = -Wall -Wextra -O0 -g -march=native -I. $(TUNE_FLAGS)
 LDFLAGS =
 
 ENGINE_SRC := $(shell find src -name '*.c' ! -name 'main.c')
