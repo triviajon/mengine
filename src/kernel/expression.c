@@ -7,6 +7,7 @@
 
 #include "src/common/color.h"
 #include "src/common/linear_map.h"
+#include "src/common/map.h"
 #include "src/kernel/beta_reduction.h"
 #include "src/kernel/context.h"
 #include "src/kernel/definitional_equal.h"
@@ -57,13 +58,25 @@ bool register_fix_body_to_expression(Context *recursive_var, Expression *body) {
     return true;
 }
 
-void add_to_parents(Expression *expression, void *ptr, Relation r) {
+DLLNode *add_to_parents(Expression *expression, void *ptr, Relation r) {
     if (expression->uplinks == NULL) {
         expression->uplinks = dll_create();
     }
     Uplink *uplink = new_uplink(ptr, r);
-    dll_insert_at_head(expression->uplinks, dll_new_node(uplink));
+    DLLNode *node = dll_new_node(uplink);
+    dll_insert_at_head(expression->uplinks, node);
     expression->uplink_count++;
+    return node;
+}
+
+void remove_uplink_by_node(Expression *expr, DLLNode *dll_node) {
+    if (expr == NULL || dll_node == NULL || expr->uplinks == NULL) {
+        return;
+    }
+    dll_remove_node(expr->uplinks, dll_node);
+    free(dll_node->data);  /* free Uplink */
+    free(dll_node);        /* free DLLNode */
+    expr->uplink_count--;
 }
 
 void propagate_evar_refs(Expression *parent, Expression *child) {
@@ -1032,7 +1045,7 @@ Expression *get_arrow_rhs(Expression *expr) {
 }
 
 // Forward declarations. No need to expose them in expression.h.
-bool _congruence(Expression *a, Expression *b, LinearMap *mapping) {
+bool _congruence(Expression *a, Expression *b, Map *mapping) {
     // Mapping is a map from variables in a to variables in b.
     if (a == b) {
         return true;
@@ -1051,18 +1064,26 @@ bool _congruence(Expression *a, Expression *b, LinearMap *mapping) {
             return (_congruence(a->as.app.func, b->as.app.func, mapping) &&
                     _congruence(a->as.app.arg, b->as.app.arg, mapping)) != 0;
         case (FORALL_EXPRESSION): {
-            linear_map_set(mapping, a->as.forall.bound_variable, b->as.forall.bound_variable);
-            return _congruence(a->as.forall.body, b->as.forall.body, mapping);
+            Expression *bv_a = a->as.forall.bound_variable;
+            Expression *bv_b = b->as.forall.bound_variable;
+            map_set(mapping, bv_a, bv_b);
+            bool result = _congruence(a->as.forall.body, b->as.forall.body, mapping);
+            map_del(mapping, bv_a);
+            return result;
         }
         case (LAMBDA_EXPRESSION): {
-            linear_map_set(mapping, a->as.lambda.bound_variable, b->as.lambda.bound_variable);
-            return _congruence(a->as.lambda.body, b->as.lambda.body, mapping);
+            Expression *bv_a = a->as.lambda.bound_variable;
+            Expression *bv_b = b->as.lambda.bound_variable;
+            map_set(mapping, bv_a, bv_b);
+            bool result = _congruence(a->as.lambda.body, b->as.lambda.body, mapping);
+            map_del(mapping, bv_a);
+            return result;
         }
         case (VAR_EXPRESSION): {
-            return ((a == b) || (linear_map_get(mapping, a) == b)) != 0;
+            return ((a == b) || (map_get(mapping, a) == b)) != 0;
         }
         case (HOLE_EXPRESSION): {
-            return ((a == b) || (linear_map_get(mapping, a) == b)) != 0;
+            return ((a == b) || (map_get(mapping, a) == b)) != 0;
         }
         case (MATCH_EXPRESSION): {
             if (!_congruence(a->as.match.scrutinee, b->as.match.scrutinee, mapping)) {
@@ -1082,48 +1103,58 @@ bool _congruence(Expression *a, Expression *b, LinearMap *mapping) {
                     return false;
                 }
 
-                // Map pattern variables
                 for (int j = 0; j < branch_a->pattern_var_count; j++) {
-                    linear_map_set(mapping, branch_a->pattern_variables[j],
-                                   branch_b->pattern_variables[j]);
+                    map_set(mapping, branch_a->pattern_variables[j],
+                            branch_b->pattern_variables[j]);
                 }
 
-                if (!_congruence(branch_a->body, branch_b->body, mapping)) {
+                bool body_result = _congruence(branch_a->body, branch_b->body, mapping);
+
+                for (int j = 0; j < branch_a->pattern_var_count; j++) {
+                    map_del(mapping, branch_a->pattern_variables[j]);
+                }
+
+                if (!body_result) {
                     return false;
                 }
             }
             return true;
         }
         case (FIX_EXPRESSION): {
-            // Map recursive variable
-            linear_map_set(mapping, a->as.fix.recursive_var, b->as.fix.recursive_var);
+            Expression *rv_a = a->as.fix.recursive_var;
+            Expression *rv_b = b->as.fix.recursive_var;
+            map_set(mapping, rv_a, rv_b);
 
-            // Check arg counts match
             if (a->as.fix.arg_count != b->as.fix.arg_count) {
+                map_del(mapping, rv_a);
                 return false;
             }
 
-            // Check decreasing arg index matches
             if (a->as.fix.decreasing_arg_index != b->as.fix.decreasing_arg_index) {
+                map_del(mapping, rv_a);
                 return false;
             }
 
-            // Map all args and check congruence
             for (int i = 0; i < a->as.fix.arg_count; i++) {
-                linear_map_set(mapping, a->as.fix.args[i], b->as.fix.args[i]);
+                map_set(mapping, a->as.fix.args[i], b->as.fix.args[i]);
             }
 
-            // Check body congruence
-            return _congruence(a->as.fix.body, b->as.fix.body, mapping);
+            bool result = _congruence(a->as.fix.body, b->as.fix.body, mapping);
+
+            for (int i = 0; i < a->as.fix.arg_count; i++) {
+                map_del(mapping, a->as.fix.args[i]);
+            }
+            map_del(mapping, rv_a);
+            return result;
         }
     }
+    return false;
 }
 
 bool congruence(Expression *a, Expression *b) {
-    LinearMap *mapping = linear_map_new();
+    Map *mapping = map_new_with_capacity(8);
     bool result = _congruence(a, b, mapping);
-    free(mapping->items);
-    free(mapping);
+    map_free(mapping);
     return result;
 }
 

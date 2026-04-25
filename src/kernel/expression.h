@@ -77,15 +77,18 @@ typedef struct {
 
 // A lambda expression: fun (bound_variable) => body.
 typedef struct {
-    Expression *bound_variable;  // The bound variable of the lambda.
-    Expression *body;            // The body of the lamdbda expression.
+    Expression *bound_variable;           // The bound variable of the lambda.
+    DLLNode    *bound_variable_uplink_node; // uplink DLLNode in bound_variable->uplinks
+    Expression *body;                     // The body of the lambda expression.
+    DLLNode    *body_uplink_node;         // uplink DLLNode in body->uplinks
 } LambdaExpression;
 
 // An application expression: (func arg).
 typedef struct {
-    Expression *func;   // The function which is applied to the argument. Has
-                        // type Forall...
-    Expression *arg;    // The argument being operating on.
+    Expression *func;              // The function which is applied to the argument.
+    DLLNode    *func_uplink_node;  // uplink DLLNode in func->uplinks
+    Expression *arg;               // The argument being operating on.
+    DLLNode    *arg_uplink_node;   // uplink DLLNode in arg->uplinks
     Expression *cache;  // A copied version of this application which is used in
                         // beta-reduction with Lambda-DAGs
 } AppExpression;
@@ -93,7 +96,9 @@ typedef struct {
 // Similar to LambdaExpression.
 typedef struct {
     Expression *bound_variable;
+    DLLNode    *bound_variable_uplink_node; // uplink DLLNode in bound_variable->uplinks
     Expression *body;
+    DLLNode    *body_uplink_node;           // uplink DLLNode in body->uplinks
 } ForallExpression;
 
 typedef struct {
@@ -117,26 +122,33 @@ typedef struct {
 
 // A single branch in a match expression.
 typedef struct {
-    Expression *constructor;         // The constructor to match against
-    Expression **pattern_variables;  // Bound variables from the pattern
-    int pattern_var_count;           // Number of pattern variables
-    Expression *body;                // Expression to evaluate if this branch matches
+    Expression *constructor;                    // The constructor to match against
+    DLLNode    *constructor_uplink_node;        // uplink DLLNode in constructor->uplinks
+    Expression **pattern_variables;             // Bound variables from the pattern
+    DLLNode    **pattern_variables_uplink_nodes; // uplink DLLNodes in each pv->uplinks
+    int pattern_var_count;                      // Number of pattern variables
+    Expression *body;                           // Expression to evaluate if this branch matches
+    DLLNode    *body_uplink_node;               // uplink DLLNode in body->uplinks
 } MatchBranch;
 
 // A match expression for pattern matching on inductive types.
 typedef struct {
-    Expression *scrutinee;   // Expression being matched on
-    MatchBranch **branches;  // Array of match branches
-    int branch_count;        // Number of branches
+    Expression *scrutinee;              // Expression being matched on
+    DLLNode    *scrutinee_uplink_node;  // uplink DLLNode in scrutinee->uplinks
+    MatchBranch **branches;             // Array of match branches
+    int branch_count;                   // Number of branches
 } MatchExpression;
 
 // A fix expression: fix (x1: A1) (x2: A2) ... (xn: An) {struct xi} := body.
 typedef struct {
-    Expression *recursive_var;  // recursive_var : forall x1:A1, ..., xn:An, B
-    Expression **args;          // Arguments of the fix expression
-    int arg_count;              // Number of arguments
-    int decreasing_arg_index;   // Index of the argument that is structurally decreasing
-    Expression *body;           // The body of the fix expression
+    Expression *recursive_var;              // recursive_var : forall x1:A1, ..., xn:An, B
+    DLLNode    *recursive_var_uplink_node;  // uplink DLLNode in recursive_var->uplinks
+    Expression **args;                      // Arguments of the fix expression
+    DLLNode    **args_uplink_nodes;         // uplink DLLNodes in each arg->uplinks
+    int arg_count;                          // Number of arguments
+    int decreasing_arg_index;               // Index of the argument that is structurally decreasing
+    Expression *body;                       // The body of the fix expression
+    DLLNode    *body_uplink_node;           // uplink DLLNode in body->uplinks
 } FixExpression;
 
 // Represents a generic expression.
@@ -174,7 +186,12 @@ struct Expression {
 };
 
 // Helper function to add an uplink to the uplinks list of an expression.
-void add_to_parents(Expression *expression, void *ptr, Relation r);
+// Returns the DLLNode* inserted into expression->uplinks (for O(1) removal later).
+DLLNode *add_to_parents(Expression *expression, void *ptr, Relation r);
+
+// Remove a specific uplink DLL node from expr->uplinks in O(1).
+// Frees the DLLNode and its Uplink data and decrements uplink_count.
+void remove_uplink_by_node(Expression *expr, DLLNode *dll_node);
 
 // Helper function to remove the first top_level_hole uplink from an
 // expression's uplinks.
@@ -225,53 +242,68 @@ void propagate_evar_refs(Expression *parent, Expression *child);
 
 #define SET_LAMBDA_BODY(expr, value)  \
     (expr)->as.lambda.body = (value); \
-    add_to_parents((value), (expr), LAMBDA_BODY)
+    (expr)->as.lambda.body_uplink_node = add_to_parents((value), (expr), LAMBDA_BODY)
 
-#define SET_LAMBDA_BOUND_VAR(expr, value)       \
-    (expr)->as.lambda.bound_variable = (value); \
-    add_to_parents((value), (expr), LAMBDA_BOUND_VAR)
+#define SET_LAMBDA_BOUND_VAR(expr, value)               \
+    (expr)->as.lambda.bound_variable = (value);         \
+    (expr)->as.lambda.bound_variable_uplink_node =      \
+        add_to_parents((value), (expr), LAMBDA_BOUND_VAR)
 
 #define SET_APP_FUNC(expr, value)  \
     (expr)->as.app.func = (value); \
-    add_to_parents((value), (expr), APP_FUNC)
+    (expr)->as.app.func_uplink_node = add_to_parents((value), (expr), APP_FUNC)
 
 #define SET_APP_ARG(expr, value)  \
     (expr)->as.app.arg = (value); \
-    add_to_parents((value), (expr), APP_ARG)
+    (expr)->as.app.arg_uplink_node = add_to_parents((value), (expr), APP_ARG)
 
 #define SET_FORALL_BODY(expr, value)  \
     (expr)->as.forall.body = (value); \
-    add_to_parents((value), (expr), FORALL_BODY)
+    (expr)->as.forall.body_uplink_node = add_to_parents((value), (expr), FORALL_BODY)
 
-#define SET_FORALL_BOUND_VAR(expr, value)       \
-    (expr)->as.forall.bound_variable = (value); \
-    add_to_parents((value), (expr), FORALL_BOUND_VAR)
+#define SET_FORALL_BOUND_VAR(expr, value)               \
+    (expr)->as.forall.bound_variable = (value);         \
+    (expr)->as.forall.bound_variable_uplink_node =      \
+        add_to_parents((value), (expr), FORALL_BOUND_VAR)
 
 #define SET_MATCH_SCRUTINEE(expr, value)  \
     (expr)->as.match.scrutinee = (value); \
-    add_to_parents((value), (expr), MATCH_SCRUTINEE)
+    (expr)->as.match.scrutinee_uplink_node = add_to_parents((value), (expr), MATCH_SCRUTINEE)
 
-#define SET_MATCH_BRANCHES(expr, value)                                                       \
-    (expr)->as.match.branches = (value);                                                      \
-    for (int __i = 0; __i < (expr)->as.match.branch_count; __i++) {                           \
-        MatchBranch *branch = (expr)->as.match.branches[__i];                                 \
-        (expr)->as.match.branches[__i] = branch;                                              \
-        add_to_parents(branch->constructor, (expr), MATCH_BRANCH_CONSTRUCTOR);                \
-        add_to_parents(branch->body, (expr), MATCH_BRANCH_BODY);                              \
-        for (int __j = 0; __j < branch->pattern_var_count; __j++) {                           \
-            add_to_parents(branch->pattern_variables[__j], (expr), MATCH_BRANCH_PATTERN_VAR); \
-        }                                                                                     \
+#define SET_MATCH_BRANCHES(expr, value)                                                                    \
+    (expr)->as.match.branches = (value);                                                                   \
+    for (int __i = 0; __i < (expr)->as.match.branch_count; __i++) {                                        \
+        MatchBranch *branch = (expr)->as.match.branches[__i];                                              \
+        (expr)->as.match.branches[__i] = branch;                                                           \
+        branch->constructor_uplink_node =                                                                  \
+            add_to_parents(branch->constructor, (expr), MATCH_BRANCH_CONSTRUCTOR);                        \
+        branch->body_uplink_node =                                                                         \
+            add_to_parents(branch->body, (expr), MATCH_BRANCH_BODY);                                      \
+        branch->pattern_variables_uplink_nodes =                                                           \
+            branch->pattern_var_count > 0                                                                  \
+                ? malloc(branch->pattern_var_count * sizeof(DLLNode *))                                    \
+                : NULL;                                                                                    \
+        for (int __j = 0; __j < branch->pattern_var_count; __j++) {                                        \
+            branch->pattern_variables_uplink_nodes[__j] =                                                  \
+                add_to_parents(branch->pattern_variables[__j], (expr), MATCH_BRANCH_PATTERN_VAR);         \
+        }                                                                                                   \
     }
 
-#define SET_FIX_RECURSIVE_VAR(expr, value)  \
-    (expr)->as.fix.recursive_var = (value); \
-    add_to_parents((value), (expr), FIX_RECURSIVE_VAR)
+#define SET_FIX_RECURSIVE_VAR(expr, value)                          \
+    (expr)->as.fix.recursive_var = (value);                         \
+    (expr)->as.fix.recursive_var_uplink_node =                      \
+        add_to_parents((value), (expr), FIX_RECURSIVE_VAR)
 
-#define SET_FIX_ARGS(expr, value)                              \
-    (expr)->as.fix.args = (value);                             \
-    for (int __i = 0; __i < (expr)->as.fix.arg_count; __i++) { \
-        (expr)->as.fix.args[__i] = (value)[__i];               \
-        add_to_parents((value)[__i], (expr), FIX_ARG);         \
+#define SET_FIX_ARGS(expr, value)                                                          \
+    (expr)->as.fix.args = (value);                                                         \
+    (expr)->as.fix.args_uplink_nodes =                                                     \
+        (expr)->as.fix.arg_count > 0                                                       \
+            ? malloc((expr)->as.fix.arg_count * sizeof(DLLNode *))                         \
+            : NULL;                                                                        \
+    for (int __i = 0; __i < (expr)->as.fix.arg_count; __i++) {                             \
+        (expr)->as.fix.args[__i] = (value)[__i];                                           \
+        (expr)->as.fix.args_uplink_nodes[__i] =                                            \
+            add_to_parents((value)[__i], (expr), FIX_ARG);                                \
     }
 
 #define SET_FIX_ARG_COUNT(expr, value) (expr)->as.fix.arg_count = (value);
@@ -280,7 +312,7 @@ void propagate_evar_refs(Expression *parent, Expression *child);
 
 #define SET_FIX_BODY(expr, value)  \
     (expr)->as.fix.body = (value); \
-    add_to_parents((value), (expr), FIX_BODY)
+    (expr)->as.fix.body_uplink_node = add_to_parents((value), (expr), FIX_BODY)
 
 // Todo: We should consider adding context arguments to these functions?
 
