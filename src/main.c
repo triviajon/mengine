@@ -9,8 +9,8 @@
 
 enum { OPT_PRINT_TOKENS = 256, OPT_PRINT_AST, OPT_PRINT_MODE };
 
-static char doc[] = "MEngine - A theorem prover";
-static char args_doc[] = "[FILENAME]";
+static char doc[] = "MEngine - A theorem prover\n\nCommands:\n  config    Print compile-time configuration and exit";
+static char args_doc[] = "[FILENAME|config]";
 static struct argp_option options[] = {
     {"load", 'l', "FILE", 0, "Load and execute FILE, then enter REPL", 0},
     {"quiet", 'q', 0, 0, "Suppress text output", 0},
@@ -128,6 +128,29 @@ int file_mode(MEngineOptions options, char *filename) {
     return r;
 }
 
+static void config_mode(void) {
+    printf("mengine compile-time configuration\n");
+    printf("----------------------------------\n");
+
+#ifdef TUNE_SUBST_TOPDOWN
+    printf("TUNE_SUBST_TOPDOWN   : top-down\n");
+#else
+    printf("TUNE_SUBST_TOPDOWN   : bottom-up/uplink\n");
+#endif
+
+#ifdef DISABLE_HASH_CONSING
+    printf("HASH_CONSING         : disabled\n");
+#else
+    printf("HASH_CONSING         : enabled\n");
+#endif
+
+#ifdef ORDER_USE_RELABELING
+    printf("ORDER_IMPL           : tag-range relabeling\n");
+#else
+    printf("ORDER_IMPL           : linked-list\n");
+#endif
+}
+
 int load_and_repl_mode(MEngineOptions options, char *filename) {
     MEngineRuntime *rt = mengine_runtime_new(&options);
     if (!rt) {
@@ -170,6 +193,11 @@ int main(int argc, char **argv) {
 
     if (!arguments.filename) {
         return interactive_mode(options);
+    }
+
+    if (strcmp(arguments.filename, "config") == 0) {
+        config_mode();
+        return 0;
     }
 
     char *filename = arguments.filename;
