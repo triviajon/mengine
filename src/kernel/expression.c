@@ -1380,9 +1380,6 @@ bool fill_hole(Expression *hole, Expression *term) {
     linear_map_clear_free(hole_assignments);
 
     // Rewrite structural uplinks: replace hole with term in all direct parents.
-    //
-    // For internable parent expressions: we remove the old intern-table entry (keyed on the hole
-    // pointer) before mutating, then re-insert after mutation
     DoublyLinkedList *holepars = hole->uplinks;
     if (holepars) {
         DLLNode *ul = holepars->head;
@@ -1439,9 +1436,6 @@ bool fill_hole(Expression *hole, Expression *term) {
     }
 
     // BFS upward through structural uplinks to recompute has_evar on ancestors.
-    // We stop propagating from any node whose has_evar didn't change.
-    // The stopping condition prevents exponential blowup:
-    // a node whose flag didn't change never re-enqueues its parents a second time.
     if (holepars && holepars->head) {
         DoublyLinkedList *queue = dll_create();
 
