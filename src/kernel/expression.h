@@ -165,6 +165,7 @@ struct Expression {
                                 // NULL for TYPE and PROP
     bool has_evar;              // True if this expression transitively contains any unfilled hole.
     uint64_t visit_gen;  // Generation stamp for occurs_in traversal (avoids visited-map alloc).
+    uint64_t mark_gen;   // Generation stamp for bottom-up substitution spine marking.
     Expression *g_alloc_next;  // Intrusive linked list for GC shutdown traversal
 
 #ifdef ORDER_USE_RELABELING
