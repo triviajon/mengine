@@ -69,8 +69,8 @@ void remove_uplink_by_node(Expression *expr, DLLNode *dll_node) {
         return;
     }
     dll_remove_node(expr->uplinks, dll_node);
-    free(dll_node->data);  /* free Uplink */
-    free(dll_node);        /* free DLLNode */
+    free(dll_node->data); /* free Uplink */
+    free(dll_node);       /* free DLLNode */
     expr->uplink_count--;
 }
 
@@ -1346,6 +1346,80 @@ bool occurs_in(Expression *var_or_hole, Expression *term) {
     return _occurs_in(var_or_hole, term, gen);
 }
 
+// Create a new version of node with old_child replaced by new_child in the
+// position described by rel. Removes old uplinks from node's children before
+// constructing the replacement via the normal init_*_wc path.
+static Expression *fill_hole_rebuild_node(Expression *node, Expression *old_child,
+                                          Expression *new_child, Relation rel) {
+    switch (node->tag) {
+        case APP_EXPRESSION:
+            if (rel == APP_FUNC) {
+                remove_uplink_by_node(old_child, node->as.app.func_uplink_node);
+                node->as.app.func_uplink_node = NULL;
+                remove_uplink_by_node(node->as.app.arg, node->as.app.arg_uplink_node);
+                node->as.app.arg_uplink_node = NULL;
+                return init_app_expression_wc(new_child, node->as.app.arg, node->context);
+            } else {
+                remove_uplink_by_node(node->as.app.func, node->as.app.func_uplink_node);
+                node->as.app.func_uplink_node = NULL;
+                remove_uplink_by_node(old_child, node->as.app.arg_uplink_node);
+                node->as.app.arg_uplink_node = NULL;
+                return init_app_expression_wc(node->as.app.func, new_child, node->context);
+            }
+        case LAMBDA_EXPRESSION:
+            if (rel == LAMBDA_BODY) {
+                remove_uplink_by_node(node->as.lambda.bound_variable,
+                                      node->as.lambda.bound_variable_uplink_node);
+                node->as.lambda.bound_variable_uplink_node = NULL;
+                remove_uplink_by_node(old_child, node->as.lambda.body_uplink_node);
+                node->as.lambda.body_uplink_node = NULL;
+                return init_lambda_expression_wc(node->as.lambda.bound_variable, new_child);
+            }
+            break;
+        case FORALL_EXPRESSION:
+            if (rel == FORALL_BODY) {
+                remove_uplink_by_node(node->as.forall.bound_variable,
+                                      node->as.forall.bound_variable_uplink_node);
+                node->as.forall.bound_variable_uplink_node = NULL;
+                remove_uplink_by_node(old_child, node->as.forall.body_uplink_node);
+                node->as.forall.body_uplink_node = NULL;
+                return init_forall_expression_wc(node->as.forall.bound_variable, new_child);
+            }
+            break;
+        default:
+            break;
+    }
+    fprintf(stderr, WARNING "fill_hole: unhandled rebuild for tag %d relation %d\n" CRESET,
+            node->tag, rel);
+    return node;
+}
+
+// Walk upward from start through non-EXPR_TYPE uplinks until a VAR_BODY uplink
+// is found. Returns the node that is the direct body of the VAR (the structural
+// root), and sets *holder_out to the VAR. Returns NULL if no VAR_BODY path.
+static Expression *find_var_body_root(Expression *start, Expression **holder_out) {
+    *holder_out = NULL;
+    Expression *current = start;
+    for (;;) {
+        if (!current->uplinks || !current->uplinks->head) return NULL;
+        DLLNode *ul = current->uplinks->head;
+        Expression *structural_parent = NULL;
+        while (ul) {
+            Uplink *up = (Uplink *)ul->data;
+            if (up->relation == VAR_BODY) {
+                *holder_out = (Expression *)up->ptr;
+                return current;
+            }
+            if (up->relation != EXPR_TYPE && structural_parent == NULL) {
+                structural_parent = (Expression *)up->ptr;
+            }
+            ul = ul->next;
+        }
+        if (!structural_parent) return NULL;
+        current = structural_parent;
+    }
+}
+
 bool fill_hole(Expression *hole, Expression *term) {
     if (hole->tag != HOLE_EXPRESSION) {
         return false;
@@ -1379,82 +1453,101 @@ bool fill_hole(Expression *hole, Expression *term) {
     }
     linear_map_clear_free(hole_assignments);
 
-    // Rewrite structural uplinks: replace hole with term in all direct parents.
-    DoublyLinkedList *holepars = hole->uplinks;
-    if (holepars) {
-        DLLNode *ul = holepars->head;
+    // This is the only place that still feels a bit hacky.
+    if (hole->uplinks) {
+        DLLNode *ul = hole->uplinks->head;
         while (ul) {
-            Uplink *uplink = (Uplink *)ul->data;
-            switch (uplink->relation) {
-                case (LAMBDA_BODY): {
-                    Expression *ptr = (Expression *)uplink->ptr;
-                    SET_LAMBDA_BODY(ptr, term);
-                    break;
-                }
-                case (LAMBDA_BOUND_VAR): {
-                    Expression *ptr = (Expression *)uplink->ptr;
-                    SET_LAMBDA_BOUND_VAR(ptr, term);
-                    break;
-                }
-                case (APP_FUNC): {
-                    Expression *ptr = (Expression *)uplink->ptr;
-                    SET_APP_FUNC(ptr, term);
-                    break;
-                }
-                case (APP_ARG): {
-                    Expression *ptr = (Expression *)uplink->ptr;
-                    SET_APP_ARG(ptr, term);
-                    break;
-                }
-                case (FORALL_BODY): {
-                    Expression *ptr = (Expression *)uplink->ptr;
-                    SET_FORALL_BODY(ptr, term);
-                    break;
-                }
-                case (FORALL_BOUND_VAR): {
-                    Expression *ptr = (Expression *)uplink->ptr;
-                    SET_FORALL_BOUND_VAR(ptr, term);
-                    break;
-                }
-                case (VAR_BODY): {
-                    Expression *ptr = (Expression *)uplink->ptr;
-                    SET_VAR_BODY(ptr, term);
-                    break;
-                }
-                case (EXPR_TYPE): {
-                    Expression *ptr = (Expression *)uplink->ptr;
-                    SET_EXPR_TYPE(ptr, term);
-                    break;
-                }
-                default:
-                    fprintf(stderr, WARNING "todo: fill_hole for relation %d.\n" CRESET,
-                            uplink->relation);
-                    break;
+            DLLNode *next = ul->next;
+            Uplink *up = (Uplink *)ul->data;
+            if (up->relation == EXPR_TYPE) {
+                Expression *ptr = (Expression *)up->ptr;
+                ptr->type = term;
+                remove_uplink_by_node(hole, ul);
+                add_to_parents(term, ptr, EXPR_TYPE);
             }
-            ul = ul->next;
+            ul = next;
         }
     }
 
-    // BFS upward through structural uplinks to recompute has_evar on ancestors.
-    if (holepars && holepars->head) {
-        DoublyLinkedList *queue = dll_create();
+    // Replace hole with term in the structural proof term via bottom-up path-copying.
+    // Walk the uplink chain from hole to the VAR holder, collecting each node on
+    // the path. Then rebuild bottom-up: each node is replaced with a fresh copy
+    // that has the updated child, reusing the original bound variables (so their
+    // contexts are preserved without freshening).
+    Expression *var_holder = NULL;
+    Expression *struct_root = find_var_body_root(hole, &var_holder);
+    if (var_holder) {
+        int cap = 16;
+        Expression **chain = malloc(cap * sizeof(Expression *));
+        Relation *rels = malloc(cap * sizeof(Relation));
+        int len = 1;
+        chain[0] = hole;
 
-        DLLNode *ul = holepars->head;
-        while (ul) {
-            Expression *par = (Expression *)((Uplink *)ul->data)->ptr;
-            dll_insert_at_tail(queue, dll_new_node(par));
-            ul = ul->next;
+        Expression *current = hole;
+        while (current != struct_root) {
+            DLLNode *ul = current->uplinks ? current->uplinks->head : NULL;
+            Expression *parent = NULL;
+            Relation parent_rel = LAMBDA_BODY;
+            while (ul) {
+                Uplink *up = (Uplink *)ul->data;
+                if (up->relation != EXPR_TYPE && up->relation != VAR_BODY) {
+                    parent = (Expression *)up->ptr;
+                    parent_rel = up->relation;
+                    break;
+                }
+                ul = ul->next;
+            }
+            if (!parent) break;
+
+            if (len >= cap) {
+                cap *= 2;
+                chain = realloc(chain, cap * sizeof(Expression *));
+                rels = realloc(rels, cap * sizeof(Relation));
+            }
+            rels[len - 1] = parent_rel;
+            chain[len++] = parent;
+            current = parent;
         }
 
+        Expression *new_child = term;
+        for (int i = 1; i < len; i++) {
+            Expression *rebuilt =
+                fill_hole_rebuild_node(chain[i], chain[i - 1], new_child, rels[i - 1]);
+            new_child = rebuilt;
+        }
+
+        free(chain);
+        free(rels);
+
+        remove_uplink(struct_root, var_holder, VAR_BODY);
+        var_holder->as.var.body = new_child;
+        add_to_parents(new_child, var_holder, VAR_BODY);
+    }
+
+    // Recompute has_evar upward from the VAR holder and from any expression
+    // whose type was updated above (now reachable via term's EXPR_TYPE uplinks).
+    {
+        DoublyLinkedList *queue = dll_create();
+        if (var_holder) {
+            dll_insert_at_tail(queue, dll_new_node(var_holder));
+        }
+        if (term->uplinks) {
+            DLLNode *ul = term->uplinks->head;
+            while (ul) {
+                Uplink *up = (Uplink *)ul->data;
+                if (up->relation == EXPR_TYPE) {
+                    dll_insert_at_tail(queue, dll_new_node((Expression *)up->ptr));
+                }
+                ul = ul->next;
+            }
+        }
         while (queue->head) {
             DLLNode *n = dll_remove_head(queue);
             Expression *p = (Expression *)n->data;
             free(n);
-
             bool old_val = p->has_evar;
             bool new_val = recompute_has_evar(p);
             p->has_evar = new_val;
-
             if (new_val != old_val && p->uplinks) {
                 DLLNode *pul = p->uplinks->head;
                 while (pul) {
@@ -1464,7 +1557,6 @@ bool fill_hole(Expression *hole, Expression *term) {
                 }
             }
         }
-
         dll_destroy(queue);
     }
 
