@@ -132,12 +132,6 @@ static void config_mode(void) {
     printf("mengine compile-time configuration\n");
     printf("----------------------------------\n");
 
-#ifdef TUNE_SUBST_TOPDOWN
-    printf("TUNE_SUBST_TOPDOWN   : top-down\n");
-#else
-    printf("TUNE_SUBST_TOPDOWN   : bottom-up/uplink\n");
-#endif
-
 #ifdef ORDER_USE_RELABELING
     printf("ORDER_IMPL           : tag-range relabeling\n");
 #else
