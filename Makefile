@@ -2,21 +2,12 @@ CC = clang
 # Optional compile-time overrides, e.g.:
 # make TUNE_FLAGS="-DMAP_INITIAL_CAPACITY=32 -DHCMAP_INITIAL_CAPACITY=2048"
 
-# Substitution toggle
-# - top-down substitution (default): TUNE_SUBST_TOPDOWN=1
-# - bottom-up/uplink based substitution: TUNE_SUBST_TOPDOWN=0
-TUNE_SUBST_TOPDOWN ?= 1
-
 # Order data structure toggle:
 # - tag-range relabeling (default): TUNE_USE_RELABELING=1
 # - linked-list: TUNE_USE_RELABELING=0
 TUNE_USE_RELABELING ?= 1
 
 TUNE_FLAGS ?=
-
-ifeq ($(TUNE_SUBST_TOPDOWN), 1)
-	TUNE_FLAGS += -DTUNE_SUBST_TOPDOWN=1
-endif
 
 ifeq ($(TUNE_USE_RELABELING), 1)
 	TUNE_FLAGS += -DORDER_USE_RELABELING=1
