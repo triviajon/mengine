@@ -85,6 +85,7 @@ static int is_binder_ownership_edge(Relation rel) {
  * carries FORALL_BOUND_VAR uplinks that lead to the entire expression graph).
  */
 static uint64_t g_subst_gen = 0;
+static uint64_t g_mark_gen = 0;
 
 /*
  * DFS from root downward, stamping every structural descendant's visit_gen
@@ -169,25 +170,20 @@ static uint64_t stamp_subtree(Expression *root) {
 }
 #undef SUBST_PUSH
 
-static void mark_spine_from(Expression *start, Expression *root, Map *marked,
+static void mark_spine_from(Expression *start, Expression *root,
                             int skip_ownership, uint64_t subtree_gen) {
-    DoublyLinkedList *queue = dll_create();
+    size_t cap = 64, front = 0, size = 0;
+    Expression **queue = malloc(cap * sizeof(Expression *));
+    if (!queue) return;
 
-    map_set(marked, start, (void *)1);
-    dll_insert_at_tail(queue, dll_new_node(start));
+    start->mark_gen = g_mark_gen;
+    queue[size++] = start;
 
-    while (queue->head != NULL) {
-        DLLNode *front = dll_remove_head(queue);
-        Expression *node = (Expression *)front->data;
-        free(front);
+    while (front < size) {
+        Expression *node = queue[front++];
 
-        if (node == root) {
-            continue;
-        }
-
-        if (node->uplinks == NULL) {
-            continue;
-        }
+        if (node == root) continue;
+        if (node->uplinks == NULL) continue;
 
         DLLNode *ul = node->uplinks->head;
         while (ul != NULL) {
@@ -196,10 +192,15 @@ static void mark_spine_from(Expression *start, Expression *root, Map *marked,
             if (!(skip_ownership && is_binder_ownership_edge(uplink->relation))) {
                 Expression *parent = (Expression *)uplink->ptr;
 
-                if (parent->visit_gen == subtree_gen &&
-                    map_get(marked, parent) == NULL) {
-                    map_set(marked, parent, (void *)1);
-                    dll_insert_at_tail(queue, dll_new_node(parent));
+                if (parent->visit_gen == subtree_gen && parent->mark_gen != g_mark_gen) {
+                    parent->mark_gen = g_mark_gen;
+                    if (size == cap) {
+                        cap *= 2;
+                        Expression **ns = realloc(queue, cap * sizeof(Expression *));
+                        if (!ns) { free(queue); return; }
+                        queue = ns;
+                    }
+                    queue[size++] = parent;
                 }
             }
 
@@ -207,21 +208,17 @@ static void mark_spine_from(Expression *start, Expression *root, Map *marked,
         }
     }
 
-    dll_destroy(queue);
+    free(queue);
 }
 
-static Map *build_marked_set(Expression *root, DoublyLinkedList *old_exprs,
+static void build_marked_set(Expression *root, DoublyLinkedList *old_exprs,
                              uint64_t subtree_gen) {
-    Map *marked = pool_map_alloc();
-
     DLLNode *o = old_exprs->head;
     while (o != NULL) {
         Expression *target = (Expression *)o->data;
-        mark_spine_from(target, root, marked, /*skip_ownership=*/0, subtree_gen);
+        mark_spine_from(target, root, /*skip_ownership=*/0, subtree_gen);
         o = o->next;
     }
-
-    return marked;
 }
 
 static Expression *_simple_topdown_psubst(Context *ctx, Expression *t,
@@ -290,35 +287,35 @@ static Expression *_simple_topdown_psubst(Context *ctx, Expression *t,
 }
 
 static Expression *spine_rebuild(Context *ctx, Expression *node, DoublyLinkedList *old_exprs,
-                                 DoublyLinkedList *new_exprs, Map *marked, Map *memo,
+                                 DoublyLinkedList *new_exprs, Map *memo,
                                  uint64_t subtree_gen);
 
 
 static Expression *maybe_rebuild(Context *ctx, Expression *child, DoublyLinkedList *old_exprs,
-                                 DoublyLinkedList *new_exprs, Map *marked, Map *memo,
+                                 DoublyLinkedList *new_exprs, Map *memo,
                                  uint64_t subtree_gen) {
-    if (map_get(marked, child) != NULL) {
-        return spine_rebuild(ctx, child, old_exprs, new_exprs, marked, memo, subtree_gen);
+    if (child->mark_gen == g_mark_gen) {
+        return spine_rebuild(ctx, child, old_exprs, new_exprs, memo, subtree_gen);
     }
 
     Expression *child_ctx = get_expression_context(child);
     if (child_ctx != NULL && subst_map_lookup(old_exprs, new_exprs, child_ctx) != NULL) {
-        map_set(marked, child, (void *)1);
-        return spine_rebuild(ctx, child, old_exprs, new_exprs, marked, memo, subtree_gen);
+        child->mark_gen = g_mark_gen;
+        return spine_rebuild(ctx, child, old_exprs, new_exprs, memo, subtree_gen);
     }
 
     return child;
 }
 
 static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLinkedList *old_exprs,
-                                 DoublyLinkedList *new_exprs, Map *marked, Map *memo,
+                                 DoublyLinkedList *new_exprs, Map *memo,
                                  uint64_t subtree_gen) {
     Expression *replacement = subst_map_lookup(old_exprs, new_exprs, node);
     if (replacement != NULL) {
         return replacement;
     }
 
-    if (map_get(marked, node) == NULL) {
+    if (node->mark_gen != g_mark_gen) {
         Context *nc = get_expression_context(node);
         bool stale = false;
         while (nc != NULL && nc->tag == VAR_EXPRESSION) {
@@ -331,7 +328,7 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
         if (!stale) {
             return node;
         }
-        map_set(marked, node, (void *)1);
+        node->mark_gen = g_mark_gen;
     }
 
     Expression *cached = (Expression *)map_get(memo, node);
@@ -350,8 +347,8 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
         case APP_EXPRESSION: {
             Expression *func = get_app_func(node);
             Expression *arg = get_app_arg(node);
-            Expression *func2 = maybe_rebuild(apps_ctx, func, old_exprs, new_exprs, marked, memo, subtree_gen);
-            Expression *arg2 = maybe_rebuild(apps_ctx, arg, old_exprs, new_exprs, marked, memo, subtree_gen);
+            Expression *func2 = maybe_rebuild(apps_ctx, func, old_exprs, new_exprs, memo, subtree_gen);
+            Expression *arg2 = maybe_rebuild(apps_ctx, arg, old_exprs, new_exprs, memo, subtree_gen);
 
             // Remove stale uplinks only in non-hash-consed mode.
             CLEAR_CHILD_UPLINK(func, node->as.app.func_uplink_node);
@@ -371,7 +368,7 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
             Expression *body = get_lambda_body(node);
 
             Expression *x_bv_type2 =
-                maybe_rebuild(apps_ctx, x_bv_type, old_exprs, new_exprs, marked, memo, subtree_gen);
+                maybe_rebuild(apps_ctx, x_bv_type, old_exprs, new_exprs, memo, subtree_gen);
             // Try to reuse the existing bound variable if the type and context are unchanged
             Expression *x_bv2;
             if (x_bv_type2 == x_bv_type && apps_ctx == get_expression_context(x_bv)) {
@@ -384,12 +381,12 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
             if (lambda_bv_changed) {
                 dll_insert_at_tail(old_exprs, dll_new_node(x_bv));
                 dll_insert_at_tail(new_exprs, dll_new_node(x_bv2));
-                mark_spine_from(x_bv, body, marked, /*skip_ownership=*/1, subtree_gen);
+                mark_spine_from(x_bv, body, /*skip_ownership=*/1, subtree_gen);
             }
 
             Map *inner_memo = pool_map_alloc();
             Expression *body2 =
-                spine_rebuild(apps_ctx, body, old_exprs, new_exprs, marked, inner_memo, subtree_gen);
+                spine_rebuild(apps_ctx, body, old_exprs, new_exprs, inner_memo, subtree_gen);
             pool_map_free(inner_memo);
 
             if (lambda_bv_changed) {
@@ -411,7 +408,7 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
             Expression *body = get_forall_body(node);
 
             Expression *x_bv_type2 =
-                maybe_rebuild(apps_ctx, x_bv_type, old_exprs, new_exprs, marked, memo, subtree_gen);
+                maybe_rebuild(apps_ctx, x_bv_type, old_exprs, new_exprs, memo, subtree_gen);
             Expression *x_bv2;
             if (x_bv_type2 == x_bv_type && apps_ctx == get_expression_context(x_bv)) {
                 x_bv2 = x_bv;
@@ -423,12 +420,12 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
             if (forall_bv_changed) {
                 dll_insert_at_tail(old_exprs, dll_new_node(x_bv));
                 dll_insert_at_tail(new_exprs, dll_new_node(x_bv2));
-                mark_spine_from(x_bv, body, marked, /*skip_ownership=*/1, subtree_gen);
+                mark_spine_from(x_bv, body, /*skip_ownership=*/1, subtree_gen);
             }
 
             Map *inner_memo2 = pool_map_alloc();
             Expression *body2 =
-                spine_rebuild(apps_ctx, body, old_exprs, new_exprs, marked, inner_memo2, subtree_gen);
+                spine_rebuild(apps_ctx, body, old_exprs, new_exprs, inner_memo2, subtree_gen);
             pool_map_free(inner_memo2);
 
             if (forall_bv_changed) {
@@ -449,7 +446,7 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
             int branch_cnt = node->as.match.branch_count;
 
             Expression *scrutinee2 =
-                maybe_rebuild(apps_ctx, scrutinee, old_exprs, new_exprs, marked, memo, subtree_gen);
+                maybe_rebuild(apps_ctx, scrutinee, old_exprs, new_exprs, memo, subtree_gen);
 
             MatchBranch **branches2 = malloc(branch_cnt * sizeof(MatchBranch *));
 
@@ -458,7 +455,7 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
                 MatchBranch *br2 = malloc(sizeof(MatchBranch));
 
                 br2->constructor =
-                    maybe_rebuild(apps_ctx, br->constructor, old_exprs, new_exprs, marked, memo, subtree_gen);
+                    maybe_rebuild(apps_ctx, br->constructor, old_exprs, new_exprs, memo, subtree_gen);
                 br2->pattern_var_count = br->pattern_var_count;
                 br2->pattern_variables = malloc(br->pattern_var_count * sizeof(Expression *));
 
@@ -467,7 +464,7 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
                     Expression *old_var_type = get_expression_type(old_var);
 
                     Expression *new_var_type =
-                        maybe_rebuild(apps_ctx, old_var_type, old_exprs, new_exprs, marked, memo, subtree_gen);
+                        maybe_rebuild(apps_ctx, old_var_type, old_exprs, new_exprs, memo, subtree_gen);
                     Expression *new_var =
                         init_var_expression_wc(get_var_name(old_var), new_var_type, apps_ctx);
                     br2->pattern_variables[j] = new_var;
@@ -476,13 +473,13 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
                     if (match_pv_changed) {
                         dll_insert_at_tail(old_exprs, dll_new_node(old_var));
                         dll_insert_at_tail(new_exprs, dll_new_node(new_var));
-                        mark_spine_from(old_var, br->body, marked, /*skip_ownership=*/1, subtree_gen);
+                        mark_spine_from(old_var, br->body, /*skip_ownership=*/1, subtree_gen);
                     }
                 }
 
                 Map *inner_memo = pool_map_alloc();
                 br2->body =
-                    spine_rebuild(apps_ctx, br->body, old_exprs, new_exprs, marked, inner_memo, subtree_gen);
+                    spine_rebuild(apps_ctx, br->body, old_exprs, new_exprs, inner_memo, subtree_gen);
                 pool_map_free(inner_memo);
 
                 for (int j = br->pattern_var_count - 1; j >= 0; j--) {
@@ -519,7 +516,7 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
             int arg_count = node->as.fix.arg_count;
 
             Expression *rec_var_type2 =
-                maybe_rebuild(apps_ctx, rec_var_type, old_exprs, new_exprs, marked, memo, subtree_gen);
+                maybe_rebuild(apps_ctx, rec_var_type, old_exprs, new_exprs, memo, subtree_gen);
             Expression *rec_var2 =
                 init_var_expression_wc(get_var_name(rec_var), rec_var_type2, apps_ctx);
 
@@ -530,7 +527,7 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
             if (fix_rv_changed) {
                 dll_insert_at_tail(old_exprs, dll_new_node(rec_var));
                 dll_insert_at_tail(new_exprs, dll_new_node(rec_var2));
-                mark_spine_from(rec_var, node->as.fix.body, marked, /*skip_ownership=*/1, subtree_gen);
+                mark_spine_from(rec_var, node->as.fix.body, /*skip_ownership=*/1, subtree_gen);
             }
 
             for (int i = 0; i < arg_count; i++) {
@@ -538,7 +535,7 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
                 Expression *old_arg_type = get_expression_type(old_arg);
 
                 Expression *new_arg_type =
-                    maybe_rebuild(apps_ctx, old_arg_type, old_exprs, new_exprs, marked, memo, subtree_gen);
+                    maybe_rebuild(apps_ctx, old_arg_type, old_exprs, new_exprs, memo, subtree_gen);
                 Expression *new_arg =
                     init_var_expression_wc(get_var_name(old_arg), new_arg_type, apps_ctx);
                 args2[i] = new_arg;
@@ -547,13 +544,13 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, DoublyLink
                 if (fix_arg_changed) {
                     dll_insert_at_tail(old_exprs, dll_new_node(old_arg));
                     dll_insert_at_tail(new_exprs, dll_new_node(new_arg));
-                    mark_spine_from(old_arg, node->as.fix.body, marked, /*skip_ownership=*/1, subtree_gen);
+                    mark_spine_from(old_arg, node->as.fix.body, /*skip_ownership=*/1, subtree_gen);
                 }
             }
 
             Map *inner_memo = pool_map_alloc();
             Expression *body2 = spine_rebuild(apps_ctx, node->as.fix.body, old_exprs, new_exprs,
-                                              marked, inner_memo, subtree_gen);
+                                              inner_memo, subtree_gen);
             pool_map_free(inner_memo);
 
             // Pop arg extensions (in reverse order, only if changed)
@@ -623,10 +620,12 @@ static Expression *_uplink_p_subst(Context *context, Expression *t, DoublyLinked
 
     uint64_t subtree_gen = stamp_subtree(t);
 
-    Map *marked = build_marked_set(t, old_exprs, subtree_gen);
+    ++g_mark_gen;
+    if (g_mark_gen == 0) ++g_mark_gen;
+    build_marked_set(t, old_exprs, subtree_gen);
 
     // If t is not marked, then no substitution targets are reachable from t, so we can skip the spine rebuild entirely and return t as-is.
-    if (map_get(marked, t) == NULL) {
+    if (t->mark_gen != g_mark_gen) {
         bool stale = false;
         Context *tc = get_expression_context(t);
         while (tc != NULL && tc->tag == VAR_EXPRESSION) {
@@ -637,19 +636,17 @@ static Expression *_uplink_p_subst(Context *context, Expression *t, DoublyLinked
             tc = get_expression_context(tc);
         }
         if (!stale) {
-            pool_map_free(marked);
             g_uplink_subst_depth--;
             return t;
         }
-        map_set(marked, t, (void *)1);
+        t->mark_gen = g_mark_gen;
     }
 
-    // Now, we only need to rebuild along the spines from t to the substitution targets, 
+    // Now, we only need to rebuild along the spines from t to the substitution targets,
     // so we can use a single memo map for the entire rebuild without worrying about cross-contamination between different branches.
     Map *memo = pool_map_alloc();
-    Expression *result = spine_rebuild(context, t, old_exprs, new_exprs, marked, memo, subtree_gen);
+    Expression *result = spine_rebuild(context, t, old_exprs, new_exprs, memo, subtree_gen);
     pool_map_free(memo);
-    pool_map_free(marked);
 
     g_uplink_subst_depth--;
     return result;
