@@ -138,12 +138,6 @@ static void config_mode(void) {
     printf("TUNE_SUBST_TOPDOWN   : bottom-up/uplink\n");
 #endif
 
-#ifdef DISABLE_HASH_CONSING
-    printf("HASH_CONSING         : disabled\n");
-#else
-    printf("HASH_CONSING         : enabled\n");
-#endif
-
 #ifdef ORDER_USE_RELABELING
     printf("ORDER_IMPL           : tag-range relabeling\n");
 #else

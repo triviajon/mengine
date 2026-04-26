@@ -10,24 +10,11 @@
 
 #ifndef TUNE_SUBST_TOPDOWN
 
-#ifdef DISABLE_HASH_CONSING
 #define CLEAR_CHILD_UPLINK(child_expr, uplink_field)         \
     do {                                                      \
         remove_uplink_by_node((child_expr), (uplink_field)); \
         (uplink_field) = NULL;                                \
     } while (0)
-#else
-/*
- * With hash-consing enabled, canonical nodes may be shared by many parents.
- * Clearing child-uplink back-pointers during path-copying can disconnect
- * still-live shared nodes. Keep these links intact in this mode.
- */
-#define CLEAR_CHILD_UPLINK(child_expr, uplink_field) \
-    do {                                             \
-        (void)(child_expr);                          \
-        (void)(uplink_field);                        \
-    } while (0)
-#endif
 
 #define MAP_POOL_CAPACITY 64
 static Map *g_map_pool[MAP_POOL_CAPACITY];

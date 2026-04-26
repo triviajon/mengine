@@ -7,11 +7,6 @@ CC = clang
 # - bottom-up/uplink based substitution: TUNE_SUBST_TOPDOWN=0
 TUNE_SUBST_TOPDOWN ?= 1
 
-# Hash-consing toggle:
-# - enabled: TUNE_HASH_CONSING=1
-# - disabled (default): TUNE_HASH_CONSING=0
-TUNE_HASH_CONSING ?= 0
-
 # Order data structure toggle:
 # - tag-range relabeling (default): TUNE_USE_RELABELING=1
 # - linked-list: TUNE_USE_RELABELING=0
@@ -21,10 +16,6 @@ TUNE_FLAGS ?=
 
 ifeq ($(TUNE_SUBST_TOPDOWN), 1)
 	TUNE_FLAGS += -DTUNE_SUBST_TOPDOWN=1
-endif
-
-ifeq ($(TUNE_HASH_CONSING), 0)
-	TUNE_FLAGS += -DDISABLE_HASH_CONSING=1
 endif
 
 ifeq ($(TUNE_USE_RELABELING), 1)

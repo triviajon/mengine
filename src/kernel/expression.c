@@ -11,15 +11,10 @@
 #include "src/kernel/beta_reduction.h"
 #include "src/kernel/context.h"
 #include "src/kernel/definitional_equal.h"
-#include "src/kernel/expression_hash.h"
 #include "src/kernel/inductive.h"
 #include "src/kernel/order.h"
 #include "src/kernel/structural.h"
 #include "src/kernel/subst.h"
-
-// Tracks whether we're inside _construct_app_type (which calls new_subst).
-// Expressions built here are type annotations and should not be interned.
-static int g_type_computation_depth = 0;
 
 // Intrusive singly-linked list of all allocated Expressions for deferred GC shutdown.
 static Expression *g_expr_list_head = NULL;
@@ -198,7 +193,6 @@ void expression_gc_shutdown(void) {
     g_expr_list_head = NULL;
     TYPE = NULL;
     PROP = NULL;
-    expression_intern_table_free();
 }
 
 // Helper to construct a lambda type from a bound variable and body.
@@ -210,12 +204,10 @@ Expression *_construct_lambda_type(Expression *bound_variable, Expression *body)
 // Helper to construct a app type from a function and argument.
 // Assumes all inputs are valid.
 Expression *_construct_app_type(Context *context, Expression *func, Expression *arg) {
-    g_type_computation_depth++;
     Expression *func_type = get_expression_type(func);  // Forall x: A, B
     Expression *weak_func_type = weak_head_normalize(func_type);
     if (weak_func_type->tag != FORALL_EXPRESSION) {
         fprintf(stderr, ERROR "Trying to apply a non-function.\n" CRESET);
-        g_type_computation_depth--;
         return NULL;
     }
     Expression *variable = get_forall_bound_variable(weak_func_type);  // x
@@ -225,13 +217,10 @@ Expression *_construct_app_type(Context *context, Expression *func, Expression *
 
     Expression *result = NULL;
     if (actual_arg_type == expected_arg_type || subtypes(actual_arg_type, expected_arg_type)) {
-        // return_type (B) is closed under context(variable) extended with variable
-        // context must include both variable and all of arg's dependencies
         result = new_subst(context, return_type, variable, arg);  // B[x -> arg]
     } else {
         fprintf(stderr, ERROR "Application does not type check.\n" CRESET);
     }
-    g_type_computation_depth--;
     return result;
 }
 
@@ -355,29 +344,6 @@ Expression *init_var_expression_wc_with_body(const char *name, Expression *body,
 }
 
 Expression *init_lambda_expression_wc(Expression *bound_variable, Expression *body) {
-#ifndef DISABLE_HASH_CONSING
-    {
-        Expression probe = {0};
-        probe.tag = LAMBDA_EXPRESSION;
-        probe.as.lambda.bound_variable = bound_variable;
-        probe.as.lambda.body = body;
-        Expression *cached = expression_intern_lookup(&probe);
-        if (cached) {
-            // Re-establish child uplink tracking if it was cleared by path-copying
-            // (bottom-up substitution removes uplinks before calling init_*_wc).
-            if (!cached->as.lambda.bound_variable_uplink_node) {
-                cached->as.lambda.bound_variable_uplink_node =
-                    add_to_parents(bound_variable, cached, LAMBDA_BOUND_VAR);
-            }
-            if (!cached->as.lambda.body_uplink_node) {
-                cached->as.lambda.body_uplink_node =
-                    add_to_parents(body, cached, LAMBDA_BODY);
-            }
-            return cached;
-        }
-    }
-#endif
-
     Context *gamma = get_expression_context(bound_variable);
     Context *extended_with_bound_variable = bound_variable;
 
@@ -395,9 +361,6 @@ Expression *init_lambda_expression_wc(Expression *bound_variable, Expression *bo
     SET_LAMBDA_BODY(expr, body);
     propagate_evar_refs(expr, body);
 
-#ifndef DISABLE_HASH_CONSING
-    expression_intern_insert(expr);
-#endif
     return expr;
 }
 
@@ -406,29 +369,6 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg, Context *c
         fprintf(stderr, ERROR "Application input is NULL.\n" CRESET);
         return NULL;
     }
-
-#ifndef DISABLE_HASH_CONSING
-    {
-        Expression probe = {0};
-        probe.tag = APP_EXPRESSION;
-        probe.context = context;
-        probe.as.app.func = func;
-        probe.as.app.arg = arg;
-        Expression *cached = expression_intern_lookup(&probe);
-        if (cached) {
-            // Re-establish child uplink tracking if it was cleared by path-copying.
-            if (!cached->as.app.func_uplink_node) {
-                cached->as.app.func_uplink_node =
-                    add_to_parents(func, cached, APP_FUNC);
-            }
-            if (!cached->as.app.arg_uplink_node) {
-                cached->as.app.arg_uplink_node =
-                    add_to_parents(arg, cached, APP_ARG);
-            }
-            return cached;
-        }
-    }
-#endif
 
     if (!valid_in_context(func, context)) {
         fprintf(stderr, ERROR "Function is not valid in context.\n" CRESET);
@@ -461,35 +401,10 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg, Context *c
     propagate_evar_refs(expr, func);
     propagate_evar_refs(expr, arg);
 
-#ifndef DISABLE_HASH_CONSING
-    expression_intern_insert(expr);
-#endif
     return expr;
 }
 
 Expression *init_forall_expression_wc(Expression *bound_variable, Expression *body) {
-#ifndef DISABLE_HASH_CONSING
-    {
-        Expression probe = {0};
-        probe.tag = FORALL_EXPRESSION;
-        probe.as.forall.bound_variable = bound_variable;
-        probe.as.forall.body = body;
-        Expression *cached = expression_intern_lookup(&probe);
-        if (cached) {
-            // Re-establish child uplink tracking if it was cleared by path-copying.
-            if (!cached->as.forall.bound_variable_uplink_node) {
-                cached->as.forall.bound_variable_uplink_node =
-                    add_to_parents(bound_variable, cached, FORALL_BOUND_VAR);
-            }
-            if (!cached->as.forall.body_uplink_node) {
-                cached->as.forall.body_uplink_node =
-                    add_to_parents(body, cached, FORALL_BODY);
-            }
-            return cached;
-        }
-    }
-#endif
-
     Context *gamma = get_expression_context(bound_variable);
     Context *extended_with_bound_variable = bound_variable;
 
@@ -518,9 +433,6 @@ Expression *init_forall_expression_wc(Expression *bound_variable, Expression *bo
     SET_FORALL_BODY(expr, body);
     propagate_evar_refs(expr, body);
 
-#ifndef DISABLE_HASH_CONSING
-    expression_intern_insert(expr);
-#endif
     return expr;
 }
 
@@ -1479,80 +1391,32 @@ bool fill_hole(Expression *hole, Expression *term) {
             switch (uplink->relation) {
                 case (LAMBDA_BODY): {
                     Expression *ptr = (Expression *)uplink->ptr;
-#ifndef DISABLE_HASH_CONSING
-                    expression_intern_remove(ptr);
-#endif
                     SET_LAMBDA_BODY(ptr, term);
-#ifndef DISABLE_HASH_CONSING
-                    if (term->tag != HOLE_EXPRESSION) {
-                        expression_intern_insert(ptr);
-                    }
-#endif
                     break;
                 }
                 case (LAMBDA_BOUND_VAR): {
                     Expression *ptr = (Expression *)uplink->ptr;
-#ifndef DISABLE_HASH_CONSING
-                    expression_intern_remove(ptr);
-#endif
                     SET_LAMBDA_BOUND_VAR(ptr, term);
-#ifndef DISABLE_HASH_CONSING
-                    if (term->tag != HOLE_EXPRESSION) {
-                        expression_intern_insert(ptr);
-                    }
-#endif
                     break;
                 }
                 case (APP_FUNC): {
                     Expression *ptr = (Expression *)uplink->ptr;
-#ifndef DISABLE_HASH_CONSING
-                    expression_intern_remove(ptr);
-#endif
                     SET_APP_FUNC(ptr, term);
-#ifndef DISABLE_HASH_CONSING
-                    if (term->tag != HOLE_EXPRESSION && ptr->as.app.arg->tag != HOLE_EXPRESSION) {
-                        expression_intern_insert(ptr);
-                    }
-#endif
                     break;
                 }
                 case (APP_ARG): {
                     Expression *ptr = (Expression *)uplink->ptr;
-#ifndef DISABLE_HASH_CONSING
-                    expression_intern_remove(ptr);
-#endif
                     SET_APP_ARG(ptr, term);
-#ifndef DISABLE_HASH_CONSING
-                    if (term->tag != HOLE_EXPRESSION && ptr->as.app.func->tag != HOLE_EXPRESSION) {
-                        expression_intern_insert(ptr);
-                    }
-#endif
                     break;
                 }
                 case (FORALL_BODY): {
                     Expression *ptr = (Expression *)uplink->ptr;
-#ifndef DISABLE_HASH_CONSING
-                    expression_intern_remove(ptr);
-#endif
                     SET_FORALL_BODY(ptr, term);
-#ifndef DISABLE_HASH_CONSING
-                    if (term->tag != HOLE_EXPRESSION) {
-                        expression_intern_insert(ptr);
-                    }
-#endif
                     break;
                 }
                 case (FORALL_BOUND_VAR): {
                     Expression *ptr = (Expression *)uplink->ptr;
-#ifndef DISABLE_HASH_CONSING
-                    expression_intern_remove(ptr);
-#endif
                     SET_FORALL_BOUND_VAR(ptr, term);
-#ifndef DISABLE_HASH_CONSING
-                    if (term->tag != HOLE_EXPRESSION) {
-                        expression_intern_insert(ptr);
-                    }
-#endif
                     break;
                 }
                 case (VAR_BODY): {
