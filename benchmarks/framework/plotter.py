@@ -154,7 +154,8 @@ def plot_benchmark(
         if x_val is None:
             continue
 
-        if value.get("success"):
+        # Include both successful results and soft-timeout results (which completed with a time)
+        if value.get("success") or value.get("soft_timeout"):
             data.setdefault(strat_id, []).append((x_val, value["time_taken"]))
         elif show_failures:
             failure_data.setdefault(strat_id, []).append((x_val, value["time_taken"]))

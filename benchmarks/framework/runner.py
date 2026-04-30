@@ -75,7 +75,12 @@ def run_single(
     timeout: float,
 ) -> dict:
     """
-    Run a single benchmark point. Returns {"time_taken": float, "success": bool}.
+    Run a single benchmark point with soft/hard timeout limits.
+    
+    Soft timeout (at 'timeout'): counts as a failure toward auto-retire, but process continues.
+    Hard timeout (at 2x 'timeout'): actually terminates the process.
+    
+    Returns {"time_taken": float, "success": bool, "soft_timeout": bool (optional)}.
     """
     with tempfile.TemporaryDirectory() as workdir:
         generated_file = benchmark.generate(strategy, params, workdir)
@@ -88,23 +93,35 @@ def run_single(
         else:
             cwd = workdir
 
+        soft_timeout = timeout
+        hard_timeout = timeout * 2
+
         start = time.perf_counter()
+        soft_timeout_hit = False
         try:
             proc = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=timeout,
+                timeout=hard_timeout,
                 cwd=cwd,
             )
             elapsed = time.perf_counter() - start
+            
+            # Check if we exceeded soft timeout but finished before hard timeout
+            if elapsed > soft_timeout:
+                soft_timeout_hit = True
+            
             success = proc.returncode == 0
             result = {"time_taken": elapsed, "success": success}
+            if soft_timeout_hit:
+                result["soft_timeout"] = True
             if not success and proc.stderr:
                 result["stderr"] = proc.stderr[:500]
             return result
         except subprocess.TimeoutExpired:
             elapsed = time.perf_counter() - start
+            # Hard timeout hit - process was actually killed
             return {"time_taken": elapsed, "success": False, "timeout": True}
         except FileNotFoundError:
             return {"time_taken": 0, "success": False, "error": f"Engine not found: {cmd[0]}"}
@@ -171,7 +188,8 @@ def run_benchmark(
         print(f"\n{'='*60}")
         print(f"  {benchmark.name}: {benchmark.description}")
         print(f"  {total_points} parameter points × {len(strategies)} strategies")
-        print(f"  Timeout: {timeout}s | Auto-retire after {config.max_consecutive_timeouts} consecutive timeouts")
+        print(f"  Soft timeout: {timeout}s | Hard timeout: {timeout*2}s")
+        print(f"  Auto-retire after {config.max_consecutive_timeouts} consecutive timeouts")
         print(f"{'='*60}")
 
     run_count = 0
@@ -201,10 +219,19 @@ def run_benchmark(
 
             # Track timeouts/failures for adaptive stopping
             if result.get("timeout"):
+                # Hard timeout: process was actually killed
                 consecutive_timeouts[strat_id] = consecutive_timeouts.get(strat_id, 0) + 1
                 consecutive_failures[strat_id] = 0
                 if verbose:
                     print(f"  TIMEOUT  {strat_id} {params} "
+                          f"({consecutive_timeouts[strat_id]}/{config.max_consecutive_timeouts})")
+            elif result.get("soft_timeout"):
+                # Soft timeout: exceeded soft limit but finished before hard timeout
+                # Counts as timeout for auto-retire, but we have the result
+                consecutive_timeouts[strat_id] = consecutive_timeouts.get(strat_id, 0) + 1
+                consecutive_failures[strat_id] = 0
+                if verbose:
+                    print(f"  SOFT_TO  {strat_id} {params} -> {result['time_taken']:.4f}s "
                           f"({consecutive_timeouts[strat_id]}/{config.max_consecutive_timeouts})")
             elif not result["success"]:
                 consecutive_failures[strat_id] = consecutive_failures.get(strat_id, 0) + 1
