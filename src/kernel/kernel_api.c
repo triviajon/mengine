@@ -13,6 +13,7 @@
 #include "src/kernel/normalize.h"
 #include "src/kernel/subst.h"
 #include "src/kernel/utils.h"
+#include "src/common/map.h"
 
 /* EXPRESSION CONSTRUCTION */
 

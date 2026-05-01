@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include "src/common/map.h"
+
 // Opaque types
 typedef struct Expression Expression;
 typedef struct Expression Context;
