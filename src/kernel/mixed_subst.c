@@ -361,30 +361,17 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, Map *subst
  */
 static int g_uplink_subst_depth = 0;
 
-static Expression *_uplink_p_subst(Context *context, Expression *t, DoublyLinkedList *old_exprs,
-                                   DoublyLinkedList *new_exprs) {
+static Expression *_uplink_p_subst(Context *context, Expression *t, Map *subst_map) {
     g_uplink_subst_depth++;
-
-    // Build the substitution map from the parallel lists.
-    Map *subst_map = pool_map_alloc();
-    DLLNode *o = old_exprs->head;
-    DLLNode *n = new_exprs->head;
-    while (o) {
-        map_set(subst_map, o->data, n->data);
-        o = o->next;
-        n = n->next;
-    }
 
     if (g_uplink_subst_depth > 1) {
         Expression *result = _simple_topdown_psubst(context, t, subst_map);
-        pool_map_free(subst_map);
         g_uplink_subst_depth--;
         return result;
     }
 
     Expression *direct = map_get(subst_map, t);
     if (direct) {
-        pool_map_free(subst_map);
         g_uplink_subst_depth--;
         return direct;
     }
@@ -401,7 +388,6 @@ static Expression *_uplink_p_subst(Context *context, Expression *t, DoublyLinked
             tc = get_expression_context(tc);
         }
         if (!stale) {
-            pool_map_free(subst_map);
             g_uplink_subst_depth--;
             return t;
         }
@@ -411,7 +397,6 @@ static Expression *_uplink_p_subst(Context *context, Expression *t, DoublyLinked
     Map *memo = pool_map_alloc();
     Expression *result = spine_rebuild(context, t, subst_map, memo);
     pool_map_free(memo);
-    pool_map_free(subst_map);
 
     g_uplink_subst_depth--;
     return result;
@@ -423,45 +408,40 @@ static Expression *_uplink_p_subst(Context *context, Expression *t, DoublyLinked
 
 Expression *_p_subst(Context *context, Expression *t, DoublyLinkedList *old_exprs,
                      DoublyLinkedList *new_exprs) {
-    return _uplink_p_subst(context, t, old_exprs, new_exprs);
+    Map *subst_map = pool_map_alloc();
+    DLLNode *o = old_exprs->head, *n = new_exprs->head;
+    while (o) { map_set(subst_map, o->data, n->data); o = o->next; n = n->next; }
+    Expression *result = _uplink_p_subst(context, t, subst_map);
+    pool_map_free(subst_map);
+    return result;
 }
 
-Expression *new_p_subst(Context *context, Expression *t, DoublyLinkedList *old_exprs,
-                        DoublyLinkedList *new_exprs) {
-    int n = dll_len(old_exprs);
-    if (n != dll_len(new_exprs)) return NULL;
-    if (n == 0) return t;
-    return _uplink_p_subst(context, t, old_exprs, new_exprs);
+Expression *new_p_subst(Context *context, Expression *t, Map *subst_map) {
+    if (!subst_map) return t;
+    return _uplink_p_subst(context, t, subst_map);
 }
 
 Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a) {
     if (t == x) return a;
-    DoublyLinkedList *old_exprs = dll_create();
-    DoublyLinkedList *new_exprs = dll_create();
-    dll_insert_at_tail(old_exprs, dll_new_node(x));
-    dll_insert_at_tail(new_exprs, dll_new_node(a));
-    Expression *result = _uplink_p_subst(context, t, old_exprs, new_exprs);
-    dll_destroy(old_exprs);
-    dll_destroy(new_exprs);
+    Map *subst_map = pool_map_alloc();
+    map_set(subst_map, x, a);
+    Expression *result = _uplink_p_subst(context, t, subst_map);
+    pool_map_free(subst_map);
     return result;
 }
 
 Expression *new_subst(Context *context, Expression *t, Expression *x, Expression *a) {
     Context *final_context = context_cut(context, x, a);
-    DoublyLinkedList *old_exprs = dll_create();
-    DoublyLinkedList *new_exprs = dll_create();
-    dll_insert_at_tail(old_exprs, dll_new_node(x));
-    dll_insert_at_tail(new_exprs, dll_new_node(a));
+    Map *subst_map = pool_map_alloc();
+    map_set(subst_map, x, a);
     Context *oc = context, *fc = final_context;
     while (oc != fc && oc != x) {
-        dll_insert_at_head(old_exprs, dll_new_node(oc));
-        dll_insert_at_head(new_exprs, dll_new_node(fc));
+        map_set(subst_map, oc, fc);
         oc = get_expression_context(oc);
         fc = get_expression_context(fc);
     }
-    Expression *result = _uplink_p_subst(final_context, t, old_exprs, new_exprs);
-    dll_destroy(old_exprs);
-    dll_destroy(new_exprs);
+    Expression *result = _uplink_p_subst(final_context, t, subst_map);
+    pool_map_free(subst_map);
     return result;
 }
 

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "src/common/doubly_linked_list.h"
+#include "src/common/map.h"
 #include "src/kernel/inductive.h"
 #include "src/kernel/subst.h"
 
@@ -70,18 +71,14 @@ Expression *iota_reduce(Context *gamma, Expression *expression) {
                 return NULL;
             }
 
-            DoublyLinkedList *old_exprs = dll_create();
-            DoublyLinkedList *new_exprs = dll_create();
-
+            Map *subst_map = map_new_with_capacity(pattern_var_count > 0 ? pattern_var_count : 1);
             for (int j = 0; j < pattern_var_count; j++) {
-                dll_insert_at_tail(old_exprs, dll_new_node(pattern_variables[j]));
-                dll_insert_at_tail(new_exprs, dll_new_node(scrutinee_args[j]));
+                map_set(subst_map, pattern_variables[j], scrutinee_args[j]);
             }
 
-            Expression *reduced_body = new_p_subst(gamma, branch->body, old_exprs, new_exprs);
+            Expression *reduced_body = new_p_subst(gamma, branch->body, subst_map);
 
-            dll_destroy(old_exprs);
-            dll_destroy(new_exprs);
+            map_free(subst_map);
             free(scrutinee_args);
 
             return reduced_body;

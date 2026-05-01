@@ -546,8 +546,7 @@ Expression *kernel_subst(Context *context, Expression *t, Expression *x, Express
  * @param new_exprs_list
  * @return
  */
-Expression *kernel_p_subst(Context *context, Expression *t, void *old_exprs_list,
-                           void *new_exprs_list);
+Expression *kernel_p_subst(Context *context, Expression *t, Map *subst_map);
 
 /* ============================================================================
  * Normalization Operations

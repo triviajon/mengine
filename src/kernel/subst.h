@@ -2,6 +2,7 @@
 #define SUBST_H
 
 #include "src/common/doubly_linked_list.h"
+#include "src/common/map.h"
 #include "src/kernel/expression.h"
 
 // Kicks off a substitution in t, replacing all instances of x with
@@ -36,8 +37,7 @@ Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a
 // example, if the user kicks off a substitution of [A -> B] in "forall x: A, eq
 // A x x", then we must also simultaneously replace x with a fresh variable "x':
 // B" in order for the expression to always remain type-checkable.
-Expression *new_p_subst(Context *context, Expression *t, DoublyLinkedList *old_exprs,
-                        DoublyLinkedList *new_exprs);
+Expression *new_p_subst(Context *context, Expression *t, Map *subst_map);
 
 // Single-variable substitution for beta-reduction. Equivalent to new_subst.
 // (Previously skipped the collect_subtree DFS; no longer needed since stale

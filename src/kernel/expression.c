@@ -1182,20 +1182,15 @@ Expression *match_and_subst(Expression *a, Expression *b, Expression *to_subst) 
     LinearMap *mapping = linear_map_new();
     _match_and_subst(a, b, mapping);
 
-    DoublyLinkedList *old_exprs = dll_create();
-    DoublyLinkedList *new_exprs = dll_create();
-
-    int n = mapping->size;
-    for (int i = 0; i < n; i++) {
-        dll_insert_at_tail(old_exprs, dll_new_node((mapping->items + i)->key));
-        dll_insert_at_tail(new_exprs, dll_new_node((mapping->items + i)->val));
+    Map *subst_map = map_new_with_capacity(mapping->size > 0 ? mapping->size : 1);
+    for (int i = 0; i < mapping->size; i++) {
+        map_set(subst_map, (mapping->items + i)->key, (mapping->items + i)->val);
     }
 
     Context *to_subst_ctx = get_expression_context(to_subst);
-    Expression *result = new_p_subst(to_subst_ctx, to_subst, old_exprs, new_exprs);
+    Expression *result = new_p_subst(to_subst_ctx, to_subst, subst_map);
 
-    dll_destroy(old_exprs);
-    dll_destroy(new_exprs);
+    map_free(subst_map);
     free(mapping->items);
     free(mapping);
     return result;

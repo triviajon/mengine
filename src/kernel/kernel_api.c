@@ -201,10 +201,8 @@ Expression *kernel_subst(Context *context, Expression *t, Expression *x, Express
     return new_subst(context, t, x, a);
 }
 
-Expression *kernel_p_subst(Context *context, Expression *t, void *old_exprs_list,
-                           void *new_exprs_list) {
-    return new_p_subst(context, t, (DoublyLinkedList *)old_exprs_list,
-                       (DoublyLinkedList *)new_exprs_list);
+Expression *kernel_p_subst(Context *context, Expression *t, Map *subst_map) {
+    return new_p_subst(context, t, (Map *)subst_map);
 }
 
 /* NORMALIZATION OPERATIONS */
