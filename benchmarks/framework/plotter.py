@@ -73,6 +73,7 @@ def plot_benchmark(
     output_dir: str = "plots",
     engines: list[str] | None = None,
     strategies_filter: list[str] | None = None,
+    exclude: list[str] | None = None,
     fmt: str = "png",
     x_param: str | None = None,
     fixed_params: dict[str, int] | None = None,
@@ -92,6 +93,7 @@ def plot_benchmark(
         output_dir: Directory to save plots.
         engines: Only plot these engines (None = all).
         strategies_filter: Only plot these strategy names (None = all).
+        exclude: Skip these engine/strategy combos, as "engine/strategy" strings (None = skip none).
         fmt: Output format (png, pdf, svg).
         x_param: Which parameter to use as x-axis (default: first param).
         fixed_params: Fix other parameters to these values (for multi-param benchmarks).
@@ -138,6 +140,10 @@ def plot_benchmark(
 
         # Filter by strategy name
         if strategies_filter and strategy.name not in strategies_filter:
+            continue
+
+        # Exclude specific engine/strategy combos
+        if exclude and f"{strategy.engine}/{strategy.name}" in exclude:
             continue
 
         # Filter by fixed params

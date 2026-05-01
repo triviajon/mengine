@@ -71,6 +71,7 @@ class RewriteNM(Benchmark):
             Strategy("coq", "rewrite_bottomup", "Rocq: rewrite_strat bottomup", color="red", marker="s"),
             Strategy("coq", "rewrite_topdown", "Rocq: rewrite_strat topdown", color="red", marker="D"),
             Strategy("lean", "simp_only", "Lean: simp only [f_n_x0]", color="green", marker="v"),
+            Strategy("lean", "repeat_rw", "Lean: repeat rw [f_n_x0]", color="green", marker="d"),
         ]
 
     def generate(self, strategy, params, workdir):
@@ -159,8 +160,13 @@ End Test.
                 let_bindings.append(f"        let x{i} := f {args}")
             let_str = "\n".join(let_bindings)
 
+            tactic_map = {
+                "simp_only": "simp only [f_n_x0]",
+                "repeat_rw": "repeat rw [f_n_x0]",
+            }
+
             content = f"""set_option maxHeartbeats 0
-set_option maxRecDepth 10000
+set_option maxRecDepth 1000000
 variable (nat : Type)
 variable (x0 : nat)
 variable (f : {nat_args})
@@ -170,7 +176,7 @@ theorem f_n_x0 : f {x0_args} = x0 := sorry
 theorem bench :
   {let_str}
   x{m} = x0 := by
-  simp only [f_n_x0]
+  {tactic_map[strategy.name]}
 """
             path = os.path.join(workdir, "test.lean")
             with open(path, "w") as f:

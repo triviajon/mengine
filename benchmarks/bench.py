@@ -18,6 +18,7 @@ Run options:
 
 Plot options:
   --engine ENGINE[,ENGINE,...]   Only plot these engines
+  --exclude ENGINE/STRATEGY      Exclude an engine/strategy (repeatable)
   --format FMT                   Output format: png, pdf, svg (default: png)
   --fixed PARAM=VALUE            Fix a parameter (for multi-param benchmarks)
   --xlim MIN:MAX                 Set x-axis limits
@@ -263,6 +264,7 @@ def cmd_plot(args):
             "log_x": args.log_x,
             "title": args.title,
             "show_failures": args.show_failures,
+            "exclude": args.exclude or [],
         }
         
         if args.xlim:
@@ -406,6 +408,8 @@ def main():
     p_plot.add_argument("--log-x", action="store_true", help="Log scale x-axis")
     p_plot.add_argument("--title", help="Custom title")
     p_plot.add_argument("--show-failures", action="store_true", help="Show failed points")
+    p_plot.add_argument("--exclude", action="append", metavar="ENGINE/STRATEGY",
+                        help="Exclude an engine/strategy from plots (e.g. lean/simp). Repeatable.")
 
     args = parser.parse_args()
 
