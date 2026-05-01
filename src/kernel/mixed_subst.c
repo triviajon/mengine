@@ -196,7 +196,12 @@ static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subs
             Expression *x_bv_type = get_expression_type(x_bv);
             Expression *body      = get_lambda_body(t);
             Expression *x_bv_type2 = _simple_topdown_psubst(ctx, x_bv_type, subst_map);
-            Expression *x_bv2 = init_var_expression_wc(get_var_name(x_bv), x_bv_type2, ctx);
+            Expression *x_bv2;
+            if (x_bv_type2 == x_bv_type && ctx == get_expression_context(x_bv)) {
+                x_bv2 = x_bv;
+            } else {
+                x_bv2 = init_var_expression_wc(get_var_name(x_bv), x_bv_type2, ctx);
+            }
             map_set(subst_map, x_bv, x_bv2);
             Expression *body2 = _simple_topdown_psubst((Context *)x_bv2, body, subst_map);
             map_del(subst_map, x_bv);
@@ -208,7 +213,12 @@ static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subs
             Expression *x_bv_type = get_expression_type(x_bv);
             Expression *body      = get_forall_body(t);
             Expression *x_bv_type2 = _simple_topdown_psubst(ctx, x_bv_type, subst_map);
-            Expression *x_bv2 = init_var_expression_wc(get_var_name(x_bv), x_bv_type2, ctx);
+            Expression *x_bv2;
+            if (x_bv_type2 == x_bv_type && ctx == get_expression_context(x_bv)) {
+                x_bv2 = x_bv;
+            } else {
+                x_bv2 = init_var_expression_wc(get_var_name(x_bv), x_bv_type2, ctx);
+            }
             map_set(subst_map, x_bv, x_bv2);
             Expression *body2 = _simple_topdown_psubst((Context *)x_bv2, body, subst_map);
             map_del(subst_map, x_bv);
