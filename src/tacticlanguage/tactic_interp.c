@@ -132,294 +132,61 @@ static bool _match_pattern(AST *pattern, Expression *expr, PatternBindings *bind
 }
 
 /* ============================================================================
- * AST deep-copy with variable substitution
+ * Flat tactic environment stack
  *
- * Used to instantiate tactic definition bodies by replacing parameter
- * identifiers with argument ASTs.
+ * Replaces the substitution model (deep-copying body ASTs on every TAC_LET /
+ * TAC_CALL).  Push is O(1); lookup is a short linear scan (only a handful of
+ * live bindings at any point).  The entries form a linked list via their
+ * `next` pointers so the top-of-stack pointer can be passed directly to
+ * ast_to_expression_env.
  * ============================================================================ */
 
-static AST *_ast_subst(AST *ast, char **params, AST **args, size_t count);
+#ifndef MAX_ENV_DEPTH
+#define MAX_ENV_DEPTH 16384
+#endif
 
-static AST *_ast_deep_copy(AST *ast) { return _ast_subst(ast, NULL, NULL, 0); }
+static TacticEnvEntry g_env_stack[MAX_ENV_DEPTH];
+static int            g_env_top = 0;
 
-static Binder *_binder_subst(Binder *b, char **params, AST **args, size_t count) {
-    Binder *copy = malloc(sizeof(Binder));
-    copy->name = b->name ? strdup(b->name) : NULL;
-    copy->type = _ast_subst(b->type, params, args, count);
-    return copy;
+static TacticEnvEntry *env_top_ptr(void) {
+    return g_env_top > 0 ? &g_env_stack[g_env_top - 1] : NULL;
 }
 
-static Pattern *_pattern_copy(Pattern *p) {
-    if (!p) {
-        return NULL;
-    }
-    Pattern *copy = malloc(sizeof(Pattern));
-    copy->constructor_name = p->constructor_name ? strdup(p->constructor_name) : NULL;
-    copy->argument_count = p->argument_count;
-    copy->argument_names = NULL;
-    if (p->argument_count > 0 && p->argument_names) {
-        copy->argument_names = malloc(sizeof(char *) * p->argument_count);
-        for (int i = 0; i < p->argument_count; i++) {
-            copy->argument_names[i] = p->argument_names[i] ? strdup(p->argument_names[i]) : NULL;
+/* Lookup from an explicit env-chain head (lexical lookup). */
+static TacticEnvEntry *env_lookup_entry_from(TacticEnvEntry *from, const char *name) {
+    for (TacticEnvEntry *e = from; e; e = e->next) {
+        if (strcmp(e->name, name) == 0) {
+            return e;
         }
     }
-    return copy;
+    return NULL;
 }
 
-static AST *_ast_subst(AST *ast, char **params, AST **args, size_t count) {
-    if (!ast) {
-        return NULL;
+/* Push a name→value binding.  The stack takes ownership of val. */
+static void env_push(const char *name, TacticValue *val) {
+    if (g_env_top >= MAX_ENV_DEPTH) {
+        fprintf(stderr, "[tactic env] stack overflow (MAX_ENV_DEPTH=%d)\n", MAX_ENV_DEPTH);
+        abort();
     }
-
-    // Check for variable substitution
-    if ((ast->tag == AST_VAR || ast->tag == AST_PATVAR) && params) {
-        const char *name = ast->tag == AST_VAR ? ast->value.var.name : ast->value.patvar.name;
-        for (size_t i = 0; i < count; i++) {
-            if (strcmp(name, params[i]) == 0) {
-                return _ast_deep_copy(args[i]);
-            }
-        }
-    }
-
-    AST *copy = malloc(sizeof(AST));
-    copy->tag = ast->tag;
-
-    switch (ast->tag) {
-        case AST_VAR:
-            copy->value.var.name = strdup(ast->value.var.name);
-            break;
-        case AST_TYPE:
-        case AST_PROP:
-            break;
-        case AST_APP:
-            copy->value.app.func = _ast_subst(ast->value.app.func, params, args, count);
-            copy->value.app.arg = _ast_subst(ast->value.app.arg, params, args, count);
-            break;
-        case AST_LAMBDA:
-            copy->value.lambda.binder.name =
-                ast->value.lambda.binder.name ? strdup(ast->value.lambda.binder.name) : NULL;
-            copy->value.lambda.binder.type =
-                _ast_subst(ast->value.lambda.binder.type, params, args, count);
-            copy->value.lambda.body = _ast_subst(ast->value.lambda.body, params, args, count);
-            break;
-        case AST_FORALL:
-            copy->value.forall.binder.name =
-                ast->value.forall.binder.name ? strdup(ast->value.forall.binder.name) : NULL;
-            copy->value.forall.binder.type =
-                _ast_subst(ast->value.forall.binder.type, params, args, count);
-            copy->value.forall.body = _ast_subst(ast->value.forall.body, params, args, count);
-            break;
-        case AST_LET:
-            copy->value.let.name = ast->value.let.name ? strdup(ast->value.let.name) : NULL;
-            copy->value.let.type = _ast_subst(ast->value.let.type, params, args, count);
-            copy->value.let.value = _ast_subst(ast->value.let.value, params, args, count);
-            copy->value.let.body = _ast_subst(ast->value.let.body, params, args, count);
-            break;
-        case AST_FIX:
-            copy->value.fix.name = ast->value.fix.name ? strdup(ast->value.fix.name) : NULL;
-            copy->value.fix.decreasing_arg_name = ast->value.fix.decreasing_arg_name
-                                                      ? strdup(ast->value.fix.decreasing_arg_name)
-                                                      : NULL;
-            copy->value.fix.binder_count = ast->value.fix.binder_count;
-            copy->value.fix.binders = malloc(sizeof(Binder *) * ast->value.fix.binder_count);
-            for (size_t i = 0; i < ast->value.fix.binder_count; i++) {
-                copy->value.fix.binders[i] =
-                    _binder_subst(ast->value.fix.binders[i], params, args, count);
-            }
-            copy->value.fix.return_type =
-                _ast_subst(ast->value.fix.return_type, params, args, count);
-            copy->value.fix.body = _ast_subst(ast->value.fix.body, params, args, count);
-            break;
-        case AST_MATCH:
-            copy->value.match.scrutinee =
-                _ast_subst(ast->value.match.scrutinee, params, args, count);
-            copy->value.match.branch_count = ast->value.match.branch_count;
-            copy->value.match.branches = malloc(sizeof(AST *) * ast->value.match.branch_count);
-            for (size_t i = 0; i < ast->value.match.branch_count; i++) {
-                copy->value.match.branches[i] =
-                    _ast_subst(ast->value.match.branches[i], params, args, count);
-            }
-            break;
-        case AST_MATCHBRANCH:
-            copy->value.matchbranch.pattern = _pattern_copy(ast->value.matchbranch.pattern);
-            copy->value.matchbranch.body =
-                _ast_subst(ast->value.matchbranch.body, params, args, count);
-            break;
-        case AST_PATVAR:
-            copy->value.patvar.name = strdup(ast->value.patvar.name);
-            break;
-        case AST_EXPR_REF:
-            copy->value.expr_ref.tval = tactic_value_dup(ast->value.expr_ref.tval);
-            break;
-    }
-
-    return copy;
+    g_env_stack[g_env_top].name = name;
+    g_env_stack[g_env_top].val  = val;
+    g_env_stack[g_env_top].next = g_env_top > 0 ? &g_env_stack[g_env_top - 1] : NULL;
+    g_env_top++;
 }
 
-/* ============================================================================
- * Tactic / TacticExpr substitution
- * ============================================================================ */
-
-static Tactic *_tactic_subst(Tactic *tac, char **params, AST **args, size_t count) {
-    if (!tac || count == 0) {
-        return tac;
-    }
-
-    Tactic *copy = malloc(sizeof(Tactic));
-    *copy = *tac;  // shallow copy
-
-    switch (tac->tag) {
-        case TACTIC_REWRITE:
-        case TACTIC_REWRITE_BACKWARD:
-        case TACTIC_EREWRITE:
-        case TACTIC_EREWRITE_BACKWARD:
-            copy->as.rewrite.lemma = _ast_subst(tac->as.rewrite.lemma, params, args, count);
-            copy->as.rewrite.equiv_proof =
-                _ast_subst(tac->as.rewrite.equiv_proof, params, args, count);
-            copy->as.rewrite.backward = tac->as.rewrite.backward;
-            break;
-        case TACTIC_CBV:
-            copy->as.cbv.rules_count = tac->as.cbv.rules_count;
-            if (tac->as.cbv.rules) {
-                copy->as.cbv.rules = malloc(sizeof(char *) * tac->as.cbv.rules_count);
-                for (int i = 0; i < tac->as.cbv.rules_count; i++) {
-                    copy->as.cbv.rules[i] = strdup(tac->as.cbv.rules[i]);
-                }
-            }
-            break;
-        default:
-            // TACTIC_ADMITTED - no AST fields
-            break;
-    }
-
-    return copy;
+/* Scan from top; return the value (not a dup) or NULL. */
+static TacticValue *env_lookup(const char *name) {
+    TacticEnvEntry *e = env_lookup_entry_from(env_top_ptr(), name);
+    return e ? e->val : NULL;
 }
 
-static TacticExpr *_tactic_expr_subst(TacticExpr *expr, char **params, AST **args, size_t count) {
-    if (!expr || count == 0) {
-        return expr;
+/* Pop back to saved_top, freeing owned TacticValues. */
+static void env_pop_to(int saved_top) {
+    for (int i = saved_top; i < g_env_top; i++) {
+        free_tactic_value(g_env_stack[i].val);
+        g_env_stack[i].val = NULL;
     }
-
-    switch (expr->tag) {
-        case TAC_PRIMITIVE:
-            return tactic_expr_primitive(
-                _tactic_subst(expr->as.primitive.tactic, params, args, count));
-        case TAC_SEQ:
-            return tactic_expr_seq(_tactic_expr_subst(expr->as.seq.left, params, args, count),
-                                   _tactic_expr_subst(expr->as.seq.right, params, args, count));
-        case TAC_ORELSE:
-            return tactic_expr_orelse(
-                _tactic_expr_subst(expr->as.orelse.left, params, args, count),
-                _tactic_expr_subst(expr->as.orelse.right, params, args, count));
-        case TAC_TRY:
-            return tactic_expr_try(_tactic_expr_subst(expr->as.try_expr.body, params, args, count));
-        case TAC_REPEAT:
-            return tactic_expr_repeat(
-                _tactic_expr_subst(expr->as.repeat.body, params, args, count));
-        case TAC_FIRST: {
-            TacticExpr **alts = malloc(sizeof(TacticExpr *) * expr->as.first.count);
-            for (size_t i = 0; i < expr->as.first.count; i++) {
-                alts[i] = _tactic_expr_subst(expr->as.first.alternatives[i], params, args, count);
-            }
-            return tactic_expr_first(alts, expr->as.first.count);
-        }
-        case TAC_CALL: {
-            // Substitute in the call's arguments
-            AST **new_args = NULL;
-            if (expr->as.call.arg_count > 0) {
-                new_args = malloc(sizeof(AST *) * expr->as.call.arg_count);
-                for (size_t i = 0; i < expr->as.call.arg_count; i++) {
-                    new_args[i] = _ast_subst(expr->as.call.args[i], params, args, count);
-                }
-            }
-            return tactic_expr_call(expr->as.call.name, new_args, expr->as.call.arg_count);
-        }
-        case TAC_IDTAC:
-            return tactic_expr_idtac();
-        case TAC_FAIL:
-            return tactic_expr_fail();
-        case TAC_MATCH_GOAL: {
-            size_t bc = expr->as.match_goal.branch_count;
-            GoalBranch *new_branches = malloc(sizeof(GoalBranch) * bc);
-            for (size_t i = 0; i < bc; i++) {
-                GoalBranch *old = &expr->as.match_goal.branches[i];
-                new_branches[i].hyp_count = old->hyp_count;
-                new_branches[i].hyps = NULL;
-                if (old->hyp_count > 0) {
-                    new_branches[i].hyps = malloc(sizeof(HypPattern) * old->hyp_count);
-                    for (size_t j = 0; j < old->hyp_count; j++) {
-                        new_branches[i].hyps[j].name = strdup(old->hyps[j].name);
-                        new_branches[i].hyps[j].type =
-                            _ast_subst(old->hyps[j].type, params, args, count);
-                    }
-                }
-                new_branches[i].conclusion = _ast_subst(old->conclusion, params, args, count);
-                new_branches[i].body = _tactic_expr_subst(old->body, params, args, count);
-            }
-            return tactic_expr_match_goal(new_branches, bc);
-        }
-        case TAC_LET:
-            return tactic_expr_let(expr->as.let_expr.name,
-                                   _tactic_expr_subst(expr->as.let_expr.rhs, params, args, count),
-                                   _tactic_expr_subst(expr->as.let_expr.body, params, args, count));
-        case TAC_GOAL_TYPE:
-            return tactic_expr_goal_type();
-        case TAC_TYPE_OF:
-            return tactic_expr_type_of(_ast_subst(expr->as.type_of.term, params, args, count));
-        case TAC_MATCH_TERM: {
-            size_t bc = expr->as.match_term.branch_count;
-            TermBranch *new_branches = malloc(sizeof(TermBranch) * bc);
-            for (size_t i = 0; i < bc; i++) {
-                TermBranch *old = &expr->as.match_term.branches[i];
-                new_branches[i].pattern = _ast_subst(old->pattern, params, args, count);
-                new_branches[i].body = _tactic_expr_subst(old->body, params, args, count);
-            }
-            return tactic_expr_match_term(
-                _ast_subst(expr->as.match_term.scrutinee, params, args, count), new_branches, bc);
-        }
-        case TAC_MK_HOLE:
-            return tactic_expr_mk_hole(_ast_subst(expr->as.mk_hole.type, params, args, count));
-        case TAC_FILL:
-            return tactic_expr_fill(_ast_subst(expr->as.fill.hole, params, args, count),
-                                    _ast_subst(expr->as.fill.term, params, args, count));
-        case TAC_SUBST:
-            return tactic_expr_subst(_ast_subst(expr->as.subst.new_term, params, args, count),
-                                     _ast_subst(expr->as.subst.body, params, args, count),
-                                     _ast_subst(expr->as.subst.old_var, params, args, count));
-        case TAC_EUNIFY:
-            return tactic_expr_eunify(_ast_subst(expr->as.eunify.lemma, params, args, count));
-        case TAC_CURRENT_GOAL:
-            return tactic_expr_current_goal();
-        case TAC_INTRO_STEP:
-            return tactic_expr_intro_step(
-                expr->as.intro_step.name ? _ast_subst(expr->as.intro_step.name, params, args, count)
-                                         : NULL);
-        case TAC_PAIR:
-            return tactic_expr_pair(_ast_subst(expr->as.pair.fst, params, args, count),
-                                    _ast_subst(expr->as.pair.snd, params, args, count));
-        case TAC_FST:
-            return tactic_expr_fst(_ast_subst(expr->as.fst.term, params, args, count));
-        case TAC_SND:
-            return tactic_expr_snd(_ast_subst(expr->as.snd.term, params, args, count));
-        case TAC_APP_FUNC:
-            return tactic_expr_app_func(_ast_subst(expr->as.app_func.term, params, args, count));
-        case TAC_APP_ARG:
-            return tactic_expr_app_arg(_ast_subst(expr->as.app_arg.term, params, args, count));
-        case TAC_EXPR_EQ:
-            return tactic_expr_expr_eq(_ast_subst(expr->as.expr_eq.left, params, args, count),
-                                       _ast_subst(expr->as.expr_eq.right, params, args, count));
-        case TAC_REWRITE_UNIFY:
-            return tactic_expr_rewrite_unify(
-                _ast_subst(expr->as.rewrite_unify.lemma, params, args, count),
-                _ast_subst(expr->as.rewrite_unify.target, params, args, count));
-        case TAC_CONSTR:
-            return tactic_expr_constr(_ast_subst(expr->as.constr.term, params, args, count));
-        case TAC_DISPATCH:
-        case TAC_SHELVE:
-            break;
-    }
-
-    return expr;
+    g_env_top = saved_top;
 }
 
 /* ============================================================================
@@ -435,7 +202,7 @@ static TacticResult *_interpret_primitive(MEngineRuntime *_, Expression *goal, T
     switch (tac->tag) {
         case TACTIC_REWRITE:
         case TACTIC_REWRITE_BACKWARD: {
-            Expression *lemma = ast_to_expression(tac->as.rewrite.lemma, ctx);
+            Expression *lemma = ast_to_expression_env(tac->as.rewrite.lemma, ctx, env_top_ptr());
             if (!lemma) {
                 return init_tactic_result(false, NULL, "Could not resolve rewrite lemma");
             }
@@ -445,7 +212,7 @@ static TacticResult *_interpret_primitive(MEngineRuntime *_, Expression *goal, T
 
         case TACTIC_EREWRITE:
         case TACTIC_EREWRITE_BACKWARD: {
-            Expression *lemma = ast_to_expression(tac->as.rewrite.lemma, ctx);
+            Expression *lemma = ast_to_expression_env(tac->as.rewrite.lemma, ctx, env_top_ptr());
             if (!lemma) {
                 return init_tactic_result(false, NULL, "Could not resolve rewrite lemma");
             }
@@ -471,18 +238,33 @@ static TacticResult *_interpret_primitive(MEngineRuntime *_, Expression *goal, T
  * ============================================================================ */
 
 /* Resolve an AST node to a TacticValue.
- * If the node is an AST_EXPR_REF, return an owned duplicate of the tval.
- * Otherwise, evaluate via ast_to_expression and wrap as TVAL_EXPRESSION.
+ * Checks the env stack first (for tactic-let-bound names), then falls back to
+ * ast_to_expression_env which can itself see the env for sub-expression lookups.
  * The caller owns the returned TacticValue. */
-static TacticValue *resolve_tactic_value(AST *ast, Context *ctx) {
+static TacticValue *resolve_tactic_value_in_env(AST *ast, Context *ctx, TacticEnvEntry *env) {
     if (ast->tag == AST_EXPR_REF) {
         return tactic_value_dup(ast->value.expr_ref.tval);
     }
-    Expression *e = ast_to_expression(ast, ctx);
+    if (ast->tag == AST_VAR) {
+        TacticEnvEntry *entry = env_lookup_entry_from(env, ast->value.var.name);
+        if (entry) {
+            TacticValue *found = entry->val;
+            if (found->kind == TVAL_AST) {
+                /* Resolve in the lexical parent env to avoid self-recursion. */
+                return resolve_tactic_value_in_env(found->ast, ctx, entry->next);
+            }
+            return tactic_value_dup(found);
+        }
+    }
+    Expression *e = ast_to_expression_env(ast, ctx, env);
     if (!e) {
         return NULL;
     }
     return tactic_value_expr(e);
+}
+
+static TacticValue *resolve_tactic_value(AST *ast, Context *ctx) {
+    return resolve_tactic_value_in_env(ast, ctx, env_top_ptr());
 }
 
 #ifndef TAC_CALL_MAX_DEPTH
@@ -673,20 +455,20 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                 return init_tactic_result(false, NULL, msg);
             }
 
-            TacticExpr *body = def->body;
-            bool body_is_copy = false;
-            if (def->param_count > 0) {
-                body = _tactic_expr_subst(def->body, def->params, expr->as.call.args,
-                                          def->param_count);
-                body_is_copy = true;
+            // Push each argument as a lazy AST thunk (TVAL_AST).  This avoids
+            // eager evaluation, which would fail for literal-name args like
+            // `intro P` where P is not yet in the context.  The stored AST is
+            // resolved at its use-site via ast_to_expression_env or env_lookup.
+            int saved = g_env_top;
+            for (size_t i = 0; i < def->param_count; i++) {
+                env_push(def->params[i], tactic_value_ast(expr->as.call.args[i]));
             }
 
             _tac_call_depth++;
-            TacticResult *result = tactic_interpret(rt, goal, body);
+            TacticResult *result = def->fn ? def->fn(rt, goal, def->compiled_env)
+                                           : tactic_interpret(rt, goal, def->body);
             _tac_call_depth--;
-            if (body_is_copy) {
-                free_tactic_expr(body);
-            }
+            env_pop_to(saved);
             return result;
         }
 
@@ -707,10 +489,8 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
                 // Match hypothesis patterns against context entries
                 bool hyps_matched = true;
-                // For each hyp pattern, we need to find a context entry that matches.
-                // Track which hyp pattern names map to which context variable names.
-                char **hyp_param_names = NULL;
-                AST **hyp_param_values = NULL;
+                // Per-hyp: record the matched context variable Expression* directly
+                Expression **hyp_exprs = NULL;
                 size_t hyp_param_count = 0;
 
                 for (size_t j = 0; j < branch->hyp_count; j++) {
@@ -721,19 +501,11 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                     while (!context_is_empty(c)) {
                         Expression *hyp_type = get_expression_type(c);
                         PatternBindings trial = bindings;
-                        // Try matching this hypothesis type
                         if (_match_pattern(hp->type, hyp_type, &trial)) {
-                            // Match succeeded - record the binding
                             bindings = trial;
-                            hyp_param_names =
-                                realloc(hyp_param_names, sizeof(char *) * (hyp_param_count + 1));
-                            hyp_param_values =
-                                realloc(hyp_param_values, sizeof(AST *) * (hyp_param_count + 1));
-                            hyp_param_names[hyp_param_count] = hp->name;
-                            AST *var_ast = malloc(sizeof(AST));
-                            var_ast->tag = AST_VAR;
-                            var_ast->value.var.name = strdup(get_var_name(c));
-                            hyp_param_values[hyp_param_count] = var_ast;
+                            hyp_exprs = realloc(hyp_exprs,
+                                                sizeof(Expression *) * (hyp_param_count + 1));
+                            hyp_exprs[hyp_param_count] = c;
                             hyp_param_count++;
                             found = true;
                             break;
@@ -748,64 +520,27 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                 }
 
                 if (!hyps_matched) {
-                    free(hyp_param_names);
-                    free(hyp_param_values);
+                    free(hyp_exprs);
                     bindings_free(&bindings);
                     continue;
                 }
 
-                // Substitute hypothesis name bindings AND pattern variable
-                // bindings into the body.  Hypothesis names map to AST_VAR
-                // nodes (already collected above); pattern variables map to
-                // AST_EXPR_REF nodes wrapping the matched Expression*.
-                size_t total_count = hyp_param_count + bindings.count;
-                char **all_names = NULL;
-                AST **all_values = NULL;
-
-                if (total_count > 0) {
-                    all_names = malloc(sizeof(char *) * total_count);
-                    all_values = malloc(sizeof(AST *) * total_count);
-
-                    // Copy hypothesis name bindings
-                    for (size_t k = 0; k < hyp_param_count; k++) {
-                        all_names[k] = hyp_param_names[k];
-                        all_values[k] = hyp_param_values[k];
-                    }
-
-                    // Convert pattern variable bindings to AST_EXPR_REF
-                    for (size_t k = 0; k < bindings.count; k++) {
-                        all_names[hyp_param_count + k] = bindings.names[k];
-                        AST *ref = malloc(sizeof(AST));
-                        ref->tag = AST_EXPR_REF;
-                        ref->value.expr_ref.tval = tactic_value_expr(bindings.values[k]);
-                        all_values[hyp_param_count + k] = ref;
-                    }
-                }
-
-                TacticExpr *body = branch->body;
-                bool body_is_copy = false;
-                if (total_count > 0) {
-                    body = _tactic_expr_subst(body, all_names, all_values, total_count);
-                    body_is_copy = true;
-                }
-
-                // Free temporary AST nodes used for substitution values
+                // Push all bindings onto the env stack: hypothesis names first,
+                // then pattern variable bindings.
+                int saved = g_env_top;
                 for (size_t k = 0; k < hyp_param_count; k++) {
-                    free_ast(hyp_param_values[k]);
+                    env_push(branch->hyps[k].name, tactic_value_expr(hyp_exprs[k]));
                 }
                 for (size_t k = 0; k < bindings.count; k++) {
-                    free_ast(all_values[hyp_param_count + k]);
+                    env_push(bindings.names[k], tactic_value_expr(bindings.values[k]));
                 }
-                free(all_names);
-                free(all_values);
-                free(hyp_param_names);
-                free(hyp_param_values);
-                bindings_free(&bindings);
+                free(hyp_exprs);
 
-                TacticResult *match_result = tactic_interpret(rt, goal, body);
-                if (body_is_copy) {
-                    free_tactic_expr(body);
-                }
+                TacticResult *match_result = tactic_interpret(rt, goal, branch->body);
+                env_pop_to(saved);
+                /* bindings_free must come AFTER env_pop_to: the env entries
+                 * hold borrowed pointers to bindings.names[k] strings. */
+                bindings_free(&bindings);
                 return match_result;
             }
 
@@ -827,23 +562,16 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
             // Save RHS goals before freeing the result struct
             DoublyLinkedList *rhs_goals = tactic_result_get_goals(rhs_result);
-            rhs_result->new_goals = NULL;   // ownership transferred
-            rhs_result->term_value = NULL;  // ownership transferred
+            rhs_result->new_goals   = NULL;  // ownership transferred
+            rhs_result->term_value  = NULL;  // ownership transferred to env slot
             free_tactic_result(rhs_result);
 
-            // Substitute the bound name in the body with AST_EXPR_REF wrapping
-            // the value.
-            AST *ref = malloc(sizeof(AST));
-            ref->tag = AST_EXPR_REF;
-            ref->value.expr_ref.tval = value;
-
-            char *params[1] = {expr->as.let_expr.name};
-            AST *args[1] = {ref};
-            TacticExpr *body = _tactic_expr_subst(expr->as.let_expr.body, params, args, 1);
-            free_ast(ref);
-
-            TacticResult *body_result = tactic_interpret(rt, goal, body);
-            free_tactic_expr(body);
+            // Push binding onto the env stack and interpret the body.
+            // env_pop_to will free value when we unwind.
+            int saved = g_env_top;
+            env_push(expr->as.let_expr.name, value);
+            TacticResult *body_result = tactic_interpret(rt, goal, expr->as.let_expr.body);
+            env_pop_to(saved);
 
             // Merge RHS goals into body result
             if (rhs_goals && tactic_result_get_success(body_result)) {
@@ -866,7 +594,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
         case TAC_TYPE_OF: {
             Context *ctx = kernel_expr_context(goal);
-            Expression *term = ast_to_expression(expr->as.type_of.term, ctx);
+            Expression *term = ast_to_expression_env(expr->as.type_of.term, ctx, env_top_ptr());
             if (!term) {
                 return init_tactic_result(false, NULL, "type_of: could not resolve term");
             }
@@ -876,7 +604,8 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
         case TAC_MATCH_TERM: {
             Context *ctx = kernel_expr_context(goal);
-            Expression *scrutinee = ast_to_expression(expr->as.match_term.scrutinee, ctx);
+            Expression *scrutinee = ast_to_expression_env(expr->as.match_term.scrutinee, ctx,
+                                                          env_top_ptr());
             if (!scrutinee) {
                 return init_tactic_result(false, NULL,
                                           "match <term>: could not evaluate scrutinee");
@@ -892,39 +621,16 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                     continue;
                 }
 
-                // Convert pattern variable bindings to AST_EXPR_REF substitutions
-                char **names = NULL;
-                AST **refs = NULL;
-                if (bindings.count > 0) {
-                    names = malloc(sizeof(char *) * bindings.count);
-                    refs = malloc(sizeof(AST *) * bindings.count);
-                    for (size_t k = 0; k < bindings.count; k++) {
-                        names[k] = bindings.names[k];
-                        AST *ref = malloc(sizeof(AST));
-                        ref->tag = AST_EXPR_REF;
-                        ref->value.expr_ref.tval = tactic_value_expr(bindings.values[k]);
-                        refs[k] = ref;
-                    }
+                // Push pattern variable bindings onto the env stack.
+                int saved = g_env_top;
+                for (size_t k = 0; k < bindings.count; k++) {
+                    env_push(bindings.names[k], tactic_value_expr(bindings.values[k]));
                 }
-
-                TacticExpr *body = branch->body;
-                bool body_is_copy = false;
-                if (bindings.count > 0) {
-                    body = _tactic_expr_subst(body, names, refs, bindings.count);
-                    body_is_copy = true;
-                    // Free temporary AST_EXPR_REF nodes (tval not owned)
-                    for (size_t k = 0; k < bindings.count; k++) {
-                        free_ast(refs[k]);
-                    }
-                }
-
-                free(names);
-                free(refs);
+                TacticResult *match_result = tactic_interpret(rt, goal, branch->body);
+                env_pop_to(saved);
+                /* bindings_free must come AFTER env_pop_to: env entries hold
+                 * borrowed pointers to bindings.names[k] strings. */
                 bindings_free(&bindings);
-                TacticResult *match_result = tactic_interpret(rt, goal, body);
-                if (body_is_copy) {
-                    free_tactic_expr(body);
-                }
                 return match_result;
             }
 
@@ -933,7 +639,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
         case TAC_MK_HOLE: {
             Context *ctx = kernel_expr_context(goal);
-            Expression *type = ast_to_expression(expr->as.mk_hole.type, ctx);
+            Expression *type = ast_to_expression_env(expr->as.mk_hole.type, ctx, env_top_ptr());
             if (!type) {
                 return init_tactic_result(false, NULL, "mk_hole: could not resolve type");
             }
@@ -948,8 +654,8 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
         case TAC_FILL: {
             Context *ctx = kernel_expr_context(goal);
-            Expression *hole = ast_to_expression(expr->as.fill.hole, ctx);
-            Expression *term = ast_to_expression(expr->as.fill.term, ctx);
+            Expression *hole = ast_to_expression_env(expr->as.fill.hole, ctx, env_top_ptr());
+            Expression *term = ast_to_expression_env(expr->as.fill.term, ctx, env_top_ptr());
             if (!hole || !term) {
                 return init_tactic_result(false, NULL, "fill: could not resolve arguments");
             }
@@ -961,9 +667,9 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
         case TAC_SUBST: {
             Context *ctx = kernel_expr_context(goal);
-            Expression *new_term = ast_to_expression(expr->as.subst.new_term, ctx);
-            Expression *body = ast_to_expression(expr->as.subst.body, ctx);
-            Expression *old_var = ast_to_expression(expr->as.subst.old_var, ctx);
+            Expression *new_term = ast_to_expression_env(expr->as.subst.new_term, ctx, env_top_ptr());
+            Expression *body = ast_to_expression_env(expr->as.subst.body, ctx, env_top_ptr());
+            Expression *old_var = ast_to_expression_env(expr->as.subst.old_var, ctx, env_top_ptr());
             if (!new_term || !body || !old_var) {
                 return init_tactic_result(false, NULL, "subst: could not resolve arguments");
             }
@@ -976,7 +682,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
         case TAC_EUNIFY: {
             Context *ctx = kernel_expr_context(goal);
-            Expression *lemma_expr = ast_to_expression(expr->as.eunify.lemma, ctx);
+            Expression *lemma_expr = ast_to_expression_env(expr->as.eunify.lemma, ctx, env_top_ptr());
             if (!lemma_expr) {
                 return init_tactic_result(false, NULL, "eunify: could not resolve lemma");
             }
@@ -1014,12 +720,22 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             char *intro_name = kernel_var_name(x);  // default: forall's binder name
             if (expr->as.intro_step.name) {
                 AST *name_ast = expr->as.intro_step.name;
-                if (name_ast->tag == AST_VAR) {
-                    intro_name = name_ast->value.var.name;
-                } else if (name_ast->tag == AST_EXPR_REF) {
+                if (name_ast->tag == AST_EXPR_REF) {
                     Expression *name_expr = tactic_value_as_expr(name_ast->value.expr_ref.tval);
-                    if (name_expr->tag == VAR_EXPRESSION) {
+                    if (name_expr && name_expr->tag == VAR_EXPRESSION) {
                         intro_name = kernel_var_name(name_expr);
+                    }
+                } else if (name_ast->tag == AST_VAR) {
+                    TacticValue *tv = env_lookup(name_ast->value.var.name);
+                    if (tv && tv->kind == TVAL_AST && tv->ast->tag == AST_VAR) {
+                        /* Call arg was a literal name, e.g. `intro P` */
+                        intro_name = tv->ast->value.var.name;
+                    } else if (tv && tv->kind == TVAL_EXPRESSION &&
+                               tv->expr->tag == VAR_EXPRESSION) {
+                        intro_name = kernel_var_name(tv->expr);
+                    } else if (!tv) {
+                        /* No binding: use the literal identifier as the name */
+                        intro_name = name_ast->value.var.name;
                     }
                 }
             }
@@ -1076,7 +792,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
         case TAC_APP_FUNC: {
             Context *ctx = kernel_expr_context(goal);
-            Expression *app_val = ast_to_expression(expr->as.app_func.term, ctx);
+            Expression *app_val = ast_to_expression_env(expr->as.app_func.term, ctx, env_top_ptr());
             if (!app_val || app_val->tag != APP_EXPRESSION) {
                 return init_tactic_result(false, NULL, "app_func: expected an application");
             }
@@ -1085,7 +801,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
         case TAC_APP_ARG: {
             Context *ctx = kernel_expr_context(goal);
-            Expression *app_val = ast_to_expression(expr->as.app_arg.term, ctx);
+            Expression *app_val = ast_to_expression_env(expr->as.app_arg.term, ctx, env_top_ptr());
             if (!app_val || app_val->tag != APP_EXPRESSION) {
                 return init_tactic_result(false, NULL, "app_arg: expected an application");
             }
@@ -1094,8 +810,8 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
         case TAC_EXPR_EQ: {
             Context *ctx = kernel_expr_context(goal);
-            Expression *left = ast_to_expression(expr->as.expr_eq.left, ctx);
-            Expression *right = ast_to_expression(expr->as.expr_eq.right, ctx);
+            Expression *left = ast_to_expression_env(expr->as.expr_eq.left, ctx, env_top_ptr());
+            Expression *right = ast_to_expression_env(expr->as.expr_eq.right, ctx, env_top_ptr());
             if (!left || !right) {
                 return init_tactic_result(false, NULL, "expr_eq: could not resolve arguments");
             }
@@ -1109,8 +825,8 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
         case TAC_REWRITE_UNIFY: {
             Context *ctx = kernel_expr_context(goal);
-            Expression *lemma = ast_to_expression(expr->as.rewrite_unify.lemma, ctx);
-            Expression *target = ast_to_expression(expr->as.rewrite_unify.target, ctx);
+            Expression *lemma = ast_to_expression_env(expr->as.rewrite_unify.lemma, ctx, env_top_ptr());
+            Expression *target = ast_to_expression_env(expr->as.rewrite_unify.target, ctx, env_top_ptr());
             if (!lemma || !target) {
                 return init_tactic_result(false, NULL,
                                           "rewrite_unify: could not resolve arguments");
@@ -1135,7 +851,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
         case TAC_CONSTR: {
             Context *ctx = kernel_expr_context(goal);
-            Expression *term = ast_to_expression(expr->as.constr.term, ctx);
+            Expression *term = ast_to_expression_env(expr->as.constr.term, ctx, env_top_ptr());
             if (!term) {
                 return init_tactic_result(false, NULL, "constr: could not resolve term");
             }

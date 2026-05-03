@@ -9,18 +9,22 @@
 typedef struct Expression Expression;
 typedef struct TacticResult TacticResult;
 typedef struct TacticValue TacticValue;
+struct AST; /* forward decl – avoids pulling in parser.h here */
 
-/* Tactic-level value: either a kernel expression or a pair of tactic values. */
-typedef enum { TVAL_EXPRESSION, TVAL_PAIR } TacticValueKind;
+/* Tactic-level value: a kernel expression, a pair, or a lazy AST thunk.
+ * TVAL_AST is used for unevaluated tactic-call arguments: the AST is
+ * resolved at use-time.  The AST pointer is NOT owned. */
+typedef enum { TVAL_EXPRESSION, TVAL_PAIR, TVAL_AST } TacticValueKind;
 
 struct TacticValue {
     TacticValueKind kind;
     union {
-        Expression *expr;
+        Expression *expr;           /* TVAL_EXPRESSION */
         struct {
             TacticValue *fst;
             TacticValue *snd;
-        } pair;
+        } pair;                     /* TVAL_PAIR */
+        struct AST *ast;            /* TVAL_AST – borrowed, never freed */
     };
 };
 
@@ -36,6 +40,13 @@ static inline TacticValue *tactic_value_pair(TacticValue *fst, TacticValue *snd)
     tv->kind = TVAL_PAIR;
     tv->pair.fst = fst;
     tv->pair.snd = snd;
+    return tv;
+}
+
+static inline TacticValue *tactic_value_ast(struct AST *a) {
+    TacticValue *tv = malloc(sizeof(TacticValue));
+    tv->kind = TVAL_AST;
+    tv->ast = a;
     return tv;
 }
 

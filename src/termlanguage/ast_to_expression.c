@@ -85,7 +85,14 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
             // Check tactic let-binding environment (from TAC_LET / TAC_MATCH_*)
             for (TacticEnvEntry *e = tac_env; e; e = e->next) {
                 if (strcmp(e->name, ast->value.var.name) == 0) {
-                    return e->expr;
+                    if (!e->val) return NULL;
+                    if (e->val->kind == TVAL_EXPRESSION) return e->val->expr;
+                    if (e->val->kind == TVAL_AST) {
+                        /* Evaluate in lexical parent env to avoid self-recursion. */
+                        return _ast_to_expression(e->val->ast, context, letbindings, e->next);
+                    }
+                    /* TVAL_PAIR: cannot appear in term position */
+                    return NULL;
                 }
             }
 

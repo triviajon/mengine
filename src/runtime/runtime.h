@@ -18,7 +18,7 @@ typedef enum {
                                    // commands.
 } MEngineRuntimeMode;
 
-typedef struct {
+typedef struct MEngineRuntime {
     MEngineOptions *options;              // Runtime options
     Context *ctx;                         // current runtime context
     Expression *pending_theorem;          // when in proof mode, this holds a reference to the

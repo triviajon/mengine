@@ -8,6 +8,8 @@
 #include "src/tacticlanguage/tactic_parser.h"
 #include "src/termlanguage/ast_to_expression.h"
 
+typedef struct MEngineRuntime MEngineRuntime;
+
 typedef enum {
     TAC_PRIMITIVE,   // wraps an existing Tactic*
     TAC_SEQ,         // tac1 ; tac2
@@ -571,11 +573,15 @@ static inline void free_tactic_expr(TacticExpr *expr) {
  * Tactic definitions (stored in the tactic environment)
  * ============================================================================ */
 
+typedef TacticResult *(*CompiledTactic)(MEngineRuntime *rt, Expression *goal, void *env);
+
 typedef struct {
-    char *name;          // tactic name
-    char **params;       // parameter names (NULL if none)
-    size_t param_count;  // number of parameters
-    TacticExpr *body;    // body expression
+    char *name;              // tactic name
+    char **params;           // parameter names (NULL if none)
+    size_t param_count;      // number of parameters
+    CompiledTactic fn;       // NULL if interpreted
+    TacticExpr *body;        // NULL if compiled-only
+    void *compiled_env;      // closed-over data for compiled tactics
 } TacticDef;
 
 typedef struct TacticEnv {
@@ -606,7 +612,10 @@ static inline void tactic_env_add(TacticEnv *env, TacticDef *def) {
                 }
                 free(old->params);
             }
-            free_tactic_expr(old->body);
+            if (old->body) {
+                free_tactic_expr(old->body);
+            }
+            free(old->compiled_env);
             free(old);
             return;
         }
@@ -644,7 +653,10 @@ static inline void tactic_env_free(TacticEnv *env) {
                 }
                 free(def->params);
             }
-            free_tactic_expr(def->body);
+            if (def->body) {
+                free_tactic_expr(def->body);
+            }
+            free(def->compiled_env);
             free(def);
         }
     }

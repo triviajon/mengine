@@ -1,6 +1,7 @@
 #ifndef AST_TO_EXPRESSION_H
 #define AST_TO_EXPRESSION_H
 
+#include "src/engine/tactic_api.h"
 #include "src/kernel/kernel_api.h"
 #include "src/termlanguage/parser.h"
 
@@ -25,10 +26,13 @@ Expression *ast_to_expression(AST *ast, Context *context);
  * Linked-list node for the tactic-level let binding environment.
  * Used to pass lazy variable bindings from the tactic interpreter into
  * ast_to_expression without eager AST deep-copying.
+ * val is a TacticValue* (TVAL_EXPRESSION or TVAL_PAIR).  When appearing in a
+ * term-level position only TVAL_EXPRESSION is meaningful; ast_to_expression_env
+ * returns NULL for pair-valued entries.
  */
 typedef struct TacticEnvEntry {
-    const char *name;
-    Expression *expr;
+    const char     *name;
+    struct TacticValue *val;   /* TacticValue* – avoids header cycle */
     struct TacticEnvEntry *next;
 } TacticEnvEntry;
 
