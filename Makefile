@@ -3,14 +3,14 @@ CC = clang
 # make TUNE_FLAGS="-DMAP_INITIAL_CAPACITY=32 -DHCMAP_INITIAL_CAPACITY=2048"
 
 # Order data structure toggle:
-# - tag-range relabeling (default): TUNE_USE_RELABELING=1
-# - linked-list: TUNE_USE_RELABELING=0
-TUNE_USE_RELABELING ?= 1
+# - tag-range relabeling (default): TUNE_USE_LL=0
+# - linked-list: TUNE_USE_LL=1
+TUNE_USE_LL ?= 0
 
 TUNE_FLAGS ?=
 
-ifeq ($(TUNE_USE_RELABELING), 1)
-	TUNE_FLAGS += -DORDER_USE_RELABELING=1
+ifeq ($(TUNE_USE_LL), 1)
+	TUNE_FLAGS += -DORDER_USE_LL=1
 endif
 
 CFLAGS = -Wall -Wextra -O0 -g -march=native -I. $(TUNE_FLAGS)

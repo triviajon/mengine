@@ -12,7 +12,7 @@
 typedef struct Expression Expression;
 typedef struct Expression Context;
 
-#ifdef ORDER_USE_RELABELING
+#ifndef ORDER_USE_LL
 /* A token in the single Euler-tour doubly-linked list.
  * Each Expression owns two: order_in (entry) and order_out (exit). */
 typedef struct OrderToken {
@@ -168,7 +168,7 @@ struct Expression {
     uint64_t mark_gen;   // Generation stamp for bottom-up substitution spine marking.
     Expression *g_alloc_next;  // Intrusive linked list for GC shutdown traversal
 
-#ifdef ORDER_USE_RELABELING
+#ifndef ORDER_USE_LL
     OrderToken order_in;   /* DFS in-time  token (preorder)  */
     OrderToken order_out;  /* DFS out-time token (postorder) */
 #endif

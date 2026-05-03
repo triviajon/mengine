@@ -17,7 +17,7 @@
  * Order  - O(1)
  */
 
-#ifdef ORDER_USE_RELABELING
+#ifndef ORDER_USE_LL
 
 static inline OrderToken *ot_next(OrderToken *ot) { return ot->next; }
 static inline OrderToken *ot_prev(OrderToken *ot) { return ot->prev; }
@@ -166,6 +166,6 @@ bool order_precedes(Expression *x, Expression *y) {
            y->order_out.tag <= x->order_out.tag;
 }
 
-#endif  // ORDER_USE_RELABELING
+#endif  // ORDER_USE_LL
 
 

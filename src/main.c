@@ -132,7 +132,7 @@ static void config_mode(void) {
     printf("mengine compile-time configuration\n");
     printf("----------------------------------\n");
 
-#ifdef ORDER_USE_RELABELING
+#ifndef ORDER_USE_LL
     printf("ORDER_IMPL           : tag-range relabeling\n");
 #else
     printf("ORDER_IMPL           : linked-list\n");

@@ -8,10 +8,15 @@
 
 Context *context_create_empty() {
     if (EMPTY_CONTEXT == NULL) {
-        EMPTY_CONTEXT = calloc(1, sizeof(Context));
-#ifdef ORDER_USE_RELABELING
-        EMPTY_CONTEXT->order_out.tag = UINT64_MAX;
-#endif
+        EMPTY_CONTEXT = malloc(sizeof(Expression));
+        if (!EMPTY_CONTEXT) {
+            return NULL;
+        }
+        SET_EXPR_TAG(EMPTY_CONTEXT, VAR_EXPRESSION);
+        SET_EXPR_CONTEXT(EMPTY_CONTEXT, NULL);
+        SET_EXPR_CTX_SIZE(EMPTY_CONTEXT, 0);
+        SET_EXPR_TYPE(EMPTY_CONTEXT, EMPTY_CONTEXT);
+        SET_VAR_NAME(EMPTY_CONTEXT, strdup("*"));
     }
     return EMPTY_CONTEXT;
 }

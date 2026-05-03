@@ -9,7 +9,7 @@
  *  Order  - O(size(y)): walk from y toward the root checking if x is found.
  */
 
-#ifndef ORDER_USE_RELABELING
+#ifdef ORDER_USE_LL
 
 void order_on_insert(Expression *parent, Expression *new_var) {
     (void)parent;
@@ -29,4 +29,4 @@ bool order_precedes(Expression *x, Expression *y) {
     return false;
 }
 
-#endif  // ORDER_USE_RELABELING
+#endif  // ORDER_USE_LL
