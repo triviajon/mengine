@@ -3,9 +3,9 @@ CC = clang
 # make TUNE_FLAGS="-DMAP_INITIAL_CAPACITY=32 -DHCMAP_INITIAL_CAPACITY=2048"
 
 # Order data structure toggle:
-# - tag-range relabeling (default): TUNE_USE_LL=0
-# - linked-list: TUNE_USE_LL=1
-TUNE_USE_LL ?= 0
+# - tag-range relabeling: TUNE_USE_LL=0
+# - linked-list (default): TUNE_USE_LL=1
+TUNE_USE_LL ?= 1
 
 TUNE_FLAGS ?=
 
