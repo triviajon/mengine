@@ -3,7 +3,7 @@
 #include "src/kernel/kernel_api.h"
 #include "tests/helpers/test_framework.h"
 
-// Filling a hole with an evar-free term succeeds (occurs check is skipped).
+// Filling a hole with an evar-free term succeeds without walking the term.
 void test_fill_hole_evar_free_term(void) {
     test_start("fill_hole succeeds with evar-free term");
 
@@ -55,6 +55,17 @@ void test_evar_refs_propagation(void) {
     assert_false(has_holes(id), "id (a variable) should not have holes");
 }
 
+// evar tracking includes types, not just term child fields.
+void test_evar_refs_propagate_from_types(void) {
+    test_start("evar_refs propagate from expression types");
+
+    Context *ctx = context_create_empty();
+    Expression *type_hole = kernel_hole_create("A", kernel_type_create(), ctx);
+    Expression *x = kernel_var_create("x", type_hole, ctx);
+
+    assert_true(has_holes(x), "variable with hole type should have holes");
+}
+
 // After filling a hole, ancestor expressions become evar-free.
 void test_fill_hole_clears_evar_refs(void) {
     test_start("fill_hole clears evar_refs from parent expressions");
@@ -78,6 +89,7 @@ void run_evar_refs_tests(void) {
     test_fill_hole_evar_free_term();
     test_fill_hole_cyclic_rejected();
     test_evar_refs_propagation();
+    test_evar_refs_propagate_from_types();
     test_fill_hole_clears_evar_refs();
 
     test_suite_end();

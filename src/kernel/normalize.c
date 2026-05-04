@@ -119,37 +119,11 @@ static Expression *_normalize_cbv(Expression *expr, ReductionFlags flags) {
             }
 
             case LAMBDA_EXPRESSION: {
-                // Normalize body
-                Expression *body = get_lambda_body(current);
-                Expression *norm_body = _normalize_cbv(body, flags);
-
-                if (norm_body != body) {
-                    Expression *bv = get_lambda_bound_variable(current);
-                    next = init_lambda_expression_wc(bv, norm_body);
-                    if (next) {
-                        current = next;
-                        changed = true;
-                        continue;
-                    }
-                }
-                break;
+                return current;
             }
 
             case FORALL_EXPRESSION: {
-                // Normalize body
-                Expression *body = get_forall_body(current);
-                Expression *norm_body = _normalize_cbv(body, flags);
-
-                if (norm_body != body) {
-                    Expression *bv = get_forall_bound_variable(current);
-                    next = init_forall_expression_wc(bv, norm_body);
-                    if (next) {
-                        current = next;
-                        changed = true;
-                        continue;
-                    }
-                }
-                break;
+                return current;
             }
 
             case TYPE_EXPRESSION:

@@ -303,7 +303,8 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, Map *subst
                 mark_spine_from(x_bv, body, 1, subtree_gen);
             }
             Map *inner_memo = pool_map_alloc();
-            Expression *body2 = spine_rebuild(apps_ctx, body, subst_map, inner_memo, subtree_gen);
+            Expression *body2 =
+                spine_rebuild((Context *)x_bv2, body, subst_map, inner_memo, subtree_gen);
             pool_map_free(inner_memo);
             if (bv_changed) map_del(subst_map, x_bv);
             CLEAR_CHILD_UPLINK(x_bv, node->as.lambda.bound_variable_uplink_node);
@@ -329,7 +330,8 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, Map *subst
                 mark_spine_from(x_bv, body, 1, subtree_gen);
             }
             Map *inner_memo = pool_map_alloc();
-            Expression *body2 = spine_rebuild(apps_ctx, body, subst_map, inner_memo, subtree_gen);
+            Expression *body2 =
+                spine_rebuild((Context *)x_bv2, body, subst_map, inner_memo, subtree_gen);
             pool_map_free(inner_memo);
             if (bv_changed) map_del(subst_map, x_bv);
             CLEAR_CHILD_UPLINK(x_bv, node->as.forall.bound_variable_uplink_node);
@@ -502,21 +504,21 @@ Expression *_p_subst(Context *context, Expression *t, DoublyLinkedList *old_expr
     Map *subst_map = pool_map_alloc();
     DLLNode *o = old_exprs->head, *n = new_exprs->head;
     while (o) { map_set(subst_map, o->data, n->data); o = o->next; n = n->next; }
-    Expression *result = _uplink_p_subst(context, t, subst_map);
+    Expression *result = _simple_topdown_psubst(context, t, subst_map);
     pool_map_free(subst_map);
     return result;
 }
 
 Expression *new_p_subst(Context *context, Expression *t, Map *subst_map) {
     if (!subst_map) return t;
-    return _uplink_p_subst(context, t, subst_map);
+    return _simple_topdown_psubst(context, t, subst_map);
 }
 
 Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a) {
     if (t == x) return a;
     Map *subst_map = pool_map_alloc();
     map_set(subst_map, x, a);
-    Expression *result = _uplink_p_subst(context, t, subst_map);
+    Expression *result = _simple_topdown_psubst(context, t, subst_map);
     pool_map_free(subst_map);
     return result;
 }
@@ -531,7 +533,7 @@ Expression *new_subst(Context *context, Expression *t, Expression *x, Expression
         oc = get_expression_context(oc);
         fc = get_expression_context(fc);
     }
-    Expression *result = _uplink_p_subst(final_context, t, subst_map);
+    Expression *result = _simple_topdown_psubst(final_context, t, subst_map);
     pool_map_free(subst_map);
     return result;
 }

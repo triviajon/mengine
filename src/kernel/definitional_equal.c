@@ -123,6 +123,17 @@ static bool _defeq(Expression *a, Expression *b, Map *bv_map) {
 
 static Map *g_defeq_cache = NULL;
 
+static void defeq_cache_free_inner(void *inner) { map_free((Map *)inner); }
+
+void definitional_equal_cache_clear(void) {
+    if (g_defeq_cache == NULL) {
+        return;
+    }
+
+    map_clear_apply_free(g_defeq_cache, defeq_cache_free_inner);
+    g_defeq_cache = NULL;
+}
+
 static bool _defeq_cached(Expression *a, Expression *b) {
     /* Only cache hole-free pairs: holes can be filled later, changing results. */
     bool cacheable = !a->has_evar && !b->has_evar;

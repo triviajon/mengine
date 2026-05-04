@@ -6,6 +6,8 @@
 
 bool definitional_equal(Expression *a, Expression *b);
 
+void definitional_equal_cache_clear(void);
+
 /**
  * Returns true iff `expected` and `actual` are definitionally equal, treating
  * HOLE_EXPRESSIONs on the expected side as unification variables. Each hole is

@@ -168,11 +168,19 @@ UnificationResult *eunify2(Expression *lemma, Expression *goal) {
         if (hole_subst == NULL) {
             Expression *hole_to_fill = init_hole_expression(
                 get_var_name(bound_variable), get_expression_type(bound_variable), goal_context);
+            if (!hole_to_fill) {
+                dll_destroy(remaining_open);
+                return NULL;
+            }
             current_lemma_app =
                 init_app_expression_wc(current_lemma_app, hole_to_fill, goal_context);
             dll_insert_at_tail(remaining_open, dll_new_node(hole_to_fill));
         } else {
             current_lemma_app = init_app_expression_wc(current_lemma_app, hole_subst, goal_context);
+        }
+        if (!current_lemma_app) {
+            dll_destroy(remaining_open);
+            return NULL;
         }
         current_lemma_app_ty = get_expression_type(current_lemma_app);
     }
@@ -220,11 +228,19 @@ UnificationResult *bad_unify_for_eq(Context *goal_context, Expression *lemma, Ex
         if (hole_subst == NULL) {
             Expression *hole_to_fill = init_hole_expression(
                 get_var_name(bound_variable), get_expression_type(bound_variable), goal_context);
+            if (!hole_to_fill) {
+                dll_destroy(remaining_open);
+                return NULL;
+            }
             current_lemma_app =
                 init_app_expression_wc(current_lemma_app, hole_to_fill, goal_context);
             dll_insert_at_tail(remaining_open, dll_new_node(hole_to_fill));
         } else {
             current_lemma_app = init_app_expression_wc(current_lemma_app, hole_subst, goal_context);
+        }
+        if (!current_lemma_app) {
+            dll_destroy(remaining_open);
+            return NULL;
         }
         current_lemma_app_ty = get_expression_type(current_lemma_app);
     }

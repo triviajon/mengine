@@ -164,7 +164,9 @@ struct Expression {
     Expression *type;           // The type of this expression
                                 // NULL for TYPE and PROP
     bool has_evar;              // True if this expression transitively contains any unfilled hole.
-    uint64_t visit_gen;  // Generation stamp for occurs_in traversal (avoids visited-map alloc).
+    DoublyLinkedList *evar_refs; // Transitive set of HOLE_EXPRESSION* nodes reachable from this
+                                 // expression's owned children, including types.
+    uint64_t visit_gen;  // Generation stamp for traversal bookkeeping.
     uint64_t mark_gen;   // Generation stamp for bottom-up substitution spine marking.
     Expression *g_alloc_next;  // Intrusive linked list for GC shutdown traversal
 
@@ -217,7 +219,7 @@ void expression_gc_shutdown(void);
 // Create a new uplink describing how ptr relates.
 Uplink *new_uplink(void *ptr, Relation r);
 
-// Set parent->has_evar = true if child contains any unfilled holes. O(1), no allocation.
+// Merge child evar_refs into parent and update parent->has_evar.
 void propagate_evar_refs(Expression *parent, Expression *child);
 
 // Macros for setting Expression fields
@@ -490,11 +492,8 @@ bool has_holes(Expression *expr);
 bool is_hole(Expression *expr);
 
 // Fills a hole with a term by rewriting uplinks. Checks preconditions
-// (type match, context validity, occurs check) and returns false if any fail.
+// (type match, context validity, evar-ref membership) and returns false if any fail.
 bool fill_hole(Expression *hole, Expression *term);
-
-// Returns true if var_or_hole appears as a subterm in term
-bool occurs_in(Expression *var_or_hole, Expression *term);
 
 // Returns true if the expressions are alpha-congruent.
 bool congruence(Expression *a, Expression *b);
