@@ -6,6 +6,7 @@ Usage:
   bench.py list                           List all benchmarks
   bench.py status [BENCHMARK]             Show what results exist
   bench.py run [BENCHMARK] [OPTIONS]      Run benchmarks
+  bench.py test [BENCHMARK] [OPTIONS]     Smoke-test each engine/strategy once
   bench.py plot [BENCHMARK] [OPTIONS]     Generate plots
   bench.py render BENCHMARK ENGINE [PARAMS] Render a single instance to stdout
 
@@ -15,6 +16,10 @@ Run options:
   --timeout SECONDS              Override default timeout
   --max-timeouts N               Consecutive timeouts before retiring (default: 3)
   --force                        Re-run even if results exist
+
+Test options:
+  --engine ENGINE[,ENGINE,...]   Only test these engines
+  --timeout SECONDS              Override default timeout
 
 Plot options:
   --engine ENGINE[,ENGINE,...]   Only plot these engines
@@ -35,6 +40,9 @@ Examples:
   # Run just rewrite_fa for mengine:
   bench.py run rewrite_fa --engine mengine
 
+  # Smoke-test one minimal instance for every strategy:
+  bench.py test
+
   # Run rewrite_nm with specific parameter slice:
   bench.py run rewrite_nm --override n=1:4000:25 --override m=3:4:1
 
@@ -52,8 +60,10 @@ Examples:
 import argparse
 import json
 import os
+import subprocess
 import sys
 import tempfile
+import time
 
 # Make imports work when running from the new-benchmarks directory
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -63,7 +73,6 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 from benchmarks.registry import ALL_BENCHMARKS
 from framework.benchmark import ParamSpec
 from framework.runner import RunConfig, run_benchmark, load_results
-from framework.plotter import plot_benchmark, plot_all_variants
 
 
 DEFAULT_CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
@@ -82,6 +91,10 @@ DEFAULT_CONFIG = {
 }
 
 _PATH_KEYS = {"mengine_path", "mengine_root", "coqutil_root", "results_dir", "plots_dir"}
+
+COLOR_GREEN = "\033[32m"
+COLOR_RED = "\033[31m"
+COLOR_RESET = "\033[0m"
 
 def load_config():
     cfg = dict(DEFAULT_CONFIG)
@@ -241,7 +254,112 @@ def cmd_run(args):
         )
 
 
+def _format_streams(stdout, stderr):
+    return [("stdout", stdout or ""), ("stderr", stderr or "")]
+
+
+def _smoke_test_single(benchmark, strategy, params, config, timeout):
+    with tempfile.TemporaryDirectory() as workdir:
+        generated_file = benchmark.generate(strategy, params, workdir)
+        engine_path = config.engine_path(strategy.engine)
+        cmd = benchmark.get_command(strategy, params, engine_path, generated_file, config=config)
+
+        if strategy.engine == "mengine" and config.mengine_root:
+            cwd = config.mengine_root
+        else:
+            cwd = workdir
+
+        start = time.perf_counter()
+        try:
+            proc = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                cwd=cwd,
+            )
+            elapsed = time.perf_counter() - start
+            return {
+                "success": proc.returncode == 0,
+                "time_taken": elapsed,
+                "returncode": proc.returncode,
+                "stdout": proc.stdout,
+                "stderr": proc.stderr,
+                "cmd": cmd,
+            }
+        except subprocess.TimeoutExpired as exc:
+            elapsed = time.perf_counter() - start
+            return {
+                "success": False,
+                "timeout": True,
+                "time_taken": elapsed,
+                "stdout": exc.stdout or "",
+                "stderr": exc.stderr or "",
+                "cmd": cmd,
+            }
+        except FileNotFoundError:
+            return {
+                "success": False,
+                "time_taken": 0,
+                "error": f"Engine not found: {cmd[0]}",
+                "stdout": "",
+                "stderr": "",
+                "cmd": cmd,
+            }
+
+
+def cmd_test(args):
+    cfg = load_config()
+    run_cfg = make_run_config(cfg, args)
+    benchmarks = get_benchmarks(args)
+    engines = set(args.engine.split(",")) if args.engine else None
+    timeout = args.timeout or cfg["default_timeout"]
+
+    total = 0
+    failed = 0
+
+    for name, bench in benchmarks.items():
+        params = {p.name: p.start for p in bench.params}
+        strategies = bench.strategies
+        if engines:
+            strategies = [s for s in strategies if s.engine in engines]
+
+        if not strategies:
+            print(f"\n{name}: no matching strategies")
+            continue
+
+        print(f"\n{name} {params}")
+        for strategy in strategies:
+            total += 1
+            result = _smoke_test_single(bench, strategy, params, run_cfg, timeout)
+            label = f"{strategy.engine}/{strategy.name}"
+
+            if result["success"]:
+                print(f"  {COLOR_GREEN}PASS{COLOR_RESET} {label:<32} {result['time_taken']:.4f}s")
+                continue
+
+            failed += 1
+            reason = "timeout" if result.get("timeout") else result.get("error", f"exit {result.get('returncode')}")
+            print(f"  {COLOR_RED}FAIL{COLOR_RESET} {label:<32} {reason} ({result['time_taken']:.4f}s)")
+            print(f"    command: {' '.join(result['cmd'])}")
+            for stream_name, content in _format_streams(result.get("stdout", ""), result.get("stderr", "")):
+                print(f"    --- {stream_name} ---")
+                print(content.rstrip() if content.rstrip() else "    <empty>")
+
+    if total == 0:
+        print("\nNo matching strategies to test.", file=sys.stderr)
+        sys.exit(1)
+
+    passed = total - failed
+    color = COLOR_GREEN if failed == 0 else COLOR_RED
+    print(f"\n{color}{passed}/{total} smoke tests passed{COLOR_RESET}")
+    if failed:
+        sys.exit(1)
+
+
 def cmd_plot(args):
+    from framework.plotter import plot_benchmark, plot_all_variants
+
     cfg = load_config()
     benchmarks = get_benchmarks(args)
     engines = args.engine.split(",") if args.engine else None
@@ -396,6 +514,12 @@ def main():
     p_run.add_argument("--max-timeouts", type=int, help="Max consecutive timeouts before retiring")
     p_run.add_argument("--force", action="store_true", help="Re-run existing results")
 
+    # test
+    p_test = subparsers.add_parser("test", help="Smoke-test each engine/strategy once")
+    p_test.add_argument("benchmark", nargs="?", help="Specific benchmark")
+    p_test.add_argument("--engine", help="Engines to test (comma-separated)")
+    p_test.add_argument("--timeout", type=float, help="Timeout in seconds")
+
     # plot
     p_plot = subparsers.add_parser("plot", help="Generate plots")
     p_plot.add_argument("benchmark", nargs="?", help="Specific benchmark")
@@ -421,6 +545,7 @@ def main():
         "list": cmd_list,
         "status": cmd_status,
         "run": cmd_run,
+        "test": cmd_test,
         "plot": cmd_plot,
         "init": cmd_init,
         "render": cmd_render,
