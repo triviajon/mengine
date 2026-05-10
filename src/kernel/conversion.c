@@ -411,10 +411,14 @@ bool conversion_holds_in_context(Context *context, Expression *lhs, Expression *
     if (lhs == rhs) {
         return true;
     }
-    Conversion *conv = conversion_check_in_context(context, lhs, rhs);
-    bool result = conv != NULL;
-    conversion_free(conv);
-    return result;
+
+    /*
+     * Convertibility is stable under weakening: once lhs and rhs are known to be
+     * valid in context, the result does not depend on the extra bindings in
+     * context. Reuse the same pair cache as the context-free compatibility
+     * wrapper.
+     */
+    return conversion_cached_holds(lhs, rhs);
 }
 
 ConversionRule conversion_rule(Conversion *conv) { return conv->rule; }
