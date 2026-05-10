@@ -162,11 +162,12 @@ static void mark_target(void *key, void *value, void *ud) {
     mark_spine_from((Expression *)key, a->root, 0, a->subtree_gen);
 }
 
-struct scope_args { Context *tc; bool found; };
-static void check_in_scope(void *key, void *value, void *ud) {
-    (void)value;
-    struct scope_args *a = (struct scope_args *)ud;
-    if (!a->found && context_find(a->tc, (Expression *)key)) a->found = true;
+static bool subst_map_touches_context(Context *ctx, Map *subst_map) {
+    while (ctx && ctx->tag == VAR_EXPRESSION) {
+        if (map_get(subst_map, ctx)) return true;
+        ctx = get_expression_context(ctx);
+    }
+    return false;
 }
 
 // ----------------------------------------------------------------------------
@@ -180,9 +181,7 @@ static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subs
     Expression *replacement = map_get(subst_map, t);
     if (replacement) return replacement;
 
-    struct scope_args sc = {get_expression_context(t), false};
-    map_for_each(subst_map, check_in_scope, &sc);
-    if (!sc.found) return t;
+    if (!subst_map_touches_context(get_expression_context(t), subst_map)) return t;
 
     switch (t->tag) {
         case APP_EXPRESSION: {
@@ -458,7 +457,8 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, Map *subst
  */
 static int g_uplink_subst_depth = 0;
 
-static Expression *_uplink_p_subst(Context *context, Expression *t, Map *subst_map) {
+__attribute__((unused)) static Expression *_uplink_p_subst(Context *context, Expression *t,
+                                                           Map *subst_map) {
     g_uplink_subst_depth++;
 
     if (g_uplink_subst_depth > 1) {
@@ -509,21 +509,21 @@ Expression *_p_subst(Context *context, Expression *t, DoublyLinkedList *old_expr
     Map *subst_map = pool_map_alloc();
     DLLNode *o = old_exprs->head, *n = new_exprs->head;
     while (o) { map_set(subst_map, o->data, n->data); o = o->next; n = n->next; }
-    Expression *result = _uplink_p_subst(context, t, subst_map);
+    Expression *result = _simple_topdown_psubst(context, t, subst_map);
     pool_map_free(subst_map);
     return result;
 }
 
 Expression *new_p_subst(Context *context, Expression *t, Map *subst_map) {
     if (!subst_map) return t;
-    return _uplink_p_subst(context, t, subst_map);
+    return _simple_topdown_psubst(context, t, subst_map);
 }
 
 Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a) {
     if (t == x) return a;
     Map *subst_map = pool_map_alloc();
     map_set(subst_map, x, a);
-    Expression *result = _uplink_p_subst(context, t, subst_map);
+    Expression *result = _simple_topdown_psubst(context, t, subst_map);
     pool_map_free(subst_map);
     return result;
 }
@@ -538,7 +538,7 @@ Expression *new_subst(Context *context, Expression *t, Expression *x, Expression
         oc = get_expression_context(oc);
         fc = get_expression_context(fc);
     }
-    Expression *result = _uplink_p_subst(final_context, t, subst_map);
+    Expression *result = _simple_topdown_psubst(final_context, t, subst_map);
     pool_map_free(subst_map);
     return result;
 }

@@ -127,6 +127,18 @@ static void test_tactic_apply(void) {
            "apply hab; exact ha.\n");
 }
 
+static void test_nested_beta_intro_subst(void) {
+    run_ok("nested beta substitution under intro",
+           "Axiom X : Type.\n"
+           "Axiom Y : Type.\n"
+           "Axiom y : Y.\n"
+           "Theorem t : forall (m : X),\n"
+           "  (((fun (m2 : X) => fun (l2 : Y) => eq X m2 m) m) y).\n"
+           "intro m.\n"
+           "reflexivity.\n");
+}
+
+
 /* ── tactic combinators ─────────────────────────────────────────────────── */
 
 static void test_tactic_first(void) {
@@ -380,6 +392,7 @@ void run_integration_tests(void) {
     test_tactic_assumption();
     test_tactic_reflexivity();
     test_tactic_apply();
+    test_nested_beta_intro_subst();
     test_tactic_first();
     test_tactic_first_fallback();
     test_tactic_try();
