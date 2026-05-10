@@ -292,9 +292,9 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                         if (j < scrutinee_param_count) {
                             /* Type-parameter slot: create a delta-reducible alias that
                              * expands to the corresponding type argument from the
-                             * scrutinee.  This makes definitional_equal(alias, type_arg)
-                             * true so that subsequent pattern variables' types unify with
-                             * the outer type parameter used by functions like `comb`. */
+                             * scrutinee. This makes the alias convertible with type_arg
+                             * so later pattern variables' types unify with the outer type
+                             * parameter used by functions like `comb`. */
                             Expression *type_arg = (Expression *)dll_at(type_args, j)->data;
                             pattern_var = kernel_var_create_with_body(pattern->argument_names[j],
                                                                       type_arg, extended_context);

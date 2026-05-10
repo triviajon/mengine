@@ -498,10 +498,6 @@ bool fill_hole(Expression *hole, Expression *term);
 // Returns true if the expressions are alpha-congruent.
 bool congruence(Expression *a, Expression *b);
 
-// Returns true if a is a subtype of b. We don't implement a full subtyping
-// relation, but it is necessary specifically for Type and Prop.
-bool subtypes(Expression *a, Expression *b);
-
 // This function compares a and b, creating a mapping of variables in a to
 // variables in b. Specifically, assuming a and b are alpha-congruent, it
 // creates a mapping of the bound variables in a to the bound variables in b. It

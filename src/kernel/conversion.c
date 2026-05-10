@@ -7,11 +7,6 @@
 #include "src/kernel/context.h"
 #include "src/kernel/normalize.h"
 
-typedef struct ConversionList {
-    Conversion *conv;
-    struct ConversionList *next;
-} ConversionList;
-
 struct Conversion {
     ConversionRule rule;
     Context *context;
@@ -20,10 +15,13 @@ struct Conversion {
     Expression *join;
     Conversion *left;
     Conversion *right;
-    ConversionList *children;
 };
 
-static Context *conversion_common_context(Expression *lhs, Expression *rhs) {
+Context *conversion_min_context(Expression *lhs, Expression *rhs) {
+    if (!lhs || !rhs) {
+        return NULL;
+    }
+
     Context *lhs_ctx = get_expression_context(lhs);
     Context *rhs_ctx = get_expression_context(rhs);
 
@@ -41,6 +39,9 @@ static Conversion *conversion_alloc(ConversionRule rule, Context *context, Expre
     if (!context || !lhs || !rhs) {
         return NULL;
     }
+    if (!valid_in_context(lhs, context) || !valid_in_context(rhs, context)) {
+        return NULL;
+    }
 
     Conversion *conv = calloc(1, sizeof(Conversion));
     if (!conv) {
@@ -53,29 +54,18 @@ static Conversion *conversion_alloc(ConversionRule rule, Context *context, Expre
     return conv;
 }
 
-static bool conversion_add_child(Conversion *parent, Conversion *child) {
-    if (!parent || !child) {
-        return false;
-    }
-
-    ConversionList *node = malloc(sizeof(ConversionList));
-    if (!node) {
-        return false;
-    }
-    node->conv = child;
-    node->next = parent->children;
-    parent->children = node;
-    return true;
-}
-
 Conversion *conversion_refl(Context *context, Expression *expr) {
-    return conversion_alloc(CONVERSION_REFL, context, expr, expr);
+    if (!context || !expr || !valid_in_context(expr, context)) {
+        return NULL;
+    }
+    return conversion_alloc(CONVERSION_REFL, get_expression_context(expr), expr, expr);
 }
 
 Conversion *conversion_sym(Conversion *conv) {
     if (!conv) {
         return NULL;
     }
+
     Conversion *result = conversion_alloc(CONVERSION_SYM, conv->context, conv->rhs, conv->lhs);
     if (!result) {
         return NULL;
@@ -88,6 +78,7 @@ Conversion *conversion_trans(Conversion *left, Conversion *right) {
     if (!left || !right || left->rhs != right->lhs) {
         return NULL;
     }
+
     Context *ctx = left->context;
     if (!context_is_ancestor(right->context, ctx)) {
         if (!context_is_ancestor(ctx, right->context)) {
@@ -121,227 +112,181 @@ void conversion_cache_clear(void) {
     g_conversion_cache = NULL;
 }
 
-static Conversion *conversion_normalize(Context *ctx, Expression *from, Expression *to) {
-    Conversion *conv = conversion_alloc(CONVERSION_NORMALIZE, ctx, from, to);
-    if (conv) {
-        conv->join = to;
-    }
-    return conv;
-}
+static bool conversion_derivable(Expression *lhs, Expression *rhs, Map *bv_map) {
+    lhs = normalize_whnf(lhs);
+    rhs = normalize_whnf(rhs);
 
-static Conversion *conversion_compose_normalized(Context *ctx, Expression *lhs,
-                                                 Expression *lhs_norm, Expression *rhs_norm,
-                                                 Expression *rhs, Conversion *middle) {
-    if (!middle) {
-        return NULL;
+    if (!lhs || !rhs) {
+        return false;
     }
-
-    Conversion *left = (lhs == lhs_norm) ? conversion_refl(ctx, lhs)
-                                         : conversion_normalize(ctx, lhs, lhs_norm);
-    Conversion *right = (rhs == rhs_norm) ? conversion_refl(ctx, rhs)
-                                          : conversion_normalize(ctx, rhs, rhs_norm);
-    Conversion *right_sym = conversion_sym(right);
-    if (!left || !right || !right_sym) {
-        conversion_free(left);
-        conversion_free(middle);
-        conversion_free(right_sym);
-        if (!right_sym) {
-            conversion_free(right);
-        }
-        return NULL;
-    }
-
-    Conversion *prefix = conversion_trans(left, middle);
-    if (!prefix) {
-        conversion_free(left);
-        conversion_free(middle);
-        conversion_free(right_sym);
-        return NULL;
-    }
-    Conversion *result = conversion_trans(prefix, right_sym);
-    if (!result) {
-        conversion_free(prefix);
-        conversion_free(right_sym);
-        return NULL;
-    }
-    return result;
-}
-
-static Conversion *_conversion_check(Expression *lhs, Expression *rhs, Map *bv_map);
-
-static Conversion *conversion_structural(Context *ctx, Expression *lhs, Expression *rhs,
-                                         Map *bv_map) {
     if (lhs == rhs) {
-        return conversion_refl(ctx, lhs);
+        return true;
     }
-
     if (lhs->tag != rhs->tag) {
-        return NULL;
+        return false;
     }
 
     switch (lhs->tag) {
         case TYPE_EXPRESSION:
         case PROP_EXPRESSION:
-            return conversion_alloc(CONVERSION_REFL, ctx, lhs, rhs);
+            return true;
 
         case VAR_EXPRESSION:
         case HOLE_EXPRESSION:
-            if (map_get(bv_map, lhs) == rhs) {
-                return conversion_alloc(CONVERSION_REFL, ctx, lhs, rhs);
-            }
-            return NULL;
+            return map_get(bv_map, lhs) == rhs;
 
-        case APP_EXPRESSION: {
-            Conversion *func =
-                _conversion_check(lhs->as.app.func, rhs->as.app.func, bv_map);
-            if (!func) {
-                return NULL;
-            }
-            Conversion *arg = _conversion_check(lhs->as.app.arg, rhs->as.app.arg, bv_map);
-            if (!arg) {
-                conversion_free(func);
-                return NULL;
-            }
-            Conversion *conv = conversion_alloc(CONVERSION_APP, ctx, lhs, rhs);
-            if (!conv || !conversion_add_child(conv, func) || !conversion_add_child(conv, arg)) {
-                conversion_free(conv);
-                conversion_free(func);
-                conversion_free(arg);
-                return NULL;
-            }
-            return conv;
-        }
+        case APP_EXPRESSION:
+            return conversion_derivable(lhs->as.app.func, rhs->as.app.func, bv_map) &&
+                   conversion_derivable(lhs->as.app.arg, rhs->as.app.arg, bv_map);
 
         case FORALL_EXPRESSION: {
             Expression *bv_l = lhs->as.forall.bound_variable;
             Expression *bv_r = rhs->as.forall.bound_variable;
+            if (!conversion_derivable(get_expression_type(bv_l), get_expression_type(bv_r),
+                                      bv_map)) {
+                return false;
+            }
+
             map_set(bv_map, bv_l, bv_r);
-            Conversion *body = _conversion_check(lhs->as.forall.body, rhs->as.forall.body, bv_map);
+            bool result = conversion_derivable(lhs->as.forall.body, rhs->as.forall.body, bv_map);
             map_del(bv_map, bv_l);
-            if (!body) {
-                return NULL;
-            }
-            Conversion *conv = conversion_alloc(CONVERSION_FORALL, ctx, lhs, rhs);
-            if (!conv || !conversion_add_child(conv, body)) {
-                conversion_free(conv);
-                conversion_free(body);
-                return NULL;
-            }
-            return conv;
+            return result;
         }
 
         case LAMBDA_EXPRESSION: {
             Expression *bv_l = lhs->as.lambda.bound_variable;
             Expression *bv_r = rhs->as.lambda.bound_variable;
+            if (!conversion_derivable(get_expression_type(bv_l), get_expression_type(bv_r),
+                                      bv_map)) {
+                return false;
+            }
+
             map_set(bv_map, bv_l, bv_r);
-            Conversion *body = _conversion_check(lhs->as.lambda.body, rhs->as.lambda.body, bv_map);
+            bool result = conversion_derivable(lhs->as.lambda.body, rhs->as.lambda.body, bv_map);
             map_del(bv_map, bv_l);
-            if (!body) {
-                return NULL;
-            }
-            Conversion *conv = conversion_alloc(CONVERSION_LAMBDA, ctx, lhs, rhs);
-            if (!conv || !conversion_add_child(conv, body)) {
-                conversion_free(conv);
-                conversion_free(body);
-                return NULL;
-            }
-            return conv;
+            return result;
         }
 
         case MATCH_EXPRESSION: {
+            if (!conversion_derivable(lhs->as.match.scrutinee, rhs->as.match.scrutinee, bv_map)) {
+                return false;
+            }
             if (lhs->as.match.branch_count != rhs->as.match.branch_count) {
-                return NULL;
-            }
-
-            Conversion *conv = conversion_alloc(CONVERSION_MATCH, ctx, lhs, rhs);
-            if (!conv) {
-                return NULL;
-            }
-
-            Conversion *scrut =
-                _conversion_check(lhs->as.match.scrutinee, rhs->as.match.scrutinee, bv_map);
-            if (!scrut || !conversion_add_child(conv, scrut)) {
-                conversion_free(scrut);
-                conversion_free(conv);
-                return NULL;
+                return false;
             }
 
             for (int i = 0; i < lhs->as.match.branch_count; i++) {
                 MatchBranch *bl = lhs->as.match.branches[i];
                 MatchBranch *br = rhs->as.match.branches[i];
+
+                if (!conversion_derivable(bl->constructor, br->constructor, bv_map)) {
+                    return false;
+                }
                 if (bl->pattern_var_count != br->pattern_var_count) {
-                    conversion_free(conv);
-                    return NULL;
+                    return false;
                 }
 
-                Conversion *ctor = _conversion_check(bl->constructor, br->constructor, bv_map);
-                if (!ctor || !conversion_add_child(conv, ctor)) {
-                    conversion_free(ctor);
-                    conversion_free(conv);
-                    return NULL;
-                }
-
+                bool ok = true;
+                int mapped = 0;
                 for (int j = 0; j < bl->pattern_var_count; j++) {
+                    if (!conversion_derivable(get_expression_type(bl->pattern_variables[j]),
+                                              get_expression_type(br->pattern_variables[j]),
+                                              bv_map)) {
+                        ok = false;
+                        break;
+                    }
                     map_set(bv_map, bl->pattern_variables[j], br->pattern_variables[j]);
+                    mapped++;
                 }
-                Conversion *body = _conversion_check(bl->body, br->body, bv_map);
-                for (int j = 0; j < bl->pattern_var_count; j++) {
+
+                bool result = ok && conversion_derivable(bl->body, br->body, bv_map);
+
+                for (int j = 0; j < mapped; j++) {
                     map_del(bv_map, bl->pattern_variables[j]);
                 }
-                if (!body || !conversion_add_child(conv, body)) {
-                    conversion_free(body);
-                    conversion_free(conv);
-                    return NULL;
+                if (!result) {
+                    return false;
                 }
             }
-            return conv;
+            return true;
         }
 
         case FIX_EXPRESSION: {
             if (lhs->as.fix.arg_count != rhs->as.fix.arg_count ||
                 lhs->as.fix.decreasing_arg_index != rhs->as.fix.decreasing_arg_index) {
-                return NULL;
+                return false;
+            }
+            if (!conversion_derivable(get_expression_type(lhs->as.fix.recursive_var),
+                                      get_expression_type(rhs->as.fix.recursive_var), bv_map)) {
+                return false;
             }
 
             map_set(bv_map, lhs->as.fix.recursive_var, rhs->as.fix.recursive_var);
             for (int i = 0; i < lhs->as.fix.arg_count; i++) {
+                if (!conversion_derivable(get_expression_type(lhs->as.fix.args[i]),
+                                          get_expression_type(rhs->as.fix.args[i]), bv_map)) {
+                    for (int j = 0; j < i; j++) {
+                        map_del(bv_map, lhs->as.fix.args[j]);
+                    }
+                    map_del(bv_map, lhs->as.fix.recursive_var);
+                    return false;
+                }
                 map_set(bv_map, lhs->as.fix.args[i], rhs->as.fix.args[i]);
             }
-            Conversion *body = _conversion_check(lhs->as.fix.body, rhs->as.fix.body, bv_map);
+
+            bool result = conversion_derivable(lhs->as.fix.body, rhs->as.fix.body, bv_map);
+
             for (int i = 0; i < lhs->as.fix.arg_count; i++) {
                 map_del(bv_map, lhs->as.fix.args[i]);
             }
             map_del(bv_map, lhs->as.fix.recursive_var);
-            if (!body) {
-                return NULL;
-            }
-            Conversion *conv = conversion_alloc(CONVERSION_FIX, ctx, lhs, rhs);
-            if (!conv || !conversion_add_child(conv, body)) {
-                conversion_free(conv);
-                conversion_free(body);
-                return NULL;
-            }
-            return conv;
+            return result;
         }
     }
 
-    return NULL;
+    return false;
 }
 
-static Conversion *_conversion_check(Expression *lhs, Expression *rhs, Map *bv_map) {
-    Context *ctx = conversion_common_context(lhs, rhs);
-    if (!ctx) {
-        ctx = get_expression_context(lhs);
+static bool conversion_derivable_in_context(Context *context, Expression *lhs, Expression *rhs) {
+    if (!context || !valid_in_context(lhs, context) || !valid_in_context(rhs, context)) {
+        return false;
     }
 
+    Map *bv_map = map_new_with_capacity(8);
+    bool result = conversion_derivable(lhs, rhs, bv_map);
+    map_free(bv_map);
+    return result;
+}
+
+static ConversionRule conversion_top_rule(Expression *lhs, Expression *rhs, Expression **join) {
     Expression *lhs_norm = normalize_whnf(lhs);
     Expression *rhs_norm = normalize_whnf(rhs);
-    if (!lhs_norm || !rhs_norm) {
-        return NULL;
+
+    if (join) {
+        *join = (lhs_norm == rhs_norm) ? lhs_norm : NULL;
     }
 
-    Conversion *middle = conversion_structural(ctx, lhs_norm, rhs_norm, bv_map);
-    return conversion_compose_normalized(ctx, lhs, lhs_norm, rhs_norm, rhs, middle);
+    if (lhs == rhs) {
+        return CONVERSION_REFL;
+    }
+    if (lhs_norm != lhs || rhs_norm != rhs) {
+        return CONVERSION_NORMALIZE;
+    }
+
+    switch (lhs_norm->tag) {
+        case APP_EXPRESSION:
+            return CONVERSION_APP;
+        case FORALL_EXPRESSION:
+            return CONVERSION_FORALL;
+        case LAMBDA_EXPRESSION:
+            return CONVERSION_LAMBDA;
+        case MATCH_EXPRESSION:
+            return CONVERSION_MATCH;
+        case FIX_EXPRESSION:
+            return CONVERSION_FIX;
+        default:
+            return CONVERSION_REFL;
+    }
 }
 
 static bool conversion_cached_holds(Expression *lhs, Expression *rhs) {
@@ -359,9 +304,9 @@ static bool conversion_cached_holds(Expression *lhs, Expression *rhs) {
         }
     }
 
-    Conversion *conv = conversion_check(lhs, rhs);
-    bool result = conv != NULL;
-    conversion_free(conv);
+    Map *bv_map = map_new_with_capacity(8);
+    bool result = conversion_derivable(lhs, rhs, bv_map);
+    map_free(bv_map);
 
     if (cacheable) {
         Map *inner = (Map *)map_get(g_conversion_cache, lhs);
@@ -375,33 +320,23 @@ static bool conversion_cached_holds(Expression *lhs, Expression *rhs) {
     return result;
 }
 
-Conversion *conversion_check(Expression *lhs, Expression *rhs) {
-    if (!lhs || !rhs) {
-        return NULL;
-    }
-    Map *bv_map = map_new_with_capacity(8);
-    Conversion *conv = _conversion_check(lhs, rhs, bv_map);
-    map_free(bv_map);
-    return conv;
-}
-
 Conversion *conversion_check_in_context(Context *context, Expression *lhs, Expression *rhs) {
-    if (!context || !valid_in_context(lhs, context) || !valid_in_context(rhs, context)) {
+    if (!conversion_derivable_in_context(context, lhs, rhs)) {
         return NULL;
     }
-    Conversion *conv = conversion_check(lhs, rhs);
-    if (!conversion_valid_in_context(conv, context)) {
-        conversion_free(conv);
+
+    Context *min_context = conversion_min_context(lhs, rhs);
+    if (!min_context || !context_is_ancestor(min_context, context)) {
         return NULL;
+    }
+
+    Expression *join = NULL;
+    ConversionRule rule = conversion_top_rule(lhs, rhs, &join);
+    Conversion *conv = conversion_alloc(rule, min_context, lhs, rhs);
+    if (conv) {
+        conv->join = join;
     }
     return conv;
-}
-
-bool conversion_holds(Expression *lhs, Expression *rhs) {
-    if (lhs == rhs) {
-        return true;
-    }
-    return conversion_cached_holds(lhs, rhs);
 }
 
 bool conversion_holds_in_context(Context *context, Expression *lhs, Expression *rhs) {
@@ -412,12 +347,6 @@ bool conversion_holds_in_context(Context *context, Expression *lhs, Expression *
         return true;
     }
 
-    /*
-     * Convertibility is stable under weakening: once lhs and rhs are known to be
-     * valid in context, the result does not depend on the extra bindings in
-     * context. Reuse the same pair cache as the context-free compatibility
-     * wrapper.
-     */
     return conversion_cached_holds(lhs, rhs);
 }
 
@@ -440,14 +369,5 @@ void conversion_free(Conversion *conv) {
 
     conversion_free(conv->left);
     conversion_free(conv->right);
-
-    ConversionList *child = conv->children;
-    while (child) {
-        ConversionList *next = child->next;
-        conversion_free(child->conv);
-        free(child);
-        child = next;
-    }
-
     free(conv);
 }

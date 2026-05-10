@@ -21,13 +21,13 @@ typedef enum {
 
 void conversion_cache_clear(void);
 
+Context *conversion_min_context(Expression *lhs, Expression *rhs);
+
 Conversion *conversion_refl(Context *context, Expression *expr);
 Conversion *conversion_sym(Conversion *conv);
 Conversion *conversion_trans(Conversion *left, Conversion *right);
 
-Conversion *conversion_check(Expression *lhs, Expression *rhs);
 Conversion *conversion_check_in_context(Context *context, Expression *lhs, Expression *rhs);
-bool conversion_holds(Expression *lhs, Expression *rhs);
 bool conversion_holds_in_context(Context *context, Expression *lhs, Expression *rhs);
 
 ConversionRule conversion_rule(Conversion *conv);

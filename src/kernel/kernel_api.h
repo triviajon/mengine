@@ -615,22 +615,6 @@ bool kernel_expr_valid_in_context(Expression *expr, Context *context);
 bool kernel_expr_valid_to_add(Expression *expr, Context *context);
 
 /**
- * Check whether two expressions are definitionally equal.
- * Time Complexity:
- *
- * @param a
- * @param b
- * @return
- */
-bool kernel_expr_definitionally_equal(Expression *a, Expression *b);
-
-/**
- * Return conversion evidence that two expressions are definitionally equal, or NULL.
- * The returned object is owned by the caller.
- */
-Conversion *kernel_expr_conversion(Expression *a, Expression *b);
-
-/**
  * Return conversion evidence usable in a particular context, or NULL.
  * The returned object is owned by the caller.
  */

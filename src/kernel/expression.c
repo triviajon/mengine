@@ -11,11 +11,11 @@
 #include "src/kernel/beta_reduction.h"
 #include "src/kernel/context.h"
 #include "src/kernel/conversion.h"
-#include "src/kernel/definitional_equal.h"
 #include "src/kernel/inductive.h"
 #include "src/kernel/order.h"
 #include "src/kernel/structural.h"
 #include "src/kernel/subst.h"
+#include "src/kernel/type_compat.h"
 
 // Intrusive singly-linked list of all allocated Expressions for deferred GC shutdown.
 static Expression *g_expr_list_head = NULL;
@@ -237,7 +237,9 @@ Expression *_construct_app_type(Context *context, Expression *func, Expression *
     Expression *return_type = get_forall_body(weak_func_type);         // B
 
     Expression *result = NULL;
-    if (actual_arg_type == expected_arg_type || subtypes(actual_arg_type, expected_arg_type)) {
+    if (actual_arg_type == expected_arg_type ||
+        (actual_arg_type->tag == PROP_EXPRESSION && expected_arg_type->tag == TYPE_EXPRESSION) ||
+        conversion_holds_in_context(context, actual_arg_type, expected_arg_type)) {
         result = new_subst(context, return_type, variable, arg);  // B[x -> arg]
     } else {
         fprintf(stderr, ERROR "Application does not type check.\n" CRESET);
@@ -1138,16 +1140,6 @@ bool congruence(Expression *a, Expression *b) {
     return result;
 }
 
-bool subtypes(Expression *a, Expression *b) {
-    // We don't implement a full subtyping relation, but it is necessary
-    // specifically for Type and Prop.
-    if (a->tag == PROP_EXPRESSION && b->tag == TYPE_EXPRESSION) {
-        return true;
-    }
-
-    return conversion_holds(a, b);
-}
-
 void _match_and_subst(Expression *a, Expression *b, LinearMap *mapping) {
     // Mapping is a map from variables in a to variables in b.
     if (a == b) {
@@ -1339,12 +1331,14 @@ bool fill_hole(Expression *hole, Expression *term) {
     //   3) term does not contain this hole.  This is an O(evar count) membership
     //      check against the maintained transitive evar set; no term walk needed.
     LinearMap *hole_assignments = linear_map_new();
-    if (!open_types_compatible_collecting(get_expression_type(hole), get_expression_type(term),
-                                          hole_assignments)) {
+    Context *hole_context = get_expression_context(hole);
+    if (!valid_in_context(term, hole_context)) {
         linear_map_clear_free(hole_assignments);
         return false;
     }
-    if (!valid_in_context(term, get_expression_context(hole))) {
+    if (!open_types_compatible_collecting_in_context(hole_context, get_expression_type(hole),
+                                                     get_expression_type(term),
+                                                     hole_assignments)) {
         linear_map_clear_free(hole_assignments);
         return false;
     }

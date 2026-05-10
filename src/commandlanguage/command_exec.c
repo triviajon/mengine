@@ -794,7 +794,7 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
 
     /* The induction principle builder uses the original param_vars, but
      * constructor types now use fresh parameter copies.  The resulting case
-     * types would fail the subtypes() check (fresh_param != original_param).
+     * types would fail the application type check (fresh_param != original_param).
      * Skip the induction principle for parametric inductives; it is not needed
      * by the tactics that use parametric types (e.g., sep_list in cancel). */
     Expression *ind_principle_type = NULL;

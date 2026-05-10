@@ -1,33 +1,30 @@
-#include "src/kernel/definitional_equal.h"
+#include "src/kernel/type_compat.h"
 
 #include <stdlib.h>
 
 #include "src/common/linear_map.h"
 #include "src/common/map.h"
-#include "src/kernel/conversion.h"
+#include "src/kernel/context.h"
 #include "src/kernel/normalize.h"
 
-void definitional_equal_cache_clear(void) { conversion_cache_clear(); }
-
-bool definitional_equal(Expression *a, Expression *b) {
-    return conversion_holds(a, b);
-}
-
 /**
- * Checks whether two types are compatible under hole-aware matching. Identical to
- * definitional_equal except when a HOLE_EXPRESSION appears on the *expected* (left-hand) side, it
- * is treated as an unification variable.
+ * Checks whether two types are compatible under hole-aware matching. When a
+ * HOLE_EXPRESSION appears on the expected side, it is treated as a unification
+ * variable and recorded in holes instead of being filled.
  *
  * bv_map - bound-variable renaming
  * holes - output map: hole -> concrete value discovered during traversal.
  *
- * no holes are filled "side-effect"-fully.
+ * No holes are filled as a side effect.
  */
 static bool _open_compat(Expression *expected, Expression *actual, Map *bv_map,
                          LinearMap *holes) {
     expected = normalize_whnf(expected);
     actual = normalize_whnf(actual);
 
+    if (!expected || !actual) {
+        return false;
+    }
     if (expected == actual) {
         return true;
     }
@@ -35,17 +32,17 @@ static bool _open_compat(Expression *expected, Expression *actual, Map *bv_map,
     if (expected->tag == HOLE_EXPRESSION) {
         Expression *already_mapped = linear_map_get(holes, expected);
         if (already_mapped != NULL) {
-            // Seen this hole before - check the new actual is defeq to the
-            // value we already committed this hole to.
-            return conversion_holds(already_mapped, actual);
+            return _open_compat(already_mapped, actual, bv_map, holes);
         }
-        // First encounter: record the assignment and check the type is compatible.
+
         linear_map_set(holes, expected, actual);
-        return conversion_holds(get_expression_type(expected), get_expression_type(actual));
+        return _open_compat(get_expression_type(expected), get_expression_type(actual), bv_map,
+                            holes);
     }
 
     if (actual->tag == HOLE_EXPRESSION) {
-        return conversion_holds(get_expression_type(expected), get_expression_type(actual));
+        return _open_compat(get_expression_type(expected), get_expression_type(actual), bv_map,
+                            holes);
     }
 
     if (expected->tag != actual->tag) {
@@ -67,8 +64,14 @@ static bool _open_compat(Expression *expected, Expression *actual, Map *bv_map,
         case FORALL_EXPRESSION: {
             Expression *bv_e = expected->as.forall.bound_variable;
             Expression *bv_a = actual->as.forall.bound_variable;
+            if (!_open_compat(get_expression_type(bv_e), get_expression_type(bv_a), bv_map,
+                              holes)) {
+                return false;
+            }
+
             map_set(bv_map, bv_e, bv_a);
-            bool result = _open_compat(expected->as.forall.body, actual->as.forall.body, bv_map, holes);
+            bool result =
+                _open_compat(expected->as.forall.body, actual->as.forall.body, bv_map, holes);
             map_del(bv_map, bv_e);
             return result;
         }
@@ -76,8 +79,14 @@ static bool _open_compat(Expression *expected, Expression *actual, Map *bv_map,
         case LAMBDA_EXPRESSION: {
             Expression *bv_e = expected->as.lambda.bound_variable;
             Expression *bv_a = actual->as.lambda.bound_variable;
+            if (!_open_compat(get_expression_type(bv_e), get_expression_type(bv_a), bv_map,
+                              holes)) {
+                return false;
+            }
+
             map_set(bv_map, bv_e, bv_a);
-            bool result = _open_compat(expected->as.lambda.body, actual->as.lambda.body, bv_map, holes);
+            bool result =
+                _open_compat(expected->as.lambda.body, actual->as.lambda.body, bv_map, holes);
             map_del(bv_map, bv_e);
             return result;
         }
@@ -99,11 +108,22 @@ static bool _open_compat(Expression *expected, Expression *actual, Map *bv_map,
                 if (be->pattern_var_count != ba->pattern_var_count) {
                     return false;
                 }
+
+                bool ok = true;
+                int mapped = 0;
                 for (int j = 0; j < be->pattern_var_count; j++) {
+                    if (!_open_compat(get_expression_type(be->pattern_variables[j]),
+                                      get_expression_type(ba->pattern_variables[j]), bv_map,
+                                      holes)) {
+                        ok = false;
+                        break;
+                    }
                     map_set(bv_map, be->pattern_variables[j], ba->pattern_variables[j]);
+                    mapped++;
                 }
-                bool body_result = _open_compat(be->body, ba->body, bv_map, holes);
-                for (int j = 0; j < be->pattern_var_count; j++) {
+
+                bool body_result = ok && _open_compat(be->body, ba->body, bv_map, holes);
+                for (int j = 0; j < mapped; j++) {
                     map_del(bv_map, be->pattern_variables[j]);
                 }
                 if (!body_result) {
@@ -116,20 +136,33 @@ static bool _open_compat(Expression *expected, Expression *actual, Map *bv_map,
         case FIX_EXPRESSION: {
             Expression *rv_e = expected->as.fix.recursive_var;
             Expression *rv_a = actual->as.fix.recursive_var;
-            map_set(bv_map, rv_e, rv_a);
             if (expected->as.fix.arg_count != actual->as.fix.arg_count) {
-                map_del(bv_map, rv_e);
                 return false;
             }
             if (expected->as.fix.decreasing_arg_index != actual->as.fix.decreasing_arg_index) {
-                map_del(bv_map, rv_e);
                 return false;
             }
-            for (int i = 0; i < expected->as.fix.arg_count; i++) {
-                map_set(bv_map, expected->as.fix.args[i], actual->as.fix.args[i]);
+            if (!_open_compat(get_expression_type(rv_e), get_expression_type(rv_a), bv_map,
+                              holes)) {
+                return false;
             }
-            bool result = _open_compat(expected->as.fix.body, actual->as.fix.body, bv_map, holes);
+
+            map_set(bv_map, rv_e, rv_a);
+            bool ok = true;
+            int mapped = 0;
             for (int i = 0; i < expected->as.fix.arg_count; i++) {
+                if (!_open_compat(get_expression_type(expected->as.fix.args[i]),
+                                  get_expression_type(actual->as.fix.args[i]), bv_map, holes)) {
+                    ok = false;
+                    break;
+                }
+                map_set(bv_map, expected->as.fix.args[i], actual->as.fix.args[i]);
+                mapped++;
+            }
+
+            bool result =
+                ok && _open_compat(expected->as.fix.body, actual->as.fix.body, bv_map, holes);
+            for (int i = 0; i < mapped; i++) {
                 map_del(bv_map, expected->as.fix.args[i]);
             }
             map_del(bv_map, rv_e);
@@ -141,19 +174,27 @@ static bool _open_compat(Expression *expected, Expression *actual, Map *bv_map,
     }
 }
 
-bool open_types_compatible_collecting(Expression *expected, Expression *actual, LinearMap *holes) {
+bool open_types_compatible_collecting_in_context(Context *context, Expression *expected,
+                                                 Expression *actual, LinearMap *holes) {
+    if (!context || !expected || !actual || !holes) {
+        return false;
+    }
+    if (!valid_in_context(expected, context) || !valid_in_context(actual, context)) {
+        return false;
+    }
     if (expected == actual) {
         return true;
     }
+
     Map *bv_map = map_new_with_capacity(8);
     bool result = _open_compat(expected, actual, bv_map, holes);
     map_free(bv_map);
     return result;
 }
 
-bool open_types_compatible(Expression *expected, Expression *actual) {
+bool open_types_compatible_in_context(Context *context, Expression *expected, Expression *actual) {
     LinearMap *holes = linear_map_new();
-    bool result = open_types_compatible_collecting(expected, actual, holes);
+    bool result = open_types_compatible_collecting_in_context(context, expected, actual, holes);
     linear_map_clear_free(holes);
     return result;
 }
