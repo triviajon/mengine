@@ -42,6 +42,7 @@ static RewriteCacheStats g_rwr_stats = {0};
 // Precomputed rigid head of the current lemma's LHS (set per rewrite()/erewrite() call).
 // NULL means unknown or non-rigid (VAR); in that case no early exit is performed.
 static Expression *s_lemma_lhs_head = NULL;
+static int s_lemma_lhs_arity = -1;
 
 // Persistent noop cache keyed by lemma and context, split by mode:
 // rewrite()  (allow_unresolved_bindings=false): s_noop_by_lemma
@@ -76,6 +77,41 @@ static Expression *_compute_lemma_lhs_head(Expression *lemma) {
         return NULL;
     }
     return head;
+}
+
+static int _app_arity(Expression *expr) {
+    int arity = 0;
+    while (expr && expr->tag == APP_EXPRESSION) {
+        arity++;
+        expr = get_app_func(expr);
+    }
+    return arity;
+}
+
+static int _compute_lemma_lhs_arity(Expression *lemma) {
+    Expression *ty = get_expression_type(lemma);
+    if (!ty) {
+        return -1;
+    }
+    Expression *body = get_innermost_body(ty);
+    if (!body) {
+        return -1;
+    }
+    Expression *lhs = _get_lhs_eq(body);
+    if (!lhs) {
+        return -1;
+    }
+    return _app_arity(lhs);
+}
+
+static bool _candidate_can_match_lemma_lhs(Expression *candidate) {
+    if (s_lemma_lhs_arity >= 0 && _app_arity(candidate) != s_lemma_lhs_arity) {
+        return false;
+    }
+    if (s_lemma_lhs_head != NULL && get_head(candidate) != s_lemma_lhs_head) {
+        return false;
+    }
+    return true;
 }
 
 void rewrite_set_debug(bool enabled) { g_rewrite_debug = enabled; }
@@ -308,6 +344,10 @@ RewriteResult *rewrite_head(Expression *mid, Expression *lemma, Context *context
                             bool allow_unresolved_bindings) {
     g_rwr_stats.rewrite_head_calls++;
 
+    if (!_candidate_can_match_lemma_lhs(mid)) {
+        return init_rewrite_result(mid, mid, NULL, NULL);
+    }
+
     // TODO: We shouldn't need to use this function
     UnificationResult *unif_result = bad_unify_for_eq(context, lemma, mid);
 
@@ -358,10 +398,10 @@ RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context
         // Fast path: both children are noop. If the head also can't match,
         // skip all proof construction and return a lazy noop immediately.
         // (rwr_func/rwr_arg are cache-owned; don't free them here.)
-        if (s_lemma_lhs_head != NULL && get_head(expr) != s_lemma_lhs_head) {
+        if (!_candidate_can_match_lemma_lhs(expr)) {
             return init_rewrite_result(expr, expr, NULL, NULL);
         }
-        mid_rwr = init_rewrite_result(expr, expr, NULL, _build_reflexivity_proof(expr, context));
+        mid_rwr = init_rewrite_result(expr, expr, NULL, NULL);
     } else {
         // Make owned copies so cache-owned rwr_func/rwr_arg are never mutated.
         RewriteResult *rwr_func_own = rewrite_result_take_copy(rwr_func);
@@ -395,7 +435,7 @@ RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context
     if (mid_result) {
         mid_result_from_cache = true;
         g_rwr_stats.mid_result_hits++;
-    } else if (s_lemma_lhs_head != NULL && get_head(mid_rwr->rewritten) != s_lemma_lhs_head) {
+    } else if (!_candidate_can_match_lemma_lhs(mid_rwr->rewritten)) {
         // Head mismatch: the reconstituted expression's outermost function is not
         // the lemma LHS head, so top-level unification is guaranteed to fail.
         // Use NULL proof - mid_result is noop and its proof is never accessed.
@@ -406,7 +446,7 @@ RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context
 #else
     bool mid_result_from_cache = false;
     RewriteResult *mid_result;
-    if (s_lemma_lhs_head != NULL && get_head(mid_rwr->rewritten) != s_lemma_lhs_head) {
+    if (!_candidate_can_match_lemma_lhs(mid_rwr->rewritten)) {
         mid_result = init_rewrite_result(mid_rwr->rewritten, mid_rwr->rewritten, NULL, NULL);
     } else {
         mid_result = rewrite_head(mid_rwr->rewritten, lemma, context, allow_unresolved_bindings);
@@ -418,7 +458,15 @@ RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context
         final_rwr = init_rewrite_result(expr, mid_rwr->rewritten, mid_rwr->new_goals,
                                         mid_rwr->original_to_rewritten_proof);
         mid_rwr->new_goals = NULL;  // transferred to final_rwr
+    } else if (!mid_result_from_cache && rewrite_is_noop(mid_rwr) &&
+               mid_rwr->original_to_rewritten_proof == NULL) {
+        final_rwr = init_rewrite_result(expr, mid_result->rewritten, mid_result->new_goals,
+                                        mid_result->original_to_rewritten_proof);
+        mid_result->new_goals = NULL;  // transferred to final_rwr
     } else {
+        if (mid_rwr->original_to_rewritten_proof == NULL) {
+            mid_rwr->original_to_rewritten_proof = _build_reflexivity_proof(mid_rwr->original, context);
+        }
         final_rwr = init_rewrite_result(expr, mid_result->rewritten,
                                         dll_merge(mid_rwr->new_goals, mid_result->new_goals),
                                         _build_transitivity_proof(mid_rwr, mid_result, context));
@@ -440,7 +488,7 @@ RewriteResult *rewrite_var(Expression *expr, Expression *lemma, Context *context
                            bool allow_unresolved_bindings) {
     // Early exit: if the lemma LHS has a rigid (non-VAR) head, a bare VAR
     // cannot unify with it at the top level - return a lazy noop immediately.
-    if (s_lemma_lhs_head != NULL) {
+    if (!_candidate_can_match_lemma_lhs(expr)) {
         return init_rewrite_result(expr, expr, NULL, NULL);
     }
     RewriteResult *head_rwr = rewrite_head(expr, lemma, context, allow_unresolved_bindings);
@@ -517,6 +565,7 @@ RewriteResult *rewrite(Expression *expr, Expression *lemma, Context *context) {
     }
 
     s_lemma_lhs_head = _compute_lemma_lhs_head(lemma);
+    s_lemma_lhs_arity = _compute_lemma_lhs_arity(lemma);
     Map *cached_rwr = map_new_with_capacity(256);
     RewriteResult *rwr = _rewrite(expr, lemma, context, cached_rwr, false);
     map_del(cached_rwr, (void *)expr);
@@ -543,6 +592,7 @@ RewriteResult *erewrite(Expression *expr, Expression *lemma, Context *context) {
     }
 
     s_lemma_lhs_head = _compute_lemma_lhs_head(lemma);
+    s_lemma_lhs_arity = _compute_lemma_lhs_arity(lemma);
     Map *cached_rwr = map_new_with_capacity(256);
     RewriteResult *rwr = _rewrite(expr, lemma, context, cached_rwr, true);
     map_del(cached_rwr,
