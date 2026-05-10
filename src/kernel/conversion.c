@@ -4,8 +4,11 @@
 #include <stdlib.h>
 
 #include "src/common/map.h"
+#include "src/kernel/beta_reduction.h"
 #include "src/kernel/context.h"
-#include "src/kernel/normalize.h"
+#include "src/kernel/delta_reduction.h"
+#include "src/kernel/fix_reduction.h"
+#include "src/kernel/iota_reduction.h"
 
 struct Conversion {
     ConversionRule rule;
@@ -98,22 +101,272 @@ Conversion *conversion_trans(Conversion *left, Conversion *right) {
 #define CONV_TRUE  ((void *)(intptr_t)1)
 #define CONV_FALSE ((void *)(intptr_t)2)
 
+typedef struct ConversionStepEntry {
+    ConversionRule rule;
+    Context *context;
+    Expression *from;
+    Expression *to;
+} ConversionStepEntry;
+
+typedef struct ConversionWhnfEntry {
+    Context *context;
+    Expression *from;
+    Expression *normal;
+} ConversionWhnfEntry;
+
 static Map *g_conversion_cache = NULL;
+static Map *g_conversion_step_cache = NULL;
+static Map *g_conversion_whnf_cache = NULL;
 
 static void conversion_cache_free_inner(void *inner) { map_free((Map *)inner); }
 
+static void conversion_cache_free_value(void *value) { free(value); }
+
 void conversion_cache_clear(void) {
-    if (g_conversion_cache == NULL) {
+    if (g_conversion_cache != NULL) {
+        map_clear_apply_free(g_conversion_cache, conversion_cache_free_inner);
+        g_conversion_cache = NULL;
+    }
+    if (g_conversion_step_cache != NULL) {
+        map_clear_apply_free(g_conversion_step_cache, conversion_cache_free_value);
+        g_conversion_step_cache = NULL;
+    }
+    if (g_conversion_whnf_cache != NULL) {
+        map_clear_apply_free(g_conversion_whnf_cache, conversion_cache_free_value);
+        g_conversion_whnf_cache = NULL;
+    }
+}
+
+static bool conversion_cacheable_expr(Expression *expr) { return expr && !expr->has_evar; }
+
+static ConversionStepEntry *conversion_cached_step(Expression *expr) {
+    if (!conversion_cacheable_expr(expr) || !g_conversion_step_cache) {
+        return NULL;
+    }
+    return (ConversionStepEntry *)map_get(g_conversion_step_cache, expr);
+}
+
+static ConversionWhnfEntry *conversion_cached_whnf_entry(Expression *expr) {
+    if (!conversion_cacheable_expr(expr) || !g_conversion_whnf_cache) {
+        return NULL;
+    }
+    return (ConversionWhnfEntry *)map_get(g_conversion_whnf_cache, expr);
+}
+
+static void conversion_record_step(Context *context, Expression *from, Expression *to,
+                                   ConversionRule rule) {
+    if (!context || !conversion_cacheable_expr(from) || !to || !valid_in_context(to, context)) {
+        return;
+    }
+    if (!g_conversion_step_cache) {
+        g_conversion_step_cache = map_new_with_capacity(64);
+        if (!g_conversion_step_cache) {
+            return;
+        }
+    }
+
+    ConversionStepEntry *entry = (ConversionStepEntry *)map_get(g_conversion_step_cache, from);
+    if (!entry) {
+        entry = malloc(sizeof(ConversionStepEntry));
+        if (!entry) {
+            return;
+        }
+        if (!map_set(g_conversion_step_cache, from, entry)) {
+            free(entry);
+            return;
+        }
+    }
+    entry->rule = rule;
+    entry->context = context;
+    entry->from = from;
+    entry->to = to;
+}
+
+static void conversion_record_whnf(Expression *from, Expression *normal) {
+    if (!conversion_cacheable_expr(from) || !normal) {
         return;
     }
 
-    map_clear_apply_free(g_conversion_cache, conversion_cache_free_inner);
-    g_conversion_cache = NULL;
+    Context *context = get_expression_context(from);
+    if (!valid_in_context(normal, context)) {
+        return;
+    }
+    if (!g_conversion_whnf_cache) {
+        g_conversion_whnf_cache = map_new_with_capacity(64);
+        if (!g_conversion_whnf_cache) {
+            return;
+        }
+    }
+
+    ConversionWhnfEntry *entry = (ConversionWhnfEntry *)map_get(g_conversion_whnf_cache, from);
+    if (!entry) {
+        entry = malloc(sizeof(ConversionWhnfEntry));
+        if (!entry) {
+            return;
+        }
+        if (!map_set(g_conversion_whnf_cache, from, entry)) {
+            free(entry);
+            return;
+        }
+    }
+    entry->context = context;
+    entry->from = from;
+    entry->normal = normal;
+}
+
+static Expression *conversion_whnf(Expression *expr) {
+    if (!expr) {
+        return NULL;
+    }
+
+    ConversionWhnfEntry *cached = conversion_cached_whnf_entry(expr);
+    if (cached) {
+        return cached->normal;
+    }
+
+    Expression *start = expr;
+    Expression *current = expr;
+
+    while (true) {
+        ConversionWhnfEntry *current_cached = conversion_cached_whnf_entry(current);
+        if (current_cached) {
+            current = current_cached->normal;
+            break;
+        }
+
+        ConversionStepEntry *step = conversion_cached_step(current);
+        if (step) {
+            current = step->to;
+            continue;
+        }
+
+        switch (current->tag) {
+            case VAR_EXPRESSION: {
+                if (is_delta_reducible(current)) {
+                    Expression *next = delta_reduce(current);
+                    if (next) {
+                        conversion_record_step(get_expression_context(current), current, next,
+                                               CONVERSION_DELTA);
+                        current = next;
+                        continue;
+                    }
+                }
+                conversion_record_whnf(current, current);
+                conversion_record_whnf(start, current);
+                return current;
+            }
+
+            case APP_EXPRESSION: {
+                Context *ctx = get_expression_context(current);
+                Expression *func = get_app_func(current);
+                Expression *arg = get_app_arg(current);
+
+                Expression *norm_func = conversion_whnf(func);
+
+                if (norm_func != func) {
+                    Expression *next = init_app_expression_wc(norm_func, arg, ctx);
+                    if (next) {
+                        conversion_record_step(ctx, current, next, CONVERSION_APP);
+                        current = next;
+                        continue;
+                    }
+                }
+
+                if (norm_func->tag == LAMBDA_EXPRESSION) {
+                    Expression *next = beta_reduce(ctx, norm_func, arg);
+                    if (next) {
+                        conversion_record_step(ctx, current, next, CONVERSION_BETA);
+                        current = next;
+                        continue;
+                    }
+                }
+
+                if (norm_func->tag == FIX_EXPRESSION && is_fix_reducible(norm_func)) {
+                    Expression *unfolded = fix_reduce(norm_func);
+                    if (unfolded) {
+                        Expression *next = init_app_expression_wc(unfolded, arg, ctx);
+                        if (next) {
+                            conversion_record_step(ctx, current, next, CONVERSION_FIX);
+                            current = next;
+                            continue;
+                        }
+                    }
+                }
+
+                conversion_record_whnf(current, current);
+                conversion_record_whnf(start, current);
+                return current;
+            }
+
+            case FIX_EXPRESSION: {
+                if (is_fix_reducible(current)) {
+                    Expression *next = fix_reduce(current);
+                    if (next) {
+                        conversion_record_step(get_expression_context(current), current, next,
+                                               CONVERSION_FIX);
+                        current = next;
+                        continue;
+                    }
+                }
+                conversion_record_whnf(current, current);
+                conversion_record_whnf(start, current);
+                return current;
+            }
+
+            case MATCH_EXPRESSION: {
+                Context *ctx = get_expression_context(current);
+                Expression *scrut = current->as.match.scrutinee;
+                Expression *norm_scrut = conversion_whnf(scrut);
+
+                if (norm_scrut != scrut) {
+                    Expression *next = init_match_expression_wc(norm_scrut,
+                                                               current->as.match.branches,
+                                                               current->as.match.branch_count,
+                                                               ctx);
+                    if (next) {
+                        conversion_record_step(ctx, current, next, CONVERSION_MATCH);
+                        current = next;
+                        continue;
+                    }
+                }
+
+                if (is_iota_reducible(current)) {
+                    Expression *next = iota_reduce(ctx, current);
+                    if (next) {
+                        conversion_record_step(ctx, current, next, CONVERSION_IOTA);
+                        current = next;
+                        continue;
+                    }
+                }
+
+                conversion_record_whnf(current, current);
+                conversion_record_whnf(start, current);
+                return current;
+            }
+
+            case LAMBDA_EXPRESSION:
+            case FORALL_EXPRESSION:
+            case TYPE_EXPRESSION:
+            case PROP_EXPRESSION:
+            case HOLE_EXPRESSION:
+                conversion_record_whnf(current, current);
+                conversion_record_whnf(start, current);
+                return current;
+
+            default:
+                conversion_record_whnf(current, current);
+                conversion_record_whnf(start, current);
+                return current;
+        }
+    }
+
+    conversion_record_whnf(start, current);
+    return current;
 }
 
 static bool conversion_derivable(Expression *lhs, Expression *rhs, Map *bv_map) {
-    lhs = normalize_whnf(lhs);
-    rhs = normalize_whnf(rhs);
+    lhs = conversion_whnf(lhs);
+    rhs = conversion_whnf(rhs);
 
     if (!lhs || !rhs) {
         return false;
@@ -258,8 +511,8 @@ static bool conversion_derivable_in_context(Context *context, Expression *lhs, E
 }
 
 static ConversionRule conversion_top_rule(Expression *lhs, Expression *rhs) {
-    Expression *lhs_norm = normalize_whnf(lhs);
-    Expression *rhs_norm = normalize_whnf(rhs);
+    Expression *lhs_norm = conversion_whnf(lhs);
+    Expression *rhs_norm = conversion_whnf(rhs);
 
     if (lhs == rhs) {
         return CONVERSION_REFL;
