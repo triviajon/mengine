@@ -15,7 +15,7 @@
  * bv_map - bound-variable renaming
  * holes - output map: hole -> concrete value discovered during traversal.
  *
- * No holes are filled as a side effect.
+ * No holes are filled "side-effect"-fully.
  */
 static bool _open_compat(Expression *expected, Expression *actual, Map *bv_map,
                          LinearMap *holes) {

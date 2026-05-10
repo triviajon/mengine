@@ -12,7 +12,6 @@ struct Conversion {
     Context *context;
     Expression *lhs;
     Expression *rhs;
-    Expression *join;
     Conversion *left;
     Conversion *right;
 };
@@ -258,13 +257,9 @@ static bool conversion_derivable_in_context(Context *context, Expression *lhs, E
     return result;
 }
 
-static ConversionRule conversion_top_rule(Expression *lhs, Expression *rhs, Expression **join) {
+static ConversionRule conversion_top_rule(Expression *lhs, Expression *rhs) {
     Expression *lhs_norm = normalize_whnf(lhs);
     Expression *rhs_norm = normalize_whnf(rhs);
-
-    if (join) {
-        *join = (lhs_norm == rhs_norm) ? lhs_norm : NULL;
-    }
 
     if (lhs == rhs) {
         return CONVERSION_REFL;
@@ -330,13 +325,8 @@ Conversion *conversion_check_in_context(Context *context, Expression *lhs, Expre
         return NULL;
     }
 
-    Expression *join = NULL;
-    ConversionRule rule = conversion_top_rule(lhs, rhs, &join);
-    Conversion *conv = conversion_alloc(rule, min_context, lhs, rhs);
-    if (conv) {
-        conv->join = join;
-    }
-    return conv;
+    ConversionRule rule = conversion_top_rule(lhs, rhs);
+    return conversion_alloc(rule, min_context, lhs, rhs);
 }
 
 bool conversion_holds_in_context(Context *context, Expression *lhs, Expression *rhs) {
