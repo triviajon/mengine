@@ -93,7 +93,7 @@ def plot_benchmark(
         output_dir: Directory to save plots.
         engines: Only plot these engines (None = all).
         strategies_filter: Only plot these strategy names (None = all).
-        exclude: Skip these engine/strategy combos, as "engine/strategy" strings (None = skip none).
+        exclude: Regex patterns matched against "engine/strategy" strings (None = skip none).
         fmt: Output format (png, pdf, svg).
         x_param: Which parameter to use as x-axis (default: first param).
         fixed_params: Fix other parameters to these values (for multi-param benchmarks).
@@ -121,6 +121,14 @@ def plot_benchmark(
         sid = f"{s.engine}:{s.name}"
         strategy_map[sid] = s
 
+    exclude_patterns = []
+    if exclude:
+        try:
+            exclude_patterns = [re.compile(pattern) for pattern in exclude]
+        except re.error as exc:
+            print(f"Invalid --exclude regex: {exc}", file=sys.stderr)
+            return
+
     # Collect data points per strategy
     data: dict[str, list[tuple[int, float]]] = {}
     failure_data: dict[str, list[tuple[int, float]]] = {}
@@ -142,8 +150,9 @@ def plot_benchmark(
         if strategies_filter and strategy.name not in strategies_filter:
             continue
 
-        # Exclude specific engine/strategy combos
-        if exclude and f"{strategy.engine}/{strategy.name}" in exclude:
+        # Exclude regex-matched engine/strategy combos.
+        strategy_label = f"{strategy.engine}/{strategy.name}"
+        if any(pattern.search(strategy_label) for pattern in exclude_patterns):
             continue
 
         # Filter by fixed params

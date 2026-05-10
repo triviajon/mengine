@@ -162,7 +162,7 @@ End Test.
 
             tactic_map = {
                 "simp_only": "simp only [f_n_x0]",
-                "repeat_rw": "repeat rw [f_n_x0]",
+                "repeat_rw": "dsimp\n  repeat rw [f_n_x0 nat x0 f]",
             }
 
             content = f"""set_option maxHeartbeats 0

@@ -40,7 +40,7 @@ class SymbolicExecution(Benchmark):
         return [
             Strategy("mengine", "repeat_exec", "Mengine: repeat_exec", color="blue", marker="s"),
             Strategy("coq", "repeat_exec", "Rocq: repeat_exec", color="red", marker="o"),
-            Strategy("lean", "internal_driver", "Lean: internal driver", color="green", marker="v"),
+            Strategy("lean", "repeat_exec", "Lean: repeat_exec", color="green", marker="v"),
         ]
 
     def generate(self, strategy, params, workdir):
@@ -409,37 +409,12 @@ End A.
             f" {concrete_repeated}))"
         )
 
-        # Build the explicit step-by-step tactic proof - no induction, no helper lemmas.
-        # After exec_input + the initial exec_set "a" := v, the local env is
-        #   l0 = pmap_put (pmap_put l "b" v) "a" v
-        # Each add-sub pair maintains this invariant via pmap_put_put_same.
-        simp_add = "eval_op, eval_var, binop_to_add, pmap_get_put_same"
-        simp_sub = ("eval_op, eval_var, binop_to_sub, "
-                    "pmap_get_put_same, pmap_get_put_diff_ba, word_add_sub_cancel")
-        proof_lines = [
-            "  apply exec_seq",
-            "  apply exec_input",
-            "  intro v",
-            "  apply exec_seq",
-            "  apply exec_set (v := v)",
-            "  · simp only [eval_var, pmap_get_put_same]",
-        ]
-        for _ in range(n):
-            proof_lines += [
-                "  apply exec_seq",
-                "  apply exec_set (v := word_add (some v) (some v))",
-                f"  · simp only [{simp_add}]",
-                "  apply exec_seq",
-                "  apply exec_set (v := v)",
-                f"  · simp only [{simp_sub}]",
-                "  simp only [pmap_put_put_same]",  # collapse consecutive "a" puts
-            ]
-        proof_lines.append("  exact exec_skip _ _ _ _ rfl")
-        proof = "\n".join(proof_lines)
-
         content = f"""-- Symbolic execution benchmark (Lean 4) - n={n}
 -- Python generates the concrete {n}-step command (fully unrolled, same as MEngine).
--- The proof steps through each instruction explicitly - no induction, no helper lemmas.
+-- The proof is a static elaborator tactic loop, mirroring the Coq/MEngine repeat_exec scripts.
+
+import Lean
+open Lean Elab Tactic
 
 set_option maxHeartbeats 0
 set_option maxRecDepth 100000
@@ -468,14 +443,14 @@ axiom interp_binop : Bopname → Option word → Option word → word
 axiom binop_to_add : ∀ w1 w2, interp_binop bop_add w1 w2 = word_add w1 w2
 axiom binop_to_sub : ∀ w1 w2, interp_binop bop_sub w1 w2 = word_sub w1 w2
 
-axiom Expr : Type
-axiom expr_var : String → Expr
-axiom expr_op  : Bopname → Expr → Expr → Expr
+axiom SymExpr : Type
+axiom expr_var : String → SymExpr
+axiom expr_op  : Bopname → SymExpr → SymExpr → SymExpr
 
-axiom eval_expr : PMap word byte → PMap String word → Expr → Option word
+axiom eval_expr : PMap word byte → PMap String word → SymExpr → Option word
 axiom eval_var : ∀ (me : PMap word byte) (le : PMap String word) (x : String),
     eval_expr me le (expr_var x) = pmap_get le x
-axiom eval_op : ∀ (me : PMap word byte) (le : PMap String word) (op : Bopname) (e1 e2 : Expr),
+axiom eval_op : ∀ (me : PMap word byte) (le : PMap String word) (op : Bopname) (e1 e2 : SymExpr),
     eval_expr me le (expr_op op e1 e2) =
       some (interp_binop op (eval_expr me le e1) (eval_expr me le e2))
 
@@ -483,7 +458,7 @@ axiom IOEvent : Type
 axiom IO_IN : word → IOEvent
 axiom Cmd : Type
 axiom cmd_skip : Cmd
-axiom cmd_set : String → Expr → Cmd
+axiom cmd_set : String → SymExpr → Cmd
 axiom cmd_seq : Cmd → Cmd → Cmd
 axiom cmd_input : String → Cmd
 
@@ -501,9 +476,34 @@ axiom exec_input : ∀ t lhs m l post,
     (∀ v : word, post (IO_IN v :: t) m (pmap_put l lhs v)) →
     exec (cmd_input lhs) t m l post
 
+elab "solve_eq_by_rewriting" : tactic => do
+  evalTactic (← `(tactic|
+    first
+    | simp only [eval_var, pmap_get_put_same]; rfl
+    | simp only [eval_op, eval_var, binop_to_add, pmap_get_put_same, pmap_put_put_same]; rfl
+    | simp only [eval_op, eval_var, binop_to_sub,
+        pmap_get_put_same, pmap_get_put_diff_ba, pmap_put_put_same,
+        binop_to_add, word_add_sub_cancel]; rfl))
+
+elab "exec_set_step" : tactic => do
+  evalTactic (← `(tactic| apply exec_set (v := _)))
+  evalTactic (← `(tactic| solve_eq_by_rewriting))
+
+elab "exec_once" : tactic => do
+  evalTactic (← `(tactic|
+    first
+    | apply exec_seq
+    | (apply exec_input; intro)
+    | exec_set_step
+    | apply exec_skip))
+
+elab "repeat_exec" : tactic => do
+  evalTactic (← `(tactic| repeat exec_once))
+
 theorem sym_exec (m : PMap word byte) (l : PMap String word) :
     exec {concrete_cmd} [] m l (fun _ m' _ => m' = m) := by
-{proof}
+  repeat_exec
+  rfl
 """
         path = os.path.join(workdir, "test.lean")
         with open(path, "w") as f:

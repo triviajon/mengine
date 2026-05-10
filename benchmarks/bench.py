@@ -23,7 +23,7 @@ Test options:
 
 Plot options:
   --engine ENGINE[,ENGINE,...]   Only plot these engines
-  --exclude ENGINE/STRATEGY      Exclude an engine/strategy (repeatable)
+  --exclude REGEX                Exclude labels matching regex over "engine/strategy" (repeatable)
   --format FMT                   Output format: png, pdf, svg (default: png)
   --fixed PARAM=VALUE            Fix a parameter (for multi-param benchmarks)
   --xlim MIN:MAX                 Set x-axis limits
@@ -532,8 +532,8 @@ def main():
     p_plot.add_argument("--log-x", action="store_true", help="Log scale x-axis")
     p_plot.add_argument("--title", help="Custom title")
     p_plot.add_argument("--show-failures", action="store_true", help="Show failed points")
-    p_plot.add_argument("--exclude", action="append", metavar="ENGINE/STRATEGY",
-                        help="Exclude an engine/strategy from plots (e.g. lean/simp). Repeatable.")
+    p_plot.add_argument("--exclude", action="append", metavar="REGEX",
+                        help='Exclude plot series whose "engine/strategy" label matches REGEX. Repeatable.')
 
     args = parser.parse_args()
 
