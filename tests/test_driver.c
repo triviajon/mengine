@@ -1,6 +1,7 @@
 #include "tests/helpers/test_framework.h"
 
 void run_evar_refs_tests(void);
+void run_conversion_tests(void);
 void run_command_parser_tests(void);
 void run_parser_tests(void);
 void run_lexer_tests(void);
@@ -9,6 +10,7 @@ void run_integration_tests(void);
 
 int main(void) {
     run_evar_refs_tests();
+    run_conversion_tests();
     run_command_parser_tests();
     run_parser_tests();
     run_lexer_tests();

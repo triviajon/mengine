@@ -11,6 +11,7 @@
 // Opaque types
 typedef struct Expression Expression;
 typedef struct Expression Context;
+typedef struct Conversion Conversion;
 
 /* ============================================================================
  * Expression Construction
@@ -622,6 +623,28 @@ bool kernel_expr_valid_to_add(Expression *expr, Context *context);
  * @return
  */
 bool kernel_expr_definitionally_equal(Expression *a, Expression *b);
+
+/**
+ * Return conversion evidence that two expressions are definitionally equal, or NULL.
+ * The returned object is owned by the caller.
+ */
+Conversion *kernel_expr_conversion(Expression *a, Expression *b);
+
+/**
+ * Return conversion evidence usable in a particular context, or NULL.
+ * The returned object is owned by the caller.
+ */
+Conversion *kernel_expr_conversion_in_context(Context *context, Expression *a, Expression *b);
+
+/**
+ * Free conversion evidence returned by the kernel conversion API.
+ */
+void kernel_conversion_free(Conversion *conv);
+
+/**
+ * Return true iff conversion evidence can be used in the supplied context.
+ */
+bool kernel_conversion_valid_in_context(Conversion *conv, Context *context);
 
 /**
  * Check whether two expressions are congruent.

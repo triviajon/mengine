@@ -10,6 +10,7 @@
 #include "src/common/map.h"
 #include "src/kernel/beta_reduction.h"
 #include "src/kernel/context.h"
+#include "src/kernel/conversion.h"
 #include "src/kernel/definitional_equal.h"
 #include "src/kernel/inductive.h"
 #include "src/kernel/order.h"
@@ -43,12 +44,12 @@ bool register_fix_body_to_expression(Context *recursive_var, Expression *body) {
 
     Expression *body_type = get_expression_type(body);
     Expression *expression_type = get_expression_type(recursive_var);
-    if (!definitional_equal(body_type, expression_type)) {
+    if (!conversion_holds_in_context(recursive_var, body_type, expression_type)) {
         fprintf(stderr, ERROR "Body type is not congruent to expression type.\n" CRESET);
         return false;
     }
 
-    definitional_equal_cache_clear();
+    conversion_cache_clear();
     SET_VAR_BODY(recursive_var, body);
 
     return true;
@@ -202,7 +203,7 @@ static void gc_free_node(Expression *expr) {
 
 // Walk the intrusive GC list and flat-free every tracked expression.
 void expression_gc_shutdown(void) {
-    definitional_equal_cache_clear();
+    conversion_cache_clear();
 
     Expression *expr = g_expr_list_head;
     while (expr) {
@@ -554,7 +555,7 @@ Expression *init_match_expression_wc(Expression *scrutinee, MatchBranch **branch
         Expression *branch_body_type = get_expression_type(branch->body);
         if (match_type == NULL) {
             match_type = branch_body_type;
-        } else if (!definitional_equal(branch_body_type, match_type)) {
+        } else if (!conversion_holds_in_context(context, branch_body_type, match_type)) {
             fprintf(stderr, ERROR "Branch body types do not match.\n" CRESET);
             free(constructor_covered);
             return NULL;
@@ -1144,7 +1145,7 @@ bool subtypes(Expression *a, Expression *b) {
         return true;
     }
 
-    return definitional_equal(a, b);
+    return conversion_holds(a, b);
 }
 
 void _match_and_subst(Expression *a, Expression *b, LinearMap *mapping) {
@@ -1361,7 +1362,7 @@ bool fill_hole(Expression *hole, Expression *term) {
     }
     linear_map_clear_free(hole_assignments);
 
-    definitional_equal_cache_clear();
+    conversion_cache_clear();
 
     // Rewrite structural uplinks: replace hole with term in all direct parents.
     DoublyLinkedList *holepars = hole->uplinks;

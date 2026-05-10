@@ -4,6 +4,7 @@
 
 #include "src/kernel/beta_reduction.h"
 #include "src/kernel/context.h"
+#include "src/kernel/conversion.h"
 #include "src/kernel/definitional_equal.h"
 #include "src/kernel/delta_reduction.h"
 #include "src/kernel/expression.h"
@@ -227,7 +228,21 @@ bool kernel_expr_valid_to_add(Expression *expr, Context *context) {
 }
 
 bool kernel_expr_definitionally_equal(Expression *a, Expression *b) {
-    return definitional_equal(a, b);
+    return conversion_holds(a, b);
+}
+
+Conversion *kernel_expr_conversion(Expression *a, Expression *b) {
+    return conversion_check(a, b);
+}
+
+Conversion *kernel_expr_conversion_in_context(Context *context, Expression *a, Expression *b) {
+    return conversion_check_in_context(context, a, b);
+}
+
+void kernel_conversion_free(Conversion *conv) { conversion_free(conv); }
+
+bool kernel_conversion_valid_in_context(Conversion *conv, Context *context) {
+    return conversion_valid_in_context(conv, context);
 }
 
 bool kernel_expr_congruent(Expression *a, Expression *b) { return congruence(a, b); }
