@@ -1,11 +1,15 @@
 CC = clang
 # Optional compile-time overrides, e.g.:
 # make TUNE_FLAGS="-DMAP_INITIAL_CAPACITY=32 -DHCMAP_INITIAL_CAPACITY=2048"
+# order_demain instrumentation/strategy examples:
+# make TUNE_FLAGS="-DORDER_DEMAIN_STATS=1"
+# make TUNE_FLAGS="-DORDER_DEMAIN_STATS=1 -DORDER_DEMAIN_INSERT_STRATEGY=1"
+# make TUNE_FLAGS="-DORDER_DEMAIN_STATS=1 -DORDER_DEMAIN_THRESHOLD_T_NUM=3 -DORDER_DEMAIN_THRESHOLD_T_DEN=2"
 
 # Order data structure toggle:
-# - tag-range relabeling: TUNE_USE_LL=0
-# - linked-list (default): TUNE_USE_LL=1
-TUNE_USE_LL ?= 1
+# - tag-range relabeling (default): TUNE_USE_LL=0
+# - linked-list: TUNE_USE_LL=1
+TUNE_USE_LL ?= 0
 
 TUNE_FLAGS ?=
 
