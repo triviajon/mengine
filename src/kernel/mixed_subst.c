@@ -224,7 +224,9 @@ static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subs
             Expression *func2 = _simple_topdown_psubst(ctx, func, subst_map);
             Expression *arg2  = _simple_topdown_psubst(ctx, arg,  subst_map);
             if (func2 == func && arg2 == arg && valid_in_context(t, ctx)) return t;
-            if (forms_beta_redex(func2, arg2)) return beta_reduce(ctx, func2, arg2);
+            if (forms_beta_redex(func2, arg2) && func->tag != VAR_EXPRESSION) {
+                return beta_reduce(ctx, func2, arg2);
+            }
             return init_app_expression_wc(func2, arg2, ctx);
         }
         case LAMBDA_EXPRESSION: {
