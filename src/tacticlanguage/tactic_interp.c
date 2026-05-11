@@ -473,7 +473,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
         }
 
         case TAC_MATCH_GOAL: {
-            Expression *goal_type = get_expression_type(goal);
+            Expression *goal_type = normalize_whnf(get_expression_type(goal));
             Context *ctx = kernel_expr_context(goal);
 
             for (size_t i = 0; i < expr->as.match_goal.branch_count; i++) {
@@ -499,7 +499,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                     Context *c = ctx;
 
                     while (!context_is_empty(c)) {
-                        Expression *hyp_type = get_expression_type(c);
+                        Expression *hyp_type = normalize_whnf(get_expression_type(c));
                         PatternBindings trial = bindings;
                         if (_match_pattern(hp->type, hyp_type, &trial)) {
                             bindings = trial;

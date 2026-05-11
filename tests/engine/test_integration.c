@@ -296,6 +296,14 @@ static void test_match_goal_patvar_as_term(void) {
            "match Goal with | [ |- ?T ] => exact (refl_lemma T a) end.\n");
 }
 
+static void test_match_goal_whnf_conclusion(void) {
+    run_ok("match Goal normalizes conclusion to WHNF",
+           "Axiom A : Prop.\n"
+           "Axiom a : A.\n"
+           "Theorem t : ((fun (P : Prop) => P) A).\n"
+           "match Goal with | [ |- A ] => exact a end.\n");
+}
+
 /* ── named tactic definitions ───────────────────────────────────────────── */
 
 static void test_named_tactic_zero_arg(void) {
@@ -409,6 +417,7 @@ void run_integration_tests(void) {
     test_match_goal_hypothesis();
     test_match_goal_multi_hyp();
     test_match_goal_patvar_as_term();
+    test_match_goal_whnf_conclusion();
     test_named_tactic_zero_arg();
     test_named_tactic_parameterized();
     test_named_tactic_composed();
