@@ -14,7 +14,7 @@ TUNE_USE_LL ?= 0
 TUNE_FLAGS ?=
 
 ifeq ($(TUNE_USE_LL), 1)
-	TUNE_FLAGS += -DORDER_USE_LL=1
+	override TUNE_FLAGS += -DORDER_USE_LL=1
 endif
 
 CFLAGS = -Wall -Wextra -O0 -g -march=native -I. $(TUNE_FLAGS)
