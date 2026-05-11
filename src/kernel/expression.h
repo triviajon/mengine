@@ -16,13 +16,12 @@ typedef struct Expression Context;
 typedef struct OrderBlock OrderBlock;
 
 /* A token in the single Euler-tour doubly-linked list.
- * Each Expression owns two: order_in (entry) and order_out (exit). */
+ * Each context variable owns two: order_in (entry) and order_out (exit). */
 typedef struct OrderToken {
-    uint64_t tag;
     struct OrderToken *prev;
     struct OrderToken *next;
     OrderBlock *block;
-    uint16_t block_index;
+    uint64_t local_tag;
 } OrderToken;
 #endif
 
@@ -77,6 +76,10 @@ typedef struct {
     char *name;        // User-friendly name for the variable. Not used internally.
     Expression *body;  // If the variable is non-opaque, then this field
                        // will be non-NULL with the body of the variable
+#ifndef ORDER_USE_LL
+    OrderToken order_in;   // DFS entry token for context-order maintenance
+    OrderToken order_out;  // DFS exit token for context-order maintenance
+#endif
 } VarExpression;
 
 // A lambda expression: fun (bound_variable) => body.
@@ -173,11 +176,6 @@ struct Expression {
     uint64_t visit_gen;  // Generation stamp for traversal bookkeeping.
     uint64_t mark_gen;   // Generation stamp for bottom-up substitution spine marking.
     Expression *g_alloc_next;  // Intrusive linked list for GC shutdown traversal
-
-#ifndef ORDER_USE_LL
-    OrderToken order_in;   /* DFS in-time  token (preorder)  */
-    OrderToken order_out;  /* DFS out-time token (postorder) */
-#endif
 
     union {
         VarExpression var;

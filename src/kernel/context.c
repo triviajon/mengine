@@ -9,9 +9,6 @@
 Context *context_create_empty() {
     if (EMPTY_CONTEXT == NULL) {
         EMPTY_CONTEXT = calloc(1, sizeof(Context));
-#ifndef ORDER_USE_LL
-        EMPTY_CONTEXT->order_out.tag = UINT64_MAX;
-#endif
     }
     return EMPTY_CONTEXT;
 }
