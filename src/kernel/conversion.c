@@ -552,8 +552,21 @@ static bool conversion_cached_holds(Expression *lhs, Expression *rhs) {
         }
     }
 
+    bool result = congruence(lhs, rhs);
+    if (result) {
+        if (cacheable) {
+            Map *inner = (Map *)map_get(g_conversion_cache, lhs);
+            if (inner == NULL) {
+                inner = map_new_with_capacity(4);
+                map_set(g_conversion_cache, lhs, inner);
+            }
+            map_set(inner, rhs, CONV_TRUE);
+        }
+        return true;
+    }
+
     Map *bv_map = map_new_with_capacity(8);
-    bool result = conversion_derivable(lhs, rhs, bv_map);
+    result = conversion_derivable(lhs, rhs, bv_map);
     map_free(bv_map);
 
     if (cacheable) {

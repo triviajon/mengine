@@ -9,6 +9,7 @@
 #include "src/common/map.h"
 #include "src/engine/unify.h"
 #include "src/runtime/core.h"
+#include "src/kernel/subst.h"
 
 /* ============================================================================
  * Rewrite cache debug statistics
@@ -105,11 +106,13 @@ static int _compute_lemma_lhs_arity(Expression *lemma) {
 }
 
 static bool _candidate_can_match_lemma_lhs(Expression *candidate) {
-    if (s_lemma_lhs_arity >= 0 && _app_arity(candidate) != s_lemma_lhs_arity) {
-        return false;
-    }
-    if (s_lemma_lhs_head != NULL && get_head(candidate) != s_lemma_lhs_head) {
-        return false;
+    if (s_lemma_lhs_head != NULL) {
+        if (s_lemma_lhs_arity >= 0 && _app_arity(candidate) != s_lemma_lhs_arity) {
+            return false;
+        }
+        if (get_head(candidate) != s_lemma_lhs_head) {
+            return false;
+        }
     }
     return true;
 }
@@ -289,8 +292,8 @@ Expression *_build_app_congruence_proof(RewriteResult *func_rwr, RewriteResult *
     Expression *H1 = func_rwr->original_to_rewritten_proof;
     Expression *H2 = arg_rwr->original_to_rewritten_proof;
 
-    Expression *f_x = init_app_expression_wc(f, x, ctx);
-    Expression *B = get_expression_type(f_x);
+    Expression *A_to_B_var = get_forall_bound_variable(A_implies_B);
+    Expression *B = new_subst(ctx, get_arrow_rhs(A_implies_B), A_to_B_var, x);
 
     Expression *proof = init_app_expression_wc(
         init_app_expression_wc(
@@ -307,10 +310,6 @@ Expression *_build_app_congruence_proof(RewriteResult *func_rwr, RewriteResult *
             H1, ctx),
         H2, ctx);
 
-    // Free f_x only if it is a fresh, unshared expression (uplinks == 0).
-    if (f_x->uplinks == NULL || f_x->uplink_count == 0) {
-        free_expression(f_x);
-    }
     return proof;
 }
 

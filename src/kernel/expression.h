@@ -13,12 +13,16 @@ typedef struct Expression Expression;
 typedef struct Expression Context;
 
 #ifndef ORDER_USE_LL
+typedef struct OrderBlock OrderBlock;
+
 /* A token in the single Euler-tour doubly-linked list.
  * Each Expression owns two: order_in (entry) and order_out (exit). */
 typedef struct OrderToken {
     uint64_t tag;
     struct OrderToken *prev;
     struct OrderToken *next;
+    OrderBlock *block;
+    uint16_t block_index;
 } OrderToken;
 #endif
 

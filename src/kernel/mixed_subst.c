@@ -170,6 +170,40 @@ static bool subst_map_touches_context(Context *ctx, Map *subst_map) {
     return false;
 }
 
+static Expression *subst_replacement_for(Map *subst_map, Expression *expr) {
+    if (expr->tag != VAR_EXPRESSION && expr->tag != HOLE_EXPRESSION) {
+        return NULL;
+    }
+    return map_get(subst_map, expr);
+}
+
+static bool has_non_binder_uplink(Expression *expr) {
+    if (!expr || !expr->uplinks) {
+        return false;
+    }
+
+    DLLNode *node = expr->uplinks->head;
+    while (node) {
+        Uplink *uplink = (Uplink *)node->data;
+        if (!is_binder_ownership_edge(uplink->relation)) {
+            return true;
+        }
+        node = node->next;
+    }
+    return false;
+}
+
+static bool substitution_skip_by_uplinks(Expression *t, Expression *x) {
+    if (!t || !x || t == x || has_non_binder_uplink(x)) {
+        return false;
+    }
+
+    // Uplinks do not include context pointers; returning t is only valid if
+    // t's own minimal context does not need the x-binding cut out.
+    Context *term_context = get_expression_context(t);
+    return context_find(term_context, x) == NULL;
+}
+
 // ----------------------------------------------------------------------------
 
 static void build_marked_set(Expression *root, Map *subst_map, uint64_t subtree_gen) {
@@ -178,7 +212,7 @@ static void build_marked_set(Expression *root, Map *subst_map, uint64_t subtree_
 }
 
 static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subst_map) {
-    Expression *replacement = map_get(subst_map, t);
+    Expression *replacement = subst_replacement_for(subst_map, t);
     if (replacement) return replacement;
 
     if (!subst_map_touches_context(get_expression_context(t), subst_map)) return t;
@@ -227,6 +261,118 @@ static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subs
             if (x_bv2 == x_bv && body2 == body) return t;
             return init_forall_expression_wc(x_bv2, body2);
         }
+        case MATCH_EXPRESSION: {
+            Expression *scrutinee = get_match_scrutinee(t);
+            Expression *scrutinee2 = _simple_topdown_psubst(ctx, scrutinee, subst_map);
+            int branch_count = t->as.match.branch_count;
+            MatchBranch **branches2 = malloc(branch_count * sizeof(MatchBranch *));
+            if (!branches2) return NULL;
+
+            bool changed = scrutinee2 != scrutinee;
+            for (int i = 0; i < branch_count; i++) {
+                MatchBranch *branch = t->as.match.branches[i];
+                MatchBranch *branch2 = calloc(1, sizeof(MatchBranch));
+                if (!branch2) return NULL;
+
+                branch2->constructor =
+                    _simple_topdown_psubst(ctx, branch->constructor, subst_map);
+                branch2->pattern_var_count = branch->pattern_var_count;
+                branch2->pattern_variables =
+                    branch->pattern_var_count > 0
+                        ? malloc(branch->pattern_var_count * sizeof(Expression *))
+                        : NULL;
+
+                Context *branch_ctx = ctx;
+                for (int j = 0; j < branch->pattern_var_count; j++) {
+                    Expression *old_var = branch->pattern_variables[j];
+                    Expression *old_var_type = get_expression_type(old_var);
+                    Expression *new_var_type =
+                        _simple_topdown_psubst(branch_ctx, old_var_type, subst_map);
+                    Expression *new_var;
+                    if (new_var_type == old_var_type &&
+                        branch_ctx == get_expression_context(old_var)) {
+                        new_var = old_var;
+                    } else {
+                        new_var = init_var_expression_wc(get_var_name(old_var), new_var_type,
+                                                         branch_ctx);
+                    }
+                    branch2->pattern_variables[j] = new_var;
+                    map_set(subst_map, old_var, new_var);
+                    branch_ctx = (Context *)new_var;
+                    changed = changed || new_var != old_var;
+                }
+
+                branch2->body = _simple_topdown_psubst(branch_ctx, branch->body, subst_map);
+                for (int j = branch->pattern_var_count - 1; j >= 0; j--) {
+                    map_del(subst_map, branch->pattern_variables[j]);
+                }
+
+                changed = changed || branch2->constructor != branch->constructor ||
+                          branch2->body != branch->body;
+                branches2[i] = branch2;
+            }
+
+            if (!changed && valid_in_context(t, ctx)) {
+                for (int i = 0; i < branch_count; i++) {
+                    free(branches2[i]->pattern_variables);
+                    free(branches2[i]);
+                }
+                free(branches2);
+                return t;
+            }
+            return init_match_expression_wc(scrutinee2, branches2, branch_count, ctx);
+        }
+        case FIX_EXPRESSION: {
+            Expression *rec_var = get_fix_recursive_var(t);
+            Expression *rec_var_type = get_expression_type(rec_var);
+            Expression *rec_var_type2 = _simple_topdown_psubst(ctx, rec_var_type, subst_map);
+            Expression *rec_var2;
+            if (rec_var_type2 == rec_var_type && ctx == get_expression_context(rec_var)) {
+                rec_var2 = rec_var;
+            } else {
+                rec_var2 = init_var_expression_wc(get_var_name(rec_var), rec_var_type2, ctx);
+            }
+
+            map_set(subst_map, rec_var, rec_var2);
+            Context *body_ctx = (Context *)rec_var2;
+            int arg_count = get_fix_arg_count(t);
+            Expression **args2 = arg_count > 0 ? malloc(arg_count * sizeof(Expression *)) : NULL;
+            if (arg_count > 0 && !args2) return NULL;
+
+            bool changed = rec_var2 != rec_var;
+            Expression **args = get_fix_args(t);
+            for (int i = 0; i < arg_count; i++) {
+                Expression *old_arg = args[i];
+                Expression *old_arg_type = get_expression_type(old_arg);
+                Expression *new_arg_type =
+                    _simple_topdown_psubst(body_ctx, old_arg_type, subst_map);
+                Expression *new_arg;
+                if (new_arg_type == old_arg_type && body_ctx == get_expression_context(old_arg)) {
+                    new_arg = old_arg;
+                } else {
+                    new_arg =
+                        init_var_expression_wc(get_var_name(old_arg), new_arg_type, body_ctx);
+                }
+                args2[i] = new_arg;
+                map_set(subst_map, old_arg, new_arg);
+                body_ctx = (Context *)new_arg;
+                changed = changed || new_arg != old_arg;
+            }
+
+            Expression *body = get_fix_body(t);
+            Expression *body2 = _simple_topdown_psubst(body_ctx, body, subst_map);
+            for (int i = arg_count - 1; i >= 0; i--) {
+                map_del(subst_map, args[i]);
+            }
+            map_del(subst_map, rec_var);
+
+            if (!changed && body2 == body && valid_in_context(t, ctx)) {
+                free(args2);
+                return t;
+            }
+            return init_fix_expression_wc(rec_var2, args2, arg_count,
+                                          get_fix_decreasing_arg_index(t), body2);
+        }
         default:
             return t;
     }
@@ -248,7 +394,7 @@ static Expression *maybe_rebuild(Context *ctx, Expression *child, Map *subst_map
 
 static Expression *spine_rebuild(Context *apps_ctx, Expression *node, Map *subst_map, Map *memo,
                                  uint64_t subtree_gen) {
-    Expression *replacement = map_get(subst_map, node);
+    Expression *replacement = subst_replacement_for(subst_map, node);
     if (replacement) return replacement;
 
     if (node->mark_gen != g_mark_gen) {
@@ -467,7 +613,7 @@ __attribute__((unused)) static Expression *_uplink_p_subst(Context *context, Exp
         return result;
     }
 
-    Expression *direct = map_get(subst_map, t);
+    Expression *direct = subst_replacement_for(subst_map, t);
     if (direct) {
         g_uplink_subst_depth--;
         return direct;
@@ -529,6 +675,10 @@ Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a
 }
 
 Expression *new_subst(Context *context, Expression *t, Expression *x, Expression *a) {
+    if (substitution_skip_by_uplinks(t, x)) {
+        return t;
+    }
+
     Context *final_context = context_cut(context, x, a);
     Map *subst_map = pool_map_alloc();
     map_set(subst_map, x, a);

@@ -64,8 +64,14 @@ static bool _open_compat(Expression *expected, Expression *actual, Map *bv_map,
         case FORALL_EXPRESSION: {
             Expression *bv_e = expected->as.forall.bound_variable;
             Expression *bv_a = actual->as.forall.bound_variable;
-            if (!_open_compat(get_expression_type(bv_e), get_expression_type(bv_a), bv_map,
-                              holes)) {
+            Expression *expected_domain = get_expression_type(bv_e);
+            Expression *actual_domain = get_expression_type(bv_a);
+
+            bool domain_ok =
+                (expected_domain->tag == PROP_EXPRESSION &&
+                 actual_domain->tag == TYPE_EXPRESSION) ||
+                _open_compat(expected_domain, actual_domain, bv_map, holes);
+            if (!domain_ok) {
                 return false;
             }
 
