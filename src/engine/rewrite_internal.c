@@ -249,10 +249,9 @@ Expression *_build_transitivity_proof(RewriteResult *first_rwr, RewriteResult *s
     Expression *proof = kernel_app_create(
         kernel_app_create(
             kernel_app_create(
-                kernel_app_create(
-                    kernel_app_create(kernel_app_create(eq_trans, relation_over, ctx),
-                                           original, ctx),
-                    mid, ctx),
+                kernel_app_create(kernel_app_create(kernel_app_create(eq_trans, relation_over, ctx),
+                                                    original, ctx),
+                                  mid, ctx),
                 rewritten, ctx),
             H1, ctx),
         H2, ctx);
@@ -261,7 +260,7 @@ Expression *_build_transitivity_proof(RewriteResult *first_rwr, RewriteResult *s
 }
 
 Expression *_build_app_kernel_expr_congruent_proof(RewriteResult *func_rwr, RewriteResult *arg_rwr,
-                                        Context *ctx) {
+                                                   Context *ctx) {
     // Bad_App_Congruence : forall (A B : Type) (f g : A -> B) (x y: A), eq (A
     // -> B) f g -> eq (A) x y -> eq (B) (f x) (g y). if func_rw provides pf :
     // eq (A -> B) f g and arg_rwr provided pg : eq A x y, build the term
@@ -300,8 +299,8 @@ Expression *_build_app_kernel_expr_congruent_proof(RewriteResult *func_rwr, Rewr
                 kernel_app_create(
                     kernel_app_create(
                         kernel_app_create(
-                            kernel_app_create(
-                                kernel_app_create(Bad_App_Congruence, A, ctx), B, ctx),
+                            kernel_app_create(kernel_app_create(Bad_App_Congruence, A, ctx), B,
+                                              ctx),
                             f, ctx),
                         g, ctx),
                     x, ctx),

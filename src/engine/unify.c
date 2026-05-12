@@ -90,14 +90,12 @@ Expression *_unify2(Expression *exprA, Expression *exprB, Expression *var_to_fil
             return NULL;
         }
 
-        Expression *new_func =
-            _unify2(kernel_app_func(exprA), kernel_app_func(exprB), var_to_fill);
+        Expression *new_func = _unify2(kernel_app_func(exprA), kernel_app_func(exprB), var_to_fill);
         if (new_func != NULL && !kernel_expr_is_hole(new_func)) {
             return new_func;
         }
 
-        Expression *new_arg =
-            _unify2(kernel_app_arg(exprA), kernel_app_arg(exprB), var_to_fill);
+        Expression *new_arg = _unify2(kernel_app_arg(exprA), kernel_app_arg(exprB), var_to_fill);
         if (new_arg != NULL) {
             return new_arg;
         }
@@ -117,8 +115,8 @@ Expression *instantiate_lemma_with_bindings(Expression *lemma, Expression *lemma
     while (kernel_expr_is_forall(curr_forall)) {
         Expression *binding_var = kernel_forall_var(curr_forall);
         Expression *binding_result = linear_map_get(binders, binding_var);
-        Context *app_ctx = join_contexts(kernel_expr_context(final_expr),
-                                         kernel_expr_context(binding_result));
+        Context *app_ctx =
+            join_contexts(kernel_expr_context(final_expr), kernel_expr_context(binding_result));
         final_expr = kernel_app_create(final_expr, binding_result, app_ctx);
         curr_forall = kernel_forall_body(curr_forall);  // structural advance, no substitution
     }

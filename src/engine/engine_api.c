@@ -198,9 +198,7 @@ EngineTacticValueKind engine_tactic_value_kind(TacticValue *value) {
     return ENGINE_TVAL_EXPRESSION;
 }
 
-Expression *engine_tactic_value_as_expr(TacticValue *value) {
-    return tactic_value_as_expr(value);
-}
+Expression *engine_tactic_value_as_expr(TacticValue *value) { return tactic_value_as_expr(value); }
 
 struct AST *engine_tactic_value_as_ast(TacticValue *value) {
     return value && value->kind == TVAL_AST ? value->ast : NULL;
