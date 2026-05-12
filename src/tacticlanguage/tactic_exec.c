@@ -38,8 +38,7 @@ int mengine_execute_tactic(MEngineRuntime *rt, TacticExpr *tac) {
     }
 
     // Add any new subgoals to the proof state
-    engine_proof_state_add_goals(rt->proof_state, engine_tactic_result_goals(result));
-    result->new_goals = NULL;  // ownership transferred to proof state
+    engine_proof_state_add_goals(rt->proof_state, engine_tactic_result_take_goals(result));
     engine_tactic_result_free(result);
 
     // The tactic filled the current goal, detaching it from the expression tree.

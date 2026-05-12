@@ -133,6 +133,32 @@ int kernel_fix_decreasing_arg(Expression *fix_expr) {
 
 bool kernel_expr_is_hole(Expression *expr) { return is_hole(expr); }
 
+bool kernel_expr_is_var(Expression *expr) { return expr && expr->tag == VAR_EXPRESSION; }
+
+bool kernel_expr_is_type(Expression *expr) { return expr && expr->tag == TYPE_EXPRESSION; }
+
+bool kernel_expr_is_prop(Expression *expr) { return expr && expr->tag == PROP_EXPRESSION; }
+
+bool kernel_expr_is_app(Expression *expr) { return expr && expr->tag == APP_EXPRESSION; }
+
+bool kernel_expr_is_lambda(Expression *expr) { return expr && expr->tag == LAMBDA_EXPRESSION; }
+
+bool kernel_expr_is_forall(Expression *expr) { return expr && expr->tag == FORALL_EXPRESSION; }
+
+bool kernel_expr_is_match(Expression *expr) { return expr && expr->tag == MATCH_EXPRESSION; }
+
+bool kernel_expr_is_fix(Expression *expr) { return expr && expr->tag == FIX_EXPRESSION; }
+
+bool kernel_hole_is_satisfied(Expression *hole) {
+    return hole && hole->tag == HOLE_EXPRESSION && hole->as.hole.is_satisfied;
+}
+
+void kernel_hole_mark_satisfied(Expression *hole) {
+    if (hole && hole->tag == HOLE_EXPRESSION) {
+        hole->as.hole.is_satisfied = true;
+    }
+}
+
 bool kernel_expr_has_holes(Expression *expr) { return has_holes(expr); }
 
 bool kernel_hole_fill(Expression *hole, Expression *term) {
@@ -226,6 +252,14 @@ bool kernel_expr_valid_to_add(Expression *expr, Context *context) {
     return valid_to_add_to_context(expr, context);
 }
 
+Expression *kernel_expr_innermost_body(Expression *expr) { return get_innermost_body(expr); }
+
+Expression *kernel_expr_head(Expression *expr) { return get_head(expr); }
+
+Expression *kernel_arrow_lhs(Expression *expr) { return get_arrow_lhs(expr); }
+
+Expression *kernel_arrow_rhs(Expression *expr) { return get_arrow_rhs(expr); }
+
 Conversion *kernel_expr_conversion_in_context(Context *context, Expression *a, Expression *b) {
     return conversion_check_in_context(context, a, b);
 }
@@ -274,6 +308,8 @@ void kernel_expr_free_excluding_ctx(Expression *a, Expression *b, Context *ctx) 
 void kernel_free_filled_hole(Expression *hole) { free_filled_hole(hole); }
 
 void kernel_context_free(Context *ctx) { free_expression_graph(ctx); }
+
+void kernel_expression_gc_shutdown(void) { expression_gc_shutdown(); }
 
 bool kernel_context_contains(Context *ctx, Expression *expr) {
     while (ctx != NULL && !context_is_empty(ctx)) {

@@ -7,7 +7,6 @@
 #include "src/common/color.h"
 #include "src/common/doubly_linked_list.h"
 #include "src/common/lexer.h"
-#include "src/engine/tactic_api.h"
 #include "src/kernel/kernel_api.h"
 #include "src/termlanguage/parser.h"
 
@@ -179,13 +178,14 @@ static Context *required_context_for_name(const char *name, Context *lexical_con
                 fprintf(stderr, ERROR "Tactic binding %s has no value.\n" CRESET, name);
                 return NULL;
             }
-            if (e->val->kind == TVAL_EXPRESSION) {
-                return require_context_valid(kernel_expr_context(e->val->expr), lexical_context,
+            if (engine_tactic_value_kind(e->val) == ENGINE_TVAL_EXPRESSION) {
+                Expression *value = engine_tactic_value_as_expr(e->val);
+                return require_context_valid(kernel_expr_context(value), lexical_context,
                                              "Tactic-bound term");
             }
-            if (e->val->kind == TVAL_AST) {
-                return ast_required_context(e->val->ast, lexical_context, letbindings, e->next,
-                                            bound_names, source_lets);
+            if (engine_tactic_value_kind(e->val) == ENGINE_TVAL_AST) {
+                return ast_required_context(engine_tactic_value_as_ast(e->val), lexical_context,
+                                            letbindings, e->next, bound_names, source_lets);
             }
             fprintf(stderr, ERROR "Tactic binding %s is not a term.\n" CRESET, name);
             return NULL;
@@ -260,7 +260,7 @@ static Context *ast_required_context(AST *ast, Context *lexical_context,
                     ast->value.patvar.name);
             return NULL;
         case AST_EXPR_REF: {
-            Expression *expr = tactic_value_as_expr(ast->value.expr_ref.tval);
+            Expression *expr = engine_tactic_value_as_expr(ast->value.expr_ref.tval);
             if (!expr) {
                 fprintf(stderr, ERROR "Expression reference does not contain a term.\n" CRESET);
                 return NULL;
@@ -427,12 +427,13 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
                     if (!e->val) {
                         return NULL;
                     }
-                    if (e->val->kind == TVAL_EXPRESSION) {
-                        return e->val->expr;
+                    if (engine_tactic_value_kind(e->val) == ENGINE_TVAL_EXPRESSION) {
+                        return engine_tactic_value_as_expr(e->val);
                     }
-                    if (e->val->kind == TVAL_AST) {
+                    if (engine_tactic_value_kind(e->val) == ENGINE_TVAL_AST) {
                         /* Evaluate in lexical parent env to avoid self-recursion. */
-                        return _ast_to_expression(e->val->ast, context, letbindings, e->next);
+                        return _ast_to_expression(engine_tactic_value_as_ast(e->val), context,
+                                                  letbindings, e->next);
                     }
                     /* TVAL_PAIR: cannot appear in term position */
                     return NULL;
@@ -455,7 +456,7 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
             return kernel_prop_create();
 
         case AST_EXPR_REF:
-            return tactic_value_as_expr(ast->value.expr_ref.tval);
+            return engine_tactic_value_as_expr(ast->value.expr_ref.tval);
 
         case AST_LAMBDA: {
             Context *scope_context = binder_scope_context(
@@ -1020,7 +1021,7 @@ void free_ast(AST *ast) {
             break;
 
         case AST_EXPR_REF:
-            free_tactic_value(ast->value.expr_ref.tval);
+            engine_tactic_value_free(ast->value.expr_ref.tval);
             break;
 
         case AST_TYPE:

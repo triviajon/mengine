@@ -8,7 +8,6 @@
 #include "src/common/doubly_linked_list.h"
 #include "src/common/map.h"
 #include "src/engine/unify.h"
-#include "src/kernel/subst.h"
 #include "src/runtime/core.h"
 
 /* ============================================================================
@@ -60,11 +59,11 @@ static Map *s_active_noop_cache = NULL;  // inner map for current call
 // Extract the rigid head of the LHS of a lemma's equality type.
 // Returns NULL if the head cannot be determined or is a VAR (non-rigid).
 static Expression *_compute_lemma_lhs_head(Expression *lemma) {
-    Expression *ty = get_expression_type(lemma);
+    Expression *ty = kernel_expr_type(lemma);
     if (!ty) {
         return NULL;
     }
-    Expression *body = get_innermost_body(ty);
+    Expression *body = kernel_expr_innermost_body(ty);
     if (!body) {
         return NULL;
     }
@@ -72,9 +71,9 @@ static Expression *_compute_lemma_lhs_head(Expression *lemma) {
     if (!lhs) {
         return NULL;
     }
-    Expression *head = get_head(lhs);
+    Expression *head = kernel_expr_head(lhs);
     // Only use for rigid (non-VAR) heads: a VAR head could unify with anything.
-    if (!head || head->tag == VAR_EXPRESSION) {
+    if (!head || kernel_expr_is_var(head)) {
         return NULL;
     }
     return head;
@@ -82,19 +81,19 @@ static Expression *_compute_lemma_lhs_head(Expression *lemma) {
 
 static int _app_arity(Expression *expr) {
     int arity = 0;
-    while (expr && expr->tag == APP_EXPRESSION) {
+    while (kernel_expr_is_app(expr)) {
         arity++;
-        expr = get_app_func(expr);
+        expr = kernel_app_func(expr);
     }
     return arity;
 }
 
 static int _compute_lemma_lhs_arity(Expression *lemma) {
-    Expression *ty = get_expression_type(lemma);
+    Expression *ty = kernel_expr_type(lemma);
     if (!ty) {
         return -1;
     }
-    Expression *body = get_innermost_body(ty);
+    Expression *body = kernel_expr_innermost_body(ty);
     if (!body) {
         return -1;
     }
@@ -110,7 +109,7 @@ static bool _candidate_can_match_lemma_lhs(Expression *candidate) {
         if (s_lemma_lhs_arity >= 0 && _app_arity(candidate) != s_lemma_lhs_arity) {
             return false;
         }
-        if (get_head(candidate) != s_lemma_lhs_head) {
+        if (kernel_expr_head(candidate) != s_lemma_lhs_head) {
             return false;
         }
     }
@@ -227,9 +226,9 @@ bool rewrite_is_noop(RewriteResult *rwr) { return rwr->original == rwr->rewritte
 Expression *_build_reflexivity_proof(Expression *expr, Context *ctx) {
     // The goal is to build a proof of eq type(expr) expr expr.
 
-    Expression *relation_over = get_expression_type(expr);
+    Expression *relation_over = kernel_expr_type(expr);
     Expression *proof =
-        init_app_expression_wc(init_app_expression_wc(eq_refl, relation_over, ctx), expr, ctx);
+        kernel_app_create(kernel_app_create(eq_refl, relation_over, ctx), expr, ctx);
 
     return proof;
 }
@@ -240,18 +239,18 @@ Expression *_build_transitivity_proof(RewriteResult *first_rwr, RewriteResult *s
     // and second_rwr : mid -> rewritten with proof pg
     // eq_trans : forall (A : Type) (x y z : A), eq A x y -> eq A y z -> eq A x
     // z. build the term "eq_trans relation_over original mid rewritten H1 H2"
-    Expression *relation_over = get_expression_type(first_rwr->original);
+    Expression *relation_over = kernel_expr_type(first_rwr->original);
     Expression *original = first_rwr->original;
     Expression *mid = first_rwr->rewritten;
     Expression *rewritten = second_rwr->rewritten;
     Expression *H1 = first_rwr->original_to_rewritten_proof;
     Expression *H2 = second_rwr->original_to_rewritten_proof;
 
-    Expression *proof = init_app_expression_wc(
-        init_app_expression_wc(
-            init_app_expression_wc(
-                init_app_expression_wc(
-                    init_app_expression_wc(init_app_expression_wc(eq_trans, relation_over, ctx),
+    Expression *proof = kernel_app_create(
+        kernel_app_create(
+            kernel_app_create(
+                kernel_app_create(
+                    kernel_app_create(kernel_app_create(eq_trans, relation_over, ctx),
                                            original, ctx),
                     mid, ctx),
                 rewritten, ctx),
@@ -261,7 +260,7 @@ Expression *_build_transitivity_proof(RewriteResult *first_rwr, RewriteResult *s
     return proof;
 }
 
-Expression *_build_app_congruence_proof(RewriteResult *func_rwr, RewriteResult *arg_rwr,
+Expression *_build_app_kernel_expr_congruent_proof(RewriteResult *func_rwr, RewriteResult *arg_rwr,
                                         Context *ctx) {
     // Bad_App_Congruence : forall (A B : Type) (f g : A -> B) (x y: A), eq (A
     // -> B) f g -> eq (A) x y -> eq (B) (f x) (g y). if func_rw provides pf :
@@ -278,10 +277,10 @@ Expression *_build_app_congruence_proof(RewriteResult *func_rwr, RewriteResult *
         arg_rwr->original_to_rewritten_proof = _build_reflexivity_proof(arg_rwr->original, ctx);
     }
 
-    Expression *A_implies_B = get_app_arg(
-        get_app_func(get_app_func(get_expression_type(func_rwr->original_to_rewritten_proof))));
+    Expression *A_implies_B = kernel_app_arg(
+        kernel_app_func(kernel_app_func(kernel_expr_type(func_rwr->original_to_rewritten_proof))));
 
-    Expression *A = get_arrow_lhs(A_implies_B);
+    Expression *A = kernel_arrow_lhs(A_implies_B);
 
     Expression *f = func_rwr->original;
     Expression *g = func_rwr->rewritten;
@@ -292,17 +291,17 @@ Expression *_build_app_congruence_proof(RewriteResult *func_rwr, RewriteResult *
     Expression *H1 = func_rwr->original_to_rewritten_proof;
     Expression *H2 = arg_rwr->original_to_rewritten_proof;
 
-    Expression *A_to_B_var = get_forall_bound_variable(A_implies_B);
-    Expression *B = new_subst(ctx, get_arrow_rhs(A_implies_B), A_to_B_var, x);
+    Expression *A_to_B_var = kernel_forall_var(A_implies_B);
+    Expression *B = kernel_subst(ctx, kernel_arrow_rhs(A_implies_B), A_to_B_var, x);
 
-    Expression *proof = init_app_expression_wc(
-        init_app_expression_wc(
-            init_app_expression_wc(
-                init_app_expression_wc(
-                    init_app_expression_wc(
-                        init_app_expression_wc(
-                            init_app_expression_wc(
-                                init_app_expression_wc(Bad_App_Congruence, A, ctx), B, ctx),
+    Expression *proof = kernel_app_create(
+        kernel_app_create(
+            kernel_app_create(
+                kernel_app_create(
+                    kernel_app_create(
+                        kernel_app_create(
+                            kernel_app_create(
+                                kernel_app_create(Bad_App_Congruence, A, ctx), B, ctx),
                             f, ctx),
                         g, ctx),
                     x, ctx),
@@ -360,8 +359,8 @@ RewriteResult *rewrite_head(Expression *mid, Expression *lemma, Context *context
     }
 
     Expression *proof = unif_result->lemma_instantiation;
-    Expression *proof_type = get_expression_type(proof);
-    if (!congruence(_get_lhs_eq(proof_type), mid)) {
+    Expression *proof_type = kernel_expr_type(proof);
+    if (!kernel_expr_congruent(_get_lhs_eq(proof_type), mid)) {
         free_unification_result(unif_result);
         return init_rewrite_result(mid, mid, NULL, NULL);
     }
@@ -386,8 +385,8 @@ static RewriteResult *rewrite_result_take_copy(RewriteResult *src) {
 
 RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context, Map *cached_rwr,
                            bool allow_unresolved_bindings) {
-    Expression *func = get_app_func(expr);
-    Expression *arg = get_app_arg(expr);
+    Expression *func = kernel_app_func(expr);
+    Expression *arg = kernel_app_arg(expr);
 
     RewriteResult *rwr_func = _rewrite(func, lemma, context, cached_rwr, allow_unresolved_bindings);
     RewriteResult *rwr_arg = _rewrite(arg, lemma, context, cached_rwr, allow_unresolved_bindings);
@@ -414,9 +413,9 @@ RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context
                 _build_reflexivity_proof(rwr_arg_own->original, context);
         }
         mid_rwr = init_rewrite_result(
-            expr, init_app_expression_wc(rwr_func_own->rewritten, rwr_arg_own->rewritten, context),
+            expr, kernel_app_create(rwr_func_own->rewritten, rwr_arg_own->rewritten, context),
             dll_merge(rwr_func_own->new_goals, rwr_arg_own->new_goals),
-            _build_app_congruence_proof(rwr_func_own, rwr_arg_own, context));
+            _build_app_kernel_expr_congruent_proof(rwr_func_own, rwr_arg_own, context));
         rwr_func_own->new_goals = NULL;
         rwr_arg_own->new_goals = NULL;
         free_rewrite_result(rwr_func_own);
@@ -518,21 +517,15 @@ RewriteResult *_rewrite(Expression *expr, Expression *lemma, Context *context, M
     }
 
     RewriteResult *result;
-    switch (expr->tag) {
-        case (APP_EXPRESSION): {
-            result = rewrite_app(expr, lemma, context, cached_rwr, allow_unresolved_bindings);
-            break;
-        }
-        case (VAR_EXPRESSION): {
-            result = rewrite_var(expr, lemma, context, cached_rwr, allow_unresolved_bindings);
-            break;
-        }
-        default:
-            // For unsupported expression types (FORALL, LAMBDA, TYPE, PROP, etc.),
-            // return a lazy noop - proof is NULL and will be built on demand if
-            // this node ever ends up as a sibling of a non-noop rewrite.
-            result = init_rewrite_result(expr, expr, NULL, NULL);
-            break;
+    if (kernel_expr_is_app(expr)) {
+        result = rewrite_app(expr, lemma, context, cached_rwr, allow_unresolved_bindings);
+    } else if (kernel_expr_is_var(expr)) {
+        result = rewrite_var(expr, lemma, context, cached_rwr, allow_unresolved_bindings);
+    } else {
+        // For unsupported expression types (FORALL, LAMBDA, TYPE, PROP, etc.),
+        // return a lazy noop - proof is NULL and will be built on demand if
+        // this node ever ends up as a sibling of a non-noop rewrite.
+        result = init_rewrite_result(expr, expr, NULL, NULL);
     }
 
     // Persist noop for this exact lemma+context+mode across calls.

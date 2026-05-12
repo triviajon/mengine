@@ -143,6 +143,11 @@ void kernel_free_filled_hole(Expression *hole);
 void kernel_context_free(Context *ctx);
 
 /**
+ * Shut down kernel-owned expression GC bookkeeping during runtime teardown.
+ */
+void kernel_expression_gc_shutdown(void);
+
+/**
  * Return true if expr is one of the nodes directly in the context chain,
  * i.e. reachable from ctx by following ->context pointers.
  */
@@ -349,6 +354,26 @@ int kernel_fix_decreasing_arg(Expression *fix_expr);
  * @return
  */
 bool kernel_expr_is_hole(Expression *expr);
+
+bool kernel_expr_is_var(Expression *expr);
+bool kernel_expr_is_type(Expression *expr);
+bool kernel_expr_is_prop(Expression *expr);
+bool kernel_expr_is_app(Expression *expr);
+bool kernel_expr_is_lambda(Expression *expr);
+bool kernel_expr_is_forall(Expression *expr);
+bool kernel_expr_is_match(Expression *expr);
+bool kernel_expr_is_fix(Expression *expr);
+
+/**
+ * Check whether a hole has already been filled or shelved.
+ */
+bool kernel_hole_is_satisfied(Expression *hole);
+
+/**
+ * Mark a hole as satisfied without filling it. This is used by the proof
+ * engine for dependent evars that will be filled by another open goal.
+ */
+void kernel_hole_mark_satisfied(Expression *hole);
 
 /**
  * Check whether an expression contains any holes.
@@ -613,6 +638,22 @@ bool kernel_expr_valid_in_context(Expression *expr, Context *context);
  * @return
  */
 bool kernel_expr_valid_to_add(Expression *expr, Context *context);
+
+/**
+ * Get the body of the innermost lambda/forall tower.
+ */
+Expression *kernel_expr_innermost_body(Expression *expr);
+
+/**
+ * Get the head of an application spine.
+ */
+Expression *kernel_expr_head(Expression *expr);
+
+/**
+ * Get the left/right sides of an arrow represented as a forall.
+ */
+Expression *kernel_arrow_lhs(Expression *expr);
+Expression *kernel_arrow_rhs(Expression *expr);
 
 /**
  * Return conversion evidence usable in a particular context, or NULL.

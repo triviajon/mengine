@@ -10,6 +10,24 @@
 
 /* PROOF STATE OPERATIONS */
 
+RelationRegistry *engine_relation_registry_create(void) { return relation_registry_new(); }
+
+void engine_relation_registry_free(RelationRegistry *reg) { relation_registry_free(reg); }
+
+bool engine_relation_registry_add(RelationRegistry *reg, EngineRelationInfo info) {
+    RelationInfo internal = {
+        .relation = info.relation,
+        .refl = info.refl,
+        .trans = info.trans,
+        .congr = info.congr,
+    };
+    return relation_registry_add(reg, internal);
+}
+
+void engine_rewrite_set_debug(bool enabled) { rewrite_set_debug(enabled); }
+
+void engine_rewrite_print_cumulative_stats(void) { rewrite_print_cumulative_stats(); }
+
 ProofState *engine_proof_state_create(Expression *pending_theorem) {
     return proof_state_new(pending_theorem);
 }
@@ -38,12 +56,25 @@ UnificationResult *engine_eunify(Expression *lemma, Expression *goal) {
     return eunify2(lemma, goal);
 }
 
+UnificationResult *engine_rewrite_unify_for_eq(Context *goal_context, Expression *lemma,
+                                               Expression *target) {
+    return bad_unify_for_eq(goal_context, lemma, target);
+}
+
 Expression *engine_unify_get_lemma(UnificationResult *unif_result) {
     return unification_result_get_lemma_instantiation(unif_result);
 }
 
 void *engine_unify_get_bindings(UnificationResult *unif_result) {
     return (void *)unification_result_get_new_goals(unif_result);
+}
+
+void *engine_unify_take_bindings(UnificationResult *unif_result) {
+    DoublyLinkedList *goals = unification_result_get_new_goals(unif_result);
+    if (unif_result) {
+        unif_result->new_goals = NULL;
+    }
+    return goals;
 }
 
 void engine_unify_free(UnificationResult *unif_result) { free_unification_result(unif_result); }
@@ -99,6 +130,89 @@ void *engine_tactic_result_goals(TacticResult *result) {
 }
 
 void engine_tactic_result_free(TacticResult *result) { free_tactic_result(result); }
+
+TacticResult *engine_tactic_result_new(bool success, void *new_goals, char *error_message) {
+    return init_tactic_result(success, (DoublyLinkedList *)new_goals, error_message);
+}
+
+TacticResult *engine_tactic_result_value(TacticValue *value) {
+    return init_tactic_result_value(value);
+}
+
+TacticValue *engine_tactic_result_get_value(TacticResult *result) {
+    return tactic_result_get_value(result);
+}
+
+void *engine_tactic_result_take_goals(TacticResult *result) {
+    DoublyLinkedList *goals = tactic_result_get_goals(result);
+    if (result) {
+        result->new_goals = NULL;
+    }
+    return goals;
+}
+
+TacticValue *engine_tactic_result_take_value(TacticResult *result) {
+    TacticValue *value = tactic_result_get_value(result);
+    if (result) {
+        result->term_value = NULL;
+    }
+    return value;
+}
+
+void engine_tactic_result_set_goals(TacticResult *result, void *goals) {
+    if (result) {
+        result->new_goals = (DoublyLinkedList *)goals;
+    }
+}
+
+void engine_tactic_result_set_value(TacticResult *result, TacticValue *value) {
+    if (result) {
+        result->term_value = value;
+    }
+}
+
+TacticValue *engine_tactic_value_expr(Expression *expr) { return tactic_value_expr(expr); }
+
+TacticValue *engine_tactic_value_pair(TacticValue *fst, TacticValue *snd) {
+    return tactic_value_pair(fst, snd);
+}
+
+TacticValue *engine_tactic_value_ast(struct AST *ast) { return tactic_value_ast(ast); }
+
+TacticValue *engine_tactic_value_dup(TacticValue *value) { return tactic_value_dup(value); }
+
+void engine_tactic_value_free(TacticValue *value) { free_tactic_value(value); }
+
+EngineTacticValueKind engine_tactic_value_kind(TacticValue *value) {
+    if (!value) {
+        return ENGINE_TVAL_EXPRESSION;
+    }
+    switch (value->kind) {
+        case TVAL_EXPRESSION:
+            return ENGINE_TVAL_EXPRESSION;
+        case TVAL_PAIR:
+            return ENGINE_TVAL_PAIR;
+        case TVAL_AST:
+            return ENGINE_TVAL_AST;
+    }
+    return ENGINE_TVAL_EXPRESSION;
+}
+
+Expression *engine_tactic_value_as_expr(TacticValue *value) {
+    return tactic_value_as_expr(value);
+}
+
+struct AST *engine_tactic_value_as_ast(TacticValue *value) {
+    return value && value->kind == TVAL_AST ? value->ast : NULL;
+}
+
+TacticValue *engine_tactic_value_pair_fst(TacticValue *value) {
+    return value && value->kind == TVAL_PAIR ? value->pair.fst : NULL;
+}
+
+TacticValue *engine_tactic_value_pair_snd(TacticValue *value) {
+    return value && value->kind == TVAL_PAIR ? value->pair.snd : NULL;
+}
 
 TacticResult *engine_tactic_rewrite(Expression *goal, Expression *lemma) {
     return rewrite_tactic(goal, lemma);

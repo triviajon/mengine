@@ -9,7 +9,6 @@
 #include "src/common/doubly_linked_list.h"
 #include "src/common/options.h"
 #include "src/engine/engine_api.h"
-#include "src/engine/rewrite_internal.h"
 #include "src/kernel/kernel_api.h"
 #include "src/runtime/runtime.h"
 #include "src/tacticlanguage/compiled_tactics.h"
@@ -1081,8 +1080,8 @@ static int _handle_register_relation_command(MEngineRuntime *rt, RegisterRelatio
         return 1;
     }
 
-    RelationInfo info = {.relation = relation, .refl = refl, .trans = trans, .congr = congr};
-    if (!relation_registry_add(rt->relation_registry, info)) {
+    EngineRelationInfo info = {.relation = relation, .refl = refl, .trans = trans, .congr = congr};
+    if (!engine_relation_registry_add(rt->relation_registry, info)) {
         fprintf(stderr, ERROR "Failed to register relation.\n" CRESET);
         return 1;
     }

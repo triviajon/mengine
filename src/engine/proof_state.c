@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-#include "src/kernel/expression.h"
+#include "src/kernel/kernel_api.h"
 
 ProofState *proof_state_new(Expression *pending_theorem) {
     ProofState *ps = malloc(sizeof(ProofState));
@@ -14,7 +14,7 @@ ProofState *proof_state_new(Expression *pending_theorem) {
     ps->pending_theorem = pending_theorem;
     ps->goals = dll_create();
 
-    Expression *initial_goal = get_expression_body(pending_theorem);
+    Expression *initial_goal = kernel_var_body(pending_theorem);
     DLLNode *n = dll_new_node(initial_goal);
     dll_insert_at_tail(ps->goals, n);
     ps->current_node = n;
@@ -38,7 +38,7 @@ Expression *proof_state_current(ProofState *ps) {
     // Advance past any satisfied holes (cascade-filled evars).
     while (ps->current_node) {
         Expression *goal = (Expression *)ps->current_node->data;
-        if (goal->tag != HOLE_EXPRESSION || !goal->as.hole.is_satisfied) {
+        if (!kernel_expr_is_hole(goal) || !kernel_hole_is_satisfied(goal)) {
             return goal;
         }
         ps->current_node = ps->current_node->next;

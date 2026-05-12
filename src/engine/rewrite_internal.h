@@ -3,7 +3,8 @@
 
 #include <stdbool.h>
 
-#include "src/kernel/expression.h"
+#include "src/common/doubly_linked_list.h"
+#include "src/kernel/kernel_api.h"
 
 /* ============================================================================
  * Relation Registry - tracks (relation, refl, trans, congr) tuples

@@ -1,5 +1,6 @@
 #include <argp.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/resource.h>
 
 #include "src/common/color.h"

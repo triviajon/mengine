@@ -6,11 +6,7 @@
 
 #include "src/common/doubly_linked_list.h"
 #include "src/engine/engine_api.h"
-#include "src/engine/unify.h"
-#include "src/kernel/context.h"
-#include "src/kernel/expression.h"
 #include "src/kernel/kernel_api.h"
-#include "src/kernel/normalize.h"
 #include "src/runtime/core.h"
 #include "src/runtime/runtime.h"
 #include "src/tacticlanguage/tactic_ast.h"
@@ -81,50 +77,50 @@ static bool _match_pattern(AST *pattern, Expression *expr, PatternBindings *bind
 
         case AST_VAR:
             // Match a concrete variable by name
-            if (expr->tag != VAR_EXPRESSION) {
+            if (!kernel_expr_is_var(expr)) {
                 return false;
             }
-            return strcmp(pattern->value.var.name, get_var_name(expr)) == 0;
+            return strcmp(pattern->value.var.name, kernel_var_name(expr)) == 0;
 
         case AST_TYPE:
-            return expr->tag == TYPE_EXPRESSION;
+            return kernel_expr_is_type(expr);
 
         case AST_PROP:
-            return expr->tag == PROP_EXPRESSION;
+            return kernel_expr_is_prop(expr);
 
         case AST_APP:
-            if (expr->tag != APP_EXPRESSION) {
+            if (!kernel_expr_is_app(expr)) {
                 return false;
             }
-            return (_match_pattern(pattern->value.app.func, get_app_func(expr), bindings) &&
-                    _match_pattern(pattern->value.app.arg, get_app_arg(expr), bindings)) != 0;
+            return (_match_pattern(pattern->value.app.func, kernel_app_func(expr), bindings) &&
+                    _match_pattern(pattern->value.app.arg, kernel_app_arg(expr), bindings)) != 0;
 
         case AST_FORALL:
-            if (expr->tag != FORALL_EXPRESSION) {
+            if (!kernel_expr_is_forall(expr)) {
                 return false;
             }
             // Match binder type
             if (pattern->value.forall.binder.type) {
-                Expression *bv = get_forall_bound_variable(expr);
-                if (!_match_pattern(pattern->value.forall.binder.type, get_expression_type(bv),
+                Expression *bv = kernel_forall_var(expr);
+                if (!_match_pattern(pattern->value.forall.binder.type, kernel_expr_type(bv),
                                     bindings)) {
                     return false;
                 }
             }
-            return _match_pattern(pattern->value.forall.body, get_forall_body(expr), bindings);
+            return _match_pattern(pattern->value.forall.body, kernel_forall_body(expr), bindings);
 
         case AST_LAMBDA:
-            if (expr->tag != LAMBDA_EXPRESSION) {
+            if (!kernel_expr_is_lambda(expr)) {
                 return false;
             }
             if (pattern->value.lambda.binder.type) {
-                Expression *bv = get_lambda_bound_variable(expr);
-                if (!_match_pattern(pattern->value.lambda.binder.type, get_expression_type(bv),
+                Expression *bv = kernel_lambda_var(expr);
+                if (!_match_pattern(pattern->value.lambda.binder.type, kernel_expr_type(bv),
                                     bindings)) {
                     return false;
                 }
             }
-            return _match_pattern(pattern->value.lambda.body, get_lambda_body(expr), bindings);
+            return _match_pattern(pattern->value.lambda.body, kernel_lambda_body(expr), bindings);
 
         default:
             return false;
@@ -183,7 +179,7 @@ static TacticValue *env_lookup(const char *name) {
 /* Pop back to saved_top, freeing owned TacticValues. */
 static void env_pop_to(int saved_top) {
     for (int i = saved_top; i < g_env_top; i++) {
-        free_tactic_value(g_env_stack[i].val);
+        engine_tactic_value_free(g_env_stack[i].val);
         g_env_stack[i].val = NULL;
     }
     g_env_top = saved_top;
@@ -204,7 +200,7 @@ static TacticResult *_interpret_primitive(MEngineRuntime *_, Expression *goal, T
         case TACTIC_REWRITE_BACKWARD: {
             Expression *lemma = ast_to_expression_env(tac->as.rewrite.lemma, ctx, env_top_ptr());
             if (!lemma) {
-                return init_tactic_result(false, NULL, "Could not resolve rewrite lemma");
+                return engine_tactic_result_new(false, NULL, "Could not resolve rewrite lemma");
             }
             // equiv_proof parsed but not currently used by engine_tactic_rewrite
             return engine_tactic_rewrite(goal, lemma);
@@ -214,7 +210,7 @@ static TacticResult *_interpret_primitive(MEngineRuntime *_, Expression *goal, T
         case TACTIC_EREWRITE_BACKWARD: {
             Expression *lemma = ast_to_expression_env(tac->as.rewrite.lemma, ctx, env_top_ptr());
             if (!lemma) {
-                return init_tactic_result(false, NULL, "Could not resolve rewrite lemma");
+                return engine_tactic_result_new(false, NULL, "Could not resolve rewrite lemma");
             }
             return engine_tactic_erewrite(goal, lemma);
         }
@@ -224,13 +220,13 @@ static TacticResult *_interpret_primitive(MEngineRuntime *_, Expression *goal, T
 
         case TACTIC_ADMITTED:
             // Admitted is handled specially at the top level, not here
-            return init_tactic_result(false, NULL, "Admitted cannot be used in tactic expressions");
+            return engine_tactic_result_new(false, NULL, "Admitted cannot be used in tactic expressions");
 
         default:
             break;
     }
 
-    return init_tactic_result(false, NULL, "Unknown tactic");
+    return engine_tactic_result_new(false, NULL, "Unknown tactic");
 }
 
 /* ============================================================================
@@ -243,24 +239,25 @@ static TacticResult *_interpret_primitive(MEngineRuntime *_, Expression *goal, T
  * The caller owns the returned TacticValue. */
 static TacticValue *resolve_tactic_value_in_env(AST *ast, Context *ctx, TacticEnvEntry *env) {
     if (ast->tag == AST_EXPR_REF) {
-        return tactic_value_dup(ast->value.expr_ref.tval);
+        return engine_tactic_value_dup(ast->value.expr_ref.tval);
     }
     if (ast->tag == AST_VAR) {
         TacticEnvEntry *entry = env_lookup_entry_from(env, ast->value.var.name);
         if (entry) {
             TacticValue *found = entry->val;
-            if (found->kind == TVAL_AST) {
+            if (engine_tactic_value_kind(found) == ENGINE_TVAL_AST) {
                 /* Resolve in the lexical parent env to avoid self-recursion. */
-                return resolve_tactic_value_in_env(found->ast, ctx, entry->next);
+                return resolve_tactic_value_in_env(engine_tactic_value_as_ast(found), ctx,
+                                                   entry->next);
             }
-            return tactic_value_dup(found);
+            return engine_tactic_value_dup(found);
         }
     }
     Expression *e = ast_to_expression_env(ast, ctx, env);
     if (!e) {
         return NULL;
     }
-    return tactic_value_expr(e);
+    return engine_tactic_value_expr(e);
 }
 
 static TacticValue *resolve_tactic_value(AST *ast, Context *ctx) {
@@ -280,12 +277,12 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
         case TAC_SEQ: {
             // Run left tactic on goal
             TacticResult *left_result = tactic_interpret(rt, goal, expr->as.seq.left);
-            if (!tactic_result_get_success(left_result)) {
+            if (!engine_tactic_result_success(left_result)) {
                 return left_result;
             }
 
             // Run right tactic on each subgoal from left
-            DoublyLinkedList *left_goals = tactic_result_get_goals(left_result);
+            DoublyLinkedList *left_goals = engine_tactic_result_goals(left_result);
             DoublyLinkedList *all_goals = dll_create();
             TacticValue *last_value = NULL;
 
@@ -295,15 +292,15 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                     Expression *subgoal = (Expression *)node->data;
                     TacticResult *right_result = tactic_interpret(rt, subgoal, expr->as.seq.right);
 
-                    if (!tactic_result_get_success(right_result)) {
+                    if (!engine_tactic_result_success(right_result)) {
                         // Propagate failure
                         dll_destroy(all_goals);
-                        free_tactic_value(last_value);
-                        free_tactic_result(left_result);
+                        engine_tactic_value_free(last_value);
+                        engine_tactic_result_free(left_result);
                         return right_result;
                     }
 
-                    DoublyLinkedList *right_goals = tactic_result_get_goals(right_result);
+                    DoublyLinkedList *right_goals = engine_tactic_result_goals(right_result);
                     // If subgoal was filled (not returned in right_goals), free it.
                     // NULL new_goals means the tactic produced a pure value without touching
                     // the goal (e.g. TAC_PAIR, TAC_FST, TAC_SND). An empty DLL means the
@@ -312,14 +309,14 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                         (right_goals != NULL && !dll_search(right_goals, subgoal)) != 0;
                     if (right_goals) {
                         all_goals = dll_merge(all_goals, right_goals);
-                        right_result->new_goals = NULL;  // consumed by merge
+                        engine_tactic_result_take_goals(right_result);
                     }
-                    if (right_result->term_value) {
-                        free_tactic_value(last_value);
-                        last_value = right_result->term_value;
-                        right_result->term_value = NULL;  // ownership transferred
+                    TacticValue *right_value = engine_tactic_result_take_value(right_result);
+                    if (right_value) {
+                        engine_tactic_value_free(last_value);
+                        last_value = right_value;
                     }
-                    free_tactic_result(right_result);
+                    engine_tactic_result_free(right_result);
                     if (subgoal_filled) {
                         kernel_free_filled_hole(subgoal);
                     }
@@ -328,33 +325,33 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                 }
             }
 
-            free_tactic_result(left_result);
-            TacticResult *seq_result = init_tactic_result(true, all_goals, NULL);
-            seq_result->term_value = last_value;
+            engine_tactic_result_free(left_result);
+            TacticResult *seq_result = engine_tactic_result_new(true, all_goals, NULL);
+            engine_tactic_result_set_value(seq_result, last_value);
             return seq_result;
         }
 
         case TAC_ORELSE: {
             // Try left; if it fails, try right (no backtracking)
             TacticResult *left_result = tactic_interpret(rt, goal, expr->as.orelse.left);
-            if (tactic_result_get_success(left_result)) {
+            if (engine_tactic_result_success(left_result)) {
                 return left_result;
             }
-            free_tactic_result(left_result);
+            engine_tactic_result_free(left_result);
             return tactic_interpret(rt, goal, expr->as.orelse.right);
         }
 
         case TAC_TRY: {
             // Try body; if it fails, succeed with goal unchanged
             TacticResult *result = tactic_interpret(rt, goal, expr->as.try_expr.body);
-            if (tactic_result_get_success(result)) {
+            if (engine_tactic_result_success(result)) {
                 return result;
             }
-            free_tactic_result(result);
+            engine_tactic_result_free(result);
             // Succeed with original goal as the sole remaining subgoal
             DoublyLinkedList *goals = dll_create();
             dll_insert_at_tail(goals, dll_new_node(goal));
-            return init_tactic_result(true, goals, NULL);
+            return engine_tactic_result_new(true, goals, NULL);
         }
 
         case TAC_REPEAT: {
@@ -379,15 +376,15 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                     Expression *g = (Expression *)node->data;
                     TacticResult *result = tactic_interpret(rt, g, expr->as.repeat.body);
 
-                    if (tactic_result_get_success(result)) {
+                    if (engine_tactic_result_success(result)) {
                         made_progress = true;
-                        DoublyLinkedList *new_goals = tactic_result_get_goals(result);
+                        DoublyLinkedList *new_goals = engine_tactic_result_goals(result);
                         // NULL new_goals means pure value computation, g not filled.
                         // An empty DLL means g was filled with no remaining subgoals.
                         bool g_filled = (new_goals != NULL && !dll_search(new_goals, g)) != 0;
                         if (new_goals) {
                             next_goals = dll_merge(next_goals, new_goals);
-                            result->new_goals = NULL;  // consumed by merge
+                            engine_tactic_result_take_goals(result);
                         }
                         // Only free g if it was created internally (not the goal passed in
                         // from outside). The caller owns `goal` and is responsible for freeing it.
@@ -398,7 +395,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                         // This goal couldn't be processed, keep it
                         dll_insert_at_tail(next_goals, dll_new_node(g));
                     }
-                    free_tactic_result(result);
+                    engine_tactic_result_free(result);
 
                     node = node->next;
                 }
@@ -407,30 +404,30 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                 current_goals = next_goals;
             }
 
-            return init_tactic_result(true, current_goals, NULL);
+            return engine_tactic_result_new(true, current_goals, NULL);
         }
 
         case TAC_FIRST: {
             // Try each alternative in order, return first success
             for (size_t i = 0; i < expr->as.first.count; i++) {
                 TacticResult *result = tactic_interpret(rt, goal, expr->as.first.alternatives[i]);
-                if (tactic_result_get_success(result)) {
+                if (engine_tactic_result_success(result)) {
                     return result;
                 }
-                free_tactic_result(result);
+                engine_tactic_result_free(result);
             }
-            return init_tactic_result(false, NULL, "All alternatives in 'first' failed");
+            return engine_tactic_result_new(false, NULL, "All alternatives in 'first' failed");
         }
 
         case TAC_IDTAC: {
             // Identity tactic: succeed, goal unchanged
             DoublyLinkedList *goals = dll_create();
             dll_insert_at_tail(goals, dll_new_node(goal));
-            return init_tactic_result(true, goals, NULL);
+            return engine_tactic_result_new(true, goals, NULL);
         }
 
         case TAC_FAIL:
-            return init_tactic_result(false, NULL, "fail");
+            return engine_tactic_result_new(false, NULL, "fail");
 
         case TAC_CALL: {
             TacticDef *def =
@@ -438,21 +435,21 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             if (!def) {
                 char msg[256];
                 snprintf(msg, sizeof(msg), "Unknown tactic '%s'", expr->as.call.name);
-                return init_tactic_result(false, NULL, msg);
+                return engine_tactic_result_new(false, NULL, msg);
             }
 
             if (expr->as.call.arg_count != def->param_count) {
                 char msg[256];
                 snprintf(msg, sizeof(msg), "Tactic '%s' expects %zu argument(s), got %zu",
                          expr->as.call.name, def->param_count, expr->as.call.arg_count);
-                return init_tactic_result(false, NULL, msg);
+                return engine_tactic_result_new(false, NULL, msg);
             }
 
             if (_tac_call_depth >= TAC_CALL_MAX_DEPTH) {
                 char msg[256];
                 snprintf(msg, sizeof(msg), "Tactic recursion limit reached calling '%s'",
                          expr->as.call.name);
-                return init_tactic_result(false, NULL, msg);
+                return engine_tactic_result_new(false, NULL, msg);
             }
 
             // Push each argument as a lazy AST thunk (TVAL_AST).  This avoids
@@ -461,7 +458,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             // resolved at its use-site via ast_to_expression_env or env_lookup.
             int saved = g_env_top;
             for (size_t i = 0; i < def->param_count; i++) {
-                env_push(def->params[i], tactic_value_ast(expr->as.call.args[i]));
+                env_push(def->params[i], engine_tactic_value_ast(expr->as.call.args[i]));
             }
 
             _tac_call_depth++;
@@ -473,7 +470,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
         }
 
         case TAC_MATCH_GOAL: {
-            Expression *goal_type = normalize_whnf(get_expression_type(goal));
+            Expression *goal_type = kernel_normalize_whnf(kernel_expr_type(goal));
             Context *ctx = kernel_expr_context(goal);
 
             for (size_t i = 0; i < expr->as.match_goal.branch_count; i++) {
@@ -498,8 +495,8 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                     bool found = false;
                     Context *c = ctx;
 
-                    while (!context_is_empty(c)) {
-                        Expression *hyp_type = normalize_whnf(get_expression_type(c));
+                    while (c && kernel_context_size(c) > 0) {
+                        Expression *hyp_type = kernel_normalize_whnf(kernel_expr_type(c));
                         PatternBindings trial = bindings;
                         if (_match_pattern(hp->type, hyp_type, &trial)) {
                             bindings = trial;
@@ -510,7 +507,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                             found = true;
                             break;
                         }
-                        c = get_expression_context(c);
+                        c = kernel_expr_context(c);
                     }
 
                     if (!found) {
@@ -529,10 +526,10 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                 // then pattern variable bindings.
                 int saved = g_env_top;
                 for (size_t k = 0; k < hyp_param_count; k++) {
-                    env_push(branch->hyps[k].name, tactic_value_expr(hyp_exprs[k]));
+                    env_push(branch->hyps[k].name, engine_tactic_value_expr(hyp_exprs[k]));
                 }
                 for (size_t k = 0; k < bindings.count; k++) {
-                    env_push(bindings.names[k], tactic_value_expr(bindings.values[k]));
+                    env_push(bindings.names[k], engine_tactic_value_expr(bindings.values[k]));
                 }
                 free(hyp_exprs);
 
@@ -544,27 +541,26 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                 return match_result;
             }
 
-            return init_tactic_result(false, NULL, "No branch matched in match Goal");
+            return engine_tactic_result_new(false, NULL, "No branch matched in match Goal");
         }
 
         case TAC_LET: {
             // Evaluate the RHS to get its term value
             TacticResult *rhs_result = tactic_interpret(rt, goal, expr->as.let_expr.rhs);
-            if (!tactic_result_get_success(rhs_result)) {
+            if (!engine_tactic_result_success(rhs_result)) {
                 return rhs_result;
             }
-            TacticValue *value = tactic_result_get_value(rhs_result);
+            TacticValue *value = engine_tactic_result_get_value(rhs_result);
             if (!value) {
-                free_tactic_result(rhs_result);
-                return init_tactic_result(false, NULL,
+                engine_tactic_result_free(rhs_result);
+                return engine_tactic_result_new(false, NULL,
                                           "let binding RHS did not produce a term value");
             }
 
             // Save RHS goals before freeing the result struct
-            DoublyLinkedList *rhs_goals = tactic_result_get_goals(rhs_result);
-            rhs_result->new_goals = NULL;   // ownership transferred
-            rhs_result->term_value = NULL;  // ownership transferred to env slot
-            free_tactic_result(rhs_result);
+            DoublyLinkedList *rhs_goals = engine_tactic_result_take_goals(rhs_result);
+            value = engine_tactic_result_take_value(rhs_result);
+            engine_tactic_result_free(rhs_result);
 
             // Push binding onto the env stack and interpret the body.
             // env_pop_to will free value when we unwind.
@@ -574,12 +570,13 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             env_pop_to(saved);
 
             // Merge RHS goals into body result
-            if (rhs_goals && tactic_result_get_success(body_result)) {
-                DoublyLinkedList *body_goals = tactic_result_get_goals(body_result);
+            if (rhs_goals && engine_tactic_result_success(body_result)) {
+                DoublyLinkedList *body_goals = engine_tactic_result_goals(body_result);
                 if (body_goals) {
-                    body_result->new_goals = dll_merge(rhs_goals, body_goals);
+                    engine_tactic_result_take_goals(body_result);
+                    engine_tactic_result_set_goals(body_result, dll_merge(rhs_goals, body_goals));
                 } else {
-                    body_result->new_goals = rhs_goals;
+                    engine_tactic_result_set_goals(body_result, rhs_goals);
                 }
             } else if (rhs_goals) {
                 dll_destroy(rhs_goals);
@@ -588,18 +585,18 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
         }
 
         case TAC_GOAL_TYPE: {
-            Expression *goal_type = get_expression_type(goal);
-            return init_tactic_result_value(tactic_value_expr(goal_type));
+            Expression *goal_type = kernel_expr_type(goal);
+            return engine_tactic_result_value(engine_tactic_value_expr(goal_type));
         }
 
         case TAC_TYPE_OF: {
             Context *ctx = kernel_expr_context(goal);
             Expression *term = ast_to_expression_env(expr->as.type_of.term, ctx, env_top_ptr());
             if (!term) {
-                return init_tactic_result(false, NULL, "type_of: could not resolve term");
+                return engine_tactic_result_new(false, NULL, "type_of: could not resolve term");
             }
             Expression *type = kernel_expr_type(term);
-            return init_tactic_result_value(tactic_value_expr(type));
+            return engine_tactic_result_value(engine_tactic_value_expr(type));
         }
 
         case TAC_MATCH_TERM: {
@@ -607,7 +604,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             Expression *scrutinee =
                 ast_to_expression_env(expr->as.match_term.scrutinee, ctx, env_top_ptr());
             if (!scrutinee) {
-                return init_tactic_result(false, NULL,
+                return engine_tactic_result_new(false, NULL,
                                           "match <term>: could not evaluate scrutinee");
             }
 
@@ -624,7 +621,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                 // Push pattern variable bindings onto the env stack.
                 int saved = g_env_top;
                 for (size_t k = 0; k < bindings.count; k++) {
-                    env_push(bindings.names[k], tactic_value_expr(bindings.values[k]));
+                    env_push(bindings.names[k], engine_tactic_value_expr(bindings.values[k]));
                 }
                 TacticResult *match_result = tactic_interpret(rt, goal, branch->body);
                 env_pop_to(saved);
@@ -634,21 +631,21 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                 return match_result;
             }
 
-            return init_tactic_result(false, NULL, "No branch matched in match <term>");
+            return engine_tactic_result_new(false, NULL, "No branch matched in match <term>");
         }
 
         case TAC_MK_HOLE: {
             Context *ctx = kernel_expr_context(goal);
             Expression *type = ast_to_expression_env(expr->as.mk_hole.type, ctx, env_top_ptr());
             if (!type) {
-                return init_tactic_result(false, NULL, "mk_hole: could not resolve type");
+                return engine_tactic_result_new(false, NULL, "mk_hole: could not resolve type");
             }
-            type = normalize_whnf(type);
+            type = kernel_normalize_whnf(type);
             Expression *hole = kernel_hole_create("hole", type, ctx);
             DoublyLinkedList *goals = dll_create();
             dll_insert_at_tail(goals, dll_new_node(hole));
-            TacticResult *r = init_tactic_result(true, goals, NULL);
-            r->term_value = tactic_value_expr(hole);
+            TacticResult *r = engine_tactic_result_new(true, goals, NULL);
+            engine_tactic_result_set_value(r, engine_tactic_value_expr(hole));
             return r;
         }
 
@@ -657,12 +654,12 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             Expression *hole = ast_to_expression_env(expr->as.fill.hole, ctx, env_top_ptr());
             Expression *term = ast_to_expression_env(expr->as.fill.term, ctx, env_top_ptr());
             if (!hole || !term) {
-                return init_tactic_result(false, NULL, "fill: could not resolve arguments");
+                return engine_tactic_result_new(false, NULL, "fill: could not resolve arguments");
             }
             if (!kernel_hole_fill(hole, term)) {
-                return init_tactic_result(false, NULL, "fill: hole fill failed");
+                return engine_tactic_result_new(false, NULL, "fill: hole fill failed");
             }
-            return init_tactic_result(true, dll_create(), NULL);
+            return engine_tactic_result_new(true, dll_create(), NULL);
         }
 
         case TAC_SUBST: {
@@ -672,13 +669,13 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             Expression *body = ast_to_expression_env(expr->as.subst.body, ctx, env_top_ptr());
             Expression *old_var = ast_to_expression_env(expr->as.subst.old_var, ctx, env_top_ptr());
             if (!new_term || !body || !old_var) {
-                return init_tactic_result(false, NULL, "subst: could not resolve arguments");
+                return engine_tactic_result_new(false, NULL, "subst: could not resolve arguments");
             }
             Expression *result = kernel_subst(ctx, body, old_var, new_term);
             if (!result) {
-                return init_tactic_result(false, NULL, "subst: substitution failed");
+                return engine_tactic_result_new(false, NULL, "subst: substitution failed");
             }
-            return init_tactic_result_value(tactic_value_expr(result));
+            return engine_tactic_result_value(engine_tactic_value_expr(result));
         }
 
         case TAC_EUNIFY: {
@@ -686,24 +683,23 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             Expression *lemma_expr =
                 ast_to_expression_env(expr->as.eunify.lemma, ctx, env_top_ptr());
             if (!lemma_expr) {
-                return init_tactic_result(false, NULL, "eunify: could not resolve lemma");
+                return engine_tactic_result_new(false, NULL, "eunify: could not resolve lemma");
             }
             UnificationResult *unif = engine_eunify(lemma_expr, goal);
             if (!unif) {
-                return init_tactic_result(false, NULL, "eunify: unification failed");
+                return engine_tactic_result_new(false, NULL, "eunify: unification failed");
             }
             Expression *inst = engine_unify_get_lemma(unif);
-            DoublyLinkedList *new_goals = (DoublyLinkedList *)engine_unify_get_bindings(unif);
-            TacticResult *r = init_tactic_result(true, new_goals ? new_goals : dll_create(), NULL);
-            r->term_value = tactic_value_expr(inst);
-            unif->new_goals = NULL;  // ownership transferred to tactic result
+            DoublyLinkedList *new_goals = (DoublyLinkedList *)engine_unify_take_bindings(unif);
+            TacticResult *r = engine_tactic_result_new(true, new_goals ? new_goals : dll_create(), NULL);
+            engine_tactic_result_set_value(r, engine_tactic_value_expr(inst));
             engine_unify_free(unif);
             return r;
         }
 
         case TAC_CURRENT_GOAL: {
-            TacticResult *r = init_tactic_result(true, dll_create(), NULL);
-            r->term_value = tactic_value_expr(goal);
+            TacticResult *r = engine_tactic_result_new(true, dll_create(), NULL);
+            engine_tactic_result_set_value(r, engine_tactic_value_expr(goal));
             return r;
         }
 
@@ -711,7 +707,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             Expression *goal_ty = kernel_expr_type(goal);
             Expression *x = kernel_forall_var(goal_ty);
             if (!x) {
-                return init_tactic_result(false, NULL,
+                return engine_tactic_result_new(false, NULL,
                                           "intro_step: goal is not a forall expression");
             }
 
@@ -723,18 +719,19 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             if (expr->as.intro_step.name) {
                 AST *name_ast = expr->as.intro_step.name;
                 if (name_ast->tag == AST_EXPR_REF) {
-                    Expression *name_expr = tactic_value_as_expr(name_ast->value.expr_ref.tval);
-                    if (name_expr && name_expr->tag == VAR_EXPRESSION) {
+                    Expression *name_expr = engine_tactic_value_as_expr(name_ast->value.expr_ref.tval);
+                    if (name_expr && kernel_expr_is_var(name_expr)) {
                         intro_name = kernel_var_name(name_expr);
                     }
                 } else if (name_ast->tag == AST_VAR) {
                     TacticValue *tv = env_lookup(name_ast->value.var.name);
-                    if (tv && tv->kind == TVAL_AST && tv->ast->tag == AST_VAR) {
+                    AST *tv_ast = engine_tactic_value_as_ast(tv);
+                    Expression *tv_expr = engine_tactic_value_as_expr(tv);
+                    if (tv_ast && tv_ast->tag == AST_VAR) {
                         /* Call arg was a literal name, e.g. `intro P` */
-                        intro_name = tv->ast->value.var.name;
-                    } else if (tv && tv->kind == TVAL_EXPRESSION &&
-                               tv->expr->tag == VAR_EXPRESSION) {
-                        intro_name = kernel_var_name(tv->expr);
+                        intro_name = tv_ast->value.var.name;
+                    } else if (tv_expr && kernel_expr_is_var(tv_expr)) {
+                        intro_name = kernel_var_name(tv_expr);
                     } else if (!tv) {
                         /* No binding: use the literal identifier as the name */
                         intro_name = name_ast->value.var.name;
@@ -748,12 +745,12 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
             Expression *proof = kernel_lambda_create(x_prime, new_goal);
             if (!kernel_hole_fill(goal, proof)) {
-                return init_tactic_result(false, NULL, "intro_step: failed to fill the hole");
+                return engine_tactic_result_new(false, NULL, "intro_step: failed to fill the hole");
             }
 
             DoublyLinkedList *goals = dll_create();
             dll_insert_at_tail(goals, dll_new_node(new_goal));
-            return init_tactic_result(true, goals, NULL);
+            return engine_tactic_result_new(true, goals, NULL);
         }
 
         case TAC_PAIR: {
@@ -761,53 +758,55 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             TacticValue *fst_val = resolve_tactic_value(expr->as.pair.fst, ctx);
             TacticValue *snd_val = resolve_tactic_value(expr->as.pair.snd, ctx);
             if (!fst_val || !snd_val) {
-                free_tactic_value(fst_val);
-                free_tactic_value(snd_val);
-                return init_tactic_result(false, NULL, "pair: could not resolve arguments");
+                engine_tactic_value_free(fst_val);
+                engine_tactic_value_free(snd_val);
+                return engine_tactic_result_new(false, NULL, "pair: could not resolve arguments");
             }
-            return init_tactic_result_value(tactic_value_pair(fst_val, snd_val));
+            return engine_tactic_result_value(engine_tactic_value_pair(fst_val, snd_val));
         }
 
         case TAC_FST: {
             Context *ctx = kernel_expr_context(goal);
             TacticValue *pair_val = resolve_tactic_value(expr->as.fst.term, ctx);
-            if (!pair_val || pair_val->kind != TVAL_PAIR) {
-                free_tactic_value(pair_val);
-                return init_tactic_result(false, NULL, "fst: expected a pair");
+            if (engine_tactic_value_kind(pair_val) != ENGINE_TVAL_PAIR) {
+                engine_tactic_value_free(pair_val);
+                return engine_tactic_result_new(false, NULL, "fst: expected a pair");
             }
-            TacticValue *component = tactic_value_dup(pair_val->pair.fst);
-            free_tactic_value(pair_val);
-            return init_tactic_result_value(component);
+            TacticValue *component =
+                engine_tactic_value_dup(engine_tactic_value_pair_fst(pair_val));
+            engine_tactic_value_free(pair_val);
+            return engine_tactic_result_value(component);
         }
 
         case TAC_SND: {
             Context *ctx = kernel_expr_context(goal);
             TacticValue *pair_val = resolve_tactic_value(expr->as.snd.term, ctx);
-            if (!pair_val || pair_val->kind != TVAL_PAIR) {
-                free_tactic_value(pair_val);
-                return init_tactic_result(false, NULL, "snd: expected a pair");
+            if (engine_tactic_value_kind(pair_val) != ENGINE_TVAL_PAIR) {
+                engine_tactic_value_free(pair_val);
+                return engine_tactic_result_new(false, NULL, "snd: expected a pair");
             }
-            TacticValue *component = tactic_value_dup(pair_val->pair.snd);
-            free_tactic_value(pair_val);
-            return init_tactic_result_value(component);
+            TacticValue *component =
+                engine_tactic_value_dup(engine_tactic_value_pair_snd(pair_val));
+            engine_tactic_value_free(pair_val);
+            return engine_tactic_result_value(component);
         }
 
         case TAC_APP_FUNC: {
             Context *ctx = kernel_expr_context(goal);
             Expression *app_val = ast_to_expression_env(expr->as.app_func.term, ctx, env_top_ptr());
-            if (!app_val || app_val->tag != APP_EXPRESSION) {
-                return init_tactic_result(false, NULL, "app_func: expected an application");
+            if (!app_val || !kernel_expr_is_app(app_val)) {
+                return engine_tactic_result_new(false, NULL, "app_func: expected an application");
             }
-            return init_tactic_result_value(tactic_value_expr(get_app_func(app_val)));
+            return engine_tactic_result_value(engine_tactic_value_expr(kernel_app_func(app_val)));
         }
 
         case TAC_APP_ARG: {
             Context *ctx = kernel_expr_context(goal);
             Expression *app_val = ast_to_expression_env(expr->as.app_arg.term, ctx, env_top_ptr());
-            if (!app_val || app_val->tag != APP_EXPRESSION) {
-                return init_tactic_result(false, NULL, "app_arg: expected an application");
+            if (!app_val || !kernel_expr_is_app(app_val)) {
+                return engine_tactic_result_new(false, NULL, "app_arg: expected an application");
             }
-            return init_tactic_result_value(tactic_value_expr(get_app_arg(app_val)));
+            return engine_tactic_result_value(engine_tactic_value_expr(kernel_app_arg(app_val)));
         }
 
         case TAC_EXPR_EQ: {
@@ -815,14 +814,14 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             Expression *left = ast_to_expression_env(expr->as.expr_eq.left, ctx, env_top_ptr());
             Expression *right = ast_to_expression_env(expr->as.expr_eq.right, ctx, env_top_ptr());
             if (!left || !right) {
-                return init_tactic_result(false, NULL, "expr_eq: could not resolve arguments");
+                return engine_tactic_result_new(false, NULL, "expr_eq: could not resolve arguments");
             }
             if (left == right) {
                 DoublyLinkedList *goals_list = dll_create();
                 dll_insert_at_tail(goals_list, dll_new_node(goal));
-                return init_tactic_result(true, goals_list, NULL);
+                return engine_tactic_result_new(true, goals_list, NULL);
             }
-            return init_tactic_result(false, NULL, "expr_eq: expressions are not pointer-equal");
+            return engine_tactic_result_new(false, NULL, "expr_eq: expressions are not pointer-equal");
         }
 
         case TAC_REWRITE_UNIFY: {
@@ -832,39 +831,40 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             Expression *target =
                 ast_to_expression_env(expr->as.rewrite_unify.target, ctx, env_top_ptr());
             if (!lemma || !target) {
-                return init_tactic_result(false, NULL,
+                return engine_tactic_result_new(false, NULL,
                                           "rewrite_unify: could not resolve arguments");
             }
-            UnificationResult *unif = bad_unify_for_eq(ctx, lemma, target);
+            UnificationResult *unif = engine_rewrite_unify_for_eq(ctx, lemma, target);
             if (!unif) {
-                return init_tactic_result(false, NULL, "rewrite_unify: unification failed");
+                return engine_tactic_result_new(false, NULL, "rewrite_unify: unification failed");
             }
-            if (unif->new_goals->head != NULL) {
-                free_unification_result(unif);
-                return init_tactic_result(false, NULL, "rewrite_unify: unresolved bindings");
+            DoublyLinkedList *new_goals = engine_unify_get_bindings(unif);
+            if (new_goals && new_goals->head != NULL) {
+                engine_unify_free(unif);
+                return engine_tactic_result_new(false, NULL, "rewrite_unify: unresolved bindings");
             }
-            Expression *inst = unif->lemma_instantiation;
-            Expression *proof_type = get_expression_type(inst);
-            if (!congruence(_get_lhs_eq(proof_type), target)) {
-                free_unification_result(unif);
-                return init_tactic_result(false, NULL, "rewrite_unify: LHS does not match target");
+            Expression *inst = engine_unify_get_lemma(unif);
+            Expression *proof_type = kernel_expr_type(inst);
+            if (!kernel_expr_congruent(_get_lhs_eq(proof_type), target)) {
+                engine_unify_free(unif);
+                return engine_tactic_result_new(false, NULL, "rewrite_unify: LHS does not match target");
             }
-            free_unification_result(unif);
-            return init_tactic_result_value(tactic_value_expr(inst));
+            engine_unify_free(unif);
+            return engine_tactic_result_value(engine_tactic_value_expr(inst));
         }
 
         case TAC_CONSTR: {
             Context *ctx = kernel_expr_context(goal);
             Expression *term = ast_to_expression_env(expr->as.constr.term, ctx, env_top_ptr());
             if (!term) {
-                return init_tactic_result(false, NULL, "constr: could not resolve term");
+                return engine_tactic_result_new(false, NULL, "constr: could not resolve term");
             }
-            return init_tactic_result_value(tactic_value_expr(term));
+            return engine_tactic_result_value(engine_tactic_value_expr(term));
         }
         case TAC_DISPATCH:
         case TAC_SHELVE:
             break;
     }
 
-    return init_tactic_result(false, NULL, "Unknown tactic expression");
+    return engine_tactic_result_new(false, NULL, "Unknown tactic expression");
 }

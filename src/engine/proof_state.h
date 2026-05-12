@@ -3,7 +3,8 @@
 
 #include <stddef.h>
 
-#include "src/kernel/expression.h"
+#include "src/common/doubly_linked_list.h"
+#include "src/kernel/kernel_api.h"
 
 typedef struct ProofState ProofState;
 

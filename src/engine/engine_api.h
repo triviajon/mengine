@@ -11,8 +11,32 @@
 // Opaque engine types
 typedef struct ProofState ProofState;
 typedef struct TacticResult TacticResult;
+typedef struct TacticValue TacticValue;
 typedef struct UnificationResult UnificationResult;
 typedef struct RewriteResult RewriteResult;
+typedef struct RelationRegistry RelationRegistry;
+
+struct AST;
+
+typedef enum { ENGINE_TVAL_EXPRESSION, ENGINE_TVAL_PAIR, ENGINE_TVAL_AST } EngineTacticValueKind;
+
+typedef struct {
+    Expression *relation;
+    Expression *refl;
+    Expression *trans;
+    Expression *congr;
+} EngineRelationInfo;
+
+/* ============================================================================
+ * Relation Registry Operations
+ * ============================================================================ */
+
+RelationRegistry *engine_relation_registry_create(void);
+void engine_relation_registry_free(RelationRegistry *reg);
+bool engine_relation_registry_add(RelationRegistry *reg, EngineRelationInfo info);
+
+void engine_rewrite_set_debug(bool enabled);
+void engine_rewrite_print_cumulative_stats(void);
 
 /* ============================================================================
  * Proof State Operations
@@ -99,6 +123,13 @@ UnificationResult *engine_unify(Context *goal_context, Expression *lemma, Expres
 UnificationResult *engine_eunify(Expression *lemma, Expression *goal);
 
 /**
+ * Unify an equality lemma's left-hand side against a target expression.
+ * This is used by the tactic language's scripted rewrite combinator.
+ */
+UnificationResult *engine_rewrite_unify_for_eq(Context *goal_context, Expression *lemma,
+                                               Expression *target);
+
+/**
  * Get the instantiated lemma from a unification result.
  * Time Complexity:
  *
@@ -115,6 +146,11 @@ Expression *engine_unify_get_lemma(UnificationResult *unif_result);
  * @return
  */
 void *engine_unify_get_bindings(UnificationResult *unif_result);
+
+/**
+ * Transfer ownership of open goals from a unification result.
+ */
+void *engine_unify_take_bindings(UnificationResult *unif_result);
 
 /**
  * Free a unification result.
@@ -301,6 +337,25 @@ void *engine_tactic_result_goals(TacticResult *result);
  * @return
  */
 void engine_tactic_result_free(TacticResult *result);
+
+TacticResult *engine_tactic_result_new(bool success, void *new_goals, char *error_message);
+TacticResult *engine_tactic_result_value(TacticValue *value);
+TacticValue *engine_tactic_result_get_value(TacticResult *result);
+void *engine_tactic_result_take_goals(TacticResult *result);
+TacticValue *engine_tactic_result_take_value(TacticResult *result);
+void engine_tactic_result_set_goals(TacticResult *result, void *goals);
+void engine_tactic_result_set_value(TacticResult *result, TacticValue *value);
+
+TacticValue *engine_tactic_value_expr(Expression *expr);
+TacticValue *engine_tactic_value_pair(TacticValue *fst, TacticValue *snd);
+TacticValue *engine_tactic_value_ast(struct AST *ast);
+TacticValue *engine_tactic_value_dup(TacticValue *value);
+void engine_tactic_value_free(TacticValue *value);
+EngineTacticValueKind engine_tactic_value_kind(TacticValue *value);
+Expression *engine_tactic_value_as_expr(TacticValue *value);
+struct AST *engine_tactic_value_as_ast(TacticValue *value);
+TacticValue *engine_tactic_value_pair_fst(TacticValue *value);
+TacticValue *engine_tactic_value_pair_snd(TacticValue *value);
 
 /* ============================================================================
  * Rewriting Operations

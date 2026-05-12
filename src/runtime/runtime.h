@@ -3,7 +3,6 @@
 
 #include "src/common/options.h"
 #include "src/engine/engine_api.h"
-#include "src/engine/rewrite_internal.h"
 
 // Forward declaration
 typedef struct TacticEnv TacticEnv;

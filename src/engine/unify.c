@@ -2,61 +2,54 @@
 
 #include <stdlib.h>
 
-#include "src/kernel/normalize.h"
-#include "src/kernel/subst.h"
+#include "src/kernel/kernel_api.h"
 #include "src/runtime/core.h"
 
-Expression *instantiate_lemma_type(Context *context, Expression *lemma_ty) {
-    switch (lemma_ty->tag) {
-        case (FORALL_EXPRESSION): {
-            Expression *bound_var = lemma_ty->as.forall.bound_variable;
-            Expression *bound_var_ty = get_expression_type(bound_var);
-            Expression *hole = init_hole_expression(get_var_name(bound_var), bound_var_ty, context);
-            Expression *lemma_ty_body = lemma_ty->as.forall.body;
-            // lemma_ty_body is closed under context(bound_var), which contains bound_var
-            Expression *new_body = new_subst(bound_var, lemma_ty_body, bound_var, hole);
-            // The result of inner_inst should be the body of lemma with binding
-            // variables substituted for holes
-            Expression *inner_inst = instantiate_lemma_type(context, new_body);
-            return inner_inst;
-        }
-        default:
-            return lemma_ty;
+static Context *join_contexts(Context *a, Context *b) {
+    if (kernel_context_is_ancestor(a, b)) {
+        return b;
     }
+    if (kernel_context_is_ancestor(b, a)) {
+        return a;
+    }
+    return a;
+}
+
+Expression *instantiate_lemma_type(Context *context, Expression *lemma_ty) {
+    if (kernel_expr_is_forall(lemma_ty)) {
+        Expression *bound_var = kernel_forall_var(lemma_ty);
+        Expression *bound_var_ty = kernel_expr_type(bound_var);
+        Expression *hole = kernel_hole_create(kernel_var_name(bound_var), bound_var_ty, context);
+        Expression *lemma_ty_body = kernel_forall_body(lemma_ty);
+        // lemma_ty_body is closed under context(bound_var), which contains bound_var
+        Expression *new_body = kernel_subst(bound_var, lemma_ty_body, bound_var, hole);
+        // The result of inner_inst should be the body of lemma with binding
+        // variables substituted for holes
+        Expression *inner_inst = instantiate_lemma_type(context, new_body);
+        return inner_inst;
+    }
+    return lemma_ty;
 }
 
 Expression *instantiate_lemma(Context *context, Expression *lemma) {
-    Expression *lemma_ty = get_expression_type(lemma);
+    Expression *lemma_ty = kernel_expr_type(lemma);
     return instantiate_lemma_type(context, lemma_ty);
 }
 
 DoublyLinkedList *_list_holes(Expression *expr, DoublyLinkedList *curr) {
-    switch (expr->tag) {
-        case (LAMBDA_EXPRESSION): {
-            curr = _list_holes(get_expression_type(expr->as.lambda.bound_variable), curr);
-            curr = _list_holes(expr->as.lambda.body, curr);
-            return curr;
-        }
-        case (FORALL_EXPRESSION): {
-            curr = _list_holes(get_expression_type(expr->as.forall.bound_variable), curr);
-            curr = _list_holes(expr->as.forall.body, curr);
-            return curr;
-        }
-        case (APP_EXPRESSION): {
-            curr = _list_holes(expr->as.app.func, curr);
-            curr = _list_holes(expr->as.app.arg, curr);
-            return curr;
-        }
-        case (HOLE_EXPRESSION): {
-            if (dll_search(curr, expr) == NULL) {
-                dll_insert_at_tail(curr, dll_new_node(expr));
-                return curr;
-            }
-            return curr;
-        }
-        default:
-            return curr;
+    if (kernel_expr_is_lambda(expr)) {
+        curr = _list_holes(kernel_expr_type(kernel_lambda_var(expr)), curr);
+        curr = _list_holes(kernel_lambda_body(expr), curr);
+    } else if (kernel_expr_is_forall(expr)) {
+        curr = _list_holes(kernel_expr_type(kernel_forall_var(expr)), curr);
+        curr = _list_holes(kernel_forall_body(expr), curr);
+    } else if (kernel_expr_is_app(expr)) {
+        curr = _list_holes(kernel_app_func(expr), curr);
+        curr = _list_holes(kernel_app_arg(expr), curr);
+    } else if (kernel_expr_is_hole(expr) && dll_search(curr, expr) == NULL) {
+        dll_insert_at_tail(curr, dll_new_node(expr));
     }
+    return curr;
 }
 
 DoublyLinkedList *list_holes(Expression *expr) {
@@ -72,47 +65,46 @@ int num_holes(Expression *expr) {
 }
 
 Expression *_unify2(Expression *exprA, Expression *exprB, Expression *var_to_fill) {
-    exprA = normalize_whnf(exprA);
-    exprB = normalize_whnf(exprB);
+    exprA = kernel_normalize_whnf(exprA);
+    exprB = kernel_normalize_whnf(exprB);
 
     if (exprA == exprB) {
         return NULL;
     }
 
-    switch (exprA->tag) {
-        case VAR_EXPRESSION: {
-            if (exprA != var_to_fill) {
-                // Don't care...
-                return NULL;
-            }
-
-            Expression *exprB_ty = get_expression_type(exprB);
-            Expression *expected_ty = get_expression_type(var_to_fill);
-            if (congruence(exprB_ty, expected_ty)) {
-                return exprB;
-            }
+    if (kernel_expr_is_var(exprA)) {
+        if (exprA != var_to_fill) {
+            // Don't care...
             return NULL;
         }
-        case APP_EXPRESSION: {
-            if (exprB->tag != APP_EXPRESSION) {
-                return NULL;
-            }
 
-            Expression *new_func = _unify2(exprA->as.app.func, exprB->as.app.func, var_to_fill);
-            if (new_func != NULL && new_func->tag != HOLE_EXPRESSION) {
-                return new_func;
-            }
+        Expression *exprB_ty = kernel_expr_type(exprB);
+        Expression *expected_ty = kernel_expr_type(var_to_fill);
+        if (kernel_expr_congruent(exprB_ty, expected_ty)) {
+            return exprB;
+        }
+        return NULL;
+    }
+    if (kernel_expr_is_app(exprA)) {
+        if (!kernel_expr_is_app(exprB)) {
+            return NULL;
+        }
 
-            Expression *new_arg = _unify2(exprA->as.app.arg, exprB->as.app.arg, var_to_fill);
-            if (new_arg != NULL) {
-                return new_arg;
-            }
-
+        Expression *new_func =
+            _unify2(kernel_app_func(exprA), kernel_app_func(exprB), var_to_fill);
+        if (new_func != NULL && !kernel_expr_is_hole(new_func)) {
             return new_func;
         }
-        default:
-            return NULL;
+
+        Expression *new_arg =
+            _unify2(kernel_app_arg(exprA), kernel_app_arg(exprB), var_to_fill);
+        if (new_arg != NULL) {
+            return new_arg;
+        }
+
+        return new_func;
     }
+    return NULL;
 }
 
 Expression *instantiate_lemma_with_bindings(Expression *lemma, Expression *lemma_ty,
@@ -122,16 +114,13 @@ Expression *instantiate_lemma_with_bindings(Expression *lemma, Expression *lemma
     // init_app_expression_wc already computes the correct type via _construct_app_type;
     // the redundant explicit new_subst for curr_forall is eliminated.
     Expression *curr_forall = lemma_ty;
-    while (curr_forall->tag == FORALL_EXPRESSION) {
-        Expression *binding_var = curr_forall->as.forall.bound_variable;
+    while (kernel_expr_is_forall(curr_forall)) {
+        Expression *binding_var = kernel_forall_var(curr_forall);
         Expression *binding_result = linear_map_get(binders, binding_var);
-        Context *final_expr_ctx = get_expression_context(final_expr);
-        Context *binding_result_ctx = get_expression_context(binding_result);
-        Context *app_ctx = (final_expr_ctx->ctx_size >= binding_result_ctx->ctx_size)
-                               ? final_expr_ctx
-                               : binding_result_ctx;
-        final_expr = init_app_expression_wc(final_expr, binding_result, app_ctx);
-        curr_forall = curr_forall->as.forall.body;  // structural advance, no substitution
+        Context *app_ctx = join_contexts(kernel_expr_context(final_expr),
+                                         kernel_expr_context(binding_result));
+        final_expr = kernel_app_create(final_expr, binding_result, app_ctx);
+        curr_forall = kernel_forall_body(curr_forall);  // structural advance, no substitution
     }
     return final_expr;
 }
@@ -154,35 +143,35 @@ void free_unification_result(UnificationResult *unification_result) {
 }
 
 UnificationResult *eunify2(Expression *lemma, Expression *goal) {
-    Context *goal_context = get_expression_context(goal);
-    Expression *expr = normalize_whnf(get_expression_type(goal));
+    Context *goal_context = kernel_expr_context(goal);
+    Expression *expr = kernel_normalize_whnf(kernel_expr_type(goal));
 
     Expression *current_lemma_app = lemma;
-    Expression *current_lemma_app_ty = get_expression_type(current_lemma_app);
+    Expression *current_lemma_app_ty = kernel_expr_type(current_lemma_app);
     DoublyLinkedList *remaining_open = dll_create();
-    while (current_lemma_app_ty->tag == FORALL_EXPRESSION) {
-        Expression *bound_variable = current_lemma_app_ty->as.forall.bound_variable;
-        Expression *lemma_target = normalize_whnf(get_innermost_body(current_lemma_app_ty));
+    while (kernel_expr_is_forall(current_lemma_app_ty)) {
+        Expression *bound_variable = kernel_forall_var(current_lemma_app_ty);
+        Expression *lemma_target =
+            kernel_normalize_whnf(kernel_expr_innermost_body(current_lemma_app_ty));
         Expression *hole_subst = _unify2(lemma_target, expr, bound_variable);
 
         if (hole_subst == NULL) {
-            Expression *hole_to_fill = init_hole_expression(
-                get_var_name(bound_variable), get_expression_type(bound_variable), goal_context);
+            Expression *hole_to_fill = kernel_hole_create(
+                kernel_var_name(bound_variable), kernel_expr_type(bound_variable), goal_context);
             if (!hole_to_fill) {
                 dll_destroy(remaining_open);
                 return NULL;
             }
-            current_lemma_app =
-                init_app_expression_wc(current_lemma_app, hole_to_fill, goal_context);
+            current_lemma_app = kernel_app_create(current_lemma_app, hole_to_fill, goal_context);
             dll_insert_at_tail(remaining_open, dll_new_node(hole_to_fill));
         } else {
-            current_lemma_app = init_app_expression_wc(current_lemma_app, hole_subst, goal_context);
+            current_lemma_app = kernel_app_create(current_lemma_app, hole_subst, goal_context);
         }
         if (!current_lemma_app) {
             dll_destroy(remaining_open);
             return NULL;
         }
-        current_lemma_app_ty = get_expression_type(current_lemma_app);
+        current_lemma_app_ty = kernel_expr_type(current_lemma_app);
     }
 
     // Shelve holes that appear in other holes' types (evar-like arguments).
@@ -195,7 +184,7 @@ UnificationResult *eunify2(Expression *lemma, Expression *goal) {
         while (other != NULL) {
             if (other != node) {
                 Expression *other_hole = (Expression *)other->data;
-                Expression *other_type = get_expression_type(other_hole);
+                Expression *other_type = kernel_expr_type(other_hole);
                 DoublyLinkedList *other_type_holes = list_holes(other_type);
                 if (dll_search(other_type_holes, hole) != NULL) {
                     appears_in_other = true;
@@ -208,7 +197,7 @@ UnificationResult *eunify2(Expression *lemma, Expression *goal) {
             other = other->next;
         }
         if (appears_in_other) {
-            hole->as.hole.is_satisfied = true;
+            kernel_hole_mark_satisfied(hole);
         }
         node = node->next;
     }
@@ -218,31 +207,31 @@ UnificationResult *eunify2(Expression *lemma, Expression *goal) {
 
 UnificationResult *bad_unify_for_eq(Context *goal_context, Expression *lemma, Expression *expr) {
     Expression *current_lemma_app = lemma;
-    Expression *current_lemma_app_ty = get_expression_type(current_lemma_app);
+    Expression *current_lemma_app_ty = kernel_expr_type(current_lemma_app);
     DoublyLinkedList *remaining_open = dll_create();
-    while (current_lemma_app_ty->tag == FORALL_EXPRESSION) {
-        Expression *current_lemma_ty_lhs = _get_lhs_eq(get_innermost_body(current_lemma_app_ty));
-        Expression *bound_variable = current_lemma_app_ty->as.forall.bound_variable;
+    while (kernel_expr_is_forall(current_lemma_app_ty)) {
+        Expression *current_lemma_ty_lhs =
+            _get_lhs_eq(kernel_expr_innermost_body(current_lemma_app_ty));
+        Expression *bound_variable = kernel_forall_var(current_lemma_app_ty);
         Expression *hole_subst = _unify2(current_lemma_ty_lhs, expr, bound_variable);
 
         if (hole_subst == NULL) {
-            Expression *hole_to_fill = init_hole_expression(
-                get_var_name(bound_variable), get_expression_type(bound_variable), goal_context);
+            Expression *hole_to_fill = kernel_hole_create(
+                kernel_var_name(bound_variable), kernel_expr_type(bound_variable), goal_context);
             if (!hole_to_fill) {
                 dll_destroy(remaining_open);
                 return NULL;
             }
-            current_lemma_app =
-                init_app_expression_wc(current_lemma_app, hole_to_fill, goal_context);
+            current_lemma_app = kernel_app_create(current_lemma_app, hole_to_fill, goal_context);
             dll_insert_at_tail(remaining_open, dll_new_node(hole_to_fill));
         } else {
-            current_lemma_app = init_app_expression_wc(current_lemma_app, hole_subst, goal_context);
+            current_lemma_app = kernel_app_create(current_lemma_app, hole_subst, goal_context);
         }
         if (!current_lemma_app) {
             dll_destroy(remaining_open);
             return NULL;
         }
-        current_lemma_app_ty = get_expression_type(current_lemma_app);
+        current_lemma_app_ty = kernel_expr_type(current_lemma_app);
     }
     return init_unification_result(current_lemma_app, remaining_open);
 }

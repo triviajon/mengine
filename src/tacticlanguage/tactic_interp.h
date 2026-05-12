@@ -1,7 +1,7 @@
 #ifndef TACTIC_INTERP_H
 #define TACTIC_INTERP_H
 
-#include "src/engine/tactic_api.h"
+#include "src/engine/engine_api.h"
 #include "src/runtime/runtime.h"
 #include "src/tacticlanguage/tactic_ast.h"
 

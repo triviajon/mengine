@@ -5,8 +5,6 @@
 
 #include "src/common/doubly_linked_list.h"
 #include "src/engine/engine_api.h"
-#include "src/engine/tactic_api.h"
-#include "src/kernel/context.h"
 #include "src/kernel/kernel_api.h"
 #include "src/runtime/core.h"
 
@@ -23,7 +21,7 @@ typedef struct {
 } BringToFrontResult;
 
 static Expression *ctx_lookup(Context *ctx, const char *name) {
-    return context_lookup_by_name(ctx, (char *)name);
+    return kernel_context_lookup(ctx, (char *)name);
 }
 
 static Expression *app(Expression *f, Expression *x, Context *ctx) {
@@ -52,7 +50,7 @@ static Expression *app6(Expression *f, Expression *a, Expression *b, Expression 
 }
 
 static bool app_parts(Expression *expr, Expression **func, Expression **arg) {
-    if (!expr || expr->tag != APP_EXPRESSION) {
+    if (!expr || !kernel_expr_is_app(expr)) {
         return false;
     }
     *func = kernel_app_func(expr);
@@ -162,7 +160,7 @@ static bool bring_to_front(SepCancelEnv *env, Expression *target, Expression *lh
 
 static TacticResult *compiled_sep_cancel(MEngineRuntime *rt, Expression *goal, void *venv) {
     if (!rt || !goal || !venv || !kernel_expr_is_hole(goal)) {
-        return init_tactic_result(false, NULL, "compiled cancel: invalid goal");
+        return engine_tactic_result_new(false, NULL, "compiled cancel: invalid goal");
     }
 
     SepCancelEnv *env = (SepCancelEnv *)venv;
@@ -201,7 +199,7 @@ static TacticResult *compiled_sep_cancel(MEngineRuntime *rt, Expression *goal, v
 
         if (!new_goal_ty || !new_goal || !strip || !rhs_target || !full ||
             !kernel_hole_fill(current, full)) {
-            return init_tactic_result(false, NULL, "compiled cancel: failed to fill goal");
+            return engine_tactic_result_new(false, NULL, "compiled cancel: failed to fill goal");
         }
 
         if (current != goal) {
@@ -211,18 +209,18 @@ static TacticResult *compiled_sep_cancel(MEngineRuntime *rt, Expression *goal, v
     }
 
     TacticResult *refl = engine_tactic_reflexivity(current);
-    if (tactic_result_get_success(refl)) {
-        free_tactic_result(refl);
+    if (engine_tactic_result_success(refl)) {
+        engine_tactic_result_free(refl);
         if (current != goal) {
             kernel_free_filled_hole(current);
         }
-        return init_tactic_result(true, dll_create(), NULL);
+        return engine_tactic_result_new(true, dll_create(), NULL);
     }
-    free_tactic_result(refl);
+    engine_tactic_result_free(refl);
 
     DoublyLinkedList *goals = dll_create();
     dll_insert_at_tail(goals, dll_new_node(current));
-    return init_tactic_result(true, goals, NULL);
+    return engine_tactic_result_new(true, goals, NULL);
 }
 
 static bool is_call0(TacticExpr *expr, const char *name) {
