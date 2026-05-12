@@ -1,5 +1,5 @@
 {
-  "mengine_path": "~/mengine/mengine",
+  "mengine_path": "~/mengine/build/mengine",
   "mengine_root": "~/mengine",
   "coq_path": "coqc",
   "lean_path": "lean",

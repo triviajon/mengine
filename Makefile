@@ -22,9 +22,11 @@ LDFLAGS =
 
 ENGINE_SRC := $(shell find src -name '*.c' ! -name 'main.c')
 ENGINE_OBJ := $(ENGINE_SRC:.c=.o)
-ENGINE_LIB := libmengine.a
+BUILD_DIR := build
+ENGINE_LIB := $(BUILD_DIR)/libmengine.a
 
-MENGINE_BIN := mengine
+MENGINE_NAME := mengine
+MENGINE_BIN := $(BUILD_DIR)/$(MENGINE_NAME)
 MENGINE_SRC := src/main.c
 MENGINE_OBJ := $(MENGINE_SRC:.c=.o)
 
@@ -64,10 +66,13 @@ else
 endif
 	@echo ".clangd generated successfully"
 
-$(ENGINE_LIB): $(ENGINE_OBJ)
+$(BUILD_DIR):
+	mkdir -p $@
+
+$(ENGINE_LIB): $(ENGINE_OBJ) | $(BUILD_DIR)
 	ar rcs $@ $^
 
-$(MENGINE_BIN): $(MENGINE_OBJ) $(ENGINE_LIB)
+$(MENGINE_BIN): $(MENGINE_OBJ) $(ENGINE_LIB) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 tests: $(TEST_DRIVER)
@@ -86,11 +91,11 @@ examples: $(MENGINE_BIN)
 
 install: $(MENGINE_BIN)
 	@echo "Installing mengine..."
-	sudo install -m 755 $(MENGINE_BIN) /usr/bin/$(MENGINE_BIN)
+	sudo install -m 755 $(MENGINE_BIN) /usr/bin/$(MENGINE_NAME)
 
 uninstall:
 	@echo "Uninstalling mengine..."
-	sudo rm -f /usr/bin/$(MENGINE_BIN)
+	sudo rm -f /usr/bin/$(MENGINE_NAME)
 
 $(TEST_DRIVER): $(TEST_DRIVER_SRC) $(TEST_OBJ) $(HELPERS_OBJ) $(ENGINE_LIB)
 	$(CC) $(CFLAGS) -o $@ $(TEST_DRIVER_SRC) $(TEST_OBJ) $(HELPERS_OBJ) $(ENGINE_LIB) $(LDFLAGS)

@@ -33,6 +33,7 @@ perf.data*
 
 mengine
 libmengine.a
+build/
 
 .clangd
 
