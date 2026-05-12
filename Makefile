@@ -106,4 +106,13 @@ clean:
 
 clangd: .clangd
 
-.PHONY: all clean tests check install uninstall clangd
+install-tools:
+ifeq ($(UNAME), Darwin)
+	@if command -v brew >/dev/null 2>&1; then \
+		brew install argp-standalone; \
+	else \
+		echo "brew not found; skipping tool installation"; \
+	fi
+endif
+
+.PHONY: all clean tests check install uninstall clangd install-tools
