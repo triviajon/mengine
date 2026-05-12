@@ -32,6 +32,7 @@ Plot options:
   --log-x                        Use log scale on x-axis
   --title TITLE                  Custom plot title
   --show-failures                Mark failed/timeout points
+  --smooth N                     Moving window average size (default: 1 = off)
 
 Examples:
   # Run everything with adaptive stopping:
@@ -383,6 +384,7 @@ def cmd_plot(args):
             "title": args.title,
             "show_failures": args.show_failures,
             "exclude": args.exclude or [],
+            "smooth": args.smooth,
         }
         
         if args.xlim:
@@ -534,6 +536,8 @@ def main():
     p_plot.add_argument("--show-failures", action="store_true", help="Show failed points")
     p_plot.add_argument("--exclude", action="append", metavar="REGEX",
                         help='Exclude plot series whose "engine/strategy" label matches REGEX. Repeatable.')
+    p_plot.add_argument("--smooth", type=int, default=1, metavar="N",
+                        help="Moving window average size for smoothing (default: 1 = no smoothing)")
 
     args = parser.parse_args()
 

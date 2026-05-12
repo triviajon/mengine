@@ -67,6 +67,19 @@ def parse_result_key(key: str, benchmark: Benchmark) -> tuple[str | None, dict[s
     return None, {}
 
 
+def _moving_average(xs: list, ys: list, window: int) -> tuple[list, list]:
+    """Return smoothed (xs, ys) using a centred moving window average."""
+    if window <= 1 or len(ys) < window:
+        return xs, ys
+    smoothed = []
+    half = window // 2
+    for i in range(len(ys)):
+        lo = max(0, i - half)
+        hi = min(len(ys), i + half + 1)
+        smoothed.append(sum(ys[lo:hi]) / (hi - lo))
+    return xs, smoothed
+
+
 def plot_benchmark(
     benchmark: Benchmark,
     results_dir: str = "results",
@@ -83,6 +96,7 @@ def plot_benchmark(
     log_x: bool = False,
     title: str | None = None,
     show_failures: bool = False,
+    smooth: int = 1,
 ):
     """
     Plot benchmark results.
@@ -101,6 +115,7 @@ def plot_benchmark(
         log_y, log_x: Use log scale.
         title: Custom title (default: benchmark description).
         show_failures: Mark failed/timeout points on the plot.
+        smooth: Moving window average size (1 = no smoothing).
     """
     plt.rcParams.update(PAPER_STYLE)
 
@@ -186,6 +201,7 @@ def plot_benchmark(
         strategy = strategy_map[strat_id]
         points.sort()
         xs, ys = zip(*points)
+        xs, ys = _moving_average(list(xs), list(ys), smooth)
         ax.plot(
             xs, ys,
             label=strategy.label,
