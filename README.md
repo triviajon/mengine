@@ -6,7 +6,7 @@
 
 MEngine is a dependently typed kernel with explicit context management, a proof engine, a tactic language, and a theorem prover, optimized for highly automated proof scripts. 
 
-The original ideas of MEngine can be found in my master's thesis[^1], but since been refined.
+The original ideas and design of MEngine were detailed in my master's thesis[^1], but have since been refined.
 
 ## How it works
 
@@ -14,7 +14,7 @@ MEngine represents proof terms as λ-DAGs [^2]: directed acyclic graphs where su
 
 The intended workflow: write proofs in MEngine's scripting language (`.me` files) using built-in tactics (`exact`, `rewrite`, `induction`, `match_goal`, `apply`, etc.) or define new tactics directly in the language.
 
-[^1]: https://dspace.mit.edu/handle/1721.1/16290
+[^1]: https://dspace.mit.edu/handle/1721.1/162908
 [^2]: https://link.springer.com/chapter/10.1007/978-3-540-31987-0_16
 
 ## Quick Start
