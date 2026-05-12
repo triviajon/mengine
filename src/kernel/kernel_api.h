@@ -119,6 +119,10 @@ void kernel_match_branch_free(void *branch);
 /**
  * Free a kernel expression via the uplink-based ref-counting teardown.
  * Suitable for freeing the top-level runtime context on shutdown.
+ * Time Complexity:
+ *
+ * @param expr
+ * @return
  */
 void kernel_expr_free(Expression *expr);
 
@@ -127,29 +131,51 @@ void kernel_expr_free(Expression *expr);
  * reachable from ctx.  Use instead of kernel_expr_free when the expression
  * shares children (e.g. context variables) with the live context chain.
  * Pass NULL for b when freeing a single expression.
+ * Time Complexity:
+ *
+ * @param a
+ * @param b
+ * @param ctx
+ * @return
  */
 void kernel_expr_free_excluding_ctx(Expression *a, Expression *b, Context *ctx);
 
 /**
  * Free a filled hole expression without cascading into children.
  * Only safe to call on holes that have been filled via kernel_hole_fill.
+ * Time Complexity:
+ *
+ * @param hole
+ * @return
  */
 void kernel_free_filled_hole(Expression *hole);
 
 /**
  * Free the context chain from leaf to root. Since context is a non-owning
  * edge, the chain must be freed explicitly. Stops at EMPTY_CONTEXT.
+ * Time Complexity:
+ *
+ * @param ctx
+ * @return
  */
 void kernel_context_free(Context *ctx);
 
 /**
  * Shut down kernel-owned expression GC bookkeeping during runtime teardown.
+ * Time Complexity:
+ *
+ * @return
  */
 void kernel_expression_gc_shutdown(void);
 
 /**
  * Return true if expr is one of the nodes directly in the context chain,
  * i.e. reachable from ctx by following ->context pointers.
+ * Time Complexity:
+ *
+ * @param ctx
+ * @param expr
+ * @return
  */
 bool kernel_context_contains(Context *ctx, Expression *expr);
 
@@ -355,23 +381,114 @@ int kernel_fix_decreasing_arg(Expression *fix_expr);
  */
 bool kernel_expr_is_hole(Expression *expr);
 
+/**
+ * Check whether an expression is a variable.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param expr
+ * @return
+ */
 bool kernel_expr_is_var(Expression *expr);
+
+/**
+ * Check whether an expression is Type.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param expr
+ * @return
+ */
 bool kernel_expr_is_type(Expression *expr);
+
+/**
+ * Check whether an expression is Prop.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param expr
+ * @return
+ */
 bool kernel_expr_is_prop(Expression *expr);
+
+/**
+ * Check whether an expression is an application.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param expr
+ * @return
+ */
 bool kernel_expr_is_app(Expression *expr);
+
+/**
+ * Check whether an expression is a lambda.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param expr
+ * @return
+ */
 bool kernel_expr_is_lambda(Expression *expr);
+
+/**
+ * Check whether an expression is a forall.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param expr
+ * @return
+ */
 bool kernel_expr_is_forall(Expression *expr);
+
+/**
+ * Check whether an expression is a match expression.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param expr
+ * @return
+ */
 bool kernel_expr_is_match(Expression *expr);
+
+/**
+ * Check whether an expression is a fix expression.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param expr
+ * @return
+ */
 bool kernel_expr_is_fix(Expression *expr);
 
 /**
  * Check whether a hole has already been filled or shelved.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param hole
+ * @return
  */
 bool kernel_hole_is_satisfied(Expression *hole);
 
 /**
  * Mark a hole as satisfied without filling it. This is used by the proof
  * engine for dependent evars that will be filled by another open goal.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param hole
+ * @return
  */
 void kernel_hole_mark_satisfied(Expression *hole);
 
@@ -641,33 +758,82 @@ bool kernel_expr_valid_to_add(Expression *expr, Context *context);
 
 /**
  * Get the body of the innermost lambda/forall tower.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param expr
+ * @return
  */
 Expression *kernel_expr_innermost_body(Expression *expr);
 
 /**
  * Get the head of an application spine.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param expr
+ * @return
  */
 Expression *kernel_expr_head(Expression *expr);
 
 /**
- * Get the left/right sides of an arrow represented as a forall.
+ * Get the left side of an arrow represented as a forall.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param expr
+ * @return
  */
 Expression *kernel_arrow_lhs(Expression *expr);
+
+/**
+ * Get the right side of an arrow represented as a forall.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param expr
+ * @return
+ */
 Expression *kernel_arrow_rhs(Expression *expr);
 
 /**
  * Return conversion evidence usable in a particular context, or NULL.
  * The returned object is owned by the caller.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param context
+ * @param a
+ * @param b
+ * @return
  */
 Conversion *kernel_expr_conversion_in_context(Context *context, Expression *a, Expression *b);
 
 /**
  * Free conversion evidence returned by the kernel conversion API.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param conv
+ * @return
  */
 void kernel_conversion_free(Conversion *conv);
 
 /**
  * Return true iff conversion evidence can be used in the supplied context.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param conv
+ * @param context
+ * @return
  */
 bool kernel_conversion_valid_in_context(Conversion *conv, Context *context);
 

@@ -31,11 +31,58 @@ typedef struct {
  * Relation Registry Operations
  * ============================================================================ */
 
+/**
+ * Create an empty relation registry.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @return
+ */
 RelationRegistry *engine_relation_registry_create(void);
+
+/**
+ * Free a relation registry.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param reg
+ * @return
+ */
 void engine_relation_registry_free(RelationRegistry *reg);
+
+/**
+ * Add relation metadata to a registry.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param reg
+ * @param info
+ * @return
+ */
 bool engine_relation_registry_add(RelationRegistry *reg, EngineRelationInfo info);
 
+/**
+ * Enable or disable rewrite debugging output.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param enabled
+ * @return
+ */
 void engine_rewrite_set_debug(bool enabled);
+
+/**
+ * Print cumulative rewrite statistics.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @return
+ */
 void engine_rewrite_print_cumulative_stats(void);
 
 /* ============================================================================
@@ -125,6 +172,12 @@ UnificationResult *engine_eunify(Expression *lemma, Expression *goal);
 /**
  * Unify an equality lemma's left-hand side against a target expression.
  * This is used by the tactic language's scripted rewrite combinator.
+ * Time Complexity:
+ *
+ * @param goal_context
+ * @param lemma
+ * @param target
+ * @return
  */
 UnificationResult *engine_rewrite_unify_for_eq(Context *goal_context, Expression *lemma,
                                                Expression *target);
@@ -149,6 +202,10 @@ void *engine_unify_get_bindings(UnificationResult *unif_result);
 
 /**
  * Transfer ownership of open goals from a unification result.
+ * Time Complexity:
+ *
+ * @param unif_result
+ * @return
  */
 void *engine_unify_take_bindings(UnificationResult *unif_result);
 
@@ -338,23 +395,196 @@ void *engine_tactic_result_goals(TacticResult *result);
  */
 void engine_tactic_result_free(TacticResult *result);
 
+/**
+ * Create a tactic result.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param success
+ * @param new_goals
+ * @param error_message
+ * @return
+ */
 TacticResult *engine_tactic_result_new(bool success, void *new_goals, char *error_message);
+
+/**
+ * Create a successful tactic result carrying a value.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param value
+ * @return
+ */
 TacticResult *engine_tactic_result_value(TacticValue *value);
+
+/**
+ * Get the value from a tactic result.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param result
+ * @return
+ */
 TacticValue *engine_tactic_result_get_value(TacticResult *result);
+
+/**
+ * Transfer ownership of the goals from a tactic result.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param result
+ * @return
+ */
 void *engine_tactic_result_take_goals(TacticResult *result);
+
+/**
+ * Transfer ownership of the value from a tactic result.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param result
+ * @return
+ */
 TacticValue *engine_tactic_result_take_value(TacticResult *result);
+
+/**
+ * Set the goals stored in a tactic result.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param result
+ * @param goals
+ * @return
+ */
 void engine_tactic_result_set_goals(TacticResult *result, void *goals);
+
+/**
+ * Set the value stored in a tactic result.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param result
+ * @param value
+ * @return
+ */
 void engine_tactic_result_set_value(TacticResult *result, TacticValue *value);
 
+/**
+ * Create a tactic value from an expression.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param expr
+ * @return
+ */
 TacticValue *engine_tactic_value_expr(Expression *expr);
+
+/**
+ * Create a tactic value from a pair of tactic values.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param fst
+ * @param snd
+ * @return
+ */
 TacticValue *engine_tactic_value_pair(TacticValue *fst, TacticValue *snd);
+
+/**
+ * Create a tactic value from an AST node.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param ast
+ * @return
+ */
 TacticValue *engine_tactic_value_ast(struct AST *ast);
+
+/**
+ * Duplicate a tactic value.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param value
+ * @return
+ */
 TacticValue *engine_tactic_value_dup(TacticValue *value);
+
+/**
+ * Free a tactic value.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param value
+ * @return
+ */
 void engine_tactic_value_free(TacticValue *value);
+
+/**
+ * Get the kind of a tactic value.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param value
+ * @return
+ */
 EngineTacticValueKind engine_tactic_value_kind(TacticValue *value);
+
+/**
+ * Get the expression stored in a tactic value.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param value
+ * @return
+ */
 Expression *engine_tactic_value_as_expr(TacticValue *value);
+
+/**
+ * Get the AST stored in a tactic value.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param value
+ * @return
+ */
 struct AST *engine_tactic_value_as_ast(TacticValue *value);
+
+/**
+ * Get the first element of a tactic-value pair.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param value
+ * @return
+ */
 TacticValue *engine_tactic_value_pair_fst(TacticValue *value);
+
+/**
+ * Get the second element of a tactic-value pair.
+ * Time Complexity:
+ *
+ * Space Complexity:
+ *
+ * @param value
+ * @return
+ */
 TacticValue *engine_tactic_value_pair_snd(TacticValue *value);
 
 /* ============================================================================
