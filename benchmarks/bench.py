@@ -12,6 +12,7 @@ Usage:
 
 Run options:
   --engine ENGINE[,ENGINE,...]   Only run these engines (mengine, coq, lean)
+  --mengine-variant NAME=PATH[:ROOT]  Add/override an MEngine binary variant
   --override PARAM=START:STOP:STEP  Override a parameter range
   --timeout SECONDS              Override default timeout
   --max-timeouts N               Consecutive timeouts before retiring (default: 3)
@@ -89,6 +90,7 @@ DEFAULT_CONFIG = {
     "default_timeout": 30,
     "max_consecutive_timeouts": 3,
     "max_consecutive_failures": 5,
+    "mengine_variants": {},
 }
 
 _PATH_KEYS = {"mengine_path", "mengine_root", "coqutil_root", "results_dir", "plots_dir"}
@@ -143,6 +145,13 @@ def save_default_config():
 
 
 def make_run_config(cfg, args):
+    variants = dict(cfg.get("mengine_variants", {}))
+    for raw in getattr(args, "mengine_variant", None) or []:
+        name, value = raw.split("=", 1)
+        parts = value.split(":", 1)
+        variants[name] = {"path": parts[0]}
+        if len(parts) == 2:
+            variants[name]["root"] = parts[1]
     return RunConfig(
         mengine_path=cfg["mengine_path"],
         coq_path=cfg["coq_path"],
@@ -150,9 +159,10 @@ def make_run_config(cfg, args):
         coqutil_root=cfg.get("coqutil_root", ""),
         mengine_root=cfg.get("mengine_root", ""),
         results_dir=cfg["results_dir"],
-        default_timeout=args.timeout or cfg["default_timeout"],
-        max_consecutive_timeouts=args.max_timeouts if hasattr(args, "max_timeouts") and args.max_timeouts else cfg["max_consecutive_timeouts"],
+        default_timeout=getattr(args, "timeout", None) or cfg["default_timeout"],
+        max_consecutive_timeouts=getattr(args, "max_timeouts", None) or cfg["max_consecutive_timeouts"],
         max_consecutive_failures=cfg["max_consecutive_failures"],
+        mengine_variants=variants,
     )
 
 
@@ -262,13 +272,10 @@ def _format_streams(stdout, stderr):
 def _smoke_test_single(benchmark, strategy, params, config, timeout):
     with tempfile.TemporaryDirectory() as workdir:
         generated_file = benchmark.generate(strategy, params, workdir)
-        engine_path = config.engine_path(strategy.engine)
+        engine_path = config.engine_path(strategy.engine, strategy.variant)
         cmd = benchmark.get_command(strategy, params, engine_path, generated_file, config=config)
 
-        if strategy.engine == "mengine" and config.mengine_root:
-            cwd = config.mengine_root
-        else:
-            cwd = workdir
+        cwd = config.engine_cwd(strategy.engine, strategy.variant, workdir)
 
         start = time.perf_counter()
         try:
@@ -321,7 +328,7 @@ def cmd_test(args):
 
     for name, bench in benchmarks.items():
         params = {p.name: p.start for p in bench.params}
-        strategies = bench.strategies
+        strategies = run_cfg.expand_strategies(bench.strategies)
         if engines:
             strategies = [s for s in strategies if s.engine in engines]
 
@@ -362,6 +369,7 @@ def cmd_plot(args):
     from framework.plotter import plot_benchmark, plot_all_variants
 
     cfg = load_config()
+    run_cfg = make_run_config(cfg, args)
     benchmarks = get_benchmarks(args)
     engines = args.engine.split(",") if args.engine else None
     results_dir = cfg["results_dir"]
@@ -385,6 +393,7 @@ def cmd_plot(args):
             "show_failures": args.show_failures,
             "exclude": args.exclude or [],
             "smooth": args.smooth,
+            "strategies_override": run_cfg.expand_strategies(bench.strategies),
         }
         
         if args.xlim:
@@ -512,6 +521,8 @@ def main():
     p_run.add_argument("benchmark", nargs="?", help="Specific benchmark")
     p_run.add_argument("--engine", help="Engines to run (comma-separated)")
     p_run.add_argument("--override", action="append", help="Override param range: PARAM=START:STOP:STEP")
+    p_run.add_argument("--mengine-variant", action="append",
+                       help="Add/override an MEngine binary variant: NAME=PATH[:ROOT]")
     p_run.add_argument("--timeout", type=float, help="Timeout in seconds")
     p_run.add_argument("--max-timeouts", type=int, help="Max consecutive timeouts before retiring")
     p_run.add_argument("--force", action="store_true", help="Re-run existing results")
@@ -520,12 +531,16 @@ def main():
     p_test = subparsers.add_parser("test", help="Smoke-test each engine/strategy once")
     p_test.add_argument("benchmark", nargs="?", help="Specific benchmark")
     p_test.add_argument("--engine", help="Engines to test (comma-separated)")
+    p_test.add_argument("--mengine-variant", action="append",
+                        help="Add/override an MEngine binary variant: NAME=PATH[:ROOT]")
     p_test.add_argument("--timeout", type=float, help="Timeout in seconds")
 
     # plot
     p_plot = subparsers.add_parser("plot", help="Generate plots")
     p_plot.add_argument("benchmark", nargs="?", help="Specific benchmark")
     p_plot.add_argument("--engine", help="Engines to plot (comma-separated)")
+    p_plot.add_argument("--mengine-variant", action="append",
+                        help="Add/override an MEngine binary variant: NAME=PATH[:ROOT]")
     p_plot.add_argument("--format", default="png", help="Output format (png, pdf, svg)")
     p_plot.add_argument("--fixed", action="append", help="Fix parameter: PARAM=VALUE")
     p_plot.add_argument("--xlim", help="X-axis limits: MIN:MAX")

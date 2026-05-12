@@ -17,6 +17,10 @@
 #include "src/kernel/subst.h"
 #include "src/kernel/type_compat.h"
 
+#ifndef MENGINE_EVAR_FREE_FILL
+#define MENGINE_EVAR_FREE_FILL 1
+#endif
+
 // Intrusive singly-linked list of all allocated Expressions for deferred GC shutdown.
 static Expression *g_expr_list_head = NULL;
 
@@ -1249,8 +1253,81 @@ static bool evar_refs_equal(DoublyLinkedList *a, DoublyLinkedList *b) {
     return true;
 }
 
+#if !MENGINE_EVAR_FREE_FILL
+static bool expr_refs_hole_slow_rec(Expression *expr, Expression *hole, Map *seen) {
+    if (!expr) {
+        return false;
+    }
+    if (expr == hole) {
+        return true;
+    }
+    if (map_get(seen, expr)) {
+        return false;
+    }
+    map_set(seen, expr, expr);
+
+    if (expr_refs_hole_slow_rec(get_expression_type(expr), hole, seen)) {
+        return true;
+    }
+
+    switch (expr->tag) {
+        case HOLE_EXPRESSION:
+        case TYPE_EXPRESSION:
+        case PROP_EXPRESSION:
+            return false;
+        case VAR_EXPRESSION:
+            return expr_refs_hole_slow_rec(expr->as.var.body, hole, seen);
+        case LAMBDA_EXPRESSION:
+            return expr_refs_hole_slow_rec(expr->as.lambda.bound_variable, hole, seen) ||
+                   expr_refs_hole_slow_rec(expr->as.lambda.body, hole, seen);
+        case APP_EXPRESSION:
+            return expr_refs_hole_slow_rec(expr->as.app.func, hole, seen) ||
+                   expr_refs_hole_slow_rec(expr->as.app.arg, hole, seen);
+        case FORALL_EXPRESSION:
+            return expr_refs_hole_slow_rec(expr->as.forall.bound_variable, hole, seen) ||
+                   expr_refs_hole_slow_rec(expr->as.forall.body, hole, seen);
+        case MATCH_EXPRESSION:
+            if (expr_refs_hole_slow_rec(expr->as.match.scrutinee, hole, seen)) {
+                return true;
+            }
+            for (int i = 0; i < expr->as.match.branch_count; i++) {
+                MatchBranch *branch = expr->as.match.branches[i];
+                if (expr_refs_hole_slow_rec(branch->constructor, hole, seen) ||
+                    expr_refs_hole_slow_rec(branch->body, hole, seen)) {
+                    return true;
+                }
+                for (int j = 0; j < branch->pattern_var_count; j++) {
+                    if (expr_refs_hole_slow_rec(branch->pattern_variables[j], hole, seen)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        case FIX_EXPRESSION:
+            if (expr_refs_hole_slow_rec(expr->as.fix.recursive_var, hole, seen) ||
+                expr_refs_hole_slow_rec(expr->as.fix.body, hole, seen)) {
+                return true;
+            }
+            for (int i = 0; i < expr->as.fix.arg_count; i++) {
+                if (expr_refs_hole_slow_rec(expr->as.fix.args[i], hole, seen)) {
+                    return true;
+                }
+            }
+            return false;
+    }
+    return false;
+}
+#endif
+
 static bool expr_refs_hole(Expression *expr, Expression *hole) {
+#if MENGINE_EVAR_FREE_FILL
     return expr && expr->has_evar && expr->evar_refs && dll_search(expr->evar_refs, hole) != NULL;
+#else
+    Map *seen = map_new_with_capacity(64);
+    bool result = expr_refs_hole_slow_rec(expr, hole, seen);
+    map_free(seen);
+    return result;
+#endif
 }
 
 // Recompute evar_refs/has_evar for a single expression from its owned children.

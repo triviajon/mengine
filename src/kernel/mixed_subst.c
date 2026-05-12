@@ -8,6 +8,10 @@
 #include "src/kernel/expression.h"
 #include "src/kernel/subst.h"
 
+#ifndef MENGINE_SUBST_MEMO
+#define MENGINE_SUBST_MEMO 1
+#endif
+
 #define CLEAR_CHILD_UPLINK(child_expr, uplink_field)         \
     do {                                                     \
         remove_uplink_by_node((child_expr), (uplink_field)); \
@@ -465,10 +469,13 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, Map *subst
         node->mark_gen = g_mark_gen;
     }
 
+    (void)memo;
+#if MENGINE_SUBST_MEMO
     Expression *cached = map_get(memo, node);
     if (cached) {
         return cached;
     }
+#endif
 
     Expression *result = NULL;
 
@@ -668,7 +675,9 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, Map *subst
     }
 
     if (result && result != node) {
+#if MENGINE_SUBST_MEMO
         map_set(memo, node, result);
+#endif
     }
     return result;
 }

@@ -42,20 +42,20 @@ def load_results(path: str) -> dict:
         return json.load(f)
 
 
-def parse_result_key(key: str, benchmark: Benchmark) -> tuple[str | None, dict[str, int]]:
+def parse_result_key(key: str, benchmark: Benchmark,
+                     strategies: list[Strategy] | None = None) -> tuple[str | None, dict[str, int]]:
     """
     Parse a result key back into (strategy_id, params).
     
     Keys look like: "mengine_n100" or "coq_repeatrewrite_n100_m3"
     Returns (strategy_name_with_engine, {param_name: value})
     """
+    all_strategies = strategies or benchmark.strategies
+
     # Identify which strategy this key belongs to
-    for strategy in benchmark.strategies:
+    for strategy in all_strategies:
         # Build what the prefix should look like
-        if strategy.engine == "mengine":
-            prefix = "mengine_"
-        else:
-            prefix = f"{strategy.engine}_{strategy.name}_"
+        prefix = f"{strategy.engine}_{strategy.name}_"
         
         if key.startswith(prefix):
             param_str = key[len(prefix):]
@@ -63,6 +63,16 @@ def parse_result_key(key: str, benchmark: Benchmark) -> tuple[str | None, dict[s
             for match in re.finditer(r"([a-zA-Z]+)(\d+)", param_str):
                 params[match.group(1)] = int(match.group(2))
             return f"{strategy.engine}:{strategy.name}", params
+
+    # Backward compatibility for pre-ablation MEngine result keys.
+    if key.startswith("mengine_"):
+        param_str = key[len("mengine_"):]
+        params = {}
+        for match in re.finditer(r"([a-zA-Z]+)(\d+)", param_str):
+            params[match.group(1)] = int(match.group(2))
+        for strategy in all_strategies:
+            if strategy.engine == "mengine":
+                return f"{strategy.engine}:{strategy.name}", params
     
     return None, {}
 
@@ -97,6 +107,7 @@ def plot_benchmark(
     title: str | None = None,
     show_failures: bool = False,
     smooth: int = 1,
+    strategies_override: list[Strategy] | None = None,
 ):
     """
     Plot benchmark results.
@@ -130,9 +141,11 @@ def plot_benchmark(
     if x_param is None:
         x_param = benchmark.params[0].name
 
+    all_strategies = strategies_override or benchmark.strategies
+
     # Build strategy lookup
     strategy_map: dict[str, Strategy] = {}
-    for s in benchmark.strategies:
+    for s in all_strategies:
         sid = f"{s.engine}:{s.name}"
         strategy_map[sid] = s
 
@@ -149,7 +162,7 @@ def plot_benchmark(
     failure_data: dict[str, list[tuple[int, float]]] = {}
 
     for key, value in results.items():
-        strat_id, params = parse_result_key(key, benchmark)
+        strat_id, params = parse_result_key(key, benchmark, all_strategies)
         if strat_id is None:
             continue
 
@@ -289,7 +302,7 @@ def plot_all_variants(
     secondary_values: dict[str, set[int]] = {p.name: set() for p in secondary_params}
 
     for key in results:
-        _, params = parse_result_key(key, benchmark)
+        _, params = parse_result_key(key, benchmark, kwargs.get("strategies_override"))
         for p in secondary_params:
             if p.name in params:
                 secondary_values[p.name].add(params[p.name])

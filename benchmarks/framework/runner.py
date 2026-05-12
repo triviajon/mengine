@@ -17,6 +17,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from dataclasses import replace
 from pathlib import Path
 
 from .benchmark import Benchmark, Strategy, ParamSpec
@@ -48,6 +49,7 @@ class RunConfig:
         default_timeout: float = 30.0,
         max_consecutive_timeouts: int = 3,
         max_consecutive_failures: int = 5,
+        mengine_variants: dict | None = None,
     ):
         self.mengine_path = os.path.expanduser(mengine_path)
         self.coq_path = os.path.expanduser(coq_path)
@@ -58,13 +60,54 @@ class RunConfig:
         self.default_timeout = default_timeout
         self.max_consecutive_timeouts = max_consecutive_timeouts
         self.max_consecutive_failures = max_consecutive_failures
+        self.mengine_variants = {}
+        for name, spec in (mengine_variants or {}).items():
+            if isinstance(spec, str):
+                path = spec
+                root = self.mengine_root
+                label = name
+            else:
+                path = spec.get("path", self.mengine_path)
+                root = spec.get("root", self.mengine_root)
+                label = spec.get("label", name)
+            self.mengine_variants[name] = {
+                "path": os.path.expanduser(path),
+                "root": os.path.expanduser(root) if root else "",
+                "label": label,
+            }
 
-    def engine_path(self, engine: str) -> str:
-        return {
-            "mengine": self.mengine_path,
-            "coq": self.coq_path,
-            "lean": self.lean_path,
-        }[engine]
+    def engine_path(self, engine: str, variant: str | None = None) -> str:
+        if engine == "mengine" and variant:
+            return self.mengine_variants[variant]["path"]
+        return {"mengine": self.mengine_path, "coq": self.coq_path, "lean": self.lean_path}[engine]
+
+    def engine_cwd(self, engine: str, variant: str | None = None, default: str | None = None) -> str:
+        if engine != "mengine":
+            return default or os.getcwd()
+        if variant:
+            root = self.mengine_variants[variant]["root"]
+        else:
+            root = self.mengine_root
+        return root or (default or os.getcwd())
+
+    def expand_strategies(self, strategies: list[Strategy]) -> list[Strategy]:
+        if not self.mengine_variants:
+            return strategies
+        expanded = []
+        for strategy in strategies:
+            if strategy.engine != "mengine":
+                expanded.append(strategy)
+                continue
+            for variant, spec in self.mengine_variants.items():
+                expanded.append(
+                    replace(
+                        strategy,
+                        name=f"{strategy.name}_{variant}",
+                        label=f"{strategy.label} ({spec['label']})",
+                        variant=variant,
+                    )
+                )
+        return expanded
 
 
 def run_single(
@@ -84,14 +127,11 @@ def run_single(
     """
     with tempfile.TemporaryDirectory() as workdir:
         generated_file = benchmark.generate(strategy, params, workdir)
-        engine_path = config.engine_path(strategy.engine)
+        engine_path = config.engine_path(strategy.engine, strategy.variant)
         cmd = benchmark.get_command(strategy, params, engine_path, generated_file, config=config)
 
         # mengine needs to run from its root dir to find prelude/tactics.me
-        if strategy.engine == "mengine" and config.mengine_root:
-            cwd = config.mengine_root
-        else:
-            cwd = workdir
+        cwd = config.engine_cwd(strategy.engine, strategy.variant, workdir)
 
         soft_timeout = timeout
         hard_timeout = timeout * 2
@@ -163,7 +203,7 @@ def run_benchmark(
         ]
 
     # Determine which strategies to run
-    strategies = benchmark.strategies
+    strategies = config.expand_strategies(benchmark.strategies)
     if engines:
         strategies = [s for s in strategies if s.engine in engines]
 

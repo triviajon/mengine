@@ -23,6 +23,7 @@ class Strategy:
     label: str            # display label for plotting, e.g. "Rocq: repeat rewrite"
     color: str = "black"
     marker: str = "o"
+    variant: str | None = None
 
 
 @dataclass
@@ -106,8 +107,6 @@ class Benchmark(ABC):
     def result_key(self, strategy: Strategy, params: dict[str, int]) -> str:
         """Generate a unique key for storing results."""
         param_parts = "_".join(f"{k}{v}" for k, v in sorted(params.items()))
-        if strategy.engine == "mengine":
-            return f"mengine_{param_parts}"
         return f"{strategy.engine}_{strategy.name}_{param_parts}"
 
     def get_strategies_for_engine(self, engine: str) -> list[Strategy]:
