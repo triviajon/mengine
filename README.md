@@ -1,14 +1,12 @@
 # mengine
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE.md)
-[![clang-format](https://github.com/triviajon/mengine/actions/workflows/clang-format.yaml/badge.svg)](https://github.com/triviajon/mengine/actions/workflows/clang-format.yaml)
-[![clang-tidy](https://github.com/triviajon/mengine/actions/workflows/clang-tidy.yaml/badge.svg)](https://github.com/triviajon/mengine/actions/workflows/clang-tidy.yaml)
 [![test](https://github.com/triviajon/mengine/actions/workflows/test.yaml/badge.svg)](https://github.com/triviajon/mengine/actions/workflows/test.yaml)
 [![examples](https://github.com/triviajon/mengine/actions/workflows/examples.yaml/badge.svg)](https://github.com/triviajon/mengine/actions/workflows/examples.yaml)
 
 MEngine is a dependently typed kernel with explicit context management, a proof engine, a tactic language, and a theorem prover, optimized for highly automated proof scripts. 
 
-The original ideas of MEngine can be found in my master's thesis[^1], but have since been largely refined since then: 8
+The original ideas of MEngine can be found in my master's thesis[^1], but since been refined.
 
 ## How it works
 
