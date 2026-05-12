@@ -12,8 +12,8 @@
 #include "src/engine/rewrite_internal.h"
 #include "src/kernel/kernel_api.h"
 #include "src/runtime/runtime.h"
-#include "src/tacticlanguage/tactic_ast.h"
 #include "src/tacticlanguage/compiled_tactics.h"
+#include "src/tacticlanguage/tactic_ast.h"
 #include "src/termlanguage/ast_to_expression.h"
 
 static int _handle_declaration_command(MEngineRuntime *rt, DeclarationCmd *decl_cmd) {

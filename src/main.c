@@ -9,7 +9,9 @@
 
 enum { OPT_PRINT_TOKENS = 256, OPT_PRINT_AST, OPT_PRINT_MODE };
 
-static char doc[] = "MEngine - A theorem prover\n\nCommands:\n  config    Print compile-time configuration and exit";
+static char doc[] =
+    "MEngine - A theorem prover\n\nCommands:\n  config    Print compile-time configuration and "
+    "exit";
 static char args_doc[] = "[FILENAME|config]";
 static struct argp_option options[] = {
     {"load", 'l', "FILE", 0, "Load and execute FILE, then enter REPL", 0},
@@ -145,8 +147,8 @@ static void config_mode(void) {
 #endif
     printf("ORDER_DEMAIN_STRATEGY: %s\n",
            ORDER_DEMAIN_INSERT_STRATEGY == 1 ? "plus-one-half" : "thirds");
-    printf("ORDER_DEMAIN_T        : %d/%d\n",
-           ORDER_DEMAIN_THRESHOLD_T_NUM, ORDER_DEMAIN_THRESHOLD_T_DEN);
+    printf("ORDER_DEMAIN_T        : %d/%d\n", ORDER_DEMAIN_THRESHOLD_T_NUM,
+           ORDER_DEMAIN_THRESHOLD_T_DEN);
 #ifdef ORDER_DEMAIN_INSTRUMENT
     printf("ORDER_DEMAIN_STATS   : enabled\n");
 #elif defined(ORDER_DEMAIN_STATS) || defined(ORDER_DEMAIN_TIMING)

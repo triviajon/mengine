@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 
+#include "src/common/map.h"
 #include "src/kernel/beta_reduction.h"
 #include "src/kernel/context.h"
 #include "src/kernel/conversion.h"
@@ -13,7 +14,6 @@
 #include "src/kernel/normalize.h"
 #include "src/kernel/subst.h"
 #include "src/kernel/utils.h"
-#include "src/common/map.h"
 
 /* EXPRESSION CONSTRUCTION */
 
@@ -203,7 +203,7 @@ Expression *kernel_subst(Context *context, Expression *t, Expression *x, Express
 }
 
 Expression *kernel_p_subst(Context *context, Expression *t, Map *subst_map) {
-    return new_p_subst(context, t, (Map *)subst_map);
+    return new_p_subst(context, t, subst_map);
 }
 
 /* NORMALIZATION OPERATIONS */

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+
 #include "src/kernel/context.h"
 #include "src/kernel/expression.h"
 #include "src/kernel/order.h"
@@ -101,35 +102,26 @@ static double ns_to_ms(uint64_t ns) { return (double)ns / 1000000.0; }
 static void order_demain_print_stats(void) {
     fflush(stdout);
     fprintf(stderr, "[order_demain] insert_strategy=%s\n", ORDER_DEMAIN_STRATEGY_NAME);
-    fprintf(stderr, "[order_demain] threshold_T=%d/%d\n",
-            ORDER_DEMAIN_THRESHOLD_T_NUM, ORDER_DEMAIN_THRESHOLD_T_DEN);
+    fprintf(stderr, "[order_demain] threshold_T=%d/%d\n", ORDER_DEMAIN_THRESHOLD_T_NUM,
+            ORDER_DEMAIN_THRESHOLD_T_DEN);
     fprintf(stderr,
             "[order_demain] inserts=%" PRIu64 " top_fast=%" PRIu64 " top_repair=%" PRIu64
             " order_queries=%" PRIu64 "\n",
-            g_order_demain_stats.inserts,
-            g_order_demain_stats.fast_inserts,
-            g_order_demain_stats.repair_inserts,
-            g_order_demain_stats.order_queries);
+            g_order_demain_stats.inserts, g_order_demain_stats.fast_inserts,
+            g_order_demain_stats.repair_inserts, g_order_demain_stats.order_queries);
+    fprintf(stderr, "[order_demain] block_splits=%" PRIu64 " block_reindex_tokens=%" PRIu64 "\n",
+            g_order_demain_stats.block_splits, g_order_demain_stats.block_reindex_tokens);
     fprintf(stderr,
-            "[order_demain] block_splits=%" PRIu64
-            " block_reindex_tokens=%" PRIu64 "\n",
-            g_order_demain_stats.block_splits,
-            g_order_demain_stats.block_reindex_tokens);
-    fprintf(stderr,
-            "[order_demain] block_reindex_split=%" PRIu64
-            " block_membership_split=%" PRIu64
-            " block_reindex_gap=%" PRIu64
-            " block_reindex_init=%" PRIu64 "\n",
+            "[order_demain] block_reindex_split=%" PRIu64 " block_membership_split=%" PRIu64
+            " block_reindex_gap=%" PRIu64 " block_reindex_init=%" PRIu64 "\n",
             g_order_demain_stats.block_split_reindex_tokens,
             g_order_demain_stats.block_split_membership_tokens,
             g_order_demain_stats.block_gap_reindex_tokens,
             g_order_demain_stats.block_init_reindex_tokens);
     fprintf(stderr,
             "[order_demain] top_repair_interval_scans=%" PRIu64
-            " top_repair_interval_blocks=%" PRIu64
-            " top_blocks_retagged=%" PRIu64 "\n",
-            g_order_demain_stats.repair_interval_scans,
-            g_order_demain_stats.repair_interval_tokens,
+            " top_repair_interval_blocks=%" PRIu64 " top_blocks_retagged=%" PRIu64 "\n",
+            g_order_demain_stats.repair_interval_scans, g_order_demain_stats.repair_interval_tokens,
             g_order_demain_stats.repair_tokens_retagged);
     fprintf(stderr,
             "[order_demain] time_ms insert=%.3f fast=%.3f repair_interval=%.3f"
@@ -306,17 +298,16 @@ static void ensure_root_block(OrderToken *root_token) {
     block_reindex_for_init(block);
 }
 
-static void find_block_repair_interval(OrderBlock *pivot,
-                                 OrderBlock **out_left, int *out_count,
-                                 uint64_t *out_lower, uint64_t *out_upper) {
+static void find_block_repair_interval(OrderBlock *pivot, OrderBlock **out_left, int *out_count,
+                                       uint64_t *out_lower, uint64_t *out_upper) {
     uint64_t tag = block_tag(pivot);
-    OrderBlock *left  = pivot;
+    OrderBlock *left = pivot;
     OrderBlock *right = pivot;
     int count = 1;
 
     for (int k = 1; k <= 63; k++) {
-        uint64_t size  = 1ULL << k;
-        uint64_t mask  = size - 1;
+        uint64_t size = 1ULL << k;
+        uint64_t mask = size - 1;
         uint64_t lower = tag & ~mask;
         uint64_t upper = (k == 63 || lower > UINT64_MAX - size) ? UINT64_MAX : lower + size;
 
@@ -337,7 +328,7 @@ static void find_block_repair_interval(OrderBlock *pivot,
         }
 
         if ((uint64_t)(count + 1) <= threshold(k)) {
-            *out_left  = left;
+            *out_left = left;
             *out_count = count;
             *out_lower = lower;
             *out_upper = upper;
@@ -346,8 +337,8 @@ static void find_block_repair_interval(OrderBlock *pivot,
     }
 
     // Worst case: entire list
-    while (block_prev(left)  != NULL) {
-        left  = block_prev(left);
+    while (block_prev(left) != NULL) {
+        left = block_prev(left);
         count++;
 #ifdef ORDER_DEMAIN_INSTRUMENT
         g_order_demain_stats.repair_interval_scans++;
@@ -360,7 +351,7 @@ static void find_block_repair_interval(OrderBlock *pivot,
         g_order_demain_stats.repair_interval_scans++;
 #endif
     }
-    *out_left  = left;
+    *out_left = left;
     *out_count = count;
     *out_lower = 0;
     *out_upper = UINT64_MAX;
@@ -400,7 +391,8 @@ static void block_link_before(OrderBlock *succ_block, OrderBlock *new_block) {
     OrderBlock *pivot = (prev_block != NULL) ? prev_block : succ_block;
     OrderBlock *left;
     int count;
-    uint64_t lower, upper;
+    uint64_t lower;
+    uint64_t upper;
     find_block_repair_interval(pivot, &left, &count, &lower, &upper);
 #ifdef ORDER_DEMAIN_INSTRUMENT
     uint64_t interval_end_ns = order_demain_now_ns();
@@ -409,7 +401,7 @@ static void block_link_before(OrderBlock *succ_block, OrderBlock *new_block) {
     uint64_t relabel_start_ns = interval_end_ns;
 #endif
 
-    int total = count + 1; // existing + one new block
+    int total = count + 1;  // existing + one new block
     uint64_t gap = (upper - lower) / (uint64_t)(total + 1);
     assert(gap >= 1);
 
@@ -424,8 +416,11 @@ static void block_link_before(OrderBlock *succ_block, OrderBlock *new_block) {
         if (!inserted && curr == succ_block) {
             new_block->tag = lower + (uint64_t)i++ * gap;
             new_block->prev = list_prev;
-            if (list_prev != NULL) list_prev->next = new_block;
-            else chain_head = new_block;
+            if (list_prev != NULL) {
+                list_prev->next = new_block;
+            } else {
+                chain_head = new_block;
+            }
             list_prev = new_block;
             inserted = true;
         }
@@ -433,7 +428,9 @@ static void block_link_before(OrderBlock *succ_block, OrderBlock *new_block) {
         OrderBlock *saved_next = curr->next;
         curr->tag = lower + (uint64_t)i++ * gap;
         curr->prev = list_prev;
-        if (list_prev != NULL) list_prev->next = curr;
+        if (list_prev != NULL) {
+            list_prev->next = curr;
+        }
         list_prev = curr;
         curr = saved_next;
 #ifdef ORDER_DEMAIN_INSTRUMENT
@@ -445,14 +442,22 @@ static void block_link_before(OrderBlock *succ_block, OrderBlock *new_block) {
     if (!inserted) {
         new_block->tag = lower + (uint64_t)i++ * gap;
         new_block->prev = list_prev;
-        if (list_prev != NULL) list_prev->next = new_block;
+        if (list_prev != NULL) {
+            list_prev->next = new_block;
+        }
         list_prev = new_block;
     }
 
-    OrderBlock *boundary_next = curr; // first block past the interval
-    if (list_prev != NULL) list_prev->next = boundary_next;
-    if (boundary_next != NULL) boundary_next->prev = list_prev;
-    if (boundary_prev != NULL) boundary_prev->next = chain_head;
+    OrderBlock *boundary_next = curr;  // first block past the interval
+    if (list_prev != NULL) {
+        list_prev->next = boundary_next;
+    }
+    if (boundary_next != NULL) {
+        boundary_next->prev = list_prev;
+    }
+    if (boundary_prev != NULL) {
+        boundary_prev->next = chain_head;
+    }
     chain_head->prev = boundary_prev;
 #ifdef ORDER_DEMAIN_INSTRUMENT
     uint64_t repair_end_ns = order_demain_now_ns();
@@ -491,7 +496,8 @@ static void split_block_if_needed(OrderBlock *block, bool preserve_local_tags) {
     }
 }
 
-static void insert_token_pair_before(OrderToken *succ_tok, OrderToken *in_tok, OrderToken *out_tok) {
+static void insert_token_pair_before(OrderToken *succ_tok, OrderToken *in_tok,
+                                     OrderToken *out_tok) {
     ensure_root_block(succ_tok);
     OrderBlock *block = succ_tok->block;
     OrderToken *prev_tok = succ_tok->prev;
@@ -541,7 +547,8 @@ void order_on_insert(Expression *parent, Expression *new_var) {
     uint64_t insert_start_ns = order_demain_now_ns();
     g_order_demain_stats.inserts++;
 #endif
-    OrderToken *succ_tok = (parent != NULL && !context_is_empty(parent)) ? var_order_out(parent) : &root_out;
+    OrderToken *succ_tok =
+        (parent != NULL && !context_is_empty(parent)) ? var_order_out(parent) : &root_out;
     insert_token_pair_before(succ_tok, var_order_in(new_var), var_order_out(new_var));
 #ifdef ORDER_DEMAIN_INSTRUMENT
     g_order_demain_stats.total_insert_ns += order_demain_now_ns() - insert_start_ns;

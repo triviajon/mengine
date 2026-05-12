@@ -131,10 +131,18 @@ static Context *source_lets_get(SourceLetBinding *source_lets, const char *name)
 }
 
 static Context *join_required_contexts(Context *lhs, Context *rhs) {
-    if (!lhs || !rhs) return NULL;
-    if (lhs == rhs) return lhs;
-    if (kernel_context_is_ancestor(lhs, rhs)) return rhs;
-    if (kernel_context_is_ancestor(rhs, lhs)) return lhs;
+    if (!lhs || !rhs) {
+        return NULL;
+    }
+    if (lhs == rhs) {
+        return lhs;
+    }
+    if (kernel_context_is_ancestor(lhs, rhs)) {
+        return rhs;
+    }
+    if (kernel_context_is_ancestor(rhs, lhs)) {
+        return lhs;
+    }
     fprintf(stderr, ERROR "Cannot join incomparable required contexts.\n" CRESET);
     return NULL;
 }
@@ -145,8 +153,7 @@ static Context *require_context_valid(Context *required, Context *lexical_contex
         return NULL;
     }
     if (!kernel_context_is_ancestor(required, lexical_context)) {
-        fprintf(stderr, ERROR "%s is not valid in the current lexical context.\n" CRESET,
-                source);
+        fprintf(stderr, ERROR "%s is not valid in the current lexical context.\n" CRESET, source);
         return NULL;
     }
     return required;
@@ -154,8 +161,7 @@ static Context *require_context_valid(Context *required, Context *lexical_contex
 
 static Context *required_context_for_name(const char *name, Context *lexical_context,
                                           DoublyLinkedList *letbindings, TacticEnvEntry *tac_env,
-                                          BoundName *bound_names,
-                                          SourceLetBinding *source_lets) {
+                                          BoundName *bound_names, SourceLetBinding *source_lets) {
     Expression *letbinding = letbindings_get(letbindings, name);
     if (letbinding) {
         return require_context_valid(kernel_expr_context(letbinding), lexical_context,
@@ -199,9 +205,8 @@ static Context *required_context_for_name(const char *name, Context *lexical_con
 }
 
 static Context *required_context_for_branch(AST *branch_ast, Context *lexical_context,
-                                            DoublyLinkedList *letbindings,
-                                            TacticEnvEntry *tac_env, BoundName *bound_names,
-                                            SourceLetBinding *source_lets) {
+                                            DoublyLinkedList *letbindings, TacticEnvEntry *tac_env,
+                                            BoundName *bound_names, SourceLetBinding *source_lets) {
     if (!branch_ast || branch_ast->tag != AST_MATCHBRANCH) {
         fprintf(stderr, ERROR "Expected match branch in dependency analysis.\n" CRESET);
         return NULL;
@@ -225,8 +230,7 @@ static Context *required_context_for_branch(AST *branch_ast, Context *lexical_co
         }
         for (int i = 0; i < pattern->argument_count; i++) {
             pattern_bound_names =
-                push_bound_name(pattern_bound_names, &pattern_nodes[i],
-                                pattern->argument_names[i]);
+                push_bound_name(pattern_bound_names, &pattern_nodes[i], pattern->argument_names[i]);
         }
     }
 
@@ -265,12 +269,11 @@ static Context *ast_required_context(AST *ast, Context *lexical_context,
                                          "Referenced term");
         }
         case AST_APP: {
-            Context *func_ctx = ast_required_context(ast->value.app.func, lexical_context,
-                                                    letbindings, tac_env, bound_names,
-                                                    source_lets);
+            Context *func_ctx =
+                ast_required_context(ast->value.app.func, lexical_context, letbindings, tac_env,
+                                     bound_names, source_lets);
             Context *arg_ctx = ast_required_context(ast->value.app.arg, lexical_context,
-                                                   letbindings, tac_env, bound_names,
-                                                   source_lets);
+                                                    letbindings, tac_env, bound_names, source_lets);
             return join_required_contexts(func_ctx, arg_ctx);
         }
         case AST_LAMBDA: {
@@ -278,10 +281,10 @@ static Context *ast_required_context(AST *ast, Context *lexical_context,
                 ast_required_context(ast->value.lambda.binder.type, lexical_context, letbindings,
                                      tac_env, bound_names, source_lets);
             BoundName bound_node;
-            BoundName *bound = push_bound_name(bound_names, &bound_node,
-                                               ast->value.lambda.binder.name);
+            BoundName *bound =
+                push_bound_name(bound_names, &bound_node, ast->value.lambda.binder.name);
             Context *body_ctx = ast_required_context(ast->value.lambda.body, lexical_context,
-                                                    letbindings, tac_env, bound, source_lets);
+                                                     letbindings, tac_env, bound, source_lets);
             return join_required_contexts(type_ctx, body_ctx);
         }
         case AST_FORALL: {
@@ -289,33 +292,33 @@ static Context *ast_required_context(AST *ast, Context *lexical_context,
                 ast_required_context(ast->value.forall.binder.type, lexical_context, letbindings,
                                      tac_env, bound_names, source_lets);
             BoundName bound_node;
-            BoundName *bound = push_bound_name(bound_names, &bound_node,
-                                               ast->value.forall.binder.name);
+            BoundName *bound =
+                push_bound_name(bound_names, &bound_node, ast->value.forall.binder.name);
             Context *body_ctx = ast_required_context(ast->value.forall.body, lexical_context,
-                                                    letbindings, tac_env, bound, source_lets);
+                                                     letbindings, tac_env, bound, source_lets);
             return join_required_contexts(type_ctx, body_ctx);
         }
         case AST_LET: {
-            Context *type_ctx = ast_required_context(ast->value.let.type, lexical_context,
-                                                    letbindings, tac_env, bound_names,
-                                                    source_lets);
-            Context *value_ctx = ast_required_context(ast->value.let.value, lexical_context,
-                                                     letbindings, tac_env, bound_names,
-                                                     source_lets);
+            Context *type_ctx =
+                ast_required_context(ast->value.let.type, lexical_context, letbindings, tac_env,
+                                     bound_names, source_lets);
+            Context *value_ctx =
+                ast_required_context(ast->value.let.value, lexical_context, letbindings, tac_env,
+                                     bound_names, source_lets);
             Context *binding_ctx = join_required_contexts(type_ctx, value_ctx);
             if (!binding_ctx) {
                 return NULL;
             }
             SourceLetBinding source_let = {ast->value.let.name, value_ctx, source_lets};
-            Context *body_ctx = ast_required_context(ast->value.let.body, lexical_context,
-                                                    letbindings, tac_env, bound_names,
-                                                    &source_let);
+            Context *body_ctx =
+                ast_required_context(ast->value.let.body, lexical_context, letbindings, tac_env,
+                                     bound_names, &source_let);
             return join_required_contexts(binding_ctx, body_ctx);
         }
         case AST_MATCH: {
-            Context *required = ast_required_context(ast->value.match.scrutinee, lexical_context,
-                                                    letbindings, tac_env, bound_names,
-                                                    source_lets);
+            Context *required =
+                ast_required_context(ast->value.match.scrutinee, lexical_context, letbindings,
+                                     tac_env, bound_names, source_lets);
             for (size_t i = 0; required && i < ast->value.match.branch_count; i++) {
                 Context *branch_ctx =
                     required_context_for_branch(ast->value.match.branches[i], lexical_context,
@@ -333,8 +336,8 @@ static Context *ast_required_context(AST *ast, Context *lexical_context,
             if (binder_count > 0) {
                 binder_nodes = calloc(binder_count, sizeof(BoundName));
                 if (!binder_nodes) {
-                    fprintf(stderr, ERROR
-                            "Memory allocation failed during dependency analysis.\n" CRESET);
+                    fprintf(stderr,
+                            ERROR "Memory allocation failed during dependency analysis.\n" CRESET);
                     return NULL;
                 }
             }
@@ -347,16 +350,15 @@ static Context *ast_required_context(AST *ast, Context *lexical_context,
                                          letbindings, tac_env, local_bound_names, source_lets);
                 required = join_required_contexts(required, binder_type_ctx);
 
-                local_bound_names =
-                    push_bound_name(local_bound_names, &binder_nodes[i],
-                                    ast->value.fix.binders[i]->name);
+                local_bound_names = push_bound_name(local_bound_names, &binder_nodes[i],
+                                                    ast->value.fix.binders[i]->name);
             }
 
             Context *return_ctx = NULL;
             if (required) {
-                return_ctx = ast_required_context(ast->value.fix.return_type, lexical_context,
-                                                 letbindings, tac_env, local_bound_names,
-                                                 source_lets);
+                return_ctx =
+                    ast_required_context(ast->value.fix.return_type, lexical_context, letbindings,
+                                         tac_env, local_bound_names, source_lets);
                 required = join_required_contexts(required, return_ctx);
             }
 
@@ -364,9 +366,9 @@ static Context *ast_required_context(AST *ast, Context *lexical_context,
                 BoundName recursive_name_node;
                 BoundName *recursive_name =
                     push_bound_name(local_bound_names, &recursive_name_node, ast->value.fix.name);
-                Context *body_ctx = ast_required_context(ast->value.fix.body, lexical_context,
-                                                        letbindings, tac_env, recursive_name,
-                                                        source_lets);
+                Context *body_ctx =
+                    ast_required_context(ast->value.fix.body, lexical_context, letbindings, tac_env,
+                                         recursive_name, source_lets);
                 required = join_required_contexts(required, body_ctx);
             }
 
@@ -401,9 +403,8 @@ static Context *binder_scope_context(Binder *binder, AST *body, Context *lexical
                                              /*bound_names*/ NULL, /*source_lets*/ NULL);
     BoundName bound_node;
     BoundName *bound = push_bound_name(NULL, &bound_node, binder->name);
-    Context *body_ctx =
-        ast_required_context(body, lexical_context, letbindings, tac_env, bound,
-                             /*source_lets*/ NULL);
+    Context *body_ctx = ast_required_context(body, lexical_context, letbindings, tac_env, bound,
+                                             /*source_lets*/ NULL);
     return join_required_contexts(type_ctx, body_ctx);
 }
 
@@ -423,8 +424,12 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
             // Check tactic let-binding environment (from TAC_LET / TAC_MATCH_*)
             for (TacticEnvEntry *e = tac_env; e; e = e->next) {
                 if (strcmp(e->name, ast->value.var.name) == 0) {
-                    if (!e->val) return NULL;
-                    if (e->val->kind == TVAL_EXPRESSION) return e->val->expr;
+                    if (!e->val) {
+                        return NULL;
+                    }
+                    if (e->val->kind == TVAL_EXPRESSION) {
+                        return e->val->expr;
+                    }
                     if (e->val->kind == TVAL_AST) {
                         /* Evaluate in lexical parent env to avoid self-recursion. */
                         return _ast_to_expression(e->val->ast, context, letbindings, e->next);
@@ -453,16 +458,14 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
             return tactic_value_as_expr(ast->value.expr_ref.tval);
 
         case AST_LAMBDA: {
-            Context *scope_context =
-                binder_scope_context(&ast->value.lambda.binder, ast->value.lambda.body, context,
-                                     letbindings, tac_env);
+            Context *scope_context = binder_scope_context(
+                &ast->value.lambda.binder, ast->value.lambda.body, context, letbindings, tac_env);
             if (!scope_context) {
                 fprintf(stderr, ERROR "Failed to find lambda binder scope.\n" CRESET);
                 return NULL;
             }
-            Expression *binder_type =
-                _ast_to_expression(ast->value.lambda.binder.type, scope_context, letbindings,
-                                   tac_env);
+            Expression *binder_type = _ast_to_expression(ast->value.lambda.binder.type,
+                                                         scope_context, letbindings, tac_env);
             if (!binder_type) {
                 fprintf(stderr, ERROR "Failed to create lambda binder type.\n" CRESET);
                 return NULL;
@@ -493,16 +496,14 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
         }
 
         case AST_FORALL: {
-            Context *scope_context =
-                binder_scope_context(&ast->value.forall.binder, ast->value.forall.body, context,
-                                     letbindings, tac_env);
+            Context *scope_context = binder_scope_context(
+                &ast->value.forall.binder, ast->value.forall.body, context, letbindings, tac_env);
             if (!scope_context) {
                 fprintf(stderr, ERROR "Failed to find forall binder scope.\n" CRESET);
                 return NULL;
             }
-            Expression *binder_type =
-                _ast_to_expression(ast->value.forall.binder.type, scope_context, letbindings,
-                                   tac_env);
+            Expression *binder_type = _ast_to_expression(ast->value.forall.binder.type,
+                                                         scope_context, letbindings, tac_env);
             if (!binder_type) {
                 fprintf(stderr, ERROR "Failed to create forall binder type.\n" CRESET);
                 return NULL;

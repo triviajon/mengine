@@ -138,7 +138,6 @@ static void test_nested_beta_intro_subst(void) {
            "reflexivity.\n");
 }
 
-
 /* ── tactic combinators ─────────────────────────────────────────────────── */
 
 static void test_tactic_first(void) {

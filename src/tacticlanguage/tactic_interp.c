@@ -146,7 +146,7 @@ static bool _match_pattern(AST *pattern, Expression *expr, PatternBindings *bind
 #endif
 
 static TacticEnvEntry g_env_stack[MAX_ENV_DEPTH];
-static int            g_env_top = 0;
+static int g_env_top = 0;
 
 static TacticEnvEntry *env_top_ptr(void) {
     return g_env_top > 0 ? &g_env_stack[g_env_top - 1] : NULL;
@@ -169,7 +169,7 @@ static void env_push(const char *name, TacticValue *val) {
         abort();
     }
     g_env_stack[g_env_top].name = name;
-    g_env_stack[g_env_top].val  = val;
+    g_env_stack[g_env_top].val = val;
     g_env_stack[g_env_top].next = g_env_top > 0 ? &g_env_stack[g_env_top - 1] : NULL;
     g_env_top++;
 }
@@ -503,8 +503,8 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                         PatternBindings trial = bindings;
                         if (_match_pattern(hp->type, hyp_type, &trial)) {
                             bindings = trial;
-                            hyp_exprs = realloc(hyp_exprs,
-                                                sizeof(Expression *) * (hyp_param_count + 1));
+                            hyp_exprs =
+                                realloc(hyp_exprs, sizeof(Expression *) * (hyp_param_count + 1));
                             hyp_exprs[hyp_param_count] = c;
                             hyp_param_count++;
                             found = true;
@@ -562,8 +562,8 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
             // Save RHS goals before freeing the result struct
             DoublyLinkedList *rhs_goals = tactic_result_get_goals(rhs_result);
-            rhs_result->new_goals   = NULL;  // ownership transferred
-            rhs_result->term_value  = NULL;  // ownership transferred to env slot
+            rhs_result->new_goals = NULL;   // ownership transferred
+            rhs_result->term_value = NULL;  // ownership transferred to env slot
             free_tactic_result(rhs_result);
 
             // Push binding onto the env stack and interpret the body.
@@ -604,8 +604,8 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
         case TAC_MATCH_TERM: {
             Context *ctx = kernel_expr_context(goal);
-            Expression *scrutinee = ast_to_expression_env(expr->as.match_term.scrutinee, ctx,
-                                                          env_top_ptr());
+            Expression *scrutinee =
+                ast_to_expression_env(expr->as.match_term.scrutinee, ctx, env_top_ptr());
             if (!scrutinee) {
                 return init_tactic_result(false, NULL,
                                           "match <term>: could not evaluate scrutinee");
@@ -667,7 +667,8 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
         case TAC_SUBST: {
             Context *ctx = kernel_expr_context(goal);
-            Expression *new_term = ast_to_expression_env(expr->as.subst.new_term, ctx, env_top_ptr());
+            Expression *new_term =
+                ast_to_expression_env(expr->as.subst.new_term, ctx, env_top_ptr());
             Expression *body = ast_to_expression_env(expr->as.subst.body, ctx, env_top_ptr());
             Expression *old_var = ast_to_expression_env(expr->as.subst.old_var, ctx, env_top_ptr());
             if (!new_term || !body || !old_var) {
@@ -682,7 +683,8 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
         case TAC_EUNIFY: {
             Context *ctx = kernel_expr_context(goal);
-            Expression *lemma_expr = ast_to_expression_env(expr->as.eunify.lemma, ctx, env_top_ptr());
+            Expression *lemma_expr =
+                ast_to_expression_env(expr->as.eunify.lemma, ctx, env_top_ptr());
             if (!lemma_expr) {
                 return init_tactic_result(false, NULL, "eunify: could not resolve lemma");
             }
@@ -825,8 +827,10 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
 
         case TAC_REWRITE_UNIFY: {
             Context *ctx = kernel_expr_context(goal);
-            Expression *lemma = ast_to_expression_env(expr->as.rewrite_unify.lemma, ctx, env_top_ptr());
-            Expression *target = ast_to_expression_env(expr->as.rewrite_unify.target, ctx, env_top_ptr());
+            Expression *lemma =
+                ast_to_expression_env(expr->as.rewrite_unify.lemma, ctx, env_top_ptr());
+            Expression *target =
+                ast_to_expression_env(expr->as.rewrite_unify.target, ctx, env_top_ptr());
             if (!lemma || !target) {
                 return init_tactic_result(false, NULL,
                                           "rewrite_unify: could not resolve arguments");

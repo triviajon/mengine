@@ -98,7 +98,7 @@ Conversion *conversion_trans(Conversion *left, Conversion *right) {
     return result;
 }
 
-#define CONV_TRUE  ((void *)(intptr_t)1)
+#define CONV_TRUE ((void *)(intptr_t)1)
 #define CONV_FALSE ((void *)(intptr_t)2)
 
 typedef struct ConversionStepEntry {
@@ -319,10 +319,9 @@ static Expression *conversion_whnf(Expression *expr) {
                 Expression *norm_scrut = conversion_whnf(scrut);
 
                 if (norm_scrut != scrut) {
-                    Expression *next = init_match_expression_wc(norm_scrut,
-                                                               current->as.match.branches,
-                                                               current->as.match.branch_count,
-                                                               ctx);
+                    Expression *next =
+                        init_match_expression_wc(norm_scrut, current->as.match.branches,
+                                                 current->as.match.branch_count, ctx);
                     if (next) {
                         conversion_record_step(ctx, current, next, CONVERSION_MATCH);
                         current = next;
@@ -547,8 +546,12 @@ static bool conversion_cached_holds(Expression *lhs, Expression *rhs) {
         Map *inner = (Map *)map_get(g_conversion_cache, lhs);
         if (inner != NULL) {
             void *cached = map_get(inner, rhs);
-            if (cached == CONV_TRUE) return true;
-            if (cached == CONV_FALSE) return false;
+            if (cached == CONV_TRUE) {
+                return true;
+            }
+            if (cached == CONV_FALSE) {
+                return false;
+            }
         }
     }
 

@@ -17,8 +17,7 @@
  *
  * No holes are filled "side-effect"-fully.
  */
-static bool _open_compat(Expression *expected, Expression *actual, Map *bv_map,
-                         LinearMap *holes) {
+static bool _open_compat(Expression *expected, Expression *actual, Map *bv_map, LinearMap *holes) {
     expected = normalize_whnf(expected);
     actual = normalize_whnf(actual);
 
@@ -67,10 +66,9 @@ static bool _open_compat(Expression *expected, Expression *actual, Map *bv_map,
             Expression *expected_domain = get_expression_type(bv_e);
             Expression *actual_domain = get_expression_type(bv_a);
 
-            bool domain_ok =
-                (expected_domain->tag == PROP_EXPRESSION &&
-                 actual_domain->tag == TYPE_EXPRESSION) ||
-                _open_compat(expected_domain, actual_domain, bv_map, holes);
+            bool domain_ok = (expected_domain->tag == PROP_EXPRESSION &&
+                              actual_domain->tag == TYPE_EXPRESSION) ||
+                             _open_compat(expected_domain, actual_domain, bv_map, holes);
             if (!domain_ok) {
                 return false;
             }

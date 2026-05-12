@@ -8,8 +8,8 @@
 #include "src/common/doubly_linked_list.h"
 #include "src/common/map.h"
 #include "src/engine/unify.h"
-#include "src/runtime/core.h"
 #include "src/kernel/subst.h"
+#include "src/runtime/core.h"
 
 /* ============================================================================
  * Rewrite cache debug statistics
@@ -464,7 +464,8 @@ RewriteResult *rewrite_app(Expression *expr, Expression *lemma, Context *context
         mid_result->new_goals = NULL;  // transferred to final_rwr
     } else {
         if (mid_rwr->original_to_rewritten_proof == NULL) {
-            mid_rwr->original_to_rewritten_proof = _build_reflexivity_proof(mid_rwr->original, context);
+            mid_rwr->original_to_rewritten_proof =
+                _build_reflexivity_proof(mid_rwr->original, context);
         }
         final_rwr = init_rewrite_result(expr, mid_result->rewritten,
                                         dll_merge(mid_rwr->new_goals, mid_result->new_goals),

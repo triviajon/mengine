@@ -37,18 +37,17 @@ static Expression *app2(Expression *f, Expression *a, Expression *b, Context *ct
     return app(app(f, a, ctx), b, ctx);
 }
 
-static Expression *app3(Expression *f, Expression *a, Expression *b, Expression *c,
-                        Context *ctx) {
+static Expression *app3(Expression *f, Expression *a, Expression *b, Expression *c, Context *ctx) {
     return app(app2(f, a, b, ctx), c, ctx);
 }
 
-static Expression *app4(Expression *f, Expression *a, Expression *b, Expression *c,
-                        Expression *d, Context *ctx) {
+static Expression *app4(Expression *f, Expression *a, Expression *b, Expression *c, Expression *d,
+                        Context *ctx) {
     return app(app3(f, a, b, c, ctx), d, ctx);
 }
 
-static Expression *app6(Expression *f, Expression *a, Expression *b, Expression *c,
-                        Expression *d, Expression *e, Expression *g, Context *ctx) {
+static Expression *app6(Expression *f, Expression *a, Expression *b, Expression *c, Expression *d,
+                        Expression *e, Expression *g, Context *ctx) {
     return app(app(app4(f, a, b, c, d, ctx), e, ctx), g, ctx);
 }
 
@@ -74,8 +73,7 @@ static bool sep_app_parts(SepCancelEnv *env, Expression *expr, Expression **head
     return sep_head == env->sep;
 }
 
-static bool eq_goal_parts(Expression *goal_ty, Expression **A, Expression **lhs,
-                          Expression **rhs) {
+static bool eq_goal_parts(Expression *goal_ty, Expression **A, Expression **lhs, Expression **rhs) {
     Expression *eq_A_lhs = NULL;
     if (!app_parts(goal_ty, &eq_A_lhs, rhs)) {
         return false;
@@ -95,14 +93,13 @@ static Expression *build_eq_refl(Expression *expr, Context *ctx) {
     return app2(eq_refl, kernel_expr_type(expr), expr, ctx);
 }
 
-static Expression *build_eq_trans(Expression *A, Expression *from, Expression *mid,
-                                  Expression *to, Expression *p1, Expression *p2,
-                                  Context *ctx) {
+static Expression *build_eq_trans(Expression *A, Expression *from, Expression *mid, Expression *to,
+                                  Expression *p1, Expression *p2, Context *ctx) {
     return app6(eq_trans, A, from, mid, to, p1, p2, ctx);
 }
 
-static bool bring_to_front(SepCancelEnv *env, Expression *target, Expression *lhs,
-                           Context *ctx, BringToFrontResult *out) {
+static bool bring_to_front(SepCancelEnv *env, Expression *target, Expression *lhs, Context *ctx,
+                           BringToFrontResult *out) {
     if (lhs == target) {
         out->rewritten = lhs;
         out->proof = build_eq_refl(lhs, ctx);

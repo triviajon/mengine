@@ -39,16 +39,14 @@ static uint64_t order_ll_now_ns(void) {
 }
 
 static void order_ll_print_stats(void) {
-    double avg_steps = g_order_ll_stats.order_queries == 0
-                           ? 0.0
-                           : (double)g_order_ll_stats.order_steps /
-                                 (double)g_order_ll_stats.order_queries;
+    double avg_steps =
+        g_order_ll_stats.order_queries == 0
+            ? 0.0
+            : (double)g_order_ll_stats.order_steps / (double)g_order_ll_stats.order_queries;
     fprintf(stderr,
             "[order_ll] order_queries=%" PRIu64 " order_steps=%" PRIu64
             " avg_steps=%.3f max_steps=%" PRIu64 " time_ms=%.3f\n",
-            g_order_ll_stats.order_queries,
-            g_order_ll_stats.order_steps,
-            avg_steps,
+            g_order_ll_stats.order_queries, g_order_ll_stats.order_steps, avg_steps,
             g_order_ll_stats.max_order_steps,
             (double)g_order_ll_stats.total_order_query_ns / 1000000.0);
 }

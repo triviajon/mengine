@@ -71,8 +71,8 @@ void remove_uplink_by_node(Expression *expr, DLLNode *dll_node) {
         return;
     }
     dll_remove_node(expr->uplinks, dll_node);
-    free(dll_node->data);  /* free Uplink */
-    free(dll_node);        /* free DLLNode */
+    free(dll_node->data); /* free Uplink */
+    free(dll_node);       /* free DLLNode */
     expr->uplink_count--;
 }
 
@@ -1337,8 +1337,7 @@ bool fill_hole(Expression *hole, Expression *term) {
         return false;
     }
     if (!open_types_compatible_collecting_in_context(hole_context, get_expression_type(hole),
-                                                     get_expression_type(term),
-                                                     hole_assignments)) {
+                                                     get_expression_type(term), hole_assignments)) {
         linear_map_clear_free(hole_assignments);
         return false;
     }

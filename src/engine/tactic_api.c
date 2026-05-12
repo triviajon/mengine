@@ -49,7 +49,7 @@ TacticValue *tactic_value_dup(TacticValue *tv) {
         return tactic_value_expr(tv->expr);
     }
     if (tv->kind == TVAL_AST) {
-        return tactic_value_ast(tv->ast);  /* AST not owned, just copy pointer */
+        return tactic_value_ast(tv->ast); /* AST not owned, just copy pointer */
     }
     return tactic_value_pair(tactic_value_dup(tv->pair.fst), tactic_value_dup(tv->pair.snd));
 }
