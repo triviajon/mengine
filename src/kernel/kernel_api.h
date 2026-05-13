@@ -20,7 +20,10 @@ typedef struct Conversion Conversion;
 /**
  * Create a variable expression in the given context with a given name and type. The name is only
  * used for printing purposes.
- * Time Complexity: linear in size of type
+ * Time Complexity: 
+ * - Check if type is valid in context -> O(valid_in_context(type, context))
+ * - Propogate evar refs -> O(propagate_evar_refs(expr, type))
+ * - Insert into global context tree -> O(order_insert(context, new_var))
  *
  * @param name
  * @param type
@@ -31,7 +34,13 @@ Expression *kernel_var_create(const char *name, Expression *type, Context *conte
 
 /**
  * Create a variable expression with an associated body in the given context.
- * Time Complexity: linear in size of body and type(body)
+ * Time Complexity:
+ * - Check if body is valid in context -> O(valid_in_context(body, context))
+ * - Check if body type is valid in context -> O(valid_in_context(type(body), context))
+ * - Check if type(body) is a sort -> O(1)
+ * - Propagate evar refs from type(body) -> O(propagate_evar_refs(expr, type(body)))
+ * - Attach body and propagate evar refs from body -> O(propagate_evar_refs(expr, body))
+ * - Insert into global context tree -> O(order_insert(context, new_var))
  *
  * @param name
  * @param body
@@ -42,8 +51,13 @@ Expression *kernel_var_create_with_body(const char *name, Expression *body, Cont
 
 /**
  * Create an application expression (func applied to arg) in the given context.
- * Time Complexity: linear in the size of the func and arg + (todo) the time to construct the app
- * type
+ * Time Complexity: 
+ * - Check if func is valid in context -> O(valid_in_context(func, context))
+ * - Check if func type is a forall -> O(1)
+ * - Check if arg is valid in context -> O(valid_in_context(arg, context))
+ * - Construct app type -> O(_construct_app_type(context, func, arg)) # TODO
+ * - Propagate evar refs from type -> O(propagate_evar_refs(expr, type))
+ * - Propagate evar refs from func and arg -> O(propagate_evar_refs(expr, func) + propagate_evar_refs(expr, arg))
  *
  * @param func
  * @param arg
@@ -54,7 +68,11 @@ Expression *kernel_app_create(Expression *func, Expression *arg, Context *contex
 
 /**
  * Create a lambda expression with a bound variable and body.
- * Time Complexity: linear in the size of the body + the time to construct the lambda type
+ * Time Complexity: 
+ * - Check if body is valid in extended context -> O(valid_in_context(body, extended_with_bound_variable))
+ * - Construct lambda type -> O(kernel_forall_create(bound_variable, get_expression_type(body)))
+ * - Propagate evar refs from type -> O(propagate_evar_refs(expr, type))
+ * - Propagate evar refs from bound variable and body -> O(propagate_evar_refs(expr, bound_variable) + propagate_evar_refs(expr, body))
  *
  * @param bound_var
  * @param body
@@ -64,7 +82,11 @@ Expression *kernel_lambda_create(Expression *bound_var, Expression *body);
 
 /**
  * Create a forall expression with a bound variable and body.
- * Time Complexity: linear in the size of the body and the type of the bound variable
+ * Time Complexity:
+ * - Check if body is valid in extended context -> O(valid_in_context(body, extended_with_bound_variable))
+ * - If body type is Type, check if bound variable type is valid in context -> O(valid_in_context(type(bound_variable), context))
+ * - Propagate evar refs from type -> O(propagate_evar_refs(expr, type))
+ * - Propagate evar refs from bound variable and body -> O(propagate_evar_refs(expr, bound_variable) + propagate_evar_refs(expr, body))
  *
  * @param bound_var
  * @param body
@@ -74,7 +96,9 @@ Expression *kernel_forall_create(Expression *bound_var, Expression *body);
 
 /**
  * Create an arrow expression (lhs -> rhs) in the given context.
- * Time Complexity: time to construct the anonymous variable + the time to construct the forall type
+ * Time Complexity: 
+ * - Create anonymous variable for lhs -> O(kernel_var_create("_", lhs, context))
+ * - Create forall over rhs using that anonymous variable -> O(kernel_forall_create(anonymous_variable, rhs))
  *
  * @param lhs
  * @param rhs
@@ -85,7 +109,10 @@ Expression *kernel_arrow_create(Expression *lhs, Expression *rhs, Context *conte
 
 /**
  * Create a hole expression with a name and return type in the given context.
- * Time Complexity: linear in the size of the return type
+ * Time Complexity:
+ * - Check if return_type is valid in context -> O(valid_in_context(return_type, context))
+ * - Propagate evar refs from return_type -> O(propagate_evar_refs(expr, return_type))
+ * - Add the hole to its own evar refs -> O(1)
  *
  * @param name
  * @param return_type
@@ -119,7 +146,7 @@ void kernel_match_branch_free(void *branch);
 /**
  * Free a kernel expression via the uplink-based ref-counting teardown.
  * Suitable for freeing the top-level runtime context on shutdown.
- * Time Complexity:
+ * Time Complexity: constant (because we defer to shutdown right now)
  *
  * @param expr
  * @return
@@ -131,7 +158,7 @@ void kernel_expr_free(Expression *expr);
  * reachable from ctx.  Use instead of kernel_expr_free when the expression
  * shares children (e.g. context variables) with the live context chain.
  * Pass NULL for b when freeing a single expression.
- * Time Complexity:
+ * Time Complexity: constant (because we defer to shutdown right now)
  *
  * @param a
  * @param b
@@ -143,7 +170,7 @@ void kernel_expr_free_excluding_ctx(Expression *a, Expression *b, Context *ctx);
 /**
  * Free a filled hole expression without cascading into children.
  * Only safe to call on holes that have been filled via kernel_hole_fill.
- * Time Complexity:
+ * Time Complexity: constant (because we defer to shutdown right now)
  *
  * @param hole
  * @return
@@ -153,7 +180,7 @@ void kernel_free_filled_hole(Expression *hole);
 /**
  * Free the context chain from leaf to root. Since context is a non-owning
  * edge, the chain must be freed explicitly. Stops at EMPTY_CONTEXT.
- * Time Complexity:
+ * Time Complexity: constant (because we defer to shutdown right now)
  *
  * @param ctx
  * @return
@@ -162,7 +189,7 @@ void kernel_context_free(Context *ctx);
 
 /**
  * Shut down kernel-owned expression GC bookkeeping during runtime teardown.
- * Time Complexity:
+ * Time Complexity: O(number of expressions allocated)
  *
  * @return
  */
@@ -172,6 +199,7 @@ void kernel_expression_gc_shutdown(void);
  * Return true if expr is one of the nodes directly in the context chain,
  * i.e. reachable from ctx by following ->context pointers.
  * Time Complexity:
+ * - O(context_is_ancestor(expr, ctx))
  *
  * @param ctx
  * @param expr
@@ -195,6 +223,12 @@ Expression *kernel_match_create(Expression *scrutinee, void **branches, int bran
 /**
  * Create a fix expression (recursive definition) in the given context.
  * Time Complexity:
+ * - Count expected arguments from recursive_var's forall type -> O(number_of_forall_args(type(recursive_var)))
+ * - Check if body is valid in the recursive context extended by args -> O(valid_in_context(body, extended_context))
+ * - Check structural recursion on the decreasing argument -> O(check_all_recursive_calls(body, recursive_var, decreasing_arg))
+ * - Close body over args with lambdas -> O(arg_count * kernel_lambda_create(arg_i, body_bound_i))
+ * - Propagate evar refs from type, recursive_var, args, and body -> O(propagate_evar_refs(expr, type(recursive_var)) + propagate_evar_refs(expr, recursive_var) + sum_i propagate_evar_refs(expr, args[i]) + propagate_evar_refs(expr, body))
+ * - Register closed body on recursive_var -> O(register_fix_body_to_expression(recursive_var, body_bound))
  *
  * @param recursive_var
  * @param args
@@ -328,7 +362,7 @@ Expression *kernel_forall_body(Expression *forall_expr);
 
 /**
  * Get the scrutinee of a match expression.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @param match_expr
  * @return
@@ -337,7 +371,7 @@ Expression *kernel_match_scrutinee(Expression *match_expr);
 
 /**
  * Get the recursive variable of a fix expression.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @param fix_expr
  * @return
@@ -346,7 +380,7 @@ Expression *kernel_fix_recursive_var(Expression *fix_expr);
 
 /**
  * Get the arguments of a fix expression.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @param fix_expr
  * @param out_count
@@ -356,7 +390,7 @@ Expression **kernel_fix_args(Expression *fix_expr, int *out_count);
 
 /**
  * Get the body of a fix expression.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @param fix_expr
  * @return
@@ -365,7 +399,7 @@ Expression *kernel_fix_body(Expression *fix_expr);
 
 /**
  * Get the decreasing argument index of a fix expression.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @param fix_expr
  * @return
@@ -383,7 +417,7 @@ bool kernel_expr_is_hole(Expression *expr);
 
 /**
  * Check whether an expression is a variable.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * Space Complexity:
  *
@@ -394,7 +428,7 @@ bool kernel_expr_is_var(Expression *expr);
 
 /**
  * Check whether an expression is Type.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * Space Complexity:
  *
@@ -405,7 +439,7 @@ bool kernel_expr_is_type(Expression *expr);
 
 /**
  * Check whether an expression is Prop.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * Space Complexity:
  *
@@ -416,7 +450,7 @@ bool kernel_expr_is_prop(Expression *expr);
 
 /**
  * Check whether an expression is an application.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * Space Complexity:
  *
@@ -427,7 +461,7 @@ bool kernel_expr_is_app(Expression *expr);
 
 /**
  * Check whether an expression is a lambda.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * Space Complexity:
  *
@@ -438,7 +472,7 @@ bool kernel_expr_is_lambda(Expression *expr);
 
 /**
  * Check whether an expression is a forall.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * Space Complexity:
  *
@@ -449,7 +483,7 @@ bool kernel_expr_is_forall(Expression *expr);
 
 /**
  * Check whether an expression is a match expression.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * Space Complexity:
  *
@@ -460,7 +494,7 @@ bool kernel_expr_is_match(Expression *expr);
 
 /**
  * Check whether an expression is a fix expression.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * Space Complexity:
  *
@@ -471,7 +505,7 @@ bool kernel_expr_is_fix(Expression *expr);
 
 /**
  * Check whether a hole has already been filled or shelved.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * Space Complexity:
  *
@@ -483,7 +517,7 @@ bool kernel_hole_is_satisfied(Expression *hole);
 /**
  * Mark a hole as satisfied without filling it. This is used by the proof
  * engine for dependent evars that will be filled by another open goal.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * Space Complexity:
  *
@@ -494,7 +528,7 @@ void kernel_hole_mark_satisfied(Expression *hole);
 
 /**
  * Check whether an expression contains any holes.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @param expr
  * @return
@@ -504,6 +538,14 @@ bool kernel_expr_has_holes(Expression *expr);
 /**
  * Fill a hole with a term if the fill is valid.
  * Time Complexity:
+ * - Check if term is valid in hole's context -> O(valid_in_context(term, context(hole)))
+ * - Check if hole type and term type are compatible, collecting sub-hole assignments -> O(open_types_compatible_collecting_in_context(context(hole), type(hole), type(term), assignments))
+ * - Check that term does not contain hole -> O(expr_refs_hole(term, hole))
+ * - Fill collected sub-holes -> O(sum_i kernel_hole_fill(assignment_holes[i], assignment_terms[i]))
+ * - Clear conversion cache -> O(conversion_cache_clear())
+ * - Rewrite direct structural uplinks from hole to term -> O(uplink_count(hole))
+ * - Recompute evar refs for hole and affected ancestors -> O(sum_{a in affected_ancestors} recompute_evar_refs(a))
+ *
  *
  * @param hole
  * @param term
@@ -517,25 +559,15 @@ bool kernel_hole_fill(Expression *hole, Expression *term);
 
 /**
  * Create or return the empty context.
- * Time Complexity:
+ * Time Complexity: constant
  *
  * @return
  */
 Context *kernel_context_empty(void);
 
 /**
- * Add a variable expression to a context and return the new context.
- * Time Complexity:
- *
- * @param context
- * @param var_expr
- * @return
- */
-Context *kernel_context_add(Context *context, Expression *var_expr);
-
-/**
  * Check whether a context contains a binding with the given name.
- * Time Complexity:
+ * Time Complexity: O(|context|)
  *
  * @param context
  * @param name
@@ -545,7 +577,7 @@ bool kernel_context_has_name(Context *context, char *name);
 
 /**
  * Look up a binding by name in a context.
- * Time Complexity:
+ * Time Complexity: O(|context|)
  *
  * @param context
  * @param name
@@ -555,7 +587,7 @@ Expression *kernel_context_lookup(Context *context, char *name);
 
 /**
  * Get the size of a context.
- * Time Complexity:
+ * Time Complexity: O(|context|)
  *
  * @param context
  * @return
@@ -564,7 +596,7 @@ int kernel_context_size(Context *context);
 
 /**
  * Check whether one context is an ancestor of another.
- * Time Complexity:
+ * Time Complexity: O(order_precedes(context_a, context_b))
  *
  * @param context_a
  * @param context_b
@@ -575,6 +607,10 @@ bool kernel_context_is_ancestor(Context *context_a, Context *context_b);
 /**
  * Apply the cut rule to a context for substitution validity.
  * Time Complexity:
+ * - Check if x occurs in context -> O(context_find(context, x))
+ * - For each binding v: T in the suffix after x:
+ *   + Substitute T[x := a] -> O(_subst(cut_prefix, T, x, a))
+ *   + Create the rebuilt context variable -> O(kernel_var_create(name(v), T[x := a], cut_prefix))
  *
  * @param context
  * @param x
@@ -589,7 +625,8 @@ Context *kernel_context_cut(Context *context, Expression *x, Expression *a);
 
 /**
  * Check whether func applied to arg forms a beta-redex.
- * Time Complexity:
+ * Time Complexity: 
+ * - Check whether func is a lambda and arg exists -> O(1)
  *
  * @param func
  * @param arg
@@ -600,6 +637,7 @@ bool kernel_can_beta_reduce(Expression *func, Expression *arg);
 /**
  * Perform beta reduction on a function application.
  * Time Complexity:
+ * - Substitute the application argument for the lambda-bound variable in the lambda body -> O(beta_subst(context, body(func), bound_variable(func), arg))
  *
  * @param context
  * @param func
@@ -611,6 +649,7 @@ Expression *kernel_beta_reduce(Context *context, Expression *func, Expression *a
 /**
  * Check whether an expression is delta-reducible.
  * Time Complexity:
+ * - Check whether expr is a variable with a body -> O(1)
  *
  * @param expr
  * @return
@@ -620,6 +659,8 @@ bool kernel_can_delta_reduce(Expression *expr);
 /**
  * Perform delta reduction on an expression.
  * Time Complexity:
+ * - Check whether expr is delta-reducible -> O(kernel_can_delta_reduce(expr))
+ * - Return the stored variable body -> O(1)
  *
  * @param expr
  * @return
@@ -629,6 +670,9 @@ Expression *kernel_delta_reduce(Expression *expr);
 /**
  * Check whether a match expression is iota-reducible.
  * Time Complexity:
+ * - Check whether match scrutinee has an inductive type -> O(is_inductive(type(scrutinee)))
+ * - Find the head of the scrutinee application spine -> O(application_spine_height(scrutinee))
+ * - Check whether that head is a constructor of the inductive type -> O(is_constructor_of(head(scrutinee), type(scrutinee)))
  *
  * @param match_expr
  * @return
@@ -638,6 +682,10 @@ bool kernel_can_iota_reduce(Expression *match_expr);
 /**
  * Perform iota reduction on a match expression.
  * Time Complexity:
+ * - Check whether match_expr is iota-reducible -> O(kernel_can_iota_reduce(match_expr))
+ * - Extract scrutinee application arguments -> O(application_spine_height(scrutinee))
+ * - Find the matching branch -> O(sum_i congruence(branch_constructor_i, head(scrutinee)))
+ * - Substitute scrutinee arguments for branch pattern variables in the matching branch body -> O(new_p_subst(context, branch_body, pattern_subst_map))
  *
  * @param context
  * @param match_expr
@@ -648,6 +696,7 @@ Expression *kernel_iota_reduce(Context *context, Expression *match_expr);
 /**
  * Check whether a fix expression is reducible.
  * Time Complexity:
+ * - Check whether fix_expr is a fix expression -> O(1)
  *
  * @param fix_expr
  * @return
@@ -657,6 +706,8 @@ bool kernel_can_fix_reduce(Expression *fix_expr);
 /**
  * Perform fix reduction on a fix expression.
  * Time Complexity:
+ * - Substitute fix_expr for its recursive variable in the fix body -> O(new_subst(context(body), body, recursive_var, fix_expr))
+ * - Close the substituted body over fix arguments with lambdas -> O(arg_count * kernel_lambda_create(arg_i, body_bound_i))
  *
  * @param fix_expr
  * @return
@@ -671,6 +722,11 @@ Expression *kernel_fix_reduce(Expression *fix_expr);
 /**
  * Perform a single substitution t[x := a] under the given context.
  * Time Complexity:
+ * - Check whether substitution can be skipped using uplinks/context -> O(substitution_skip_by_uplinks(t, x))
+ * - Cut x out of context and substitute through the context suffix -> O(kernel_context_cut(context, x, a))
+ * - Run top-down parallel substitution over t. If s is the number of context
+ *   binders after x and d is the maximum number of nested binders inside t, the
+ *   substitution map has size O(s + d) during traversal -> O(kernel_p_subst(final_context, t, subst_map))
  *
  * @param context
  * @param t
@@ -684,6 +740,11 @@ Expression *kernel_subst(Context *context, Expression *t, Expression *x, Express
 /**
  * Perform a parallel substitution replacing multiple variables simultaneously.
  * Time Complexity:
+ * Let V be the expression occurrences reached before context-pruning stops the
+ * traversal, and let d be the maximum number of nested binders inside t.
+ * - Context-pruning scans binder prefixes, bounded by O(|V| * d) in the worst case.
+ * - Rebuilding visited nodes calls the corresponding kernel constructors -> O(sum rebuild_cost(e)).
+ * Overall: O(|V| * d + sum rebuild_cost(e)).
  *
  * @param context
  * @param t
@@ -706,7 +767,7 @@ Expression *kernel_p_subst(Context *context, Expression *t, Map *subst_map);
 
 /**
  * Normalize an expression using call-by-value with selected reduction flags.
- * Time Complexity:
+ * Time Complexity: TODO
  *
  * @param expr
  * @param flags
@@ -716,7 +777,7 @@ Expression *kernel_normalize_cbv(Expression *expr, unsigned int flags);
 
 /**
  * Normalize an expression using the default compute strategy.
- * Time Complexity:
+ * Time Complexity: TODO
  *
  * @param expr
  * @return
@@ -725,7 +786,7 @@ Expression *kernel_normalize_compute(Expression *expr);
 
 /**
  * Normalize an expression to weak head normal form.
- * Time Complexity:
+ * Time Complexity: TODO
  *
  * @param expr
  * @return
@@ -736,9 +797,17 @@ Expression *kernel_normalize_whnf(Expression *expr);
  * Type Checking and Equality
  * ============================================================================ */
 
+/*
+ * Context ancestry cost depends on the order implementation:
+ * - order_linkedlist: O(depth(context)) by walking parent pointers.
+ * - order_demain: O(1) query using maintained Euler-tour tags; insertion/deletion
+ *   maintenance is paid when context variables are created/freed.
+ */
+
 /**
  * Check whether an expression is valid in the given context.
- * Time Complexity: linear in the size of context which expr is valid in.
+ * Time Complexity:
+ * - O(context_ancestry_query)
  *
  * @param expr
  * @param context
@@ -749,6 +818,7 @@ bool kernel_expr_valid_in_context(Expression *expr, Context *context);
 /**
  * Check whether an expression can be added to the given context.
  * Time Complexity:
+ * - O(valid_in_context(type(expr), context))
  *
  * @param expr
  * @param context
@@ -758,9 +828,7 @@ bool kernel_expr_valid_to_add(Expression *expr, Context *context);
 
 /**
  * Get the body of the innermost lambda/forall tower.
- * Time Complexity:
- *
- * Space Complexity:
+ * Time Complexity: O(|expr|)
  *
  * @param expr
  * @return
@@ -769,9 +837,7 @@ Expression *kernel_expr_innermost_body(Expression *expr);
 
 /**
  * Get the head of an application spine.
- * Time Complexity:
- *
- * Space Complexity:
+ * Time Complexity: O(|expr|)
  *
  * @param expr
  * @return
@@ -780,9 +846,7 @@ Expression *kernel_expr_head(Expression *expr);
 
 /**
  * Get the left side of an arrow represented as a forall.
- * Time Complexity:
- *
- * Space Complexity:
+ * Time Complexity: O(1)
  *
  * @param expr
  * @return
@@ -791,9 +855,7 @@ Expression *kernel_arrow_lhs(Expression *expr);
 
 /**
  * Get the right side of an arrow represented as a forall.
- * Time Complexity:
- *
- * Space Complexity:
+ * Time Complexity: O(1)
  *
  * @param expr
  * @return
@@ -804,8 +866,9 @@ Expression *kernel_arrow_rhs(Expression *expr);
  * Return conversion evidence usable in a particular context, or NULL.
  * The returned object is owned by the caller.
  * Time Complexity:
- *
- * Space Complexity:
+ * - O(valid_in_context(a, context) + valid_in_context(b, context))
+ * - O(conversion_derivable(a, b))
+ * - O(context_ancestry_query)
  *
  * @param context
  * @param a
@@ -816,9 +879,7 @@ Conversion *kernel_expr_conversion_in_context(Context *context, Expression *a, E
 
 /**
  * Free conversion evidence returned by the kernel conversion API.
- * Time Complexity:
- *
- * Space Complexity:
+ * Time Complexity: O(|conv|)
  *
  * @param conv
  * @return
@@ -827,9 +888,7 @@ void kernel_conversion_free(Conversion *conv);
 
 /**
  * Return true iff conversion evidence can be used in the supplied context.
- * Time Complexity:
- *
- * Space Complexity:
+ * Time Complexity: O(context_ancestry_query)
  *
  * @param conv
  * @param context
@@ -839,7 +898,7 @@ bool kernel_conversion_valid_in_context(Conversion *conv, Context *context);
 
 /**
  * Check whether two expressions are congruent.
- * Time Complexity:
+ * Time Complexity: O(|a| + |b|)
  *
  * @param a
  * @param b
@@ -853,7 +912,7 @@ bool kernel_expr_congruent(Expression *a, Expression *b);
 
 /**
  * Check whether an expression is an inductive type.
- * Time Complexity:
+ * Time Complexity: TODO
  *
  * @param expr
  * @return
@@ -862,7 +921,7 @@ bool kernel_expr_is_inductive(Expression *expr);
 
 /**
  * Check whether an expression is a constructor.
- * Time Complexity:
+ * Time Complexity: TODO
  *
  * @param expr
  * @return
@@ -871,7 +930,7 @@ bool kernel_expr_is_constructor(Expression *expr);
 
 /**
  * Get the constructors of an inductive type.
- * Time Complexity:
+ * Time Complexity: TODO
  *
  * @param inductive_var
  * @param out_count
@@ -881,7 +940,7 @@ Expression **kernel_inductive_constructors(Expression *inductive_var, int *out_c
 
 /**
  * Get the eliminator for an inductive type.
- * Time Complexity:
+ * Time Complexity: TODO
  *
  * @param inductive_var
  * @return
@@ -890,7 +949,7 @@ Expression *kernel_inductive_eliminator(Expression *inductive_var);
 
 /**
  * Check whether an expression is a constructor of a given inductive type.
- * Time Complexity:
+ * Time Complexity: TODO
  *
  * @param expr
  * @param inductive_var
@@ -900,7 +959,7 @@ bool kernel_expr_is_constructor_of(Expression *expr, Expression *inductive_var);
 
 /**
  * Register an inductive type and its constructors with the kernel.
- * Time Complexity:
+ * Time Complexity: TODO
  *
  * @param inductive_var
  * @param constructors
@@ -917,7 +976,7 @@ bool kernel_inductive_register(Expression *inductive_var, Expression **construct
 
 /**
  * Convert an expression to a string.
- * Time Complexity:
+ * Time Complexity: O(2^{|expr|}) # TODO exponential in the worst case due to naive unfolding of recursive definitions
  *
  * @param expr
  * @return
@@ -926,7 +985,7 @@ char *kernel_expr_to_string(Expression *expr);
 
 /**
  * Convert a context to a string.
- * Time Complexity:
+ * Time Complexity: O(|context|)
  *
  * @param context
  * @return
@@ -935,7 +994,7 @@ char *kernel_context_to_string(Context *context);
 
 /**
  * Convert a context to a string, stopping at the given context.
- * Time Complexity:
+ * Time Complexity: O(depth(context))
  * @param context
  * @param until
  * @return

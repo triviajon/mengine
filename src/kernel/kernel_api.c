@@ -172,14 +172,6 @@ bool kernel_hole_fill(Expression *hole, Expression *term) {
 
 Context *kernel_context_empty(void) { return context_create_empty(); }
 
-Context *kernel_context_add(Context *context, Expression *var_expr) {
-    // In this system, adding a variable to a context means the variable
-    // expression itself becomes the new context. The variable should already
-    // have been created with the given context as its parent.
-    (void)context;  // The context is implicitly in var_expr
-    return var_expr;
-}
-
 bool kernel_context_has_name(Context *context, char *name) {
     return context_contains_name(context, name);
 }
@@ -312,13 +304,7 @@ void kernel_context_free(Context *ctx) { free_expression_graph(ctx); }
 void kernel_expression_gc_shutdown(void) { expression_gc_shutdown(); }
 
 bool kernel_context_contains(Context *ctx, Expression *expr) {
-    while (ctx != NULL && !context_is_empty(ctx)) {
-        if (ctx == expr) {
-            return true;
-        }
-        ctx = get_expression_context(ctx);
-    }
-    return false;
+    return expr && expr->tag == VAR_EXPRESSION && context_is_ancestor((Context *)expr, ctx);
 }
 
 char *kernel_context_to_string(Context *context) {
