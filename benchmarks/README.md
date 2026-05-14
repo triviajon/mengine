@@ -37,6 +37,9 @@ python3 bench.py test [BENCHMARK] [OPTIONS]  # smoke-test each strategy once
 | `repeat_mod` | Nested modulo chain rewriting | mengine, coq, lean |
 | `addr0_let_in` | Rewriting inside nested let-bindings | mengine, coq, lean |
 | `rewrite_nm` | N-ary function + M-deep let-bindings | mengine, coq, lean |
+| `substitution_sharing` | Substitution through repeated references to one shared subtree | mengine |
+| `evar_free_filling` | Hole filling with a large evar-free proof term | mengine |
+| `context_order_validity` | Deep-context validity checks for order backend comparison | mengine |
 | `separation_logic` | Sep logic predicate cancellation | mengine, coq |
 | `symbolic_execution` | Imperative program verification | mengine, coq, lean |
 

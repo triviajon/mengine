@@ -146,6 +146,12 @@ ablation-binaries:
 	$(MAKE) TUNE_SUBST_MEMO=1 TUNE_EVAR_FREE_FILL=0
 	cp $(MENGINE_BIN) build/ablations/mengine-no-evar-free-fill
 	$(MAKE) clean
+	$(MAKE) TUNE_USE_LL=1 TUNE_SUBST_MEMO=1 TUNE_EVAR_FREE_FILL=1
+	cp $(MENGINE_BIN) build/ablations/mengine-order-ll
+	$(MAKE) clean
+	$(MAKE) TUNE_USE_LL=0 TUNE_SUBST_MEMO=1 TUNE_EVAR_FREE_FILL=1
+	cp $(MENGINE_BIN) build/ablations/mengine-order-demain
+	$(MAKE) clean
 	$(MAKE) TUNE_SUBST_MEMO=1 TUNE_EVAR_FREE_FILL=1
 
 .PHONY: all clean tests check install uninstall clangd install-tools ablation-binaries

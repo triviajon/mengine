@@ -24,6 +24,16 @@
       "path": "~/mengine/build/ablations/mengine-no-evar-free-fill",
       "root": "~/mengine",
       "label": "no evar-free fill"
+    },
+    "order_ll": {
+      "path": "~/mengine/build/ablations/mengine-order-ll",
+      "root": "~/mengine",
+      "label": "order linked list"
+    },
+    "order_demain": {
+      "path": "~/mengine/build/ablations/mengine-order-demain",
+      "root": "~/mengine",
+      "label": "order demain"
     }
   }
 }
