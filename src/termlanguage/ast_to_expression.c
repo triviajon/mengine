@@ -18,16 +18,33 @@ typedef struct LetBinding {
     Expression *value;
 } LetBinding;
 
-typedef struct BoundName {
+typedef struct LocalDepName {
     const char *name;
-    struct BoundName *next;
-} BoundName;
+    int index;
+    struct LocalDepName *next;
+} LocalDepName;
 
-typedef struct SourceLetBinding {
+typedef struct SourceLetDeps {
     const char *name;
-    Context *required_context;
-    struct SourceLetBinding *next;
-} SourceLetBinding;
+    struct DepInfo *deps;
+    struct SourceLetDeps *next;
+} SourceLetDeps;
+
+typedef struct DepInfo {
+    Context *ambient;
+    bool *local_deps;
+    int *local_indices;
+    size_t local_dep_count;
+    size_t local_count;
+    int max_local_dep;
+} DepInfo;
+
+typedef struct Telescope {
+    ASTTag tag;
+    Binder **binders;
+    size_t binder_count;
+    AST *body;
+} Telescope;
 
 /**
  * Internal helper for recursive conversion.
@@ -41,10 +58,6 @@ typedef struct SourceLetBinding {
  */
 static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedList *letbindings,
                                       TacticEnvEntry *tac_env);
-
-static Context *ast_required_context(AST *ast, Context *lexical_context,
-                                     DoublyLinkedList *letbindings, TacticEnvEntry *tac_env,
-                                     BoundName *bound_names, SourceLetBinding *source_lets);
 
 /**
  * Helper to look up a let binding by name.
@@ -83,26 +96,8 @@ static void letbindings_set(DoublyLinkedList *letbindings, const char *name, Exp
     dll_insert_at_tail(letbindings, dll_new_node(binding));
 }
 
-static bool bound_names_contains(BoundName *bound_names, const char *name) {
-    for (BoundName *it = bound_names; it; it = it->next) {
-        if (strcmp(it->name, name) == 0) {
-            return true;
-        }
-    }
-    return false;
-}
-
 static bool is_anonymous_name(const char *name) {
     return name && name[0] == '_' && name[1] == '\0';
-}
-
-static BoundName *push_bound_name(BoundName *head, BoundName *node, const char *name) {
-    if (is_anonymous_name(name)) {
-        return head;
-    }
-    node->name = name;
-    node->next = head;
-    return node;
 }
 
 static Expression *dependency_context_lookup(Context *context, const char *name) {
@@ -116,15 +111,6 @@ static Expression *dependency_context_lookup(Context *context, const char *name)
             continue;
         }
         return current;
-    }
-    return NULL;
-}
-
-static Context *source_lets_get(SourceLetBinding *source_lets, const char *name) {
-    for (SourceLetBinding *it = source_lets; it; it = it->next) {
-        if (strcmp(it->name, name) == 0) {
-            return it->required_context;
-        }
     }
     return NULL;
 }
@@ -158,254 +144,555 @@ static Context *require_context_valid(Context *required, Context *lexical_contex
     return required;
 }
 
-static Context *required_context_for_name(const char *name, Context *lexical_context,
-                                          DoublyLinkedList *letbindings, TacticEnvEntry *tac_env,
-                                          BoundName *bound_names, SourceLetBinding *source_lets) {
+static bool dep_init(DepInfo *deps, size_t local_count) {
+    deps->ambient = kernel_context_empty();
+    deps->local_count = local_count;
+    deps->local_dep_count = 0;
+    deps->max_local_dep = -1;
+    deps->local_deps = local_count == 0 ? NULL : calloc(local_count, sizeof(bool));
+    deps->local_indices = local_count == 0 ? NULL : malloc(local_count * sizeof(int));
+    if (local_count == 0 || (deps->local_deps != NULL && deps->local_indices != NULL)) {
+        return true;
+    }
+    free(deps->local_deps);
+    free(deps->local_indices);
+    deps->local_deps = NULL;
+    deps->local_indices = NULL;
+    return false;
+}
+
+static void dep_free(DepInfo *deps) {
+    free(deps->local_deps);
+    free(deps->local_indices);
+    deps->local_deps = NULL;
+    deps->local_indices = NULL;
+    deps->local_dep_count = 0;
+    deps->local_count = 0;
+    deps->max_local_dep = -1;
+    deps->ambient = NULL;
+}
+
+static bool dep_add_ambient(DepInfo *deps, Context *context) {
+    context = require_context_valid(context, context, "Dependency context");
+    if (!context) {
+        return false;
+    }
+    deps->ambient = join_required_contexts(deps->ambient, context);
+    return deps->ambient != NULL;
+}
+
+static bool dep_union(DepInfo *dst, const DepInfo *src) {
+    dst->ambient = join_required_contexts(dst->ambient, src->ambient);
+    if (!dst->ambient) {
+        return false;
+    }
+    if (dst->local_count != src->local_count) {
+        fprintf(stderr, ERROR "Mismatched dependency sets.\n" CRESET);
+        return false;
+    }
+    for (size_t i = 0; i < src->local_dep_count; i++) {
+        int index = src->local_indices[i];
+        if (!dst->local_deps[index]) {
+            dst->local_deps[index] = true;
+            dst->local_indices[dst->local_dep_count++] = index;
+        }
+    }
+    if (src->max_local_dep > dst->max_local_dep) {
+        dst->max_local_dep = src->max_local_dep;
+    }
+    return true;
+}
+
+static void dep_add_local(DepInfo *deps, int index) {
+    if (index >= 0 && (size_t)index < deps->local_count) {
+        if (!deps->local_deps[index]) {
+            deps->local_deps[index] = true;
+            deps->local_indices[deps->local_dep_count++] = index;
+        }
+        if (index > deps->max_local_dep) {
+            deps->max_local_dep = index;
+        }
+    }
+}
+
+static int dep_max_local_before(const DepInfo *deps, size_t limit) {
+    if (limit > deps->local_count) {
+        limit = deps->local_count;
+    }
+    for (size_t i = limit; i > 0; i--) {
+        if (deps->local_deps[i - 1]) {
+            return (int)(i - 1);
+        }
+    }
+    return -1;
+}
+
+static LocalDepName *local_dep_lookup(LocalDepName *locals, const char *name) {
+    if (is_anonymous_name(name)) {
+        return NULL;
+    }
+    for (LocalDepName *it = locals; it; it = it->next) {
+        if (strcmp(it->name, name) == 0) {
+            return it;
+        }
+    }
+    return NULL;
+}
+
+static LocalDepName *push_local_dep(LocalDepName *head, LocalDepName *node, const char *name,
+                                    int index) {
+    if (is_anonymous_name(name)) {
+        return head;
+    }
+    node->name = name;
+    node->index = index;
+    node->next = head;
+    return node;
+}
+
+static bool dep_context_for_name(const char *name, Context *lexical_context,
+                                 DoublyLinkedList *letbindings, TacticEnvEntry *tac_env,
+                                 LocalDepName *locals, SourceLetDeps *source_lets,
+                                 DepInfo *deps);
+
+static bool ast_collect_deps(AST *ast, Context *lexical_context, DoublyLinkedList *letbindings,
+                             TacticEnvEntry *tac_env, LocalDepName *locals,
+                             SourceLetDeps *source_lets, DepInfo *deps);
+
+static bool dep_context_for_name(const char *name, Context *lexical_context,
+                                 DoublyLinkedList *letbindings, TacticEnvEntry *tac_env,
+                                 LocalDepName *locals, SourceLetDeps *source_lets,
+                                 DepInfo *deps) {
     Expression *letbinding = letbindings_get(letbindings, name);
     if (letbinding) {
-        return require_context_valid(kernel_expr_context(letbinding), lexical_context,
-                                     "Let-bound term");
+        return dep_add_ambient(deps, kernel_expr_context(letbinding));
     }
 
-    Context *source_let_context = source_lets_get(source_lets, name);
-    if (source_let_context) {
-        return source_let_context;
-    }
-
-    for (TacticEnvEntry *e = tac_env; e; e = e->next) {
-        if (strcmp(e->name, name) == 0) {
-            if (!e->val) {
-                fprintf(stderr, ERROR "Tactic binding %s has no value.\n" CRESET, name);
-                return NULL;
-            }
-            if (engine_tactic_value_kind(e->val) == ENGINE_TVAL_EXPRESSION) {
-                Expression *value = engine_tactic_value_as_expr(e->val);
-                return require_context_valid(kernel_expr_context(value), lexical_context,
-                                             "Tactic-bound term");
-            }
-            if (engine_tactic_value_kind(e->val) == ENGINE_TVAL_AST) {
-                return ast_required_context(engine_tactic_value_as_ast(e->val), lexical_context,
-                                            letbindings, e->next, bound_names, source_lets);
-            }
-            fprintf(stderr, ERROR "Tactic binding %s is not a term.\n" CRESET, name);
-            return NULL;
+    for (SourceLetDeps *it = source_lets; it; it = it->next) {
+        if (strcmp(it->name, name) == 0) {
+            return dep_union(deps, it->deps);
         }
     }
 
-    if (bound_names_contains(bound_names, name)) {
-        return kernel_context_empty();
+    for (TacticEnvEntry *e = tac_env; e; e = e->next) {
+        if (strcmp(e->name, name) != 0) {
+            continue;
+        }
+        if (!e->val) {
+            fprintf(stderr, ERROR "Tactic binding %s has no value.\n" CRESET, name);
+            return false;
+        }
+        if (engine_tactic_value_kind(e->val) == ENGINE_TVAL_EXPRESSION) {
+            Expression *value = engine_tactic_value_as_expr(e->val);
+            return value && dep_add_ambient(deps, kernel_expr_context(value));
+        }
+        if (engine_tactic_value_kind(e->val) == ENGINE_TVAL_AST) {
+            return ast_collect_deps(engine_tactic_value_as_ast(e->val), lexical_context,
+                                    letbindings, e->next, locals, source_lets, deps);
+        }
+        fprintf(stderr, ERROR "Tactic binding %s is not a term.\n" CRESET, name);
+        return false;
+    }
+
+    LocalDepName *local = local_dep_lookup(locals, name);
+    if (local) {
+        dep_add_local(deps, local->index);
+        return true;
     }
 
     Expression *var = dependency_context_lookup(lexical_context, name);
     if (!var) {
         fprintf(stderr, ERROR "Variable %s not found in context.\n" CRESET, name);
-        return NULL;
+        return false;
     }
-    return var;
+    return dep_add_ambient(deps, var);
 }
 
-static Context *required_context_for_branch(AST *branch_ast, Context *lexical_context,
-                                            DoublyLinkedList *letbindings, TacticEnvEntry *tac_env,
-                                            BoundName *bound_names, SourceLetBinding *source_lets) {
+static bool ast_collect_branch_deps(AST *branch_ast, Context *lexical_context,
+                                    DoublyLinkedList *letbindings, TacticEnvEntry *tac_env,
+                                    LocalDepName *locals, SourceLetDeps *source_lets,
+                                    DepInfo *deps) {
     if (!branch_ast || branch_ast->tag != AST_MATCHBRANCH) {
         fprintf(stderr, ERROR "Expected match branch in dependency analysis.\n" CRESET);
-        return NULL;
+        return false;
     }
 
     Pattern *pattern = branch_ast->value.matchbranch.pattern;
-    Expression *constructor = dependency_context_lookup(lexical_context, pattern->constructor_name);
-    if (!constructor) {
-        fprintf(stderr, ERROR "Constructor %s not found in context.\n" CRESET,
-                pattern->constructor_name);
-        return NULL;
+    if (!dep_context_for_name(pattern->constructor_name, lexical_context, letbindings, tac_env,
+                              locals, source_lets, deps)) {
+        return false;
     }
 
-    BoundName *pattern_bound_names = bound_names;
-    BoundName *pattern_nodes = NULL;
+    LocalDepName *pattern_locals = locals;
+    LocalDepName *pattern_nodes = NULL;
     if (pattern->argument_count > 0) {
-        pattern_nodes = calloc((size_t)pattern->argument_count, sizeof(BoundName));
+        pattern_nodes = calloc((size_t)pattern->argument_count, sizeof(LocalDepName));
         if (!pattern_nodes) {
             fprintf(stderr, ERROR "Memory allocation failed during dependency analysis.\n" CRESET);
-            return NULL;
+            return false;
         }
         for (int i = 0; i < pattern->argument_count; i++) {
-            pattern_bound_names =
-                push_bound_name(pattern_bound_names, &pattern_nodes[i], pattern->argument_names[i]);
+            pattern_locals =
+                push_local_dep(pattern_locals, &pattern_nodes[i], pattern->argument_names[i], -1);
         }
     }
 
-    Context *body_ctx =
-        ast_required_context(branch_ast->value.matchbranch.body, lexical_context, letbindings,
-                             tac_env, pattern_bound_names, source_lets);
+    bool ok = ast_collect_deps(branch_ast->value.matchbranch.body, lexical_context, letbindings,
+                               tac_env, pattern_locals, source_lets, deps);
     free(pattern_nodes);
-    return join_required_contexts(constructor, body_ctx);
+    return ok;
 }
 
-static Context *ast_required_context(AST *ast, Context *lexical_context,
-                                     DoublyLinkedList *letbindings, TacticEnvEntry *tac_env,
-                                     BoundName *bound_names, SourceLetBinding *source_lets) {
+static bool ast_collect_deps(AST *ast, Context *lexical_context, DoublyLinkedList *letbindings,
+                             TacticEnvEntry *tac_env, LocalDepName *locals,
+                             SourceLetDeps *source_lets, DepInfo *deps) {
     if (!ast) {
-        return kernel_context_empty();
+        return true;
     }
 
     switch (ast->tag) {
         case AST_VAR:
-            return required_context_for_name(ast->value.var.name, lexical_context, letbindings,
-                                             tac_env, bound_names, source_lets);
+            return dep_context_for_name(ast->value.var.name, lexical_context, letbindings, tac_env,
+                                        locals, source_lets, deps);
         case AST_TYPE:
         case AST_PROP:
-            return kernel_context_empty();
+            return true;
         case AST_PATVAR:
             fprintf(stderr, ERROR "Pattern variable %s is not a term.\n" CRESET,
                     ast->value.patvar.name);
-            return NULL;
+            return false;
         case AST_EXPR_REF: {
             Expression *expr = engine_tactic_value_as_expr(ast->value.expr_ref.tval);
-            if (!expr) {
-                fprintf(stderr, ERROR "Expression reference does not contain a term.\n" CRESET);
-                return NULL;
-            }
-            return require_context_valid(kernel_expr_context(expr), lexical_context,
-                                         "Referenced term");
+            return expr && dep_add_ambient(deps, kernel_expr_context(expr));
         }
-        case AST_APP: {
-            Context *func_ctx =
-                ast_required_context(ast->value.app.func, lexical_context, letbindings, tac_env,
-                                     bound_names, source_lets);
-            Context *arg_ctx = ast_required_context(ast->value.app.arg, lexical_context,
-                                                    letbindings, tac_env, bound_names, source_lets);
-            return join_required_contexts(func_ctx, arg_ctx);
-        }
+        case AST_APP:
+            return ast_collect_deps(ast->value.app.func, lexical_context, letbindings, tac_env,
+                                    locals, source_lets, deps) &&
+                   ast_collect_deps(ast->value.app.arg, lexical_context, letbindings, tac_env,
+                                    locals, source_lets, deps);
         case AST_LAMBDA: {
-            Context *type_ctx =
-                ast_required_context(ast->value.lambda.binder.type, lexical_context, letbindings,
-                                     tac_env, bound_names, source_lets);
-            BoundName bound_node;
-            BoundName *bound =
-                push_bound_name(bound_names, &bound_node, ast->value.lambda.binder.name);
-            Context *body_ctx = ast_required_context(ast->value.lambda.body, lexical_context,
-                                                     letbindings, tac_env, bound, source_lets);
-            return join_required_contexts(type_ctx, body_ctx);
+            LocalDepName node;
+            bool ok = ast_collect_deps(ast->value.lambda.binder.type, lexical_context, letbindings,
+                                       tac_env, locals, source_lets, deps);
+            LocalDepName *body_locals =
+                push_local_dep(locals, &node, ast->value.lambda.binder.name, -1);
+            return ok && ast_collect_deps(ast->value.lambda.body, lexical_context, letbindings,
+                                          tac_env, body_locals, source_lets, deps);
         }
         case AST_FORALL: {
-            Context *type_ctx =
-                ast_required_context(ast->value.forall.binder.type, lexical_context, letbindings,
-                                     tac_env, bound_names, source_lets);
-            BoundName bound_node;
-            BoundName *bound =
-                push_bound_name(bound_names, &bound_node, ast->value.forall.binder.name);
-            Context *body_ctx = ast_required_context(ast->value.forall.body, lexical_context,
-                                                     letbindings, tac_env, bound, source_lets);
-            return join_required_contexts(type_ctx, body_ctx);
+            LocalDepName node;
+            bool ok = ast_collect_deps(ast->value.forall.binder.type, lexical_context, letbindings,
+                                       tac_env, locals, source_lets, deps);
+            LocalDepName *body_locals =
+                push_local_dep(locals, &node, ast->value.forall.binder.name, -1);
+            return ok && ast_collect_deps(ast->value.forall.body, lexical_context, letbindings,
+                                          tac_env, body_locals, source_lets, deps);
         }
         case AST_LET: {
-            Context *type_ctx =
-                ast_required_context(ast->value.let.type, lexical_context, letbindings, tac_env,
-                                     bound_names, source_lets);
-            Context *value_ctx =
-                ast_required_context(ast->value.let.value, lexical_context, letbindings, tac_env,
-                                     bound_names, source_lets);
-            Context *binding_ctx = join_required_contexts(type_ctx, value_ctx);
-            if (!binding_ctx) {
-                return NULL;
+            DepInfo value_deps;
+            if (!dep_init(&value_deps, deps->local_count)) {
+                return false;
             }
-            SourceLetBinding source_let = {ast->value.let.name, value_ctx, source_lets};
-            Context *body_ctx =
-                ast_required_context(ast->value.let.body, lexical_context, letbindings, tac_env,
-                                     bound_names, &source_let);
-            return join_required_contexts(binding_ctx, body_ctx);
+            bool ok = ast_collect_deps(ast->value.let.type, lexical_context, letbindings, tac_env,
+                                       locals, source_lets, deps) &&
+                      ast_collect_deps(ast->value.let.value, lexical_context, letbindings, tac_env,
+                                       locals, source_lets, &value_deps) &&
+                      dep_union(deps, &value_deps);
+            SourceLetDeps source_let = {ast->value.let.name, &value_deps, source_lets};
+            ok = ok && ast_collect_deps(ast->value.let.body, lexical_context, letbindings, tac_env,
+                                        locals, &source_let, deps);
+            dep_free(&value_deps);
+            return ok;
         }
         case AST_MATCH: {
-            Context *required =
-                ast_required_context(ast->value.match.scrutinee, lexical_context, letbindings,
-                                     tac_env, bound_names, source_lets);
-            for (size_t i = 0; required && i < ast->value.match.branch_count; i++) {
-                Context *branch_ctx =
-                    required_context_for_branch(ast->value.match.branches[i], lexical_context,
-                                                letbindings, tac_env, bound_names, source_lets);
-                required = join_required_contexts(required, branch_ctx);
+            if (!ast_collect_deps(ast->value.match.scrutinee, lexical_context, letbindings,
+                                  tac_env, locals, source_lets, deps)) {
+                return false;
             }
-            return required;
+            for (size_t i = 0; i < ast->value.match.branch_count; i++) {
+                if (!ast_collect_branch_deps(ast->value.match.branches[i], lexical_context,
+                                             letbindings, tac_env, locals, source_lets, deps)) {
+                    return false;
+                }
+            }
+            return true;
         }
         case AST_MATCHBRANCH:
-            return required_context_for_branch(ast, lexical_context, letbindings, tac_env,
-                                               bound_names, source_lets);
+            return ast_collect_branch_deps(ast, lexical_context, letbindings, tac_env, locals,
+                                           source_lets, deps);
         case AST_FIX: {
+            LocalDepName *fix_locals = locals;
+            LocalDepName recursive_node;
+            LocalDepName *binder_nodes = NULL;
             size_t binder_count = ast->value.fix.binder_count;
-            BoundName *binder_nodes = NULL;
             if (binder_count > 0) {
-                binder_nodes = calloc(binder_count, sizeof(BoundName));
+                binder_nodes = calloc(binder_count, sizeof(LocalDepName));
                 if (!binder_nodes) {
                     fprintf(stderr,
                             ERROR "Memory allocation failed during dependency analysis.\n" CRESET);
-                    return NULL;
+                    return false;
                 }
             }
 
-            Context *required = kernel_context_empty();
-            BoundName *local_bound_names = bound_names;
-            for (size_t i = 0; required && i < binder_count; i++) {
-                Context *binder_type_ctx =
-                    ast_required_context(ast->value.fix.binders[i]->type, lexical_context,
-                                         letbindings, tac_env, local_bound_names, source_lets);
-                required = join_required_contexts(required, binder_type_ctx);
-
-                local_bound_names = push_bound_name(local_bound_names, &binder_nodes[i],
-                                                    ast->value.fix.binders[i]->name);
+            bool ok = true;
+            for (size_t i = 0; ok && i < binder_count; i++) {
+                ok = ast_collect_deps(ast->value.fix.binders[i]->type, lexical_context,
+                                      letbindings, tac_env, fix_locals, source_lets, deps);
+                fix_locals =
+                    push_local_dep(fix_locals, &binder_nodes[i], ast->value.fix.binders[i]->name,
+                                   -1);
             }
-
-            Context *return_ctx = NULL;
-            if (required) {
-                return_ctx =
-                    ast_required_context(ast->value.fix.return_type, lexical_context, letbindings,
-                                         tac_env, local_bound_names, source_lets);
-                required = join_required_contexts(required, return_ctx);
-            }
-
-            if (required) {
-                BoundName recursive_name_node;
-                BoundName *recursive_name =
-                    push_bound_name(local_bound_names, &recursive_name_node, ast->value.fix.name);
-                Context *body_ctx =
-                    ast_required_context(ast->value.fix.body, lexical_context, letbindings, tac_env,
-                                         recursive_name, source_lets);
-                required = join_required_contexts(required, body_ctx);
-            }
-
-            if (required) {
-                bool found_decreasing_arg = false;
-                for (size_t i = 0; i < binder_count; i++) {
-                    if (strcmp(ast->value.fix.binders[i]->name,
-                               ast->value.fix.decreasing_arg_name) == 0) {
-                        found_decreasing_arg = true;
-                        break;
-                    }
-                }
-                if (!found_decreasing_arg) {
-                    fprintf(stderr, ERROR "Decreasing argument '%s' not found in binders.\n" CRESET,
-                            ast->value.fix.decreasing_arg_name);
-                    required = NULL;
-                }
-            }
-
+            ok = ok && ast_collect_deps(ast->value.fix.return_type, lexical_context, letbindings,
+                                        tac_env, fix_locals, source_lets, deps);
+            LocalDepName *body_locals =
+                push_local_dep(fix_locals, &recursive_node, ast->value.fix.name, -1);
+            ok = ok && ast_collect_deps(ast->value.fix.body, lexical_context, letbindings, tac_env,
+                                        body_locals, source_lets, deps);
             free(binder_nodes);
-            return required;
+            return ok;
         }
     }
 
     fprintf(stderr, ERROR "Unhandled AST tag in dependency analysis.\n" CRESET);
-    return NULL;
+    return false;
 }
 
-static Context *binder_scope_context(Binder *binder, AST *body, Context *lexical_context,
-                                     DoublyLinkedList *letbindings, TacticEnvEntry *tac_env) {
-    Context *type_ctx = ast_required_context(binder->type, lexical_context, letbindings, tac_env,
-                                             /*bound_names*/ NULL, /*source_lets*/ NULL);
-    BoundName bound_node;
-    BoundName *bound = push_bound_name(NULL, &bound_node, binder->name);
-    Context *body_ctx = ast_required_context(body, lexical_context, letbindings, tac_env, bound,
-                                             /*source_lets*/ NULL);
-    return join_required_contexts(type_ctx, body_ctx);
+static Telescope collect_telescope(AST *ast) {
+    Telescope telescope = {ast->tag, NULL, 0, ast};
+    AST *cursor = ast;
+    while (cursor && cursor->tag == ast->tag) {
+        telescope.binder_count++;
+        cursor = ast->tag == AST_LAMBDA ? cursor->value.lambda.body : cursor->value.forall.body;
+    }
+
+    telescope.binders = malloc(telescope.binder_count * sizeof(Binder *));
+    if (!telescope.binders) {
+        telescope.binder_count = 0;
+        telescope.body = NULL;
+        return telescope;
+    }
+
+    cursor = ast;
+    for (size_t i = 0; i < telescope.binder_count; i++) {
+        if (ast->tag == AST_LAMBDA) {
+            telescope.binders[i] = &cursor->value.lambda.binder;
+            cursor = cursor->value.lambda.body;
+        } else {
+            telescope.binders[i] = &cursor->value.forall.binder;
+            cursor = cursor->value.forall.body;
+        }
+    }
+    telescope.body = cursor;
+    return telescope;
+}
+
+static Context *context_for_deps(DepInfo *deps, size_t local_limit, Expression **locals) {
+    Context *context = deps->ambient;
+    int local_index = deps->max_local_dep;
+    if (local_index >= (int)local_limit) {
+        local_index = dep_max_local_before(deps, local_limit);
+    }
+    if (local_index >= 0) {
+        context = join_required_contexts(context, locals[local_index]);
+    }
+    return context;
+}
+
+static Context *context_from_summary(Context *ambient, int max_local_dep, Expression **locals) {
+    Context *context = ambient;
+    if (max_local_dep >= 0) {
+        context = join_required_contexts(context, locals[max_local_dep]);
+    }
+    return context;
+}
+
+static bool init_dep_array(DepInfo *deps, size_t count, size_t local_count) {
+    for (size_t i = 0; i < count; i++) {
+        if (!dep_init(&deps[i], local_count)) {
+            for (size_t j = 0; j < i; j++) {
+                dep_free(&deps[j]);
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
+static void free_dep_array(DepInfo *deps, size_t count) {
+    if (!deps) {
+        return;
+    }
+    for (size_t i = 0; i < count; i++) {
+        dep_free(&deps[i]);
+    }
+}
+
+static bool compute_tail_summaries(DepInfo *type_deps, size_t count, DepInfo *body_deps,
+                                   Context **tail_ambient_after, int *tail_max_before) {
+    Context *ambient = body_deps->ambient;
+    for (size_t i = count; i > 0; i--) {
+        size_t idx = i - 1;
+        tail_ambient_after[idx] = ambient;
+        ambient = join_required_contexts(type_deps[idx].ambient, ambient);
+        if (!ambient) {
+            return false;
+        }
+    }
+
+    int *active_until = malloc(count * sizeof(int));
+    int *active_stack = malloc(count * sizeof(int));
+    if ((!active_until || !active_stack) && count > 0) {
+        free(active_until);
+        free(active_stack);
+        return false;
+    }
+    for (size_t i = 0; i < count; i++) {
+        active_until[i] = -1;
+        tail_max_before[i] = -1;
+    }
+
+    for (size_t i = 0; i < body_deps->local_dep_count; i++) {
+        int k = body_deps->local_indices[i];
+        active_until[k] = (int)count;
+    }
+    for (size_t j = 0; j < count; j++) {
+        for (size_t dep_i = 0; dep_i < type_deps[j].local_dep_count; dep_i++) {
+            int k = type_deps[j].local_indices[dep_i];
+            if ((size_t)k < j && active_until[k] < (int)j - 1) {
+                active_until[k] = (int)j - 1;
+            } else if ((size_t)k >= j) {
+                fprintf(stderr, ERROR "Binder type depends on an out-of-scope binder.\n" CRESET);
+                free(active_until);
+                free(active_stack);
+                return false;
+            }
+        }
+    }
+
+    size_t active_count = 0;
+    for (size_t i = 0; i < count; i++) {
+        if (i > 0) {
+            size_t k = i - 1;
+            if (active_until[k] >= (int)i) {
+                active_stack[active_count++] = (int)k;
+            }
+        }
+        while (active_count > 0 && active_until[active_stack[active_count - 1]] < (int)i) {
+            active_count--;
+        }
+        if (active_count > 0) {
+            tail_max_before[i] = active_stack[active_count - 1];
+        }
+    }
+
+    free(active_until);
+    free(active_stack);
+    return true;
+}
+
+static Expression *elaborate_binder_telescope(AST *ast, Context *context,
+                                              DoublyLinkedList *letbindings,
+                                              TacticEnvEntry *tac_env) {
+    Telescope telescope = collect_telescope(ast);
+    if (!telescope.binders || telescope.binder_count == 0) {
+        fprintf(stderr, ERROR "Failed to collect binder telescope.\n" CRESET);
+        free(telescope.binders);
+        return NULL;
+    }
+
+    size_t count = telescope.binder_count;
+    DepInfo *type_deps = calloc(count, sizeof(DepInfo));
+    DepInfo body_deps;
+    bool body_deps_initialized = false;
+    Context **tail_ambient_after = calloc(count, sizeof(Context *));
+    int *tail_max_before = malloc(count * sizeof(int));
+    Expression **vars = calloc(count, sizeof(Expression *));
+    LocalDepName *local_nodes = calloc(count, sizeof(LocalDepName));
+    if (!type_deps || !tail_ambient_after || !tail_max_before || !vars || !local_nodes ||
+        !init_dep_array(type_deps, count, count) || !dep_init(&body_deps, count)) {
+        fprintf(stderr, ERROR "Memory allocation failed during telescope elaboration.\n" CRESET);
+        free_dep_array(type_deps, count);
+        free(type_deps);
+        free(tail_ambient_after);
+        free(tail_max_before);
+        free(vars);
+        free(local_nodes);
+        free(telescope.binders);
+        return NULL;
+    }
+    body_deps_initialized = true;
+
+    bool ok = true;
+    LocalDepName *locals = NULL;
+    for (size_t i = 0; ok && i < count; i++) {
+        ok = ast_collect_deps(telescope.binders[i]->type, context, letbindings, tac_env, locals,
+                              /*source_lets*/ NULL, &type_deps[i]);
+        locals = push_local_dep(locals, &local_nodes[i], telescope.binders[i]->name, (int)i);
+    }
+    ok = ok && ast_collect_deps(telescope.body, context, letbindings, tac_env, locals,
+                                /*source_lets*/ NULL, &body_deps);
+    ok = ok && compute_tail_summaries(type_deps, count, &body_deps, tail_ambient_after,
+                                      tail_max_before);
+
+    for (size_t i = 0; ok && i < count; i++) {
+        Context *type_ctx = context_for_deps(&type_deps[i], i, vars);
+        Context *body_ctx =
+            context_from_summary(tail_ambient_after[i], tail_max_before[i], vars);
+        Context *scope_context = join_required_contexts(type_ctx, body_ctx);
+        if (!scope_context) {
+            ok = false;
+            break;
+        }
+
+        Expression *binder_type =
+            _ast_to_expression(telescope.binders[i]->type, scope_context, letbindings, tac_env);
+        if (!binder_type) {
+            fprintf(stderr, ERROR "Failed to create telescope binder type.\n" CRESET);
+            ok = false;
+            break;
+        }
+
+        vars[i] = kernel_var_create(telescope.binders[i]->name, binder_type, scope_context);
+        if (!vars[i]) {
+            fprintf(stderr, ERROR "Failed to create telescope bound var.\n" CRESET);
+            ok = false;
+            break;
+        }
+    }
+
+    Expression *result = NULL;
+    if (ok) {
+        Context *body_context = context_for_deps(&body_deps, count, vars);
+        result = _ast_to_expression(telescope.body, body_context, letbindings, tac_env);
+        if (!result) {
+            fprintf(stderr, ERROR "Failed to create telescope body.\n" CRESET);
+            ok = false;
+        }
+    }
+
+    for (size_t i = count; ok && i > 0; i--) {
+        if (telescope.tag == AST_LAMBDA) {
+            result = kernel_lambda_create(vars[i - 1], result);
+        } else {
+            result = kernel_forall_create(vars[i - 1], result);
+        }
+        if (!result) {
+            fprintf(stderr, ERROR "Failed to close telescope binder.\n" CRESET);
+            ok = false;
+        }
+    }
+
+    free_dep_array(type_deps, count);
+    if (body_deps_initialized) {
+        dep_free(&body_deps);
+    }
+    free(type_deps);
+    free(tail_ambient_after);
+    free(tail_max_before);
+    free(vars);
+    free(local_nodes);
+    free(telescope.binders);
+    return ok ? result : NULL;
 }
 
 static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedList *letbindings,
@@ -459,79 +746,11 @@ static Expression *_ast_to_expression(AST *ast, Context *context, DoublyLinkedLi
             return engine_tactic_value_as_expr(ast->value.expr_ref.tval);
 
         case AST_LAMBDA: {
-            Context *scope_context = binder_scope_context(
-                &ast->value.lambda.binder, ast->value.lambda.body, context, letbindings, tac_env);
-            if (!scope_context) {
-                fprintf(stderr, ERROR "Failed to find lambda binder scope.\n" CRESET);
-                return NULL;
-            }
-            Expression *binder_type = _ast_to_expression(ast->value.lambda.binder.type,
-                                                         scope_context, letbindings, tac_env);
-            if (!binder_type) {
-                fprintf(stderr, ERROR "Failed to create lambda binder type.\n" CRESET);
-                return NULL;
-            }
-
-            char *name = ast->value.lambda.binder.name;
-
-            Expression *bound_var = kernel_var_create(name, binder_type, scope_context);
-            if (!bound_var) {
-                fprintf(stderr, ERROR "Failed to create lambda bound var.\n" CRESET);
-                return NULL;
-            }
-
-            Context *extended_context = bound_var;
-            if (!extended_context) {
-                fprintf(stderr, ERROR "Failed to create lambda extended context.\n" CRESET);
-                return NULL;
-            }
-
-            Expression *body =
-                _ast_to_expression(ast->value.lambda.body, extended_context, letbindings, tac_env);
-            if (!body) {
-                fprintf(stderr, ERROR "Failed to create lambda body.\n" CRESET);
-                return NULL;
-            }
-
-            return kernel_lambda_create(bound_var, body);
+            return elaborate_binder_telescope(ast, context, letbindings, tac_env);
         }
 
         case AST_FORALL: {
-            Context *scope_context = binder_scope_context(
-                &ast->value.forall.binder, ast->value.forall.body, context, letbindings, tac_env);
-            if (!scope_context) {
-                fprintf(stderr, ERROR "Failed to find forall binder scope.\n" CRESET);
-                return NULL;
-            }
-            Expression *binder_type = _ast_to_expression(ast->value.forall.binder.type,
-                                                         scope_context, letbindings, tac_env);
-            if (!binder_type) {
-                fprintf(stderr, ERROR "Failed to create forall binder type.\n" CRESET);
-                return NULL;
-            }
-
-            char *name = ast->value.forall.binder.name;
-
-            Expression *bound_var = kernel_var_create(name, binder_type, scope_context);
-            if (!bound_var) {
-                fprintf(stderr, ERROR "Failed to create forall bound var.\n" CRESET);
-                return NULL;
-            }
-
-            Context *extended_context = bound_var;
-            if (!extended_context) {
-                fprintf(stderr, ERROR "Failed to create forall extended context.\n" CRESET);
-                return NULL;
-            }
-
-            Expression *body =
-                _ast_to_expression(ast->value.forall.body, extended_context, letbindings, tac_env);
-            if (!body) {
-                fprintf(stderr, ERROR "Failed to create forall body.\n" CRESET);
-                return NULL;
-            }
-
-            return kernel_forall_create(bound_var, body);
+            return elaborate_binder_telescope(ast, context, letbindings, tac_env);
         }
 
         case AST_APP: {
