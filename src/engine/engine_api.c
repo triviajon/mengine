@@ -1,6 +1,7 @@
 #include "src/engine/engine_api.h"
 
 #include "src/common/doubly_linked_list.h"
+#include "src/common/timing.h"
 #include "src/engine/proof_state.h"
 #include "src/engine/rewrite_internal.h"
 #include "src/engine/tactic_api.h"
@@ -49,16 +50,25 @@ void engine_proof_state_add_goals(ProofState *ps, void *new_goals_list) {
 /* UNIFICATION OPERATIONS */
 
 UnificationResult *engine_unify(Context *goal_context, Expression *lemma, Expression *goal) {
-    return unify_and_instantiate(goal_context, lemma, kernel_expr_type(lemma), goal);
+    timer_push(TIMER_ENGINE);
+    UnificationResult *r = unify_and_instantiate(goal_context, lemma, kernel_expr_type(lemma), goal);
+    timer_pop();
+    return r;
 }
 
 UnificationResult *engine_eunify(Expression *lemma, Expression *goal) {
-    return eunify2(lemma, goal);
+    timer_push(TIMER_ENGINE);
+    UnificationResult *r = eunify2(lemma, goal);
+    timer_pop();
+    return r;
 }
 
 UnificationResult *engine_rewrite_unify_for_eq(Context *goal_context, Expression *lemma,
                                                Expression *target) {
-    return bad_unify_for_eq(goal_context, lemma, target);
+    timer_push(TIMER_ENGINE);
+    UnificationResult *r = bad_unify_for_eq(goal_context, lemma, target);
+    timer_pop();
+    return r;
 }
 
 Expression *engine_unify_get_lemma(UnificationResult *unif_result) {
@@ -81,40 +91,88 @@ void engine_unify_free(UnificationResult *unif_result) { free_unification_result
 
 /* TACTIC OPERATIONS */
 
-TacticResult *engine_tactic_intro(Expression *goal, char *name) { return intro_tactic(goal, name); }
+TacticResult *engine_tactic_intro(Expression *goal, char *name) {
+    timer_push(TIMER_ENGINE);
+    TacticResult *r = intro_tactic(goal, name);
+    timer_pop();
+    return r;
+}
 
 TacticResult *engine_tactic_intros(Expression *goal, char **names, size_t name_count) {
-    return intros_tactic(goal, names, name_count);
+    timer_push(TIMER_ENGINE);
+    TacticResult *r = intros_tactic(goal, names, name_count);
+    timer_pop();
+    return r;
 }
 
 TacticResult *engine_tactic_apply(Expression *goal, Expression *lemma) {
-    return apply_tactic(goal, lemma);
+    timer_push(TIMER_ENGINE);
+    TacticResult *r = apply_tactic(goal, lemma);
+    timer_pop();
+    return r;
 }
 
 TacticResult *engine_tactic_eapply(Expression *goal, Expression *lemma) {
-    return eapply_tactic(goal, lemma);
+    timer_push(TIMER_ENGINE);
+    TacticResult *r = eapply_tactic(goal, lemma);
+    timer_pop();
+    return r;
 }
 
 TacticResult *engine_tactic_exact(Expression *goal, Expression *proof_term) {
-    return exact_tactic(goal, proof_term);
+    timer_push(TIMER_ENGINE);
+    TacticResult *r = exact_tactic(goal, proof_term);
+    timer_pop();
+    return r;
 }
 
-TacticResult *engine_tactic_assumption(Expression *goal) { return assumption_tactic(goal); }
+TacticResult *engine_tactic_assumption(Expression *goal) {
+    timer_push(TIMER_ENGINE);
+    TacticResult *r = assumption_tactic(goal);
+    timer_pop();
+    return r;
+}
 
-TacticResult *engine_tactic_reflexivity(Expression *goal) { return reflexivity_tactic(goal); }
+TacticResult *engine_tactic_reflexivity(Expression *goal) {
+    timer_push(TIMER_ENGINE);
+    TacticResult *r = reflexivity_tactic(goal);
+    timer_pop();
+    return r;
+}
 
-TacticResult *engine_tactic_split(Expression *goal) { return split_tactic(goal); }
+TacticResult *engine_tactic_split(Expression *goal) {
+    timer_push(TIMER_ENGINE);
+    TacticResult *r = split_tactic(goal);
+    timer_pop();
+    return r;
+}
 
-TacticResult *engine_tactic_left(Expression *goal) { return left_tactic(goal); }
+TacticResult *engine_tactic_left(Expression *goal) {
+    timer_push(TIMER_ENGINE);
+    TacticResult *r = left_tactic(goal);
+    timer_pop();
+    return r;
+}
 
-TacticResult *engine_tactic_right(Expression *goal) { return right_tactic(goal); }
+TacticResult *engine_tactic_right(Expression *goal) {
+    timer_push(TIMER_ENGINE);
+    TacticResult *r = right_tactic(goal);
+    timer_pop();
+    return r;
+}
 
 TacticResult *engine_tactic_exists(Expression *goal, Expression *witness) {
-    return exists_tactic(goal, witness);
+    timer_push(TIMER_ENGINE);
+    TacticResult *r = exists_tactic(goal, witness);
+    timer_pop();
+    return r;
 }
 
 TacticResult *engine_tactic_cbv(Expression *goal, char **rules, int rule_count) {
-    return cbv_tactic(goal, rules, rule_count);
+    timer_push(TIMER_ENGINE);
+    TacticResult *r = cbv_tactic(goal, rules, rule_count);
+    timer_pop();
+    return r;
 }
 
 bool engine_tactic_result_success(TacticResult *result) {

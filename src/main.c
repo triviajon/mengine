@@ -5,10 +5,11 @@
 
 #include "src/common/color.h"
 #include "src/common/options.h"
+#include "src/common/timing.h"
 #include "src/runtime/repl.h"
 #include "src/runtime/runtime.h"
 
-enum { OPT_PRINT_TOKENS = 256, OPT_PRINT_AST, OPT_PRINT_MODE };
+enum { OPT_PRINT_TOKENS = 256, OPT_PRINT_AST, OPT_PRINT_MODE, OPT_TIME };
 
 static char doc[] =
     "MEngine - A theorem prover\n\nCommands:\n  config    Print compile-time configuration and "
@@ -24,11 +25,12 @@ static struct argp_option options[] = {
      0},
     {"print-mode", OPT_PRINT_MODE, 0, 0,
      "Print mode during execution (default: true, requires --debug)", 0},
+    {"time", OPT_TIME, 0, 0, "Print subsystem timing summary on exit", 0},
     {0}};
 struct arguments {
     char *filename;   // [FILENAME]
     char *load_file;  // -l/--load FILE
-    bool quiet, debug, debug__print_tokens, debug__print_ast, debug__print_mode;
+    bool quiet, debug, debug__print_tokens, debug__print_ast, debug__print_mode, time;
 };
 static struct argp_child children[] = {{0}};
 
@@ -53,6 +55,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
             break;
         case OPT_PRINT_MODE:
             arguments->debug__print_mode = true;
+            break;
+        case OPT_TIME:
+            arguments->time = true;
             break;
         case ARGP_KEY_ARG:
             if (state->arg_num > 0) {
@@ -102,6 +107,7 @@ MEngineOptions build_options(struct arguments *args) {
     options.debug__print_ast = args->debug__print_ast;
     options.debug__print_mode = args->debug__print_mode;
     options.quiet = args->quiet;
+    options.time = args->time;
     return options;
 }
 
@@ -192,18 +198,24 @@ int main(int argc, char **argv) {
     arguments.debug__print_tokens = true;
     arguments.debug__print_ast = true;
     arguments.debug__print_mode = true;
+    arguments.time = false;
     arguments.filename = NULL;
     arguments.load_file = NULL;
 
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
     MEngineOptions options = build_options(&arguments);
+    timer_set_enabled(options.time);
 
     if (arguments.load_file) {
-        return load_and_repl_mode(options, arguments.load_file);
+        int rc = load_and_repl_mode(options, arguments.load_file);
+        timer_print_summary();
+        return rc;
     }
 
     if (!arguments.filename) {
-        return interactive_mode(options);
+        int rc = interactive_mode(options);
+        timer_print_summary();
+        return rc;
     }
 
     if (strcmp(arguments.filename, "config") == 0) {
@@ -212,5 +224,7 @@ int main(int argc, char **argv) {
     }
 
     char *filename = arguments.filename;
-    return file_mode(options, filename);
+    int rc = file_mode(options, filename);
+    timer_print_summary();
+    return rc;
 }

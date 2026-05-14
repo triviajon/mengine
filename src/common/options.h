@@ -20,6 +20,7 @@ typedef struct {
     bool debug__print_mode;    // Print the current runtime mode and relevant info
                                // after each update to the mode.
     bool quiet;                // If true, suppresses all printing to stdout
+    bool time;                 // If true, print subsystem timing summary on exit
     MEngineExecutionType execution_type;
 } MEngineOptions;
 

@@ -14,6 +14,7 @@
 #include "src/tacticlanguage/compiled_tactics.h"
 #include "src/tacticlanguage/tactic_ast.h"
 #include "src/termlanguage/ast_to_expression.h"
+#include "src/common/timing.h"
 
 static int _handle_declaration_command(MEngineRuntime *rt, DeclarationCmd *decl_cmd) {
     Expression *var_type = ast_to_expression(decl_cmd->binder.type, rt->ctx);
@@ -1096,42 +1097,57 @@ int mengine_execute_command(MEngineRuntime *rt, Command *cmd) {
     if (!rt || !cmd) {
         return 1;
     }
-
+    timer_push(TIMER_COMMAND);
+    int rc;
     switch (cmd->tag) {
         case CMD_DECLARATION: {
-            return _handle_declaration_command(rt, &cmd->as.decl);
+            rc = _handle_declaration_command(rt, &cmd->as.decl);
+            break;
         }
         case CMD_DEFINITION: {
-            return _handle_definition_command(rt, &cmd->as.defn);
+            rc = _handle_definition_command(rt, &cmd->as.defn);
+            break;
         }
         case CMD_STATEMENT: {
-            return _handle_statement_command(rt, &cmd->as.stmt);
+            rc = _handle_statement_command(rt, &cmd->as.stmt);
+            break;
         }
         case CMD_CHECK: {
-            return _handle_check_command(rt, &cmd->as.check);
+            rc = _handle_check_command(rt, &cmd->as.check);
+            break;
         }
         case CMD_PRINT: {
-            return _handle_print_command(rt, &cmd->as.print);
+            rc = _handle_print_command(rt, &cmd->as.print);
+            break;
         }
         case CMD_EVAL: {
-            return _handle_eval_command(rt, &cmd->as.eval);
+            rc = _handle_eval_command(rt, &cmd->as.eval);
+            break;
         }
         case CMD_INDUCTIVE: {
-            return _handle_inductive_command(rt, &cmd->as.inductive);
+            rc = _handle_inductive_command(rt, &cmd->as.inductive);
+            break;
         }
         case CMD_FIXPOINT: {
-            return _handle_fixpoint_command(rt, &cmd->as.fixpoint);
+            rc = _handle_fixpoint_command(rt, &cmd->as.fixpoint);
+            break;
         }
         case CMD_SHOW: {
-            return _handle_show_command(rt, &cmd->as.show);
+            rc = _handle_show_command(rt, &cmd->as.show);
+            break;
         }
         case CMD_TACTIC_DEF: {
-            return _handle_tactic_def_command(rt, &cmd->as.tactic_def);
+            rc = _handle_tactic_def_command(rt, &cmd->as.tactic_def);
+            break;
         }
         case CMD_REGISTER_RELATION: {
-            return _handle_register_relation_command(rt, &cmd->as.register_relation);
+            rc = _handle_register_relation_command(rt, &cmd->as.register_relation);
+            break;
         }
         default:
-            return 1;
+            rc = 1;
+            break;
     }
+    timer_pop();
+    return rc;
 }

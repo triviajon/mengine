@@ -7,6 +7,7 @@
 #include "src/commandlanguage/command_parser.h"
 #include "src/common/color.h"
 #include "src/common/options.h"
+#include "src/common/timing.h"
 #include "src/engine/engine_api.h"
 #include "src/kernel/kernel_api.h"
 #include "src/runtime/core.h"
@@ -132,7 +133,9 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
 
         switch (rt->mode) {
             case MENGINE_RUNTIME_COMMAND_MODE: {
+                timer_push(TIMER_PARSE);
                 Command *cmd = command_parse_command(&parser);
+                timer_pop();
                 if (!cmd) {
                     fprintf(stderr, ERROR "Command parse error.\n" CRESET);
                     rc = 1;
@@ -155,7 +158,9 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
                 CMD_LOOKUP_ENTRY(&cmd_entry, tok_type);
 
                 if (cmd_entry != NULL) {
+                    timer_push(TIMER_PARSE);
                     Command *cmd = command_parse_command(&parser);
+                    timer_pop();
                     if (!cmd) {
                         fprintf(stderr, ERROR "Command parse error.\n" CRESET);
                         rc = 1;
@@ -173,7 +178,9 @@ int mengine_runtime_exec_string(MEngineRuntime *rt, const char *source) {
                 }
 
                 // It's a tactic, parse and execute it
+                timer_push(TIMER_PARSE);
                 TacticExpr *tactic = tactic_parse_proof_command(&parser);
+                timer_pop();
                 if (!tactic) {
                     fprintf(stderr, ERROR "Tactic parse error.\n" CRESET);
                     rc = 1;

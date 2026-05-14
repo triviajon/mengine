@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "src/common/map.h"
+#include "src/common/timing.h"
 #include "src/kernel/beta_reduction.h"
 #include "src/kernel/context.h"
 #include "src/kernel/conversion.h"
@@ -18,31 +19,52 @@
 /* EXPRESSION CONSTRUCTION */
 
 Expression *kernel_var_create(const char *name, Expression *type, Context *context) {
-    return init_var_expression_wc(name, type, context);
+    timer_push(TIMER_KERNEL);
+    Expression *r = init_var_expression_wc(name, type, context);
+    timer_pop();
+    return r;
 }
 
 Expression *kernel_var_create_with_body(const char *name, Expression *body, Context *context) {
-    return init_var_expression_wc_with_body(name, body, context);
+    timer_push(TIMER_KERNEL);
+    Expression *r = init_var_expression_wc_with_body(name, body, context);
+    timer_pop();
+    return r;
 }
 
 Expression *kernel_app_create(Expression *func, Expression *arg, Context *context) {
-    return init_app_expression_wc(func, arg, context);
+    timer_push(TIMER_KERNEL);
+    Expression *r = init_app_expression_wc(func, arg, context);
+    timer_pop();
+    return r;
 }
 
 Expression *kernel_lambda_create(Expression *bound_var, Expression *body) {
-    return init_lambda_expression_wc(bound_var, body);
+    timer_push(TIMER_KERNEL);
+    Expression *r = init_lambda_expression_wc(bound_var, body);
+    timer_pop();
+    return r;
 }
 
 Expression *kernel_forall_create(Expression *bound_var, Expression *body) {
-    return init_forall_expression_wc(bound_var, body);
+    timer_push(TIMER_KERNEL);
+    Expression *r = init_forall_expression_wc(bound_var, body);
+    timer_pop();
+    return r;
 }
 
 Expression *kernel_arrow_create(Expression *lhs, Expression *rhs, Context *context) {
-    return init_arrow_expression_wc(lhs, rhs, context);
+    timer_push(TIMER_KERNEL);
+    Expression *r = init_arrow_expression_wc(lhs, rhs, context);
+    timer_pop();
+    return r;
 }
 
 Expression *kernel_hole_create(char *name, Expression *return_type, Context *context) {
-    return init_hole_expression(name, return_type, context);
+    timer_push(TIMER_KERNEL);
+    Expression *r = init_hole_expression(name, return_type, context);
+    timer_pop();
+    return r;
 }
 
 void *kernel_match_branch_create(Expression *constructor, Expression **pattern_variables,
@@ -71,13 +93,19 @@ void kernel_match_branch_free(void *branch_) {
 
 Expression *kernel_match_create(Expression *scrutinee, void **branches, int branch_count,
                                 Context *context) {
-    return init_match_expression_wc(scrutinee, (MatchBranch **)branches, branch_count, context);
+    timer_push(TIMER_KERNEL);
+    Expression *r = init_match_expression_wc(scrutinee, (MatchBranch **)branches, branch_count, context);
+    timer_pop();
+    return r;
 }
 
 Expression *kernel_fix_create(Expression *recursive_var, Expression **args, int arg_count,
                               Expression *body, int decreasing_arg_index, Context *context) {
-    (void)context; /* context not used by init_fix_expression_wc */
-    return init_fix_expression_wc(recursive_var, args, arg_count, decreasing_arg_index, body);
+    timer_push(TIMER_KERNEL);
+    (void)context;
+    Expression *r = init_fix_expression_wc(recursive_var, args, arg_count, decreasing_arg_index, body);
+    timer_pop();
+    return r;
 }
 
 Expression *kernel_type_create(void) { return init_type_expression(); }
@@ -217,22 +245,41 @@ Expression *kernel_fix_reduce(Expression *fix_expr) { return fix_reduce(fix_expr
 /* SUBSTITUTION OPERATIONS */
 
 Expression *kernel_subst(Context *context, Expression *t, Expression *x, Expression *a) {
-    return new_subst(context, t, x, a);
+    timer_push(TIMER_KERNEL);
+    Expression *r = new_subst(context, t, x, a);
+    timer_pop();
+    return r;
 }
 
 Expression *kernel_p_subst(Context *context, Expression *t, Map *subst_map) {
-    return new_p_subst(context, t, subst_map);
+    timer_push(TIMER_KERNEL);
+    Expression *r = new_p_subst(context, t, subst_map);
+    timer_pop();
+    return r;
 }
 
 /* NORMALIZATION OPERATIONS */
 
 Expression *kernel_normalize_cbv(Expression *expr, unsigned int flags) {
-    return normalize_cbv(expr, (ReductionFlags)flags);
+    timer_push(TIMER_KERNEL);
+    Expression *r = normalize_cbv(expr, (ReductionFlags)flags);
+    timer_pop();
+    return r;
 }
 
-Expression *kernel_normalize_compute(Expression *expr) { return normalize_compute(expr); }
+Expression *kernel_normalize_compute(Expression *expr) {
+    timer_push(TIMER_KERNEL);
+    Expression *r = normalize_compute(expr);
+    timer_pop();
+    return r;
+}
 
-Expression *kernel_normalize_whnf(Expression *expr) { return normalize_whnf(expr); }
+Expression *kernel_normalize_whnf(Expression *expr) {
+    timer_push(TIMER_KERNEL);
+    Expression *r = normalize_whnf(expr);
+    timer_pop();
+    return r;
+}
 
 /* TYPE CHECKING AND EQUALITY */
 
@@ -253,7 +300,10 @@ Expression *kernel_arrow_lhs(Expression *expr) { return get_arrow_lhs(expr); }
 Expression *kernel_arrow_rhs(Expression *expr) { return get_arrow_rhs(expr); }
 
 Conversion *kernel_expr_conversion_in_context(Context *context, Expression *a, Expression *b) {
-    return conversion_check_in_context(context, a, b);
+    timer_push(TIMER_KERNEL);
+    Conversion *r = conversion_check_in_context(context, a, b);
+    timer_pop();
+    return r;
 }
 
 void kernel_conversion_free(Conversion *conv) { conversion_free(conv); }

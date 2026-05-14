@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "src/common/color.h"
+#include "src/common/timing.h"
 #include "src/engine/engine_api.h"
 #include "src/kernel/kernel_api.h"
 #include "src/tacticlanguage/tactic_ast.h"
@@ -13,12 +14,14 @@ int mengine_execute_tactic(MEngineRuntime *rt, TacticExpr *tac) {
     if (!rt || !rt->proof_state || !tac) {
         return 1;
     }
+    timer_push(TIMER_TACTIC);
 
     // Handle "Admitted" specially - it exits proof mode immediately
     if (tac->tag == TAC_PRIMITIVE && tac->as.primitive.tactic->tag == TACTIC_ADMITTED) {
         Expression *thm = rt->pending_theorem;
         rt->ctx = thm;
         mengine_runtime_command_mode(rt);
+        timer_pop();
         return 0;
     }
 
@@ -26,6 +29,7 @@ int mengine_execute_tactic(MEngineRuntime *rt, TacticExpr *tac) {
     Expression *goal = engine_proof_state_current_goal(rt->proof_state);
     if (!goal) {
         fprintf(stderr, ERROR "No current goal\n" CRESET);
+        timer_pop();
         return 1;
     }
 
@@ -34,6 +38,7 @@ int mengine_execute_tactic(MEngineRuntime *rt, TacticExpr *tac) {
     if (!engine_tactic_result_success(result)) {
         fprintf(stderr, ERROR "%s\n" CRESET, engine_tactic_result_error(result));
         engine_tactic_result_free(result);
+        timer_pop();
         return 1;
     }
 
@@ -59,5 +64,6 @@ int mengine_execute_tactic(MEngineRuntime *rt, TacticExpr *tac) {
         mengine_runtime_command_mode(rt);
     }
 
+    timer_pop();
     return 0;
 }
