@@ -9,6 +9,7 @@ timeouts. Results are stored incrementally so runs can be resumed.
 import itertools
 import json
 import os
+import signal
 import subprocess
 import sys
 import tempfile
@@ -88,10 +89,11 @@ class RunConfig:
         mengine_root: str = "",
         results_dir: str = "results",
         default_timeout: float = 30.0,
-        max_consecutive_timeouts: int = 3,
+        max_consecutive_timeouts: int = 2,
         max_consecutive_failures: int = 5,
-        trials: int = 3,
-        coq_timeout_multiplier: float = 3.0,
+        trials: int = 2,
+        coq_timeout_multiplier: float = 1.5,
+        repeat_trial_cutoff: float = 0.5,
         mengine_variants: dict | None = None,
     ):
         self.mengine_path = os.path.expanduser(mengine_path)
@@ -105,6 +107,7 @@ class RunConfig:
         self.max_consecutive_failures = max_consecutive_failures
         self.trials = max(1, int(trials))
         self.coq_timeout_multiplier = max(1.0, float(coq_timeout_multiplier))
+        self.repeat_trial_cutoff = max(0.0, min(1.0, float(repeat_trial_cutoff)))
         self.mengine_variants = {}
         for name, spec in (mengine_variants or {}).items():
             if isinstance(spec, str):
@@ -174,20 +177,20 @@ def run_single(
     """
     Run a single benchmark point, repeating trials and keeping the minimum.
     
-    Soft timeout (at 'timeout'): counts as a failure toward auto-retire, but process continues.
-    Hard timeout (at 2x 'timeout'): actually terminates the process.
+    Timeout means the whole process group is terminated.  Slow completed
+    points are still flagged as soft timeouts for auto-retirement.
     
     Returns {"time_taken": min_success_time, "success": bool, "trials": [...]}.
     """
     timeout_multiplier = config.coq_timeout_multiplier if strategy.engine == "coq" else 1.0
     soft_timeout = timeout * timeout_multiplier
-    hard_timeout = soft_timeout * 2
+    hard_timeout = soft_timeout
 
     trials = []
     best_idx = None
     best_time = None
 
-    for _ in range(config.trials):
+    for trial_index in range(config.trials):
         with tempfile.TemporaryDirectory() as workdir:
             generated_file = benchmark.generate(strategy, params, workdir)
             engine_path = config.engine_path(strategy.engine, strategy.variant)
@@ -198,24 +201,34 @@ def run_single(
 
             start = time.perf_counter()
             try:
-                proc = subprocess.run(
+                proc = subprocess.Popen(
                     cmd,
-                    capture_output=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
                     text=True,
-                    timeout=hard_timeout,
                     cwd=cwd,
+                    start_new_session=True,
                 )
+                stdout, stderr = proc.communicate(timeout=hard_timeout)
                 elapsed = time.perf_counter() - start
                 trial = {"time_taken": elapsed, "success": proc.returncode == 0}
                 if elapsed > soft_timeout:
                     trial["soft_timeout"] = True
                 if not trial["success"]:
                     trial["returncode"] = proc.returncode
-                    if proc.stderr:
-                        trial["stderr"] = proc.stderr[:500]
+                    if stderr:
+                        trial["stderr"] = stderr[:500]
                 trials.append(trial)
             except subprocess.TimeoutExpired:
                 elapsed = time.perf_counter() - start
+                try:
+                    os.killpg(proc.pid, signal.SIGTERM)
+                    proc.communicate(timeout=1)
+                except Exception:
+                    try:
+                        os.killpg(proc.pid, signal.SIGKILL)
+                    except Exception:
+                        pass
                 trials.append({"time_taken": elapsed, "success": False, "timeout": True})
             except FileNotFoundError:
                 trials.append({"time_taken": 0, "success": False, "error": f"Engine not found: {cmd[0]}"})
@@ -227,6 +240,13 @@ def run_single(
             if best_time is None or elapsed < best_time:
                 best_time = elapsed
                 best_idx = len(trials) - 1
+
+        if trial.get("timeout") or trial.get("error") or not trial.get("success"):
+            break
+        if trial.get("soft_timeout"):
+            break
+        if trial_index == 0 and trial.get("time_taken", 0) > soft_timeout * config.repeat_trial_cutoff:
+            break
 
     if best_idx is not None:
         best = trials[best_idx]
@@ -323,10 +343,10 @@ def run_benchmark(
         print(f"\n{'='*60}")
         print(f"  {benchmark.name}: {benchmark.description}")
         print(f"  ~{total_points} parameter points × {len(strategies)} strategies (adaptive step)")
-        print(f"  Soft timeout: {timeout}s | Hard timeout: {timeout*2}s")
-        print(f"  Trials per point: {config.trials}; plotted value is the minimum successful trial")
+        print(f"  Timeout: {timeout}s")
         if config.coq_timeout_multiplier != 1.0:
-            print(f"  Rocq timeout multiplier: {config.coq_timeout_multiplier:g}×")
+            print(f"  Rocq timeout: {timeout * config.coq_timeout_multiplier:g}s")
+        print(f"  Trials per point: up to {config.trials}; slow/failed points stop after one trial")
         print(f"  Auto-retire after {config.max_consecutive_timeouts} consecutive timeouts")
         print(f"{'='*60}")
 

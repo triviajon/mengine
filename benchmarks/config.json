@@ -7,10 +7,10 @@
   "results_dir": "results",
   "plots_dir": "plots",
   "default_timeout": 20,
-  "max_consecutive_timeouts": 3,
+  "max_consecutive_timeouts": 2,
   "max_consecutive_failures": 2,
-  "trials": 3,
-  "coq_timeout_multiplier": 3.0,
+  "trials": 2,
+  "coq_timeout_multiplier": 1.5,
   "mengine_variants": {
     "baseline": {
       "path": "~/mengine/build/ablations/mengine-baseline",

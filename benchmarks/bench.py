@@ -17,6 +17,7 @@ Run options:
   --timeout SECONDS              Override default timeout
   --max-timeouts N               Consecutive timeouts before retiring (default: 3)
   --trials N                     Repeat each point N times and keep the minimum
+  --coq-timeout-multiplier N     Rocq timeout multiplier (default: config)
   --force                        Re-run even if results exist
 
 Test options:
@@ -89,10 +90,10 @@ DEFAULT_CONFIG = {
     "results_dir": "results",
     "plots_dir": "plots",
     "default_timeout": 30,
-    "max_consecutive_timeouts": 3,
+    "max_consecutive_timeouts": 2,
     "max_consecutive_failures": 5,
-    "trials": 3,
-    "coq_timeout_multiplier": 3.0,
+    "trials": 2,
+    "coq_timeout_multiplier": 1.5,
     "mengine_variants": {},
 }
 
@@ -166,7 +167,7 @@ def make_run_config(cfg, args):
         max_consecutive_timeouts=getattr(args, "max_timeouts", None) or cfg["max_consecutive_timeouts"],
         max_consecutive_failures=cfg["max_consecutive_failures"],
         trials=getattr(args, "trials", None) or cfg.get("trials", 3),
-        coq_timeout_multiplier=cfg.get("coq_timeout_multiplier", 3.0),
+        coq_timeout_multiplier=getattr(args, "coq_timeout_multiplier", None) or cfg.get("coq_timeout_multiplier", 1.5),
         mengine_variants={} if getattr(args, "no_variants", False) else variants,
     )
 
@@ -592,6 +593,7 @@ def main():
     p_run.add_argument("--timeout", type=float, help="Timeout in seconds")
     p_run.add_argument("--max-timeouts", type=int, help="Max consecutive timeouts before retiring")
     p_run.add_argument("--trials", type=int, help="Trials per point; minimum successful time is recorded")
+    p_run.add_argument("--coq-timeout-multiplier", type=float, help="Rocq timeout multiplier")
     p_run.add_argument("--force", action="store_true", help="Re-run existing results")
     p_run.add_argument("--no-variants", action="store_true", help="Skip ablation variants, run only the base mengine binary")
 

@@ -54,6 +54,11 @@ new-benchmarks/**/__pycache__/
 new-benchmarks/perf.data*
 plots/
 results/
+!benchmarks/plots/
+!benchmarks/plots/**
+!benchmarks/results/
+!benchmarks/results/**
+benchmarks/flame_trends/
 
 # Local profiling and packaging artifacts.
 flame*.svg
