@@ -25,7 +25,8 @@ from .benchmark import Benchmark, Strategy, ParamSpec
 
 
 _ADAPTIVE_WINDOW = 4
-_ADAPTIVE_R2_THRESHOLD = 0.999
+_ADAPTIVE_STEP_UP_R2   = 0.999
+_ADAPTIVE_STEP_DOWN_R2 = 0.95
 _ADAPTIVE_MAX_FACTOR = 8
 
 
@@ -57,13 +58,15 @@ def _adaptive_step(
     current_step: int,
     base_step: int,
 ) -> int:
-    """Double step when recent points fit a power law well; halve if they deviate."""
+    """Double step when recent points fit a power law well; halve only if they clearly deviate."""
     if len(recent) < _ADAPTIVE_WINDOW:
         return current_step
     r2 = _log_linear_r2(recent[-_ADAPTIVE_WINDOW:])
-    if r2 >= _ADAPTIVE_R2_THRESHOLD:
+    if r2 >= _ADAPTIVE_STEP_UP_R2:
         return min(current_step * 2, base_step * _ADAPTIVE_MAX_FACTOR)
-    return max(current_step // 2, base_step)
+    if r2 < _ADAPTIVE_STEP_DOWN_R2:
+        return max(current_step // 2, base_step)
+    return current_step
 
 
 _DEFAULT_VARIANT_STYLES = {
