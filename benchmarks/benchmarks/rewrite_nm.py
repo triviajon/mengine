@@ -186,5 +186,7 @@ theorem bench :
     def get_command(self, strategy, params, engine_path, generated_file, config=None):
         if strategy.engine == "mengine":
             return [engine_path, "-q", generated_file]
+        if strategy.engine == "lean":
+            return [engine_path, "--tstack=1000000", generated_file]
 
         return [engine_path, generated_file]
