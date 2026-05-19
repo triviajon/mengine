@@ -57,6 +57,15 @@ def _successful_time(result: dict) -> float | None:
     return None
 
 
+def _result_is_complete(result: dict, target_trials: int) -> bool:
+    """Return true if a stored result should be skipped unless --force is used."""
+    if result.get("timeout") or result.get("error") or result.get("success") is False:
+        return True
+    if result.get("soft_timeout") or result.get("repeat_stopped"):
+        return True
+    return len(result.get("trials", [])) >= target_trials
+
+
 _DEFAULT_VARIANT_STYLES = {
     "baseline":          {"color": "steelblue",   "marker": "o"},
     "no_evar_free_fill": {"color": "deepskyblue",  "marker": "^"},
@@ -189,6 +198,7 @@ def run_single(
     trials = []
     best_idx = None
     best_time = None
+    repeat_stopped = None
 
     for trial_index in range(config.trials):
         with tempfile.TemporaryDirectory() as workdir:
@@ -242,10 +252,13 @@ def run_single(
                 best_idx = len(trials) - 1
 
         if trial.get("timeout") or trial.get("error") or not trial.get("success"):
+            repeat_stopped = "failed"
             break
         if trial.get("soft_timeout"):
+            repeat_stopped = "soft_timeout"
             break
         if trial_index == 0 and trial.get("time_taken", 0) > soft_timeout * config.repeat_trial_cutoff:
+            repeat_stopped = "slow_first_trial"
             break
 
     if best_idx is not None:
@@ -258,6 +271,8 @@ def run_single(
         }
         if best.get("soft_timeout"):
             result["soft_timeout"] = True
+        if repeat_stopped:
+            result["repeat_stopped"] = repeat_stopped
         return result
 
     first_error = next((t for t in trials if t.get("error")), None)
@@ -269,6 +284,8 @@ def run_single(
     }
     if any(t.get("timeout") for t in trials):
         result["timeout"] = True
+    if repeat_stopped:
+        result["repeat_stopped"] = repeat_stopped
     if first_error:
         result["error"] = first_error["error"]
     else:
@@ -385,11 +402,7 @@ def run_benchmark(
                 key = benchmark.result_key(strategy, params)
 
                 existing = results.get(key)
-                enough_trials = (
-                    existing is not None
-                    and len(existing.get("trials", [])) >= config.trials
-                )
-                if existing is not None and not force and enough_trials:
+                if existing is not None and not force and _result_is_complete(existing, config.trials):
                     skip_count += 1
                     v = results[key]
                     if _successful_time(v) is not None:
@@ -397,6 +410,31 @@ def run_benchmark(
                         if len(recent_times) > 8:
                             recent_times = recent_times[-8:]
                         last_success_x = x
+                        if v.get("soft_timeout"):
+                            consecutive_timeouts[series_id] = consecutive_timeouts.get(series_id, 0) + 1
+                            consecutive_failures[series_id] = 0
+                        else:
+                            consecutive_timeouts[series_id] = 0
+                            consecutive_failures[series_id] = 0
+                    elif v.get("timeout"):
+                        consecutive_timeouts[series_id] = consecutive_timeouts.get(series_id, 0) + 1
+                        consecutive_failures[series_id] = 0
+                    else:
+                        consecutive_failures[series_id] = consecutive_failures.get(series_id, 0) + 1
+                        consecutive_timeouts[series_id] = 0
+
+                    if consecutive_timeouts.get(series_id, 0) >= config.max_consecutive_timeouts:
+                        retired.add(series_id)
+                        if verbose:
+                            print(f"  RETIRED  {strat_id} after {config.max_consecutive_timeouts} saved timeouts")
+                        break
+
+                    if consecutive_failures.get(series_id, 0) >= config.max_consecutive_failures:
+                        retired.add(series_id)
+                        if verbose:
+                            print(f"  RETIRED  {strat_id} after {config.max_consecutive_failures} saved failures")
+                        break
+
                     current_step = _adaptive_step(recent_times, current_step, primary_spec.step, min_step, max_step)
                     if _successful_time(v) is None and strategy.engine == "coq" and current_step > min_step and last_success_x is not None:
                         current_step = max(current_step // 2, min_step)
