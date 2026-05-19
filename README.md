@@ -49,3 +49,21 @@ This is a prototype! My goals include:
 - examples of verifying large imperative programs
 - all proofs continue to generate Coq-checkable proof terms
 - a tactic scripting language for writing new tactics
+
+## Benchmark Results
+
+<!-- BENCHMARK_RESULTS_START -->
+
+| Benchmark | Description | Plot |
+| --- | --- | --- |
+| `addr0_let_in` | Rewriting add_r_O inside nested let-bindings | <img src="benchmarks/plots/addr0_let_in.png" alt="addr0_let_in" width="320"><br><sub>overview</sub> |
+| `context_order_validity` | Deep-context valid_in_context queries for order-backend comparison | <img src="benchmarks/plots/context_order_validity.png" alt="context_order_validity" width="320"><br><sub>overview</sub> |
+| `evar_free_filling` | Hole filling with a large evar-free proof term | <img src="benchmarks/plots/evar_free_filling.png" alt="evar_free_filling" width="320"><br><sub>overview</sub> |
+| `repeat_mod` | Rewriting nested modulo chains (mod (mod ... b p) p) = (mod b p) | <img src="benchmarks/plots/repeat_mod.png" alt="repeat_mod" width="320"><br><sub>overview</sub> |
+| `rewrite_fa` | Rewriting f(f(...f(a))) = a with n nested applications | <img src="benchmarks/plots/rewrite_fa.png" alt="rewrite_fa" width="320"><br><sub>overview</sub> |
+| `rewrite_nm` | Rewriting f(x,...,x)=x in let x1:=f x0..x0 in ... let xm:=f x(m-1)..x(m-1) in xm=x0 | <img src="benchmarks/plots/rewrite_nm_m1.png" alt="rewrite_nm_m1" width="320"><br><sub>m1</sub><br><br><img src="benchmarks/plots/rewrite_nm_m2.png" alt="rewrite_nm_m2" width="320"><br><sub>m2</sub><br><br><img src="benchmarks/plots/rewrite_nm_m3.png" alt="rewrite_nm_m3" width="320"><br><sub>m3</sub><br><br><img src="benchmarks/plots/rewrite_nm_m4.png" alt="rewrite_nm_m4" width="320"><br><sub>m4</sub><br><br><img src="benchmarks/plots/rewrite_nm_m5.png" alt="rewrite_nm_m5" width="320"><br><sub>m5</sub><br><br><img src="benchmarks/plots/rewrite_nm_m6.png" alt="rewrite_nm_m6" width="320"><br><sub>m6</sub><br><br><img src="benchmarks/plots/rewrite_nm_m7.png" alt="rewrite_nm_m7" width="320"><br><sub>m7</sub><br><br><img src="benchmarks/plots/rewrite_nm_m8.png" alt="rewrite_nm_m8" width="320"><br><sub>m8</sub><br><br><img src="benchmarks/plots/rewrite_nm_m9.png" alt="rewrite_nm_m9" width="320"><br><sub>m9</sub><br><br><img src="benchmarks/plots/rewrite_nm_m10.png" alt="rewrite_nm_m10" width="320"><br><sub>m10</sub> |
+| `separation_logic` | Separation logic predicate cancellation (reordering sep predicates) | _pending_ |
+| `substitution_sharing` | Substitution through a dependent type with repeated references to one shared let-bound subtree | _pending_ |
+| `symbolic_execution` | Symbolic execution of imperative programs with partial maps | _pending_ |
+
+<!-- BENCHMARK_RESULTS_END -->
