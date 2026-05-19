@@ -37,9 +37,9 @@ void test_fill_hole_cyclic_rejected(void) {
     assert_false(result, "filling hole with term containing itself should fail");
 }
 
-// evar_refs propagates correctly through term constructors.
+// has_evar propagates correctly through term constructors.
 void test_evar_refs_propagation(void) {
-    test_start("evar_refs propagates through term construction");
+    test_start("has_evar propagates through term construction");
 
     Context *ctx = kernel_context_empty();
     Expression *A = kernel_var_create("A", kernel_type_create(), ctx);
@@ -55,7 +55,7 @@ void test_evar_refs_propagation(void) {
 
 // evar tracking includes types, not just term child fields.
 void test_evar_refs_propagate_from_types(void) {
-    test_start("evar_refs propagate from expression types");
+    test_start("has_evar propagates from expression types");
 
     Context *ctx = kernel_context_empty();
     Expression *type_hole = kernel_hole_create("A", kernel_type_create(), ctx);
@@ -66,7 +66,7 @@ void test_evar_refs_propagate_from_types(void) {
 
 // After filling a hole, ancestor expressions become evar-free.
 void test_fill_hole_clears_evar_refs(void) {
-    test_start("fill_hole clears evar_refs from parent expressions");
+    test_start("fill_hole clears has_evar from parent expressions");
 
     Context *ctx = kernel_context_empty();
     Expression *A = kernel_var_create("A", kernel_type_create(), ctx);
