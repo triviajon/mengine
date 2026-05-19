@@ -16,6 +16,7 @@ Run options:
   --override PARAM=START:STOP:STEP  Override a parameter range
   --timeout SECONDS              Override default timeout
   --max-timeouts N               Consecutive timeouts before retiring (default: 3)
+  --trials N                     Repeat each point N times and keep the minimum
   --force                        Re-run even if results exist
 
 Test options:
@@ -90,6 +91,8 @@ DEFAULT_CONFIG = {
     "default_timeout": 30,
     "max_consecutive_timeouts": 3,
     "max_consecutive_failures": 5,
+    "trials": 3,
+    "coq_timeout_multiplier": 3.0,
     "mengine_variants": {},
 }
 
@@ -162,7 +165,9 @@ def make_run_config(cfg, args):
         default_timeout=getattr(args, "timeout", None) or cfg["default_timeout"],
         max_consecutive_timeouts=getattr(args, "max_timeouts", None) or cfg["max_consecutive_timeouts"],
         max_consecutive_failures=cfg["max_consecutive_failures"],
-        mengine_variants=variants,
+        trials=getattr(args, "trials", None) or cfg.get("trials", 3),
+        coq_timeout_multiplier=cfg.get("coq_timeout_multiplier", 3.0),
+        mengine_variants={} if getattr(args, "no_variants", False) else variants,
     )
 
 
@@ -480,6 +485,60 @@ def cmd_init(args):
     save_default_config()
 
 
+def cmd_purge(args):
+    cfg = load_config()
+    benchmarks = get_benchmarks(args)
+    results_dir = cfg["results_dir"]
+
+    engine   = args.engine
+    strategy = args.strategy
+
+    # Build the key prefix to match against.
+    # Keys are always "{engine}_{strategy_name}_{params}".
+    if engine and strategy:
+        prefix = f"{engine}_{strategy}_"
+    elif engine:
+        prefix = f"{engine}_"
+    elif strategy:
+        prefix = None  # can't safely prefix-match without engine; scan all
+    else:
+        print("Specify at least --engine or --strategy.", file=sys.stderr)
+        sys.exit(1)
+
+    total_removed = 0
+
+    for name, bench in benchmarks.items():
+        results_path = os.path.join(results_dir, f"{bench.name}.json")
+        results = load_results(results_path)
+        if not results:
+            continue
+
+        to_remove = [
+            k for k in results
+            if (prefix and k.startswith(prefix))
+            or (prefix is None and f"_{strategy}_" in k)
+        ]
+
+        if not to_remove:
+            continue
+
+        print(f"\n{name}: {len(to_remove)} keys")
+        for k in sorted(to_remove):
+            print(f"  - {k}")
+
+        if args.yes:
+            for k in to_remove:
+                del results[k]
+            with open(results_path, "w") as f:
+                json.dump(results, f, indent=2)
+            total_removed += len(to_remove)
+
+    if not args.yes:
+        print("\nDry run — pass --yes to actually delete.")
+    else:
+        print(f"\nRemoved {total_removed} result(s).")
+
+
 def get_benchmarks(args):
     if hasattr(args, "benchmark") and args.benchmark:
         name = args.benchmark
@@ -506,6 +565,13 @@ def main():
     p_status = subparsers.add_parser("status", help="Show benchmark status")
     p_status.add_argument("benchmark", nargs="?", help="Specific benchmark")
 
+    # purge
+    p_purge = subparsers.add_parser("purge", help="Delete results for a specific engine or strategy")
+    p_purge.add_argument("benchmark", nargs="?", help="Specific benchmark (default: all)")
+    p_purge.add_argument("--engine", help="Engine whose results to delete (e.g. mengine, coq)")
+    p_purge.add_argument("--strategy", help="Strategy name whose results to delete (e.g. cancel_baseline)")
+    p_purge.add_argument("--yes", action="store_true", help="Actually delete (default is dry run)")
+
     # init
     subparsers.add_parser("init", help="Create default config.json")
 
@@ -525,7 +591,9 @@ def main():
                        help="Add/override an MEngine binary variant: NAME=PATH[:ROOT]")
     p_run.add_argument("--timeout", type=float, help="Timeout in seconds")
     p_run.add_argument("--max-timeouts", type=int, help="Max consecutive timeouts before retiring")
+    p_run.add_argument("--trials", type=int, help="Trials per point; minimum successful time is recorded")
     p_run.add_argument("--force", action="store_true", help="Re-run existing results")
+    p_run.add_argument("--no-variants", action="store_true", help="Skip ablation variants, run only the base mengine binary")
 
     # test
     p_test = subparsers.add_parser("test", help="Smoke-test each engine/strategy once")
@@ -534,6 +602,7 @@ def main():
     p_test.add_argument("--mengine-variant", action="append",
                         help="Add/override an MEngine binary variant: NAME=PATH[:ROOT]")
     p_test.add_argument("--timeout", type=float, help="Timeout in seconds")
+    p_test.add_argument("--no-variants", action="store_true", help="Skip ablation variants, run only the base mengine binary")
 
     # plot
     p_plot = subparsers.add_parser("plot", help="Generate plots")
@@ -553,6 +622,7 @@ def main():
                         help='Exclude plot series whose "engine/strategy" label matches REGEX. Repeatable.')
     p_plot.add_argument("--smooth", type=int, default=1, metavar="N",
                         help="Moving window average size for smoothing (default: 1 = no smoothing)")
+    p_plot.add_argument("--no-variants", action="store_true", help="Skip ablation variants, plot only the base mengine binary")
 
     args = parser.parse_args()
 
@@ -568,6 +638,7 @@ def main():
         "plot": cmd_plot,
         "init": cmd_init,
         "render": cmd_render,
+        "purge": cmd_purge,
     }
     commands[args.command](args)
 

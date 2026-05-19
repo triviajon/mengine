@@ -42,6 +42,16 @@ def load_results(path: str) -> dict:
         return json.load(f)
 
 
+def _parse_params(param_str: str) -> dict[str, int]:
+    params = {}
+    for part in param_str.split("_"):
+        match = re.fullmatch(r"([a-zA-Z][a-zA-Z0-9_]*?)(\d+)", part)
+        if not match:
+            return {}
+        params[match.group(1)] = int(match.group(2))
+    return params
+
+
 def parse_result_key(key: str, benchmark: Benchmark,
                      strategies: list[Strategy] | None = None) -> tuple[str | None, dict[str, int]]:
     """
@@ -52,27 +62,32 @@ def parse_result_key(key: str, benchmark: Benchmark,
     """
     all_strategies = strategies or benchmark.strategies
 
-    # Identify which strategy this key belongs to
-    for strategy in all_strategies:
+    # Identify which strategy this key belongs to. Sort by longest prefix so a
+    # strategy named "native_no_subst_memo" wins before "native" if both exist.
+    for strategy in sorted(all_strategies, key=lambda s: len(f"{s.engine}_{s.name}_"), reverse=True):
         # Build what the prefix should look like
         prefix = f"{strategy.engine}_{strategy.name}_"
         
         if key.startswith(prefix):
             param_str = key[len(prefix):]
-            params = {}
-            for match in re.finditer(r"([a-zA-Z]+)(\d+)", param_str):
-                params[match.group(1)] = int(match.group(2))
+            params = _parse_params(param_str)
+            if not params:
+                continue
             return f"{strategy.engine}:{strategy.name}", params
 
-    # Backward compatibility for pre-ablation MEngine result keys.
-    if key.startswith("mengine_"):
+    has_mengine_variants = any(strategy.engine == "mengine" and strategy.variant
+                               for strategy in all_strategies)
+
+    # Backward compatibility for pre-ablation MEngine result keys. Do not fold
+    # legacy keys into an ablation baseline: that silently splices different
+    # binaries/configurations into one plot series.
+    if key.startswith("mengine_") and not has_mengine_variants:
         param_str = key[len("mengine_"):]
-        params = {}
-        for match in re.finditer(r"([a-zA-Z]+)(\d+)", param_str):
-            params[match.group(1)] = int(match.group(2))
-        for strategy in all_strategies:
-            if strategy.engine == "mengine":
-                return f"{strategy.engine}:{strategy.name}", params
+        params = _parse_params(param_str)
+        if params:
+            for strategy in all_strategies:
+                if strategy.engine == "mengine":
+                    return f"{strategy.engine}:{strategy.name}", params
     
     return None, {}
 
@@ -88,6 +103,17 @@ def _moving_average(xs: list, ys: list, window: int) -> tuple[list, list]:
         hi = min(len(ys), i + half + 1)
         smoothed.append(sum(ys[lo:hi]) / (hi - lo))
     return xs, smoothed
+
+
+def _plotted_time(result: dict) -> float | None:
+    """Return the minimum successful trial, with backward compatibility."""
+    trials = result.get("trials") or []
+    successful = [t["time_taken"] for t in trials if t.get("success") and "time_taken" in t]
+    if successful:
+        return min(successful)
+    if result.get("success") or result.get("soft_timeout"):
+        return result.get("time_taken")
+    return None
 
 
 def plot_benchmark(
@@ -197,9 +223,11 @@ def plot_benchmark(
         if x_val is None:
             continue
 
-        # Include both successful results and soft-timeout results (which completed with a time)
-        if value.get("success") or value.get("soft_timeout"):
-            data.setdefault(strat_id, []).append((x_val, value["time_taken"]))
+        # Include both successful results and soft-timeout results (which completed with a time).
+        # New result files store all trials; plot only the minimum successful trial.
+        plotted_time = _plotted_time(value)
+        if plotted_time is not None:
+            data.setdefault(strat_id, []).append((x_val, plotted_time))
         elif show_failures:
             failure_data.setdefault(strat_id, []).append((x_val, value["time_taken"]))
 

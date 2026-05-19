@@ -1,18 +1,13 @@
 """
 Adaptive benchmark runner.
 
-Key feature: instead of requiring manually-tuned per-engine parameter ranges,
-the runner sweeps the global parameter range and automatically stops running
+The runner sweeps the global parameter range and automatically stops running
 an engine/strategy after it hits `max_consecutive_timeouts` consecutive
-timeouts. This eliminates the need for manual intervention when engines have
-vastly different performance characteristics.
-
-Results are stored incrementally so runs can be resumed.
+timeouts. Results are stored incrementally so runs can be resumed.
 """
 
 import itertools
 import json
-import math
 import os
 import subprocess
 import sys
@@ -24,49 +19,41 @@ from pathlib import Path
 from .benchmark import Benchmark, Strategy, ParamSpec
 
 
-_ADAPTIVE_WINDOW = 4
-_ADAPTIVE_STEP_UP_R2   = 0.999
-_ADAPTIVE_STEP_DOWN_R2 = 0.95
-_ADAPTIVE_MAX_FACTOR = 8
-
-
-def _log_linear_r2(recent: list[tuple[int, float]]) -> float:
-    """R² of a log-log power-law fit over recent (x, time) pairs."""
-    if len(recent) < 2:
-        return 0.0
-    try:
-        lxs = [math.log(x) for x, _ in recent]
-        lys = [math.log(t) for _, t in recent]
-    except ValueError:
-        return 0.0
-    n = len(lxs)
-    mx = sum(lxs) / n
-    my = sum(lys) / n
-    ss_xx = sum((lx - mx) ** 2 for lx in lxs)
-    if ss_xx == 0:
-        return 1.0
-    ss_xy = sum((lx - mx) * (ly - my) for lx, ly in zip(lxs, lys))
-    slope = ss_xy / ss_xx
-    intercept = my - slope * mx
-    ss_res = sum((ly - (slope * lx + intercept)) ** 2 for lx, ly in zip(lxs, lys))
-    ss_tot = sum((ly - my) ** 2 for ly in lys)
-    return 1.0 - ss_res / ss_tot if ss_tot > 0 else 1.0
+_ADAPTIVE_MAX_FACTOR = 16
+_SMALL_GROWTH_PER_BASE_STEP = 0.04
+_LARGE_GROWTH_PER_BASE_STEP = 0.20
 
 
 def _adaptive_step(
     recent: list[tuple[int, float]],
     current_step: int,
     base_step: int,
+    min_step: int,
+    max_step: int,
 ) -> int:
-    """Double step when recent points fit a power law well; halve only if they clearly deviate."""
-    if len(recent) < _ADAPTIVE_WINDOW:
+    """Adjust by the local derivative instead of a global correlation fit."""
+    if len(recent) < 2:
         return current_step
-    r2 = _log_linear_r2(recent[-_ADAPTIVE_WINDOW:])
-    if r2 >= _ADAPTIVE_STEP_UP_R2:
-        return min(current_step * 2, base_step * _ADAPTIVE_MAX_FACTOR)
-    if r2 < _ADAPTIVE_STEP_DOWN_R2:
-        return max(current_step // 2, base_step)
+
+    (x0, t0), (x1, t1) = recent[-2], recent[-1]
+    dx = x1 - x0
+    if dx <= 0 or t1 <= 0:
+        return current_step
+
+    # Fractional time increase we would expect over one base step.  Small means
+    # the curve is locally flat; large means the cliff is probably close.
+    growth = max(0.0, (t1 - t0) / dx) * base_step / max(t1, 1e-9)
+    if growth <= _SMALL_GROWTH_PER_BASE_STEP:
+        return min(max(current_step * 2, base_step), max_step)
+    if growth >= _LARGE_GROWTH_PER_BASE_STEP:
+        return max(current_step // 2, min_step)
     return current_step
+
+
+def _successful_time(result: dict) -> float | None:
+    if result.get("success") or result.get("soft_timeout"):
+        return result.get("time_taken")
+    return None
 
 
 _DEFAULT_VARIANT_STYLES = {
@@ -103,6 +90,8 @@ class RunConfig:
         default_timeout: float = 30.0,
         max_consecutive_timeouts: int = 3,
         max_consecutive_failures: int = 5,
+        trials: int = 3,
+        coq_timeout_multiplier: float = 3.0,
         mengine_variants: dict | None = None,
     ):
         self.mengine_path = os.path.expanduser(mengine_path)
@@ -114,6 +103,8 @@ class RunConfig:
         self.default_timeout = default_timeout
         self.max_consecutive_timeouts = max_consecutive_timeouts
         self.max_consecutive_failures = max_consecutive_failures
+        self.trials = max(1, int(trials))
+        self.coq_timeout_multiplier = max(1.0, float(coq_timeout_multiplier))
         self.mengine_variants = {}
         for name, spec in (mengine_variants or {}).items():
             if isinstance(spec, str):
@@ -181,53 +172,91 @@ def run_single(
     timeout: float,
 ) -> dict:
     """
-    Run a single benchmark point with soft/hard timeout limits.
+    Run a single benchmark point, repeating trials and keeping the minimum.
     
     Soft timeout (at 'timeout'): counts as a failure toward auto-retire, but process continues.
     Hard timeout (at 2x 'timeout'): actually terminates the process.
     
-    Returns {"time_taken": float, "success": bool, "soft_timeout": bool (optional)}.
+    Returns {"time_taken": min_success_time, "success": bool, "trials": [...]}.
     """
-    with tempfile.TemporaryDirectory() as workdir:
-        generated_file = benchmark.generate(strategy, params, workdir)
-        engine_path = config.engine_path(strategy.engine, strategy.variant)
-        cmd = benchmark.get_command(strategy, params, engine_path, generated_file, config=config)
+    timeout_multiplier = config.coq_timeout_multiplier if strategy.engine == "coq" else 1.0
+    soft_timeout = timeout * timeout_multiplier
+    hard_timeout = soft_timeout * 2
 
-        # mengine needs to run from its root dir to find prelude/tactics.me
-        cwd = config.engine_cwd(strategy.engine, strategy.variant, workdir)
+    trials = []
+    best_idx = None
+    best_time = None
 
-        soft_timeout = timeout
-        hard_timeout = timeout * 2
+    for _ in range(config.trials):
+        with tempfile.TemporaryDirectory() as workdir:
+            generated_file = benchmark.generate(strategy, params, workdir)
+            engine_path = config.engine_path(strategy.engine, strategy.variant)
+            cmd = benchmark.get_command(strategy, params, engine_path, generated_file, config=config)
 
-        start = time.perf_counter()
-        soft_timeout_hit = False
-        try:
-            proc = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=hard_timeout,
-                cwd=cwd,
-            )
-            elapsed = time.perf_counter() - start
-            
-            # Check if we exceeded soft timeout but finished before hard timeout
-            if elapsed > soft_timeout:
-                soft_timeout_hit = True
-            
-            success = proc.returncode == 0
-            result = {"time_taken": elapsed, "success": success}
-            if soft_timeout_hit:
-                result["soft_timeout"] = True
-            if not success and proc.stderr:
-                result["stderr"] = proc.stderr[:500]
-            return result
-        except subprocess.TimeoutExpired:
-            elapsed = time.perf_counter() - start
-            # Hard timeout hit - process was actually killed
-            return {"time_taken": elapsed, "success": False, "timeout": True}
-        except FileNotFoundError:
-            return {"time_taken": 0, "success": False, "error": f"Engine not found: {cmd[0]}"}
+            # mengine needs to run from its root dir to find prelude/tactics.me
+            cwd = config.engine_cwd(strategy.engine, strategy.variant, workdir)
+
+            start = time.perf_counter()
+            try:
+                proc = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=hard_timeout,
+                    cwd=cwd,
+                )
+                elapsed = time.perf_counter() - start
+                trial = {"time_taken": elapsed, "success": proc.returncode == 0}
+                if elapsed > soft_timeout:
+                    trial["soft_timeout"] = True
+                if not trial["success"]:
+                    trial["returncode"] = proc.returncode
+                    if proc.stderr:
+                        trial["stderr"] = proc.stderr[:500]
+                trials.append(trial)
+            except subprocess.TimeoutExpired:
+                elapsed = time.perf_counter() - start
+                trials.append({"time_taken": elapsed, "success": False, "timeout": True})
+            except FileNotFoundError:
+                trials.append({"time_taken": 0, "success": False, "error": f"Engine not found: {cmd[0]}"})
+                break
+
+        trial = trials[-1]
+        if trial.get("success"):
+            elapsed = trial["time_taken"]
+            if best_time is None or elapsed < best_time:
+                best_time = elapsed
+                best_idx = len(trials) - 1
+
+    if best_idx is not None:
+        best = trials[best_idx]
+        result = {
+            "time_taken": best["time_taken"],
+            "success": True,
+            "trials": trials,
+            "best_trial": best_idx,
+        }
+        if best.get("soft_timeout"):
+            result["soft_timeout"] = True
+        return result
+
+    first_error = next((t for t in trials if t.get("error")), None)
+    slowest = max(trials, key=lambda t: t.get("time_taken", 0), default={"time_taken": 0})
+    result = {
+        "time_taken": slowest.get("time_taken", 0),
+        "success": False,
+        "trials": trials,
+    }
+    if any(t.get("timeout") for t in trials):
+        result["timeout"] = True
+    if first_error:
+        result["error"] = first_error["error"]
+    else:
+        failed = next((t for t in trials if t.get("stderr")), None)
+        if failed:
+            result["stderr"] = failed["stderr"]
+            result["returncode"] = failed.get("returncode")
+    return result
 
 
 def run_benchmark(
@@ -274,7 +303,8 @@ def run_benchmark(
         print(f"No strategies to run for {benchmark.name}")
         return
 
-    # Track consecutive timeouts/failures per strategy
+    # Track consecutive timeouts/failures per plotted series.  Multi-parameter
+    # benchmarks should not let one fixed-parameter slice retire the others.
     consecutive_timeouts: dict[str, int] = {}
     consecutive_failures: dict[str, int] = {}
     retired: set[str] = set()
@@ -294,6 +324,9 @@ def run_benchmark(
         print(f"  {benchmark.name}: {benchmark.description}")
         print(f"  ~{total_points} parameter points × {len(strategies)} strategies (adaptive step)")
         print(f"  Soft timeout: {timeout}s | Hard timeout: {timeout*2}s")
+        print(f"  Trials per point: {config.trials}; plotted value is the minimum successful trial")
+        if config.coq_timeout_multiplier != 1.0:
+            print(f"  Rocq timeout multiplier: {config.coq_timeout_multiplier:g}×")
         print(f"  Auto-retire after {config.max_consecutive_timeouts} consecutive timeouts")
         print(f"{'='*60}")
 
@@ -304,15 +337,25 @@ def run_benchmark(
         strat_id = f"{strategy.engine}:{strategy.name}"
 
         for secondary_vals in (itertools.product(*secondary_ranges) if secondary_ranges else [()]):
-            if strat_id in retired:
-                break
+            secondary_suffix = ""
+            if secondary_specs:
+                secondary_suffix = " " + " ".join(
+                    f"{name}={value}" for name, value in zip(secondary_names, secondary_vals)
+                )
+            series_id = f"{strat_id}{secondary_suffix}"
+            if series_id in retired:
+                continue
 
             recent_times: list[tuple[int, float]] = []
             current_step = primary_spec.step
+            min_step = max(1, primary_spec.step // 5) if strategy.engine == "coq" else primary_spec.step
+            primary_span = max(primary_spec.stop - primary_spec.start, primary_spec.step)
+            max_step = max(primary_spec.step, min(primary_spec.step * _ADAPTIVE_MAX_FACTOR, primary_span // 12 or primary_spec.step))
             x = primary_spec.start
+            last_success_x: int | None = None
 
             while x < primary_spec.stop:
-                if strat_id in retired:
+                if series_id in retired:
                     break
 
                 params: dict[str, int] = {primary_spec.name: x}
@@ -321,14 +364,26 @@ def run_benchmark(
 
                 key = benchmark.result_key(strategy, params)
 
-                if key in results and not force:
+                existing = results.get(key)
+                enough_trials = (
+                    existing is not None
+                    and len(existing.get("trials", [])) >= config.trials
+                )
+                if existing is not None and not force and enough_trials:
                     skip_count += 1
                     v = results[key]
-                    if v.get("success") or v.get("soft_timeout"):
+                    if _successful_time(v) is not None:
                         recent_times.append((x, v["time_taken"]))
                         if len(recent_times) > 8:
                             recent_times = recent_times[-8:]
-                    current_step = _adaptive_step(recent_times, current_step, primary_spec.step)
+                        last_success_x = x
+                    current_step = _adaptive_step(recent_times, current_step, primary_spec.step, min_step, max_step)
+                    if _successful_time(v) is None and strategy.engine == "coq" and current_step > min_step and last_success_x is not None:
+                        current_step = max(current_step // 2, min_step)
+                        next_x = last_success_x + current_step
+                        if next_x < x:
+                            x = next_x
+                            continue
                     x += current_step
                     continue
 
@@ -338,45 +393,50 @@ def run_benchmark(
                 run_count += 1
 
                 if result.get("timeout"):
-                    consecutive_timeouts[strat_id] = consecutive_timeouts.get(strat_id, 0) + 1
-                    consecutive_failures[strat_id] = 0
+                    consecutive_timeouts[series_id] = consecutive_timeouts.get(series_id, 0) + 1
+                    consecutive_failures[series_id] = 0
                     if verbose:
                         print(f"  TIMEOUT  {strat_id} {params} "
-                              f"({consecutive_timeouts[strat_id]}/{config.max_consecutive_timeouts})")
+                              f"({consecutive_timeouts[series_id]}/{config.max_consecutive_timeouts})")
                 elif result.get("soft_timeout"):
-                    consecutive_timeouts[strat_id] = consecutive_timeouts.get(strat_id, 0) + 1
-                    consecutive_failures[strat_id] = 0
+                    consecutive_timeouts[series_id] = consecutive_timeouts.get(series_id, 0) + 1
+                    consecutive_failures[series_id] = 0
                     if verbose:
                         print(f"  SOFT_TO  {strat_id} {params} -> {result['time_taken']:.4f}s "
-                              f"({consecutive_timeouts[strat_id]}/{config.max_consecutive_timeouts})")
+                              f"({consecutive_timeouts[series_id]}/{config.max_consecutive_timeouts})")
                 elif not result["success"]:
-                    consecutive_failures[strat_id] = consecutive_failures.get(strat_id, 0) + 1
-                    consecutive_timeouts[strat_id] = 0
+                    consecutive_failures[series_id] = consecutive_failures.get(series_id, 0) + 1
+                    consecutive_timeouts[series_id] = 0
                     if verbose:
                         err = result.get("error", result.get("stderr", "")[:80])
                         print(f"  FAIL     {strat_id} {params}: {err}")
                 else:
-                    consecutive_timeouts[strat_id] = 0
-                    consecutive_failures[strat_id] = 0
+                    consecutive_timeouts[series_id] = 0
+                    consecutive_failures[series_id] = 0
                     if verbose:
                         print(f"  OK       {strat_id} {params} -> {result['time_taken']:.4f}s")
 
-                if result.get("success") or result.get("soft_timeout"):
+                if _successful_time(result) is not None:
                     recent_times.append((x, result["time_taken"]))
                     if len(recent_times) > 8:
                         recent_times = recent_times[-8:]
-                    new_step = _adaptive_step(recent_times, current_step, primary_spec.step)
-                    if new_step != current_step and verbose:
-                        print(f"  STEP     {strat_id} {primary_spec.name}: {current_step} → {new_step}")
+                    last_success_x = x
+                    new_step = _adaptive_step(recent_times, current_step, primary_spec.step, min_step, max_step)
                     current_step = new_step
+                elif strategy.engine == "coq" and current_step > min_step and last_success_x is not None:
+                    current_step = max(current_step // 2, min_step)
+                    next_x = last_success_x + current_step
+                    if next_x < x:
+                        x = next_x
+                        continue
 
-                if consecutive_timeouts.get(strat_id, 0) >= config.max_consecutive_timeouts:
-                    retired.add(strat_id)
+                if consecutive_timeouts.get(series_id, 0) >= config.max_consecutive_timeouts:
+                    retired.add(series_id)
                     if verbose:
                         print(f"  RETIRED  {strat_id} after {config.max_consecutive_timeouts} consecutive timeouts")
 
-                if consecutive_failures.get(strat_id, 0) >= config.max_consecutive_failures:
-                    retired.add(strat_id)
+                if consecutive_failures.get(series_id, 0) >= config.max_consecutive_failures:
+                    retired.add(series_id)
                     if verbose:
                         print(f"  RETIRED  {strat_id} after {config.max_consecutive_failures} consecutive failures")
 

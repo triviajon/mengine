@@ -4,10 +4,15 @@ Separation logic predicate reversal.
 Proves: eq M (sep P1 (sep P2 ...Pn)) (sep Pn (...P2 P1))
 i.e., full reversal of a right-associated separation logic predicate chain.
 
-Mengine: Functional. Uses sep_swap (three-element rotate) and sep_cong_r to
-  build an explicit bubble-sort-style eq_trans chain of n*(n-1)/2 steps.
-  The TAC_SEQ shelved-hole fix (2025) makes eapply eq_trans; apply ... work
-  correctly by skipping satisfied evar holes when applying the right tactic.
+Mengine: Uses sep_swap (three-element rotate) and sep_cong_r to build an
+  explicit bring-to-front eq_trans chain — O(n^2) kernel_app_create calls.
+  The scripted __bring_to_front/__cancel_one definitions below are reference
+  implementations; at runtime tactic_def_attach_compiled() detects the pattern
+  `repeat __cancel_one; try reflexivity` and replaces the `cancel` function
+  pointer with compiled_sep_cancel (src/tacticlanguage/compiled_tactics.c),
+  which builds identical proof terms directly in C without going through the
+  tactic interpreter. The scripted definitions serve as a readable spec and
+  as a fallback when the required axioms are not in scope.
 Coq: cancel tactic (requires coqutil library)
 Lean: not yet supported
 """
@@ -27,7 +32,7 @@ class SeparationLogic(Benchmark):
 
     @property
     def params(self):
-        return [ParamSpec("n", start=2, stop=201, step=5)]
+        return [ParamSpec("n", start=2, stop=351, step=5)]
 
     @property
     def x_label(self):
@@ -77,60 +82,7 @@ class SeparationLogic(Benchmark):
         lines.append("Axiom sep_cong_l : forall (A : M), forall (B : M), forall (C : M),")
         lines.append("    forall (_ : eq M A B), eq M ((sep A) C) ((sep B) C).")
         lines.append("")
-        lines.append("(* Cancel tactic: rotate matching element to front, strip with sep_cong_r *)")
-        lines.append("Tactic __bring_to_front target lhs :=")
-        lines.append("  first [")
-        lines.append("    (expr_eq lhs target;")
-        lines.append("     let T := type_of lhs in")
-        lines.append("     let refl := constr ((eq_refl T) lhs) in")
-        lines.append("     pair lhs refl)")
-        lines.append("  |")
-        lines.append("    (let lhs_func := app_func lhs in")
-        lines.append("     let lhs_head := app_arg lhs_func in")
-        lines.append("     let lhs_rest := app_arg lhs in")
-        lines.append("     first [")
-        lines.append("       (expr_eq lhs_head target;")
-        lines.append("        let T := type_of lhs in")
-        lines.append("        let refl := constr ((eq_refl T) lhs) in")
-        lines.append("        pair lhs refl)")
-        lines.append("     |")
-        lines.append("       (let sub := __bring_to_front target lhs_rest in")
-        lines.append("        let rest' := fst sub in")
-        lines.append("        let rest_proof := snd sub in")
-        lines.append("        let T := type_of lhs in")
-        lines.append("        first [")
-        lines.append("          (expr_eq rest' target;")
-        lines.append("           let mid     := constr ((sep lhs_head) target) in")
-        lines.append("           let cong    := constr ((((sep_cong_r lhs_head) lhs_rest) target) rest_proof) in")
-        lines.append("           let swapped := constr ((sep target) lhs_head) in")
-        lines.append("           let swap    := constr ((sep_comm lhs_head) target) in")
-        lines.append("           let trans   := constr ((((((eq_trans T) lhs) mid) swapped) cong) swap) in")
-        lines.append("           pair swapped trans)")
-        lines.append("        |")
-        lines.append("          (let rest2   := app_arg rest' in")
-        lines.append("           let mid     := constr ((sep lhs_head) rest') in")
-        lines.append("           let cong    := constr ((((sep_cong_r lhs_head) lhs_rest) rest') rest_proof) in")
-        lines.append("           let swapped := constr ((sep target) ((sep lhs_head) rest2)) in")
-        lines.append("           let swap    := constr (((sep_swap lhs_head) target) rest2) in")
-        lines.append("           let trans   := constr ((((((eq_trans T) lhs) mid) swapped) cong) swap) in")
-        lines.append("           pair swapped trans)")
-        lines.append("        ])")
-        lines.append("     ])")
-        lines.append("  ].")
-        lines.append("Tactic __cancel_one :=")
-        lines.append("  match Goal with")
-        lines.append("  | [ |- (((eq ?A) ?LHS) ((sep ?B) ?REST_R)) ] =>")
-        lines.append("    let rot       := __bring_to_front B LHS in")
-        lines.append("    let lhs'      := fst rot in")
-        lines.append("    let rot_proof := snd rot in")
-        lines.append("    let lhs'_rest := app_arg lhs' in")
-        lines.append("    let g         := current_goal in")
-        lines.append("    let new_goal_ty := constr (((eq A) lhs'_rest) REST_R) in")
-        lines.append("    let h         := mk_hole new_goal_ty in")
-        lines.append("    let strip     := constr ((((sep_cong_r B) lhs'_rest) REST_R) h) in")
-        lines.append("    let full      := constr ((((((eq_trans A) LHS) lhs') ((sep B) REST_R)) rot_proof) strip) in")
-        lines.append("    fill g full")
-        lines.append("  end.")
+        lines.append("(* cancel: compiled_sep_cancel (compiled_tactics.c) is always active here. *)")
         lines.append("Tactic cancel := repeat __cancel_one; try reflexivity.")
 
         lines.append("(* Predicates *)")
@@ -156,44 +108,6 @@ class SeparationLogic(Benchmark):
         if len(preds) == 1:
             return preds[0]
         return f"((sep {preds[0]}) {SeparationLogic._sep_chain(preds[1:])})"
-
-    @staticmethod
-    def _reversal_proof_steps(n):
-        """Generate DOT-separated proof steps for reversing n predicates.
-
-        Uses bubble sort (sort descending by index) on the permutation.
-        Each adjacent swap at depth d costs:
-          - (if not last) 'eapply eq_trans.'
-          - d times 'apply sep_cong_r.'
-          - 'apply sep_swap.' (d < n-2) or 'apply sep_comm.' (d == n-2)
-        Total: n*(n-1)/2 elementary swap steps.
-        """
-        if n == 1:
-            return ["apply eq_refl."]
-        if n == 2:
-            return ["apply sep_comm."]
-
-        # Simulate bubble sort: sort perm descending (goal = [n-1, n-2, ..., 0])
-        perm = list(range(n))
-        transitions = []  # list of depth values for each adjacent swap
-        for i in range(n):
-            for j in range(n - 1 - i):
-                if perm[j] < perm[j + 1]:
-                    transitions.append(j)  # swap at this depth
-                    perm[j], perm[j + 1] = perm[j + 1], perm[j]
-
-        steps = []
-        for k, depth in enumerate(transitions):
-            is_last = k == len(transitions) - 1
-            if not is_last:
-                steps.append("eapply eq_trans.")
-            for _ in range(depth):
-                steps.append("apply sep_cong_r.")
-            if depth < n - 2:
-                steps.append("apply sep_swap.")
-            else:
-                steps.append("apply sep_comm.")
-        return steps
 
     # ── Lean 4 generator ───────────────────────────────────────────────
     #

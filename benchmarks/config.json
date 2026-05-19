@@ -9,16 +9,13 @@
   "default_timeout": 20,
   "max_consecutive_timeouts": 3,
   "max_consecutive_failures": 2,
+  "trials": 3,
+  "coq_timeout_multiplier": 3.0,
   "mengine_variants": {
     "baseline": {
       "path": "~/mengine/build/ablations/mengine-baseline",
       "root": "~/mengine",
       "label": "baseline"
-    },
-    "no_subst_memo": {
-      "path": "~/mengine/build/ablations/mengine-no-subst-memo",
-      "root": "~/mengine",
-      "label": "no substitution memo"
     },
     "no_evar_free_fill": {
       "path": "~/mengine/build/ablations/mengine-no-evar-free-fill",
