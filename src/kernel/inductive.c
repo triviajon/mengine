@@ -16,6 +16,21 @@ void inductive_registry_init(void) {
     }
 }
 
+void inductive_registry_shutdown(void) {
+    if (inductive_registry == NULL) {
+        return;
+    }
+    for (int i = 0; i < inductive_registry->size; i++) {
+        InductiveDefinition *def = (InductiveDefinition *)inductive_registry->items[i].val;
+        if (def) {
+            free(def->constructors);
+            free(def);
+        }
+    }
+    linear_map_clear_free(inductive_registry);
+    inductive_registry = NULL;
+}
+
 bool register_inductive(Expression *inductive_var, Expression **constructors, int constructor_count,
                         Expression *eliminator) {
     if (inductive_var == NULL || constructors == NULL || constructor_count < 1) {

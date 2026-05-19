@@ -399,7 +399,7 @@ char *_stringify_expression_with_let(Expression *expression) {
             break;
 
         case LAMBDA_EXPRESSION: {
-            if (get_expression_uplinks(expression)->head != NULL && expression->uplink_count > 1) {
+            if (get_expression_uplinks(expression) != NULL && expression->uplink_count > 1) {
                 char buf[(2 * sizeof(void *)) + 1];
                 snprintf(buf, sizeof(buf), "%p", (void *)expression);
                 result = strdup(str_concat("var", buf));
@@ -438,7 +438,7 @@ char *_stringify_expression_with_let(Expression *expression) {
             break;
         }
         case APP_EXPRESSION: {
-            if (get_expression_uplinks(expression)->head != NULL && expression->uplink_count > 1) {
+            if (get_expression_uplinks(expression) != NULL && expression->uplink_count > 1) {
                 char buf[(2 * sizeof(void *)) + 1];
                 snprintf(buf, sizeof(buf), "%p", (void *)expression);
                 result = strdup(str_concat("var", buf));
@@ -466,7 +466,7 @@ char *_stringify_expression_with_let(Expression *expression) {
         }
 
         case FORALL_EXPRESSION: {
-            if (get_expression_uplinks(expression)->head != NULL && expression->uplink_count > 1) {
+            if (get_expression_uplinks(expression) != NULL && expression->uplink_count > 1) {
                 char buf[(2 * sizeof(void *)) + 1];
                 snprintf(buf, sizeof(buf), "%p", (void *)expression);
                 result = strdup(str_concat("var", buf));

@@ -66,9 +66,11 @@ An uplink is a combination of
 
     Either 1a or 1b will ever be true, but never both.
 */
-typedef struct {
-    void *ptr;
-    Relation relation;
+typedef struct Uplink {
+    void          *ptr;
+    Relation       relation;
+    struct Uplink *next;
+    struct Uplink *prev;
 } Uplink;
 
 // A variable/type binding.
@@ -84,18 +86,18 @@ typedef struct {
 
 // A lambda expression: fun (bound_variable) => body.
 typedef struct {
-    Expression *bound_variable;           // The bound variable of the lambda.
-    DLLNode    *bound_variable_uplink_node; // uplink DLLNode in bound_variable->uplinks
-    Expression *body;                     // The body of the lambda expression.
-    DLLNode    *body_uplink_node;         // uplink DLLNode in body->uplinks
+    Expression *bound_variable;             // The bound variable of the lambda.
+    Uplink     *bound_variable_uplink_node; // uplink node in bound_variable->uplinks
+    Expression *body;                       // The body of the lambda expression.
+    Uplink     *body_uplink_node;           // uplink node in body->uplinks
 } LambdaExpression;
 
 // An application expression: (func arg).
 typedef struct {
-    Expression *func;              // The function which is applied to the argument.
-    DLLNode    *func_uplink_node;  // uplink DLLNode in func->uplinks
-    Expression *arg;               // The argument being operating on.
-    DLLNode    *arg_uplink_node;   // uplink DLLNode in arg->uplinks
+    Expression *func;               // The function which is applied to the argument.
+    Uplink     *func_uplink_node;   // uplink node in func->uplinks
+    Expression *arg;                // The argument being operating on.
+    Uplink     *arg_uplink_node;    // uplink node in arg->uplinks
     Expression *cache;  // A copied version of this application which is used in
                         // beta-reduction with Lambda-DAGs
 } AppExpression;
@@ -103,9 +105,9 @@ typedef struct {
 // Similar to LambdaExpression.
 typedef struct {
     Expression *bound_variable;
-    DLLNode    *bound_variable_uplink_node; // uplink DLLNode in bound_variable->uplinks
+    Uplink     *bound_variable_uplink_node; // uplink node in bound_variable->uplinks
     Expression *body;
-    DLLNode    *body_uplink_node;           // uplink DLLNode in body->uplinks
+    Uplink     *body_uplink_node;           // uplink node in body->uplinks
 } ForallExpression;
 
 typedef struct {
@@ -129,40 +131,40 @@ typedef struct {
 
 // A single branch in a match expression.
 typedef struct {
-    Expression *constructor;                    // The constructor to match against
-    DLLNode    *constructor_uplink_node;        // uplink DLLNode in constructor->uplinks
-    Expression **pattern_variables;             // Bound variables from the pattern
-    DLLNode    **pattern_variables_uplink_nodes; // uplink DLLNodes in each pv->uplinks
-    int pattern_var_count;                      // Number of pattern variables
-    Expression *body;                           // Expression to evaluate if this branch matches
-    DLLNode    *body_uplink_node;               // uplink DLLNode in body->uplinks
+    Expression *constructor;                     // The constructor to match against
+    Uplink     *constructor_uplink_node;         // uplink node in constructor->uplinks
+    Expression **pattern_variables;              // Bound variables from the pattern
+    Uplink     **pattern_variables_uplink_nodes; // uplink nodes in each pv->uplinks
+    int pattern_var_count;                       // Number of pattern variables
+    Expression *body;                            // Expression to evaluate if this branch matches
+    Uplink     *body_uplink_node;                // uplink node in body->uplinks
 } MatchBranch;
 
 // A match expression for pattern matching on inductive types.
 typedef struct {
-    Expression *scrutinee;              // Expression being matched on
-    DLLNode    *scrutinee_uplink_node;  // uplink DLLNode in scrutinee->uplinks
-    MatchBranch **branches;             // Array of match branches
-    int branch_count;                   // Number of branches
+    Expression *scrutinee;             // Expression being matched on
+    Uplink     *scrutinee_uplink_node; // uplink node in scrutinee->uplinks
+    MatchBranch **branches;            // Array of match branches
+    int branch_count;                  // Number of branches
 } MatchExpression;
 
 // A fix expression: fix (x1: A1) (x2: A2) ... (xn: An) {struct xi} := body.
 typedef struct {
-    Expression *recursive_var;              // recursive_var : forall x1:A1, ..., xn:An, B
-    DLLNode    *recursive_var_uplink_node;  // uplink DLLNode in recursive_var->uplinks
-    Expression **args;                      // Arguments of the fix expression
-    DLLNode    **args_uplink_nodes;         // uplink DLLNodes in each arg->uplinks
-    int arg_count;                          // Number of arguments
-    int decreasing_arg_index;               // Index of the argument that is structurally decreasing
-    Expression *body;                       // The body of the fix expression
-    DLLNode    *body_uplink_node;           // uplink DLLNode in body->uplinks
+    Expression *recursive_var;               // recursive_var : forall x1:A1, ..., xn:An, B
+    Uplink     *recursive_var_uplink_node;   // uplink node in recursive_var->uplinks
+    Expression **args;                       // Arguments of the fix expression
+    Uplink     **args_uplink_nodes;          // uplink nodes in each arg->uplinks
+    int arg_count;                           // Number of arguments
+    int decreasing_arg_index;                // Index of the argument that is structurally decreasing
+    Expression *body;                        // The body of the fix expression
+    Uplink     *body_uplink_node;            // uplink node in body->uplinks
 } FixExpression;
 
 // Represents a generic expression.
 struct Expression {
     // Common fields
     ExpressionType tag;         // The kind of expression (VAR, LAMBDA, APP, etc.)
-    DoublyLinkedList *uplinks;  // Uplinks where this expression is referenced
+    Uplink *uplinks;  // Uplinks where this expression is referenced (intrusive list)
     int uplink_count;           // Number of uplinks (O(1) alternative to dll_len(uplinks))
     Context *context;           // The minimal context this expression is valid in
                                 // NULL for TYPE and PROP
@@ -170,12 +172,9 @@ struct Expression {
                                 // 0 for TYPE and PROP
     Expression *type;           // The type of this expression
                                 // NULL for TYPE and PROP
-    bool has_evar;              // True if this expression transitively contains any unfilled hole.
-    DoublyLinkedList *evar_refs; // Transitive set of HOLE_EXPRESSION* nodes reachable from this
-                                 // expression's owned children, including types.
+    bool has_evar;  // True if this expression transitively contains any unfilled hole.
     uint64_t visit_gen;  // Generation stamp for traversal bookkeeping.
     uint64_t mark_gen;   // Generation stamp for bottom-up substitution spine marking.
-    Expression *g_alloc_next;  // Intrusive linked list for GC shutdown traversal
 
     union {
         VarExpression var;
@@ -191,12 +190,12 @@ struct Expression {
 };
 
 // Helper function to add an uplink to the uplinks list of an expression.
-// Returns the DLLNode* inserted into expression->uplinks (for O(1) removal later).
-DLLNode *add_to_parents(Expression *expression, void *ptr, Relation r);
+// Returns the Uplink* inserted into expression->uplinks (for O(1) removal later).
+Uplink *add_to_parents(Expression *expression, void *ptr, Relation r);
 
-// Remove a specific uplink DLL node from expr->uplinks in O(1).
-// Frees the DLLNode and its Uplink data and decrements uplink_count.
-void remove_uplink_by_node(Expression *expr, DLLNode *dll_node);
+// Remove a specific uplink node from expr->uplinks in O(1).
+// Decrements uplink_count. (Memory is arena-managed; not freed here.)
+void remove_uplink_by_node(Expression *expr, Uplink *uplink_node);
 
 // Helper function to remove the first top_level_hole uplink from an
 // expression's uplinks.
@@ -218,10 +217,7 @@ void free_filled_hole(Expression *hole);
 // Free all allocated expressions at shutdown (deferred GC).
 void expression_gc_shutdown(void);
 
-// Create a new uplink describing how ptr relates.
-Uplink *new_uplink(void *ptr, Relation r);
-
-// Merge child evar_refs into parent and update parent->has_evar.
+// Propagate the child's transitive evar bit into parent.
 void propagate_evar_refs(Expression *parent, Expression *child);
 
 // Macros for setting Expression fields
@@ -249,9 +245,9 @@ void propagate_evar_refs(Expression *parent, Expression *child);
     (expr)->as.lambda.body = (value); \
     (expr)->as.lambda.body_uplink_node = add_to_parents((value), (expr), LAMBDA_BODY)
 
-#define SET_LAMBDA_BOUND_VAR(expr, value)               \
-    (expr)->as.lambda.bound_variable = (value);         \
-    (expr)->as.lambda.bound_variable_uplink_node =      \
+#define SET_LAMBDA_BOUND_VAR(expr, value)                \
+    (expr)->as.lambda.bound_variable = (value);          \
+    (expr)->as.lambda.bound_variable_uplink_node =       \
         add_to_parents((value), (expr), LAMBDA_BOUND_VAR)
 
 #define SET_APP_FUNC(expr, value)  \
@@ -286,7 +282,7 @@ void propagate_evar_refs(Expression *parent, Expression *child);
             add_to_parents(branch->body, (expr), MATCH_BRANCH_BODY);                                      \
         branch->pattern_variables_uplink_nodes =                                                           \
             branch->pattern_var_count > 0                                                                  \
-                ? malloc(branch->pattern_var_count * sizeof(DLLNode *))                                    \
+                ? malloc(branch->pattern_var_count * sizeof(Uplink *))                                     \
                 : NULL;                                                                                    \
         for (int __j = 0; __j < branch->pattern_var_count; __j++) {                                        \
             branch->pattern_variables_uplink_nodes[__j] =                                                  \
@@ -302,9 +298,9 @@ void propagate_evar_refs(Expression *parent, Expression *child);
 #define SET_FIX_ARGS(expr, value)                                                          \
     (expr)->as.fix.args = (value);                                                         \
     (expr)->as.fix.args_uplink_nodes =                                                     \
-        (expr)->as.fix.arg_count > 0                                                       \
-            ? malloc((expr)->as.fix.arg_count * sizeof(DLLNode *))                         \
-            : NULL;                                                                        \
+        (expr)->as.fix.arg_count > 0                                                           \
+            ? malloc((expr)->as.fix.arg_count * sizeof(Uplink *))                              \
+            : NULL;                                                                            \
     for (int __i = 0; __i < (expr)->as.fix.arg_count; __i++) {                             \
         (expr)->as.fix.args[__i] = (value)[__i];                                           \
         (expr)->as.fix.args_uplink_nodes[__i] =                                            \
@@ -416,7 +412,7 @@ Expression *init_fix_expression_wc(Expression *recursive_var, Expression **args,
                                    int decreasing_arg_index, Expression *body);
 
 // Returns the uplinks of an expression.
-DoublyLinkedList *get_expression_uplinks(Expression *expression);
+Uplink *get_expression_uplinks(Expression *expression);
 
 // Returns the type of an expression.
 Expression *get_expression_type(Expression *expression);

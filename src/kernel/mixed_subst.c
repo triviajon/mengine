@@ -155,11 +155,10 @@ static bool mark_spine_from(Expression *start, Expression *root, int skip_owners
             continue;
         }
 
-        DLLNode *ul = node->uplinks->head;
+        Uplink *ul = node->uplinks;
         while (ul) {
-            Uplink *uplink = (Uplink *)ul->data;
-            if (!(skip_ownership && is_binder_ownership_edge(uplink->relation))) {
-                Expression *parent = (Expression *)uplink->ptr;
+            if (!(skip_ownership && is_binder_ownership_edge(ul->relation))) {
+                Expression *parent = (Expression *)ul->ptr;
                 if (parent == root) {
                     reached_root = true;
                 }
@@ -196,14 +195,26 @@ static void mark_target(void *key, void *value, void *ud) {
     mark_spine_from((Expression *)key, a->root, 0, a->subtree_gen);
 }
 
-static bool subst_map_touches_context(Context *ctx, Map *subst_map) {
-    while (ctx && ctx->tag == VAR_EXPRESSION) {
-        if (map_get(subst_map, ctx)) {
-            return true;
-        }
-        ctx = get_expression_context(ctx);
+struct subst_ctx_check_ud {
+    Context *ctx;
+    bool found;
+};
+
+static void check_key_in_context_cb(void *key, void *value, void *ud) {
+    (void)value;
+    struct subst_ctx_check_ud *s = ud;
+    if (context_find(s->ctx, (Expression *)key)) {
+        s->found = true;
     }
-    return false;
+}
+
+static bool subst_map_touches_context(Context *ctx, Map *subst_map) {
+    if (!ctx || ctx->tag != VAR_EXPRESSION) {
+        return false;
+    }
+    struct subst_ctx_check_ud s = { ctx, false };
+    map_for_each(subst_map, check_key_in_context_cb, &s);
+    return s.found;
 }
 
 static Expression *subst_replacement_for(Map *subst_map, Expression *expr) {
@@ -218,13 +229,12 @@ static bool has_non_binder_uplink(Expression *expr) {
         return false;
     }
 
-    DLLNode *node = expr->uplinks->head;
-    while (node) {
-        Uplink *uplink = (Uplink *)node->data;
-        if (!is_binder_ownership_edge(uplink->relation)) {
+    Uplink *ul = expr->uplinks;
+    while (ul) {
+        if (!is_binder_ownership_edge(ul->relation)) {
             return true;
         }
-        node = node->next;
+        ul = ul->next;
     }
     return false;
 }

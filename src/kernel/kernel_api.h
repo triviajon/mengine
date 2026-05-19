@@ -22,7 +22,7 @@ typedef struct Conversion Conversion;
  * used for printing purposes.
  * Time Complexity: 
  * - Check if type is valid in context -> O(valid_in_context(type, context))
- * - Propogate evar refs -> O(propagate_evar_refs(expr, type))
+ * - Propagate has_evar from type -> O(propagate_evar_refs(expr, type))
  * - Insert into global context tree -> O(order_insert(context, new_var))
  *
  * @param name
@@ -38,8 +38,8 @@ Expression *kernel_var_create(const char *name, Expression *type, Context *conte
  * - Check if body is valid in context -> O(valid_in_context(body, context))
  * - Check if body type is valid in context -> O(valid_in_context(type(body), context))
  * - Check if type(body) is a sort -> O(1)
- * - Propagate evar refs from type(body) -> O(propagate_evar_refs(expr, type(body)))
- * - Attach body and propagate evar refs from body -> O(propagate_evar_refs(expr, body))
+ * - Propagate has_evar from type(body) -> O(propagate_evar_refs(expr, type(body)))
+ * - Attach body and propagate has_evar from body -> O(propagate_evar_refs(expr, body))
  * - Insert into global context tree -> O(order_insert(context, new_var))
  *
  * @param name
@@ -56,8 +56,8 @@ Expression *kernel_var_create_with_body(const char *name, Expression *body, Cont
  * - Check if func type is a forall -> O(1)
  * - Check if arg is valid in context -> O(valid_in_context(arg, context))
  * - Construct app type -> O(_construct_app_type(context, func, arg)) # TODO
- * - Propagate evar refs from type -> O(propagate_evar_refs(expr, type))
- * - Propagate evar refs from func and arg -> O(propagate_evar_refs(expr, func) + propagate_evar_refs(expr, arg))
+ * - Propagate has_evar from type -> O(propagate_evar_refs(expr, type))
+ * - Propagate has_evar from func and arg -> O(propagate_evar_refs(expr, func) + propagate_evar_refs(expr, arg))
  *
  * @param func
  * @param arg
@@ -71,8 +71,8 @@ Expression *kernel_app_create(Expression *func, Expression *arg, Context *contex
  * Time Complexity: 
  * - Check if body is valid in extended context -> O(valid_in_context(body, extended_with_bound_variable))
  * - Construct lambda type -> O(kernel_forall_create(bound_variable, get_expression_type(body)))
- * - Propagate evar refs from type -> O(propagate_evar_refs(expr, type))
- * - Propagate evar refs from bound variable and body -> O(propagate_evar_refs(expr, bound_variable) + propagate_evar_refs(expr, body))
+ * - Propagate has_evar from type -> O(propagate_evar_refs(expr, type))
+ * - Propagate has_evar from bound variable and body -> O(propagate_evar_refs(expr, bound_variable) + propagate_evar_refs(expr, body))
  *
  * @param bound_var
  * @param body
@@ -85,8 +85,8 @@ Expression *kernel_lambda_create(Expression *bound_var, Expression *body);
  * Time Complexity:
  * - Check if body is valid in extended context -> O(valid_in_context(body, extended_with_bound_variable))
  * - If body type is Type, check if bound variable type is valid in context -> O(valid_in_context(type(bound_variable), context))
- * - Propagate evar refs from type -> O(propagate_evar_refs(expr, type))
- * - Propagate evar refs from bound variable and body -> O(propagate_evar_refs(expr, bound_variable) + propagate_evar_refs(expr, body))
+ * - Propagate has_evar from type -> O(propagate_evar_refs(expr, type))
+ * - Propagate has_evar from bound variable and body -> O(propagate_evar_refs(expr, bound_variable) + propagate_evar_refs(expr, body))
  *
  * @param bound_var
  * @param body
@@ -111,7 +111,7 @@ Expression *kernel_arrow_create(Expression *lhs, Expression *rhs, Context *conte
  * Create a hole expression with a name and return type in the given context.
  * Time Complexity:
  * - Check if return_type is valid in context -> O(valid_in_context(return_type, context))
- * - Propagate evar refs from return_type -> O(propagate_evar_refs(expr, return_type))
+ * - Propagate has_evar from return_type -> O(propagate_evar_refs(expr, return_type))
  * - Add the hole to its own evar refs -> O(1)
  *
  * @param name
@@ -227,7 +227,7 @@ Expression *kernel_match_create(Expression *scrutinee, void **branches, int bran
  * - Check if body is valid in the recursive context extended by args -> O(valid_in_context(body, extended_context))
  * - Check structural recursion on the decreasing argument -> O(check_all_recursive_calls(body, recursive_var, decreasing_arg))
  * - Close body over args with lambdas -> O(arg_count * kernel_lambda_create(arg_i, body_bound_i))
- * - Propagate evar refs from type, recursive_var, args, and body -> O(propagate_evar_refs(expr, type(recursive_var)) + propagate_evar_refs(expr, recursive_var) + sum_i propagate_evar_refs(expr, args[i]) + propagate_evar_refs(expr, body))
+ * - Propagate has_evar from type, recursive_var, args, and body -> O(propagate_evar_refs(expr, type(recursive_var)) + propagate_evar_refs(expr, recursive_var) + sum_i propagate_evar_refs(expr, args[i]) + propagate_evar_refs(expr, body))
  * - Register closed body on recursive_var -> O(register_fix_body_to_expression(recursive_var, body_bound))
  *
  * @param recursive_var
@@ -544,7 +544,7 @@ bool kernel_expr_has_holes(Expression *expr);
  * - Fill collected sub-holes -> O(sum_i kernel_hole_fill(assignment_holes[i], assignment_terms[i]))
  * - Clear conversion cache -> O(conversion_cache_clear())
  * - Rewrite direct structural uplinks from hole to term -> O(uplink_count(hole))
- * - Recompute evar refs for hole and affected ancestors -> O(sum_{a in affected_ancestors} recompute_evar_refs(a))
+ * - Recompute has_evar for hole and affected ancestors -> O(sum_{a in affected_ancestors} recompute_has_evar(a))
  *
  *
  * @param hole

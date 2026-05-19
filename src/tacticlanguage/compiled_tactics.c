@@ -1,3 +1,22 @@
+/*
+ * compiled_tactics.c — JIT-style compiled replacements for scripted tactics.
+ *
+ * tactic_def_attach_compiled() is called after each tactic definition is
+ * parsed.  It inspects the tactic body and, when it recognises a known
+ * pattern AND all required axioms are in scope, replaces def->fn with a C
+ * implementation that constructs the same proof terms without going through
+ * the tactic interpreter.
+ *
+ * Currently compiled tactics:
+ *   compiled_sep_cancel  — replaces `cancel` when its body is exactly
+ *       `repeat __cancel_one; try reflexivity` and {sep, sep_comm,
+ *       sep_swap, sep_cong_r} are in scope.  Implements the same
+ *       bring-to-front + strip loop as the scripted __cancel_one /__
+ *       bring_to_front reference definitions (see separation_logic.py).
+ *       The scripted definitions are still parsed (and serve as a
+ *       readable spec and interpreter fallback), but are NOT called
+ *       during normal execution when this compiled version is active.
+ */
 #include "src/tacticlanguage/compiled_tactics.h"
 
 #include <stdlib.h>
@@ -228,6 +247,7 @@ static bool is_call0(TacticExpr *expr, const char *name) {
            strcmp(expr->as.call.name, name) == 0;
 }
 
+/* Returns true iff body has the shape `repeat __cancel_one; try reflexivity`. */
 static bool is_scripted_sep_cancel(TacticExpr *body) {
     if (!body || body->tag != TAC_SEQ) {
         return false;
@@ -238,6 +258,7 @@ static bool is_scripted_sep_cancel(TacticExpr *body) {
            right && right->tag == TAC_TRY && is_call0(right->as.try_expr.body, "reflexivity");
 }
 
+/* If def matches a known compiled pattern, replace its fn pointer in-place. */
 void tactic_def_attach_compiled(MEngineRuntime *rt, TacticDef *def) {
     if (!rt || !def || strcmp(def->name, "cancel") != 0 || def->param_count != 0 ||
         !is_scripted_sep_cancel(def->body)) {

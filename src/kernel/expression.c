@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <sys/user.h>
+
 #include "src/common/color.h"
 #include "src/common/linear_map.h"
 #include "src/common/map.h"
@@ -21,8 +23,62 @@
 #define MENGINE_EVAR_FREE_FILL 1
 #endif
 
-// Intrusive singly-linked list of all allocated Expressions for deferred GC shutdown.
-static Expression *g_expr_list_head = NULL;
+// Arena allocator for Expression nodes.
+// Each page holds ~64 KiB of node payload (exact count falls out of
+// sizeof(Expression), so it stays calibrated if the struct changes).
+// Bump-allocating within a page avoids O(n) individual malloc/calloc calls
+// and lets expression_gc_shutdown free memory with O(pages) free() calls
+// instead of O(nodes).
+#define EXPR_PAGE_NODES ((PAGE_SIZE) / (int)sizeof(Expression))
+
+typedef struct ExprArenaPage {
+    struct ExprArenaPage *next;
+    int used;
+    Expression nodes[EXPR_PAGE_NODES];
+} ExprArenaPage;
+
+static ExprArenaPage *g_arena_pages   = NULL;
+static ExprArenaPage *g_arena_current = NULL;
+
+// Arena allocator for Uplink nodes (intrusive list nodes).
+// Each page holds ~64 KiB of Uplink payload.
+#define UPLINK_PAGE_NODES ((64 * 1024) / (int)sizeof(Uplink))
+
+typedef struct UplinkPage {
+    struct UplinkPage *next;
+    int used;
+    Uplink nodes[UPLINK_PAGE_NODES];
+} UplinkPage;
+
+static UplinkPage *g_uplink_pages   = NULL;
+static UplinkPage *g_uplink_current = NULL;
+
+static Uplink *uplink_arena_alloc(void) {
+    if (!g_uplink_current || g_uplink_current->used == UPLINK_PAGE_NODES) {
+        UplinkPage *page = calloc(1, sizeof(UplinkPage));
+        if (!page) {
+            return NULL;
+        }
+        page->next        = g_uplink_pages;
+        g_uplink_pages    = page;
+        g_uplink_current  = page;
+    }
+    return &g_uplink_current->nodes[g_uplink_current->used++];
+}
+
+static Expression *arena_alloc_expression(void) {
+    if (!g_arena_current || g_arena_current->used == EXPR_PAGE_NODES) {
+        ExprArenaPage *page = calloc(1, sizeof(ExprArenaPage));
+        if (!page) {
+            return NULL;
+        }
+        page->next      = g_arena_pages;
+        g_arena_pages   = page;
+        g_arena_current = page;
+    }
+    // Nodes are pre-zeroed by calloc; return next available slot.
+    return &g_arena_current->nodes[g_arena_current->used++];
+}
 
 // Register a body to a recursive variable expression. WARNING: Mutator function, modifies the
 // expression in place and returns true if successful, false otherwise.
@@ -59,49 +115,45 @@ bool register_fix_body_to_expression(Context *recursive_var, Expression *body) {
     return true;
 }
 
-DLLNode *add_to_parents(Expression *expression, void *ptr, Relation r) {
-    if (expression->uplinks == NULL) {
-        expression->uplinks = dll_create();
+Uplink *add_to_parents(Expression *expression, void *ptr, Relation r) {
+    Uplink *ul = uplink_arena_alloc();
+    if (!ul) {
+        return NULL;
     }
-    Uplink *uplink = new_uplink(ptr, r);
-    DLLNode *node = dll_new_node(uplink);
-    dll_insert_at_head(expression->uplinks, node);
+    ul->ptr      = ptr;
+    ul->relation = r;
+    ul->prev     = NULL;
+    ul->next     = expression->uplinks;
+    if (expression->uplinks) {
+        expression->uplinks->prev = ul;
+    }
+    expression->uplinks = ul;
     expression->uplink_count++;
-    return node;
+    return ul;
 }
 
-void remove_uplink_by_node(Expression *expr, DLLNode *dll_node) {
-    if (expr == NULL || dll_node == NULL || expr->uplinks == NULL) {
+void remove_uplink_by_node(Expression *expr, Uplink *uplink_node) {
+    if (expr == NULL || uplink_node == NULL) {
         return;
     }
-    dll_remove_node(expr->uplinks, dll_node);
-    free(dll_node->data); /* free Uplink */
-    free(dll_node);       /* free DLLNode */
+    if (uplink_node->prev) {
+        uplink_node->prev->next = uplink_node->next;
+    } else {
+        expr->uplinks = uplink_node->next;
+    }
+    if (uplink_node->next) {
+        uplink_node->next->prev = uplink_node->prev;
+    }
+    /* uplink_node memory is arena-managed; not freed here */
     expr->uplink_count--;
 }
 
 void propagate_evar_refs(Expression *parent, Expression *child) {
-    if (!parent || !child || !child->has_evar || !child->evar_refs) {
+    if (!parent || !child || !child->has_evar) {
         return;
     }
 
-    for (DLLNode *node = child->evar_refs->head; node; node = node->next) {
-        if (!dll_search(parent->evar_refs, node->data)) {
-            dll_insert_at_tail(parent->evar_refs, dll_new_node(node->data));
-        }
-    }
-    parent->has_evar = parent->evar_refs->head != NULL;
-}
-
-Uplink *new_uplink(void *ptr, Relation r) {
-    Uplink *new_uplink = malloc(sizeof(Uplink));
-    if (!new_uplink) {
-        return NULL;
-    }
-
-    new_uplink->ptr = ptr;
-    new_uplink->relation = r;
-    return new_uplink;
+    parent->has_evar = true;
 }
 
 void remove_uplink(Expression *expr, void *parent_ptr, Relation rel) {
@@ -109,34 +161,21 @@ void remove_uplink(Expression *expr, void *parent_ptr, Relation rel) {
         return;
     }
 
-    DLLNode *current = expr->uplinks->head;
-    DLLNode *prev = NULL;
-
+    Uplink *current = expr->uplinks;
     while (current != NULL) {
-        Uplink *uplink = (Uplink *)current->data;
-        if (uplink->ptr == parent_ptr && uplink->relation == rel) {
-            if (prev == NULL) {
-                expr->uplinks->head = current->next;
-                if (current->next != NULL) {
-                    current->next->prev = NULL;
-                } else {
-                    expr->uplinks->tail = NULL;
-                }
+        if (current->ptr == parent_ptr && current->relation == rel) {
+            if (current->prev) {
+                current->prev->next = current->next;
             } else {
-                prev->next = current->next;
-                if (current->next != NULL) {
-                    current->next->prev = prev;
-                } else {
-                    expr->uplinks->tail = prev;
-                }
+                expr->uplinks = current->next;
             }
-
-            free(uplink);
-            free(current);
+            if (current->next) {
+                current->next->prev = current->prev;
+            }
+            /* current is arena-managed; not freed here */
             expr->uplink_count--;
             return;
         }
-        prev = current;
         current = current->next;
     }
 }
@@ -157,26 +196,8 @@ void free_filled_hole(Expression *hole) { (void)hole; }
 
 // Flat free of a single expression's non-expression heap allocations.
 static void gc_free_node(Expression *expr) {
-    if (expr->uplinks) {
-        DLLNode *node = expr->uplinks->head;
-        while (node) {
-            DLLNode *next = node->next;
-            free(node->data);  // Uplink*
-            free(node);
-            node = next;
-        }
-        free(expr->uplinks);
-    }
-
-    if (expr->evar_refs) {
-        DLLNode *node = expr->evar_refs->head;
-        while (node) {
-            DLLNode *next = node->next;
-            free(node);
-            node = next;
-        }
-        free(expr->evar_refs);
-    }
+    /* Uplink nodes are arena-managed; no per-node free needed. */
+    expr->uplinks = NULL;
 
     // Free tag-specific non-expression allocations
     switch (expr->tag) {
@@ -201,21 +222,34 @@ static void gc_free_node(Expression *expr) {
         default:
             break;
     }
-
-    free(expr);
 }
 
-// Walk the intrusive GC list and flat-free every tracked expression.
+// Walk the arena pages and free every tracked expression.
 void expression_gc_shutdown(void) {
+    inductive_registry_shutdown();
     conversion_cache_clear();
 
-    Expression *expr = g_expr_list_head;
-    while (expr) {
-        Expression *next = expr->g_alloc_next;
-        gc_free_node(expr);
-        expr = next;
+    ExprArenaPage *page = g_arena_pages;
+    while (page) {
+        ExprArenaPage *next = page->next;
+        for (int i = 0; i < page->used; i++) {
+            gc_free_node(&page->nodes[i]);
+        }
+        free(page);
+        page = next;
     }
-    g_expr_list_head = NULL;
+    g_arena_pages   = NULL;
+    g_arena_current = NULL;
+
+    UplinkPage *upage = g_uplink_pages;
+    while (upage) {
+        UplinkPage *unext = upage->next;
+        free(upage);
+        upage = unext;
+    }
+    g_uplink_pages   = NULL;
+    g_uplink_current = NULL;
+
     TYPE = NULL;
     PROP = NULL;
 }
@@ -253,18 +287,13 @@ Expression *_construct_app_type(Context *context, Expression *func, Expression *
 
 Expression *_init_expression_base(ExpressionType tag, Context *context, int ctx_size,
                                   Expression *type) {
-    Expression *expr = (Expression *)calloc(1, sizeof(Expression));
+    Expression *expr = arena_alloc_expression();
     if (!expr) {
         return NULL;
     }
 
-    // Track in global GC list
-    expr->g_alloc_next = g_expr_list_head;
-    g_expr_list_head = expr;
-
     SET_EXPR_TAG(expr, tag);
     // uplinks are lazily allocated in add_to_parents
-    expr->evar_refs = dll_create();
     SET_EXPR_CONTEXT(expr, context);
     SET_EXPR_CTX_SIZE(expr, ctx_size);
     SET_EXPR_TYPE(expr, type);
@@ -286,15 +315,12 @@ Expression *init_type_expression() {
     if (TYPE == NULL) {
         Context *context = context_create_empty();
         // Special case: Type's type is recursive, so we need to create it manually.
-        TYPE = calloc(1, sizeof(Expression));
+        TYPE = arena_alloc_expression();
         if (!TYPE) {
             return NULL;
         }
-        TYPE->g_alloc_next = g_expr_list_head;
-        g_expr_list_head = TYPE;
 
         SET_EXPR_TAG(TYPE, TYPE_EXPRESSION);
-        TYPE->evar_refs = dll_create();
         SET_EXPR_CONTEXT(TYPE, context);
         SET_EXPR_CTX_SIZE(TYPE, 0);
         SET_EXPR_TYPE(TYPE, init_type_expression());
@@ -320,7 +346,6 @@ Expression *init_hole_expression(char *name, Expression *type, Context *gamma) {
 
     SET_HOLE_NAME(expr, strdup(name ? name : "_"));
     expr->has_evar = true;  // A hole always contains itself
-    dll_insert_at_tail(expr->evar_refs, dll_new_node(expr));
     return expr;
 }
 
@@ -803,30 +828,8 @@ Expression *init_fix_expression_wc(Expression *recursive_var, Expression **args,
     return expr;
 }
 
-DoublyLinkedList *get_expression_uplinks(Expression *expression) {
-    switch (expression->tag) {
-        case (VAR_EXPRESSION):
-            return expression->uplinks;
-        case (LAMBDA_EXPRESSION):
-            return expression->uplinks;
-        case (APP_EXPRESSION):
-            return expression->uplinks;
-        case (FORALL_EXPRESSION):
-            return expression->uplinks;
-        case (TYPE_EXPRESSION):
-            return expression->uplinks;
-        case (PROP_EXPRESSION):
-            return expression->uplinks;
-        case (HOLE_EXPRESSION):
-            return expression->uplinks;
-        case (MATCH_EXPRESSION):
-            return expression->uplinks;
-        case (FIX_EXPRESSION):
-            return expression->uplinks;
-        default:
-            fprintf(stderr, ERROR "Unknown expression type in get_expression_uplinks.\n" CRESET);
-            exit(EXIT_FAILURE);
-    }
+Uplink *get_expression_uplinks(Expression *expression) {
+    return expression->uplinks;
 }
 
 Expression *get_expression_type(Expression *expression) { return expression->type; }
@@ -1231,29 +1234,6 @@ bool has_holes(Expression *expr) { return expr && expr->has_evar; }
 
 bool is_hole(Expression *expr) { return expr->tag == HOLE_EXPRESSION; }
 
-static bool evar_refs_equal(DoublyLinkedList *a, DoublyLinkedList *b) {
-    DLLNode *na = a ? a->head : NULL;
-    DLLNode *nb = b ? b->head : NULL;
-    int len_a = 0;
-    int len_b = 0;
-    for (DLLNode *n = na; n; n = n->next) {
-        len_a++;
-    }
-    for (DLLNode *n = nb; n; n = n->next) {
-        len_b++;
-    }
-    if (len_a != len_b) {
-        return false;
-    }
-    for (DLLNode *n = na; n; n = n->next) {
-        if (!dll_search(b, n->data)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-#if !MENGINE_EVAR_FREE_FILL
 static bool expr_refs_hole_slow_rec(Expression *expr, Expression *hole, Map *seen) {
     if (!expr) {
         return false;
@@ -1261,6 +1241,11 @@ static bool expr_refs_hole_slow_rec(Expression *expr, Expression *hole, Map *see
     if (expr == hole) {
         return true;
     }
+#if MENGINE_EVAR_FREE_FILL
+    if (!expr->has_evar) {
+        return false;
+    }
+#endif
     if (map_get(seen, expr)) {
         return false;
     }
@@ -1317,32 +1302,35 @@ static bool expr_refs_hole_slow_rec(Expression *expr, Expression *hole, Map *see
     }
     return false;
 }
-#endif
 
 static bool expr_refs_hole(Expression *expr, Expression *hole) {
 #if MENGINE_EVAR_FREE_FILL
-    return expr && expr->has_evar && expr->evar_refs && dll_search(expr->evar_refs, hole) != NULL;
+    if (!expr || !expr->has_evar) {
+        return false;
+    }
 #else
+    if (!expr) {
+        return false;
+    }
+#endif
     Map *seen = map_new_with_capacity(64);
     bool result = expr_refs_hole_slow_rec(expr, hole, seen);
     map_free(seen);
     return result;
-#endif
 }
 
-// Recompute evar_refs/has_evar for a single expression from its owned children.
+// Recompute has_evar for a single expression from its owned children.
 // This mirrors construction-time propagate_evar_refs calls, plus the expression's type edge.
-static bool recompute_evar_refs(Expression *expr) {
-    DoublyLinkedList *old_refs = expr->evar_refs;
-    DoublyLinkedList *new_refs = dll_create();
-    expr->evar_refs = new_refs;
+static bool recompute_has_evar(Expression *expr) {
+    bool old_has_evar = expr->has_evar;
+    expr->has_evar = false;
 
     propagate_evar_refs(expr, get_expression_type(expr));
 
     switch (expr->tag) {
         case HOLE_EXPRESSION:
-            if (!expr->as.hole.is_satisfied && !dll_search(expr->evar_refs, expr)) {
-                dll_insert_at_tail(expr->evar_refs, dll_new_node(expr));
+            if (!expr->as.hole.is_satisfied) {
+                expr->has_evar = true;
             }
             break;
         case VAR_EXPRESSION:
@@ -1383,18 +1371,7 @@ static bool recompute_evar_refs(Expression *expr) {
             break;
     }
 
-    expr->has_evar = expr->evar_refs->head != NULL;
-    bool changed = !evar_refs_equal(old_refs, expr->evar_refs);
-    if (old_refs) {
-        DLLNode *node = old_refs->head;
-        while (node) {
-            DLLNode *next = node->next;
-            free(node);
-            node = next;
-        }
-        free(old_refs);
-    }
-    return changed;
+    return old_has_evar != expr->has_evar;
 }
 
 bool fill_hole(Expression *hole, Expression *term) {
@@ -1405,8 +1382,8 @@ bool fill_hole(Expression *hole, Expression *term) {
     // Check preconditions:
     //   1) type(term) == expected return type of hole
     //   2) term is valid in hole's context
-    //   3) term does not contain this hole.  This is an O(evar count) membership
-    //      check against the maintained transitive evar set; no term walk needed.
+    //   3) term does not contain this hole. Evar-free terms return immediately;
+    //      otherwise we walk the term DAG looking for this specific hole.
     LinearMap *hole_assignments = linear_map_new();
     Context *hole_context = get_expression_context(hole);
     if (!valid_in_context(term, hole_context)) {
@@ -1435,55 +1412,54 @@ bool fill_hole(Expression *hole, Expression *term) {
     conversion_cache_clear();
 
     // Rewrite structural uplinks: replace hole with term in all direct parents.
-    DoublyLinkedList *holepars = hole->uplinks;
+    Uplink *holepars = hole->uplinks;
     if (holepars) {
-        DLLNode *ul = holepars->head;
+        Uplink *ul = holepars;
         while (ul) {
-            Uplink *uplink = (Uplink *)ul->data;
-            switch (uplink->relation) {
+            switch (ul->relation) {
                 case (LAMBDA_BODY): {
-                    Expression *ptr = (Expression *)uplink->ptr;
+                    Expression *ptr = (Expression *)ul->ptr;
                     SET_LAMBDA_BODY(ptr, term);
                     break;
                 }
                 case (LAMBDA_BOUND_VAR): {
-                    Expression *ptr = (Expression *)uplink->ptr;
+                    Expression *ptr = (Expression *)ul->ptr;
                     SET_LAMBDA_BOUND_VAR(ptr, term);
                     break;
                 }
                 case (APP_FUNC): {
-                    Expression *ptr = (Expression *)uplink->ptr;
+                    Expression *ptr = (Expression *)ul->ptr;
                     SET_APP_FUNC(ptr, term);
                     break;
                 }
                 case (APP_ARG): {
-                    Expression *ptr = (Expression *)uplink->ptr;
+                    Expression *ptr = (Expression *)ul->ptr;
                     SET_APP_ARG(ptr, term);
                     break;
                 }
                 case (FORALL_BODY): {
-                    Expression *ptr = (Expression *)uplink->ptr;
+                    Expression *ptr = (Expression *)ul->ptr;
                     SET_FORALL_BODY(ptr, term);
                     break;
                 }
                 case (FORALL_BOUND_VAR): {
-                    Expression *ptr = (Expression *)uplink->ptr;
+                    Expression *ptr = (Expression *)ul->ptr;
                     SET_FORALL_BOUND_VAR(ptr, term);
                     break;
                 }
                 case (VAR_BODY): {
-                    Expression *ptr = (Expression *)uplink->ptr;
+                    Expression *ptr = (Expression *)ul->ptr;
                     SET_VAR_BODY(ptr, term);
                     break;
                 }
                 case (EXPR_TYPE): {
-                    Expression *ptr = (Expression *)uplink->ptr;
+                    Expression *ptr = (Expression *)ul->ptr;
                     SET_EXPR_TYPE(ptr, term);
                     break;
                 }
                 default:
                     fprintf(stderr, WARNING "todo: fill_hole for relation %d.\n" CRESET,
-                            uplink->relation);
+                            ul->relation);
                     break;
             }
             ul = ul->next;
@@ -1491,15 +1467,15 @@ bool fill_hole(Expression *hole, Expression *term) {
     }
 
     hole->as.hole.is_satisfied = true;
-    recompute_evar_refs(hole);
+    recompute_has_evar(hole);
 
     // BFS upward through structural uplinks to recompute has_evar on ancestors.
-    if (holepars && holepars->head) {
+    if (holepars) {
         DoublyLinkedList *queue = dll_create();
 
-        DLLNode *ul = holepars->head;
+        Uplink *ul = holepars;
         while (ul) {
-            Expression *par = (Expression *)((Uplink *)ul->data)->ptr;
+            Expression *par = (Expression *)ul->ptr;
             dll_insert_at_tail(queue, dll_new_node(par));
             ul = ul->next;
         }
@@ -1509,11 +1485,11 @@ bool fill_hole(Expression *hole, Expression *term) {
             Expression *p = (Expression *)n->data;
             free(n);
 
-            bool changed = recompute_evar_refs(p);
+            bool changed = recompute_has_evar(p);
             if (changed && p->uplinks) {
-                DLLNode *pul = p->uplinks->head;
+                Uplink *pul = p->uplinks;
                 while (pul) {
-                    Expression *pp = (Expression *)((Uplink *)pul->data)->ptr;
+                    Expression *pp = (Expression *)pul->ptr;
                     dll_insert_at_tail(queue, dll_new_node(pp));
                     pul = pul->next;
                 }

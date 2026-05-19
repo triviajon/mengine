@@ -16,6 +16,9 @@ typedef struct {
 // Initialize the inductive registry (call once at startup)
 void inductive_registry_init(void);
 
+// Clear and free the inductive registry (called at shutdown)
+void inductive_registry_shutdown(void);
+
 // Register a new inductive type with its constructors
 // Makes a copy of the constructors array (caller retains ownership)
 // Returns true on success, false if already registered
