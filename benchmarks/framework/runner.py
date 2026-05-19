@@ -12,6 +12,7 @@ Results are stored incrementally so runs can be resumed.
 
 import itertools
 import json
+import math
 import os
 import subprocess
 import sys
@@ -21,6 +22,56 @@ from dataclasses import replace
 from pathlib import Path
 
 from .benchmark import Benchmark, Strategy, ParamSpec
+
+
+_ADAPTIVE_WINDOW = 4
+_ADAPTIVE_R2_THRESHOLD = 0.999
+_ADAPTIVE_MAX_FACTOR = 8
+
+
+def _log_linear_r2(recent: list[tuple[int, float]]) -> float:
+    """R² of a log-log power-law fit over recent (x, time) pairs."""
+    if len(recent) < 2:
+        return 0.0
+    try:
+        lxs = [math.log(x) for x, _ in recent]
+        lys = [math.log(t) for _, t in recent]
+    except ValueError:
+        return 0.0
+    n = len(lxs)
+    mx = sum(lxs) / n
+    my = sum(lys) / n
+    ss_xx = sum((lx - mx) ** 2 for lx in lxs)
+    if ss_xx == 0:
+        return 1.0
+    ss_xy = sum((lx - mx) * (ly - my) for lx, ly in zip(lxs, lys))
+    slope = ss_xy / ss_xx
+    intercept = my - slope * mx
+    ss_res = sum((ly - (slope * lx + intercept)) ** 2 for lx, ly in zip(lxs, lys))
+    ss_tot = sum((ly - my) ** 2 for ly in lys)
+    return 1.0 - ss_res / ss_tot if ss_tot > 0 else 1.0
+
+
+def _adaptive_step(
+    recent: list[tuple[int, float]],
+    current_step: int,
+    base_step: int,
+) -> int:
+    """Double step when recent points fit a power law well; halve if they deviate."""
+    if len(recent) < _ADAPTIVE_WINDOW:
+        return current_step
+    r2 = _log_linear_r2(recent[-_ADAPTIVE_WINDOW:])
+    if r2 >= _ADAPTIVE_R2_THRESHOLD:
+        return min(current_step * 2, base_step * _ADAPTIVE_MAX_FACTOR)
+    return max(current_step // 2, base_step)
+
+
+_DEFAULT_VARIANT_STYLES = {
+    "baseline":          {"color": "steelblue",   "marker": "o"},
+    "no_evar_free_fill": {"color": "deepskyblue",  "marker": "^"},
+    "order_ll":          {"color": "royalblue",   "marker": "D"},
+    "order_demain":      {"color": "navy",        "marker": "v"},
+}
 
 
 def load_results(path: str) -> dict:
@@ -66,14 +117,21 @@ class RunConfig:
                 path = spec
                 root = self.mengine_root
                 label = name
+                color = None
+                marker = None
             else:
                 path = spec.get("path", self.mengine_path)
                 root = spec.get("root", self.mengine_root)
                 label = spec.get("label", name)
+                color = spec.get("color")
+                marker = spec.get("marker")
+            style = _DEFAULT_VARIANT_STYLES.get(name, {})
             self.mengine_variants[name] = {
                 "path": os.path.expanduser(path),
                 "root": os.path.expanduser(root) if root else "",
                 "label": label,
+                "color": color or style.get("color"),
+                "marker": marker or style.get("marker"),
             }
 
     def engine_path(self, engine: str, variant: str | None = None) -> str:
@@ -104,6 +162,8 @@ class RunConfig:
                         strategy,
                         name=f"{strategy.name}_{variant}",
                         label=f"{strategy.label} ({spec['label']})",
+                        color=spec["color"] or strategy.color,
+                        marker=spec["marker"] or strategy.marker,
                         variant=variant,
                     )
                 )
@@ -214,20 +274,22 @@ def run_benchmark(
     # Track consecutive timeouts/failures per strategy
     consecutive_timeouts: dict[str, int] = {}
     consecutive_failures: dict[str, int] = {}
-    retired: set[str] = set()  # strategies that have been retired
+    retired: set[str] = set()
 
-    # Build sorted parameter grid
-    ranges = [list(p.range()) for p in param_specs]
-    param_names = [p.name for p in param_specs]
+    # Split into primary param (adaptive step) and secondary params (fixed grid)
+    primary_spec = param_specs[0]
+    secondary_specs = param_specs[1:]
+    secondary_names = [p.name for p in secondary_specs]
+    secondary_ranges = [list(p.range()) for p in secondary_specs]
 
-    total_points = 1
-    for r in ranges:
+    total_points = len(list(primary_spec.range()))
+    for r in secondary_ranges:
         total_points *= len(r)
 
     if verbose:
         print(f"\n{'='*60}")
         print(f"  {benchmark.name}: {benchmark.description}")
-        print(f"  {total_points} parameter points × {len(strategies)} strategies")
+        print(f"  ~{total_points} parameter points × {len(strategies)} strategies (adaptive step)")
         print(f"  Soft timeout: {timeout}s | Hard timeout: {timeout*2}s")
         print(f"  Auto-retire after {config.max_consecutive_timeouts} consecutive timeouts")
         print(f"{'='*60}")
@@ -235,66 +297,87 @@ def run_benchmark(
     run_count = 0
     skip_count = 0
 
-    for param_values in itertools.product(*ranges):
-        params = dict(zip(param_names, param_values))
+    for strategy in strategies:
+        strat_id = f"{strategy.engine}:{strategy.name}"
 
-        for strategy in strategies:
-            strat_id = f"{strategy.engine}:{strategy.name}"
-
+        for secondary_vals in (itertools.product(*secondary_ranges) if secondary_ranges else [()]):
             if strat_id in retired:
-                continue
+                break
 
-            key = benchmark.result_key(strategy, params)
+            recent_times: list[tuple[int, float]] = []
+            current_step = primary_spec.step
+            x = primary_spec.start
 
-            # Skip if already have results (unless force)
-            if key in results and not force:
-                skip_count += 1
-                continue
+            while x < primary_spec.stop:
+                if strat_id in retired:
+                    break
 
-            # Run it
-            result = run_single(benchmark, strategy, params, config, timeout)
-            results[key] = result
-            save_results(results, results_path)
-            run_count += 1
+                params: dict[str, int] = {primary_spec.name: x}
+                if secondary_specs:
+                    params.update(dict(zip(secondary_names, secondary_vals)))
 
-            # Track timeouts/failures for adaptive stopping
-            if result.get("timeout"):
-                # Hard timeout: process was actually killed
-                consecutive_timeouts[strat_id] = consecutive_timeouts.get(strat_id, 0) + 1
-                consecutive_failures[strat_id] = 0
-                if verbose:
-                    print(f"  TIMEOUT  {strat_id} {params} "
-                          f"({consecutive_timeouts[strat_id]}/{config.max_consecutive_timeouts})")
-            elif result.get("soft_timeout"):
-                # Soft timeout: exceeded soft limit but finished before hard timeout
-                # Counts as timeout for auto-retire, but we have the result
-                consecutive_timeouts[strat_id] = consecutive_timeouts.get(strat_id, 0) + 1
-                consecutive_failures[strat_id] = 0
-                if verbose:
-                    print(f"  SOFT_TO  {strat_id} {params} -> {result['time_taken']:.4f}s "
-                          f"({consecutive_timeouts[strat_id]}/{config.max_consecutive_timeouts})")
-            elif not result["success"]:
-                consecutive_failures[strat_id] = consecutive_failures.get(strat_id, 0) + 1
-                consecutive_timeouts[strat_id] = 0
-                if verbose:
-                    err = result.get("error", result.get("stderr", "")[:80])
-                    print(f"  FAIL     {strat_id} {params}: {err}")
-            else:
-                consecutive_timeouts[strat_id] = 0
-                consecutive_failures[strat_id] = 0
-                if verbose:
-                    print(f"  OK       {strat_id} {params} -> {result['time_taken']:.4f}s")
+                key = benchmark.result_key(strategy, params)
 
-            # Check retirement
-            if consecutive_timeouts.get(strat_id, 0) >= config.max_consecutive_timeouts:
-                retired.add(strat_id)
-                if verbose:
-                    print(f"  RETIRED  {strat_id} after {config.max_consecutive_timeouts} consecutive timeouts")
+                if key in results and not force:
+                    skip_count += 1
+                    v = results[key]
+                    if v.get("success") or v.get("soft_timeout"):
+                        recent_times.append((x, v["time_taken"]))
+                        if len(recent_times) > 8:
+                            recent_times = recent_times[-8:]
+                    current_step = _adaptive_step(recent_times, current_step, primary_spec.step)
+                    x += current_step
+                    continue
 
-            if consecutive_failures.get(strat_id, 0) >= config.max_consecutive_failures:
-                retired.add(strat_id)
-                if verbose:
-                    print(f"  RETIRED  {strat_id} after {config.max_consecutive_failures} consecutive failures")
+                result = run_single(benchmark, strategy, params, config, timeout)
+                results[key] = result
+                save_results(results, results_path)
+                run_count += 1
+
+                if result.get("timeout"):
+                    consecutive_timeouts[strat_id] = consecutive_timeouts.get(strat_id, 0) + 1
+                    consecutive_failures[strat_id] = 0
+                    if verbose:
+                        print(f"  TIMEOUT  {strat_id} {params} "
+                              f"({consecutive_timeouts[strat_id]}/{config.max_consecutive_timeouts})")
+                elif result.get("soft_timeout"):
+                    consecutive_timeouts[strat_id] = consecutive_timeouts.get(strat_id, 0) + 1
+                    consecutive_failures[strat_id] = 0
+                    if verbose:
+                        print(f"  SOFT_TO  {strat_id} {params} -> {result['time_taken']:.4f}s "
+                              f"({consecutive_timeouts[strat_id]}/{config.max_consecutive_timeouts})")
+                elif not result["success"]:
+                    consecutive_failures[strat_id] = consecutive_failures.get(strat_id, 0) + 1
+                    consecutive_timeouts[strat_id] = 0
+                    if verbose:
+                        err = result.get("error", result.get("stderr", "")[:80])
+                        print(f"  FAIL     {strat_id} {params}: {err}")
+                else:
+                    consecutive_timeouts[strat_id] = 0
+                    consecutive_failures[strat_id] = 0
+                    if verbose:
+                        print(f"  OK       {strat_id} {params} -> {result['time_taken']:.4f}s")
+
+                if result.get("success") or result.get("soft_timeout"):
+                    recent_times.append((x, result["time_taken"]))
+                    if len(recent_times) > 8:
+                        recent_times = recent_times[-8:]
+                    new_step = _adaptive_step(recent_times, current_step, primary_spec.step)
+                    if new_step != current_step and verbose:
+                        print(f"  STEP     {strat_id} {primary_spec.name}: {current_step} → {new_step}")
+                    current_step = new_step
+
+                if consecutive_timeouts.get(strat_id, 0) >= config.max_consecutive_timeouts:
+                    retired.add(strat_id)
+                    if verbose:
+                        print(f"  RETIRED  {strat_id} after {config.max_consecutive_timeouts} consecutive timeouts")
+
+                if consecutive_failures.get(strat_id, 0) >= config.max_consecutive_failures:
+                    retired.add(strat_id)
+                    if verbose:
+                        print(f"  RETIRED  {strat_id} after {config.max_consecutive_failures} consecutive failures")
+
+                x += current_step
 
     if verbose:
         print(f"\nDone: {run_count} runs, {skip_count} skipped, {len(retired)} strategies retired")
