@@ -17,6 +17,7 @@ START = "<!-- BENCHMARK_RESULTS_START -->"
 END = "<!-- BENCHMARK_RESULTS_END -->"
 
 PLOT_EXTENSIONS = (".png", ".svg", ".pdf")
+MAX_PLOTS_PER_BENCHMARK = 3
 
 
 def _load_benchmarks():
@@ -43,12 +44,24 @@ def _plot_paths(name: str) -> list[Path]:
     return sorted(set(paths), key=_natural_key)
 
 
+def _representative_paths(paths: list[Path]) -> list[Path]:
+    if len(paths) <= MAX_PLOTS_PER_BENCHMARK:
+        return paths
+    indexes = {
+        0,
+        len(paths) // 2,
+        len(paths) - 1,
+    }
+    return [paths[i] for i in sorted(indexes)]
+
+
 def _escape_cell(text: str) -> str:
     return text.replace("|", "\\|").replace("\n", " ")
 
 
 def _plot_cell(name: str) -> str:
-    paths = _plot_paths(name)
+    all_paths = _plot_paths(name)
+    paths = _representative_paths(all_paths)
     if not paths:
         return "_pending_"
 
@@ -61,6 +74,8 @@ def _plot_cell(name: str) -> str:
         else:
             label = label.replace("_", " ")
         images.append(f'<img src="{rel}" alt="{path.stem}" width="320"><br><sub>{label}</sub>')
+    if len(all_paths) > len(paths):
+        images.append(f"<sub>{len(all_paths) - len(paths)} more plot(s) omitted</sub>")
     return "<br><br>".join(images)
 
 
