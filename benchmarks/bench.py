@@ -406,6 +406,8 @@ def cmd_plot(args):
             kwargs["xlim"] = parse_limit(args.xlim)
         if args.ylim:
             kwargs["ylim"] = parse_limit(args.ylim)
+        else:
+            kwargs["timeout_cap"] = cfg["default_timeout"]
 
         if fixed_params:
             kwargs["fixed_params"] = fixed_params

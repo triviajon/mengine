@@ -116,6 +116,11 @@ def _plotted_time(result: dict) -> float | None:
     return None
 
 
+def _axis_pad(max_value: float, fraction: float = 0.02) -> float:
+    """Give plotted data a little room without making empty space visually loud."""
+    return max(max_value, 1.0) * fraction
+
+
 def plot_benchmark(
     benchmark: Benchmark,
     results_dir: str = "results",
@@ -134,6 +139,7 @@ def plot_benchmark(
     show_failures: bool = False,
     smooth: int = 1,
     strategies_override: list[Strategy] | None = None,
+    timeout_cap: float | None = None,
 ):
     """
     Plot benchmark results.
@@ -153,6 +159,7 @@ def plot_benchmark(
         title: Custom title (default: benchmark description).
         show_failures: Mark failed/timeout points on the plot.
         smooth: Moving window average size (1 = no smoothing).
+        timeout_cap: Default y-axis ceiling when ylim is not explicitly set.
     """
     plt.rcParams.update(PAPER_STYLE)
 
@@ -237,12 +244,16 @@ def plot_benchmark(
 
     # Plot
     fig, ax = plt.subplots()
+    plotted_xs: list[float] = []
+    plotted_ys: list[float] = []
 
     for strat_id, points in sorted(data.items()):
         strategy = strategy_map[strat_id]
         points.sort()
         xs, ys = zip(*points)
         xs, ys = _moving_average(list(xs), list(ys), smooth)
+        plotted_xs.extend(xs)
+        plotted_ys.extend(ys)
         ax.plot(
             xs, ys,
             label=strategy.label,
@@ -260,6 +271,8 @@ def plot_benchmark(
             strategy = strategy_map[strat_id]
             points.sort()
             xs, ys = zip(*points)
+            plotted_xs.extend(xs)
+            plotted_ys.extend(ys)
             ax.scatter(
                 xs, ys,
                 color=strategy.color,
@@ -278,8 +291,24 @@ def plot_benchmark(
 
     if xlim:
         ax.set_xlim(xlim)
+    elif not log_x:
+        x_max = max(plotted_xs)
+        x_pad = _axis_pad(x_max)
+        ax.set_xlim(left=-x_pad, right=x_max + x_pad)
+    else:
+        ax.set_xlim(left=0)
     if ylim:
         ax.set_ylim(ylim)
+    elif plotted_ys:
+        y_max = max(plotted_ys)
+        y_pad = _axis_pad(y_max)
+        y_top = y_max + y_pad
+        if timeout_cap:
+            y_top = min(timeout_cap, y_top)
+        bottom = -y_pad if not log_y else 0
+        ax.set_ylim(bottom=bottom, top=y_top)
+    else:
+        ax.set_ylim(bottom=0)
     if log_y:
         ax.set_yscale("log")
     if log_x:

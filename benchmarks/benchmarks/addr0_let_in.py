@@ -222,7 +222,7 @@ Admitted.
             lets = _generate_lean_let_bindings(n)
             last = f"v{n}" if n > 0 else "v0"
             content = f"""set_option maxHeartbeats 0
-set_option maxRecDepth 50000
+set_option maxRecDepth 1000000
 section Test
 
 axiom nat : Type

@@ -190,6 +190,7 @@ macro "cancel" : tactic =>
         lines = [self._LEAN_CANCEL_TACTIC]
         lines.append(f"-- Separation logic reversal benchmark (Lean 4) - n={n}")
         lines.append("set_option maxHeartbeats 0")
+        lines.append("set_option maxRecDepth 1000000")
         lines.append("")
         lines.append("axiom M : Type")
         lines.append("axiom sep : M → M → M")
@@ -263,4 +264,4 @@ End Test.
             return [engine_path, generated_file]
 
         if strategy.engine == "lean":
-            return [engine_path, generated_file]
+            return [engine_path, "--tstack=1000000", generated_file]

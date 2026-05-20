@@ -130,7 +130,7 @@ apply eq_refl.
             for _ in range(n):
                 expr = f"f ({expr})"
             content = f"""set_option maxHeartbeats 0
-set_option maxRecDepth 4096
+set_option maxRecDepth 1000000
 
 section Test
 

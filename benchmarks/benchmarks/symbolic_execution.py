@@ -417,7 +417,7 @@ import Lean
 open Lean Elab Tactic
 
 set_option maxHeartbeats 0
-set_option maxRecDepth 100000
+set_option maxRecDepth 1000000
 
 axiom word : Type
 axiom byte : Type
@@ -513,5 +513,7 @@ theorem sym_exec (m : PMap word byte) (l : PMap String word) :
     def get_command(self, strategy, params, engine_path, generated_file, config=None):
         if strategy.engine == "mengine":
             return [engine_path, "-q", generated_file]
+        if strategy.engine == "lean":
+            return [engine_path, "--tstack=1000000", generated_file]
 
         return [engine_path, generated_file]
