@@ -1,0 +1,7340 @@
+{
+  "mengine_native_n1": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n16": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n31": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n46": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n61": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n76": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n91": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n106": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n121": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n136": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n151": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n166": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n181": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n196": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n211": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n226": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n241": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n271": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n301": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n361": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n421": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n504": {
+    "time_taken": 0.09538251100002526,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.10469674800015127,
+        "success": true
+      },
+      {
+        "time_taken": 0.09538251100002526,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "mengine_native_n587": {
+    "time_taken": 0.11241371899996011,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.11241371899996011,
+        "success": true
+      },
+      {
+        "time_taken": 0.11366900900020482,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "mengine_native_n670": {
+    "time_taken": 0.12259141000004092,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.12315255000021352,
+        "success": true
+      },
+      {
+        "time_taken": 0.12259141000004092,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "mengine_native_n753": {
+    "time_taken": 0.13540975800015076,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.14096407899978658,
+        "success": true
+      },
+      {
+        "time_taken": 0.13540975800015076,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "mengine_native_n836": {
+    "time_taken": 0.1476942910003345,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.1476942910003345,
+        "success": true
+      },
+      {
+        "time_taken": 0.15279644000020198,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "mengine_native_n919": {
+    "time_taken": 0.16914240099958988,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.16968112399990787,
+        "success": true
+      },
+      {
+        "time_taken": 0.16914240099958988,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_rewrite_n1": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n16": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n31": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n46": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n53": {
+    "time_taken": 0.13764016499999343,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.1413989689999653,
+        "success": true
+      },
+      {
+        "time_taken": 0.13764016499999343,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_rewrite_n68": {
+    "time_taken": 0.15732815299998038,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.15732815299998038,
+        "success": true
+      },
+      {
+        "time_taken": 0.15984423800000513,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_rewrite_n83": {
+    "time_taken": 0.18276238299995384,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.18276238299995384,
+        "success": true
+      },
+      {
+        "time_taken": 0.18333227599987367,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_rewrite_n98": {
+    "time_taken": 0.19760650300031557,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.20486431300014374,
+        "success": true
+      },
+      {
+        "time_taken": 0.19760650300031557,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_rewrite_n113": {
+    "time_taken": 0.23051638900005855,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.23292309699991165,
+        "success": true
+      },
+      {
+        "time_taken": 0.23051638900005855,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_rewrite_n128": {
+    "time_taken": 0.2779966009998134,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.2795232369999212,
+        "success": true
+      },
+      {
+        "time_taken": 0.2779966009998134,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_rewrite_n143": {
+    "time_taken": 0.31602926300001855,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.31602926300001855,
+        "success": true
+      },
+      {
+        "time_taken": 0.3243548880000162,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_rewrite_n158": {
+    "time_taken": 0.3453164900001866,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.3453164900001866,
+        "success": true
+      },
+      {
+        "time_taken": 0.34908064799992644,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_rewrite_n173": {
+    "time_taken": 0.3659286269999029,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.3659286269999029,
+        "success": true
+      },
+      {
+        "time_taken": 0.39985649700020076,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_rewrite_n188": {
+    "time_taken": 0.40467178800008696,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.40467178800008696,
+        "success": true
+      },
+      {
+        "time_taken": 0.4216342910003732,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_rewrite_n203": {
+    "time_taken": 0.4368207490001623,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.4368207490001623,
+        "success": true
+      },
+      {
+        "time_taken": 0.44727148299989494,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_rewrite_n218": {
+    "time_taken": 0.4668029750000642,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.4668029750000642,
+        "success": true
+      },
+      {
+        "time_taken": 0.5066734000001816,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_rewrite_n233": {
+    "time_taken": 0.509434765000151,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.509434765000151,
+        "success": true
+      },
+      {
+        "time_taken": 0.534049342000344,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_rewrite_n248": {
+    "time_taken": 0.5525498699998934,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.5525498699998934,
+        "success": true
+      },
+      {
+        "time_taken": 0.5983984929998769,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_rewrite_n263": {
+    "time_taken": 0.600017138000112,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.600017138000112,
+        "success": true
+      },
+      {
+        "time_taken": 0.6109240770001634,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_rewrite_n278": {
+    "time_taken": 0.6602199020003354,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.6602199020003354,
+        "success": true
+      },
+      {
+        "time_taken": 0.69763918200033,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_rewrite_n293": {
+    "time_taken": 0.712247687999934,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.712247687999934,
+        "success": true
+      },
+      {
+        "time_taken": 0.7217090770000141,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_rewrite_n308": {
+    "time_taken": 0.7472605950001707,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.7472605950001707,
+        "success": true
+      },
+      {
+        "time_taken": 0.7671601839997493,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_rewrite_n323": {
+    "time_taken": 0.8133067299995673,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.8133067299995673,
+        "success": true
+      },
+      {
+        "time_taken": 0.8197100880001926,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_rewrite_n338": {
+    "time_taken": 0.8635408360000838,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.8841115739996894,
+        "success": true
+      },
+      {
+        "time_taken": 0.8635408360000838,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_rewrite_n353": {
+    "time_taken": 0.9202090979997593,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.9202090979997593,
+        "success": true
+      },
+      {
+        "time_taken": 0.9355847259998882,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_rewrite_n368": {
+    "time_taken": 0.9606076550003309,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.9802049899999474,
+        "success": true
+      },
+      {
+        "time_taken": 0.9606076550003309,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_rewrite_n383": {
+    "time_taken": 1.007346724999934,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.0377243469997666,
+        "success": true
+      },
+      {
+        "time_taken": 1.007346724999934,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_rewrite_n398": {
+    "time_taken": 1.0508675229998516,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.1172504370001661,
+        "success": true
+      },
+      {
+        "time_taken": 1.0508675229998516,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_rewrite_n413": {
+    "time_taken": 1.1598156879999806,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.2053271449999556,
+        "success": true
+      },
+      {
+        "time_taken": 1.1598156879999806,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_rewrite_n428": {
+    "time_taken": 1.190068214999883,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.266383424000196,
+        "success": true
+      },
+      {
+        "time_taken": 1.190068214999883,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_rewrite_n458": {
+    "time_taken": 1.3258779890002188,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.4135991460002515,
+        "success": true
+      },
+      {
+        "time_taken": 1.3258779890002188,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_rewrite_n488": {
+    "time_taken": 1.517782817999887,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.517782817999887,
+        "success": true
+      },
+      {
+        "time_taken": 1.5547757149997778,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_rewrite_n518": {
+    "time_taken": 1.684509159999834,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.7347442240002238,
+        "success": true
+      },
+      {
+        "time_taken": 1.684509159999834,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_rewrite_n548": {
+    "time_taken": 1.8352950620001138,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.9376566700002513,
+        "success": true
+      },
+      {
+        "time_taken": 1.8352950620001138,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_rewrite_n578": {
+    "time_taken": 2.0370239519997995,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.0854428650000045,
+        "success": true
+      },
+      {
+        "time_taken": 2.0370239519997995,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_rewrite_n608": {
+    "time_taken": 2.2113150979998863,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.265805626999736,
+        "success": true
+      },
+      {
+        "time_taken": 2.2113150979998863,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_rewrite_n668": {
+    "time_taken": 2.6291860579999593,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.6562472260002323,
+        "success": true
+      },
+      {
+        "time_taken": 2.6291860579999593,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_rewrite_n751": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n834": {
+    "time_taken": 4.03860599599966,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 4.041766321000068,
+        "success": true
+      },
+      {
+        "time_taken": 4.03860599599966,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_rewrite_n917": {
+    "time_taken": 4.783695168999657,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 4.971959389999938,
+        "success": true
+      },
+      {
+        "time_taken": 4.783695168999657,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_rewrite_n1000": {
+    "time_taken": 5.766716804000225,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 5.766716804000225,
+        "success": true
+      },
+      {
+        "time_taken": 6.286543535999954,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_setoid_rewrite_n1": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n16": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n31": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n46": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n53": {
+    "time_taken": 0.13188253999987865,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.13833943100007673,
+        "success": true
+      },
+      {
+        "time_taken": 0.13188253999987865,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_setoid_rewrite_n60": {
+    "time_taken": 0.14388782599962724,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.14388782599962724,
+        "success": true
+      },
+      {
+        "time_taken": 0.14413144199988892,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_setoid_rewrite_n67": {
+    "time_taken": 0.17889840799989543,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.24040512300007322,
+        "success": true
+      },
+      {
+        "time_taken": 0.17889840799989543,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_setoid_rewrite_n70": {
+    "time_taken": 0.15661190199989505,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.15661190199989505,
+        "success": true
+      },
+      {
+        "time_taken": 0.21257934999994177,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_setoid_rewrite_n85": {
+    "time_taken": 0.19084975700025097,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.2142812820002291,
+        "success": true
+      },
+      {
+        "time_taken": 0.19084975700025097,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_setoid_rewrite_n100": {
+    "time_taken": 0.22125934699988647,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.24174866900011693,
+        "success": true
+      },
+      {
+        "time_taken": 0.22125934699988647,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_setoid_rewrite_n115": {
+    "time_taken": 0.17821641899990937,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.22367377299997315,
+        "success": true
+      },
+      {
+        "time_taken": 0.17821641899990937,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_setoid_rewrite_n145": {
+    "time_taken": 0.27773877400022684,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.2800985330000003,
+        "success": true
+      },
+      {
+        "time_taken": 0.27773877400022684,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_setoid_rewrite_n175": {
+    "time_taken": 0.2842488940000294,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.2842488940000294,
+        "success": true
+      },
+      {
+        "time_taken": 0.34707567599980393,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_setoid_rewrite_n235": {
+    "time_taken": 0.4079307459996926,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.4235796210000444,
+        "success": true
+      },
+      {
+        "time_taken": 0.4079307459996926,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_setoid_rewrite_n295": {
+    "time_taken": 0.558161175999885,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.7521860970000489,
+        "success": true
+      },
+      {
+        "time_taken": 0.558161175999885,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_setoid_rewrite_n355": {
+    "time_taken": 0.6569535440003165,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.6569535440003165,
+        "success": true
+      },
+      {
+        "time_taken": 0.8144318159997965,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_setoid_rewrite_n438": {
+    "time_taken": 0.9393995460000042,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.1303213729997879,
+        "success": true
+      },
+      {
+        "time_taken": 0.9393995460000042,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_setoid_rewrite_n521": {
+    "time_taken": 1.1620210769997357,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.1620210769997357,
+        "success": true
+      },
+      {
+        "time_taken": 1.8035462390002976,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_setoid_rewrite_n604": {
+    "time_taken": 2.6216862179999225,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.6216862179999225,
+        "success": true
+      },
+      {
+        "time_taken": 2.6805172889999085,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_setoid_rewrite_n687": {
+    "time_taken": 2.271983884000292,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.2858063870003207,
+        "success": true
+      },
+      {
+        "time_taken": 2.271983884000292,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_setoid_rewrite_n770": {
+    "time_taken": 2.707301096000265,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.8627350629999455,
+        "success": true
+      },
+      {
+        "time_taken": 2.707301096000265,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_setoid_rewrite_n853": {
+    "time_taken": 3.382656211000267,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 3.382656211000267,
+        "success": true
+      },
+      {
+        "time_taken": 3.5268926450003164,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_repeat_setoid_rewrite_n936": {
+    "time_taken": 5.207163770000079,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 5.31137132799995,
+        "success": true
+      },
+      {
+        "time_taken": 5.207163770000079,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_bottomup_n1": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n16": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n46": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n76": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n106": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n136": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n166": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n196": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n226": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n256": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n286": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n316": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n346": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n406": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n466": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n526": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n609": {
+    "time_taken": 3.781165081999916,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 3.781165081999916,
+        "success": true
+      },
+      {
+        "time_taken": 4.2040504490000785,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_rewrite_bottomup_n692": {
+    "time_taken": 4.501300579000144,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 4.501300579000144,
+        "success": true
+      },
+      {
+        "time_taken": 4.681520799000282,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_rewrite_bottomup_n775": {
+    "time_taken": 6.2641929360001996,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 7.0468073600000025,
+        "success": true
+      },
+      {
+        "time_taken": 6.2641929360001996,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_bottomup_n858": {
+    "time_taken": 7.461916327999916,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 7.627620115999889,
+        "success": true
+      },
+      {
+        "time_taken": 7.461916327999916,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_bottomup_n941": {
+    "time_taken": 9.387722980000035,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 9.387722980000035,
+        "success": true
+      },
+      {
+        "time_taken": 9.440053582000019,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_rewrite_topdown_n1": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n16": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n46": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n76": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n106": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n136": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n166": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n196": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n256": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n316": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n376": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n436": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n496": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n579": {
+    "time_taken": 1.344015749999926,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.344015749999926,
+        "success": true
+      },
+      {
+        "time_taken": 1.6502374730002884,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_rewrite_topdown_n662": {
+    "time_taken": 1.6240975699997762,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.310109261999969,
+        "success": true
+      },
+      {
+        "time_taken": 1.6240975699997762,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_topdown_n745": {
+    "time_taken": 2.0531029200001285,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.0531029200001285,
+        "success": true
+      },
+      {
+        "time_taken": 2.6483314510001037,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_rewrite_topdown_n828": {
+    "time_taken": 2.377914809000231,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.9140306260001125,
+        "success": true
+      },
+      {
+        "time_taken": 2.377914809000231,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_topdown_n911": {
+    "time_taken": 3.095064665999871,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 4.059893749999901,
+        "success": true
+      },
+      {
+        "time_taken": 3.095064665999871,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_topdown_n994": {
+    "time_taken": 3.4168300919996,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 3.5066287449999436,
+        "success": true
+      },
+      {
+        "time_taken": 3.4168300919996,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_bang_n1": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n16": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n31": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n46": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n53": {
+    "time_taken": 0.1413175819998287,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.1413175819998287,
+        "success": true
+      },
+      {
+        "time_taken": 0.1478200750002543,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_rewrite_bang_n60": {
+    "time_taken": 0.14440444199999547,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.15041913999993994,
+        "success": true
+      },
+      {
+        "time_taken": 0.14440444199999547,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_bang_n67": {
+    "time_taken": 0.15124035999997432,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.15124035999997432,
+        "success": true
+      },
+      {
+        "time_taken": 0.15176068799974018,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_rewrite_bang_n74": {
+    "time_taken": 0.15501860499989562,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.15942650099987077,
+        "success": true
+      },
+      {
+        "time_taken": 0.15501860499989562,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_bang_n81": {
+    "time_taken": 0.1788859970001795,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.18222657299975253,
+        "success": true
+      },
+      {
+        "time_taken": 0.1788859970001795,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_bang_n84": {
+    "time_taken": 0.1827911329996823,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.18961893599998803,
+        "success": true
+      },
+      {
+        "time_taken": 0.1827911329996823,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_bang_n87": {
+    "time_taken": 0.1870213470001545,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.1870213470001545,
+        "success": true
+      },
+      {
+        "time_taken": 0.19055059400034224,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_rewrite_bang_n90": {
+    "time_taken": 0.18831354399981137,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.1956879200001822,
+        "success": true
+      },
+      {
+        "time_taken": 0.18831354399981137,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_bang_n105": {
+    "time_taken": 0.20664437300001737,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.20664437300001737,
+        "success": true
+      },
+      {
+        "time_taken": 0.20749892499998168,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_rewrite_bang_n120": {
+    "time_taken": 0.2617311880003399,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.2617311880003399,
+        "success": true
+      },
+      {
+        "time_taken": 0.31640067699981955,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_rewrite_bang_n127": {
+    "time_taken": 0.408680516000004,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.4505019160001211,
+        "success": true
+      },
+      {
+        "time_taken": 0.408680516000004,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_bang_n130": {
+    "time_taken": 0.41344003199992585,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.41344003199992585,
+        "success": true
+      },
+      {
+        "time_taken": 0.4293241420000413,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_rewrite_bang_n133": {
+    "time_taken": 0.4161073270001907,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.4161073270001907,
+        "success": true
+      },
+      {
+        "time_taken": 0.43968562500003827,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_rewrite_bang_n148": {
+    "time_taken": 0.45199958000011975,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.46059750499989605,
+        "success": true
+      },
+      {
+        "time_taken": 0.45199958000011975,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_bang_n163": {
+    "time_taken": 0.3518746969998574,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.45054225800004133,
+        "success": true
+      },
+      {
+        "time_taken": 0.3518746969998574,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_bang_n193": {
+    "time_taken": 0.40758030999995754,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.4082552250001754,
+        "success": true
+      },
+      {
+        "time_taken": 0.40758030999995754,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_bang_n223": {
+    "time_taken": 0.474992845000088,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.474992845000088,
+        "success": true
+      },
+      {
+        "time_taken": 0.48318504000008033,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_rewrite_bang_n253": {
+    "time_taken": 0.5624751289997221,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.5624751289997221,
+        "success": true
+      },
+      {
+        "time_taken": 0.5771894990002693,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_rewrite_bang_n283": {
+    "time_taken": 0.6493083929999557,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.6493083929999557,
+        "success": true
+      },
+      {
+        "time_taken": 0.6931186960000559,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_rewrite_bang_n313": {
+    "time_taken": 0.7586110460001692,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.7586110460001692,
+        "success": true
+      },
+      {
+        "time_taken": 0.7733448389999467,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_rewrite_bang_n343": {
+    "time_taken": 0.8813691959999232,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.8831694680002329,
+        "success": true
+      },
+      {
+        "time_taken": 0.8813691959999232,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_bang_n373": {
+    "time_taken": 0.9989428459998635,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.0093992560000515,
+        "success": true
+      },
+      {
+        "time_taken": 0.9989428459998635,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_bang_n403": {
+    "time_taken": 1.1028108239997891,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.1370847230000436,
+        "success": true
+      },
+      {
+        "time_taken": 1.1028108239997891,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_bang_n433": {
+    "time_taken": 1.2245823660000497,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.2810826690001704,
+        "success": true
+      },
+      {
+        "time_taken": 1.2245823660000497,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_bang_n463": {
+    "time_taken": 2.0227528000000348,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.0227528000000348,
+        "success": true
+      },
+      {
+        "time_taken": 2.1460553730003085,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_rewrite_bang_n493": {
+    "time_taken": 1.494933213999957,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.5513999220002006,
+        "success": true
+      },
+      {
+        "time_taken": 1.494933213999957,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_bang_n553": {
+    "time_taken": 3.162534012999913,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 3.162534012999913,
+        "success": true
+      },
+      {
+        "time_taken": 3.183805296999708,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_rewrite_bang_n613": {
+    "time_taken": 2.5844258439997247,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 3.850020846999996,
+        "success": true
+      },
+      {
+        "time_taken": 2.5844258439997247,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_bang_n696": {
+    "time_taken": 2.713032230999943,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 3.6176283940003486,
+        "success": true
+      },
+      {
+        "time_taken": 2.713032230999943,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_bang_n779": {
+    "time_taken": 5.065694070000063,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 5.065694070000063,
+        "success": true
+      },
+      {
+        "time_taken": 5.178303196000343,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_rewrite_bang_n862": {
+    "time_taken": 4.281289457999719,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 5.846565493000071,
+        "success": true
+      },
+      {
+        "time_taken": 4.281289457999719,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_rewrite_bang_n945": {
+    "time_taken": 5.0332255230000555,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 5.291018306999831,
+        "success": true
+      },
+      {
+        "time_taken": 5.0332255230000555,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "lean_repeat_rw_n219": {
+    "time_taken": 0.2804459180001686,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.2804459180001686,
+        "success": true
+      },
+      {
+        "time_taken": 0.28389249000019845,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "lean_repeat_rw_n302": {
+    "time_taken": 0.32663801900025646,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.3326925950000259,
+        "success": true
+      },
+      {
+        "time_taken": 0.32663801900025646,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "lean_repeat_rw_n385": {
+    "time_taken": 0.39786723299994264,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.39786723299994264,
+        "success": true
+      },
+      {
+        "time_taken": 0.4122621999999865,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "lean_repeat_rw_n468": {
+    "time_taken": 0.43353099400019346,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.4342831889998706,
+        "success": true
+      },
+      {
+        "time_taken": 0.43353099400019346,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "lean_repeat_rw_n551": {
+    "time_taken": 0.48106686099981744,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.48106686099981744,
+        "success": true
+      },
+      {
+        "time_taken": 0.5102898729996923,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "lean_repeat_rw_n634": {
+    "time_taken": 0.543620515999919,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.543620515999919,
+        "success": true
+      },
+      {
+        "time_taken": 0.5631921930003045,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "lean_repeat_rw_n717": {
+    "time_taken": 0.6153829810000389,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.6153829810000389,
+        "success": true
+      },
+      {
+        "time_taken": 0.618762998999955,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "lean_repeat_rw_n800": {
+    "time_taken": 0.6439200290001281,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.6439200290001281,
+        "success": true
+      },
+      {
+        "time_taken": 0.6748915070002113,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "lean_repeat_rw_n883": {
+    "time_taken": 0.7284463719997802,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.7284463719997802,
+        "success": true
+      },
+      {
+        "time_taken": 0.7351940359999389,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "lean_repeat_rw_n966": {
+    "time_taken": 0.7692303869998796,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.7778855460001068,
+        "success": true
+      },
+      {
+        "time_taken": 0.7692303869998796,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_repeat_rewrite_n61": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n76": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n91": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n106": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n121": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n136": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n151": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n166": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n181": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n196": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n211": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n226": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n241": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n256": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n271": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n286": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n301": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n316": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n331": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n346": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n361": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n376": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n391": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n406": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n421": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n436": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n451": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n466": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n481": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n496": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n511": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n526": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n541": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n556": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n571": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n586": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n601": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n616": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n631": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n646": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n661": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n676": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n691": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n706": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n721": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n736": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n766": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n781": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n796": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n811": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n826": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n841": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n856": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n871": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n886": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n901": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n916": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n931": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n946": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n961": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n976": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_rewrite_n991": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n61": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n76": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n91": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n106": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n121": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n136": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n151": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n166": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n181": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n196": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n211": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n226": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n241": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n256": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n271": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n286": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n301": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n316": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n331": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n346": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n361": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n376": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n391": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n406": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n421": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n436": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n451": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n466": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n481": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n496": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n511": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n526": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n541": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n556": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n571": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n586": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n601": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n616": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n631": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n646": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n661": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n676": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n691": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n706": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n721": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n736": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n751": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n766": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n781": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n796": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n811": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n826": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n841": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n856": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n871": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n886": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n901": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n916": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n931": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n946": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n961": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n976": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_repeat_setoid_rewrite_n991": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n31": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n61": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n91": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n121": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n151": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n181": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n211": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n241": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n271": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n301": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n331": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n361": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n376": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n391": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n421": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n436": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n451": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n481": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n496": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n511": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n541": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n556": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n571": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n586": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n601": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n616": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n631": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n646": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n661": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n676": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n691": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n706": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n721": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n736": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n751": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n766": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n781": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n796": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n811": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n826": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n841": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n856": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n871": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n886": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n901": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n916": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n931": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n946": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n961": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n976": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bottomup_n991": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n31": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n61": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n91": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n121": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n151": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n181": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n211": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n226": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n241": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n271": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n286": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n301": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n331": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n346": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n361": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n391": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n406": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n421": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n451": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n466": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n481": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n511": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n526": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n541": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n556": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n571": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n586": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n601": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n616": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n631": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n646": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n661": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n676": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n691": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n706": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n721": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n736": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n751": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n766": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n781": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n796": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n811": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n826": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n841": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n856": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n871": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n886": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n901": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n916": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n931": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n946": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n961": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n976": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_topdown_n991": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n61": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n76": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n91": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n106": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n121": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n136": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n151": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n166": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n181": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n196": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n211": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n226": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n241": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n256": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n271": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n286": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n301": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n316": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n331": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n346": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n361": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n376": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n391": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n406": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n421": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n436": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n451": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n466": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n481": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n496": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n511": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n526": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n541": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n556": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n571": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n586": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n601": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n616": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n631": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n646": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n661": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n676": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n691": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n706": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n721": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n736": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n751": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n766": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n781": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n796": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n811": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n826": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n841": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n856": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n871": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n886": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n901": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n916": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n931": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n946": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n961": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n976": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "coq_rewrite_bang_n991": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n256": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n286": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n316": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n331": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n346": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n376": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n391": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n406": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n436": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n451": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n466": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n481": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n496": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n511": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n526": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n541": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n556": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n571": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n586": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n601": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n616": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n631": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n646": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n661": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n676": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n691": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n706": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n721": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n736": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n751": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n766": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n781": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n796": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n811": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n826": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n841": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n856": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n871": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n886": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n901": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n916": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n931": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n946": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n961": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n976": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  },
+  "mengine_native_n991": {
+    "time_taken": 0,
+    "success": false,
+    "error": "manually skipped Rocq/MEngine benchmark run",
+    "manual_skip": true,
+    "created_at": "2026-05-20T01:02:24.193919+00:00",
+    "trials": [
+      {
+        "time_taken": 0,
+        "success": false,
+        "error": "manually skipped Rocq/MEngine benchmark run"
+      }
+    ]
+  }
+}

@@ -481,6 +481,10 @@ def run_benchmark(
                     last_success_x = x
                     new_step = _adaptive_step(recent_times, current_step, primary_spec.step, min_step, max_step)
                     current_step = new_step
+                elif consecutive_timeouts.get(series_id, 0) >= config.max_consecutive_timeouts:
+                    pass
+                elif consecutive_failures.get(series_id, 0) >= config.max_consecutive_failures:
+                    pass
                 elif strategy.engine == "coq" and current_step > min_step and last_success_x is not None:
                     current_step = max(current_step // 2, min_step)
                     next_x = last_success_x + current_step
