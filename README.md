@@ -62,8 +62,8 @@ This is a prototype! My goals include:
 | `repeat_mod` | Rewriting nested modulo chains (mod (mod ... b p) p) = (mod b p) | <img src="benchmarks/plots/repeat_mod.png" alt="repeat_mod" width="320"><br><sub>overview</sub> |
 | `rewrite_fa` | Rewriting f(f(...f(a))) = a with n nested applications | <img src="benchmarks/plots/rewrite_fa.png" alt="rewrite_fa" width="320"><br><sub>overview</sub> |
 | `rewrite_nm` | Rewriting f(x,...,x)=x in let x1:=f x0..x0 in ... let xm:=f x(m-1)..x(m-1) in xm=x0 | <img src="benchmarks/plots/rewrite_nm_m1.png" alt="rewrite_nm_m1" width="320"><br><sub>m1</sub><br><br><img src="benchmarks/plots/rewrite_nm_m6.png" alt="rewrite_nm_m6" width="320"><br><sub>m6</sub><br><br><img src="benchmarks/plots/rewrite_nm_m10.png" alt="rewrite_nm_m10" width="320"><br><sub>m10</sub><br><br><sub>7 more plot(s) omitted</sub> |
-| `separation_logic` | Separation logic predicate cancellation (reordering sep predicates) | _pending_ |
-| `substitution_sharing` | Substitution through a dependent type with repeated references to one shared let-bound subtree | _pending_ |
-| `symbolic_execution` | Symbolic execution of imperative programs with partial maps | _pending_ |
+| `separation_logic` | Separation logic predicate cancellation (reordering sep predicates) | <img src="benchmarks/plots/separation_logic.png" alt="separation_logic" width="320"><br><sub>overview</sub> |
+| `substitution_sharing` | Substitution through a dependent type with repeated references to one shared let-bound subtree | <img src="benchmarks/plots/substitution_sharing.png" alt="substitution_sharing" width="320"><br><sub>overview</sub> |
+| `symbolic_execution` | Symbolic execution of imperative programs with partial maps | <img src="benchmarks/plots/symbolic_execution.png" alt="symbolic_execution" width="320"><br><sub>overview</sub> |
 
 <!-- BENCHMARK_RESULTS_END -->
