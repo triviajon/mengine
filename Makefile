@@ -12,19 +12,13 @@ CC = clang
 TUNE_USE_LL ?= 0
 
 # Ablation toggles:
-# - substitution memoization during spine rebuild (default on): TUNE_SUBST_MEMO=1
 # - evar-ref shortcut for hole occurs checks (default on): TUNE_EVAR_FREE_FILL=1
-TUNE_SUBST_MEMO ?= 1
 TUNE_EVAR_FREE_FILL ?= 1
 
 TUNE_FLAGS ?=
 
 ifeq ($(TUNE_USE_LL), 1)
 	override TUNE_FLAGS += -DORDER_USE_LL=1
-endif
-
-ifeq ($(TUNE_SUBST_MEMO), 0)
-	override TUNE_FLAGS += -DMENGINE_SUBST_MEMO=0
 endif
 
 ifeq ($(TUNE_EVAR_FREE_FILL), 0)
@@ -139,9 +133,6 @@ ablation-binaries:
 	$(MAKE) clean
 	$(MAKE) TUNE_SUBST_MEMO=1 TUNE_EVAR_FREE_FILL=1
 	cp $(MENGINE_BIN) build/ablations/mengine-baseline
-	$(MAKE) clean
-	$(MAKE) TUNE_SUBST_MEMO=0 TUNE_EVAR_FREE_FILL=1
-	cp $(MENGINE_BIN) build/ablations/mengine-no-subst-memo
 	$(MAKE) clean
 	$(MAKE) TUNE_SUBST_MEMO=1 TUNE_EVAR_FREE_FILL=0
 	cp $(MENGINE_BIN) build/ablations/mengine-no-evar-free-fill
