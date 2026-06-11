@@ -2,20 +2,17 @@
  * compiled_tactics.c — JIT-style compiled replacements for scripted tactics.
  *
  * tactic_def_attach_compiled() is called after each tactic definition is
- * parsed.  It inspects the tactic body and, when it recognises a known
- * pattern AND all required axioms are in scope, replaces def->fn with a C
- * implementation that constructs the same proof terms without going through
- * the tactic interpreter.
+ * parsed.  It looks up the tactic by name and arity in a static table and,
+ * when a match is found and all required axioms are in scope, replaces
+ * def->fn with a C implementation that constructs the same proof terms
+ * without going through the tactic interpreter.  The scripted body is
+ * retained as a readable spec and interpreter fallback.
  *
  * Currently compiled tactics:
- *   compiled_sep_cancel  — replaces `cancel` when its body is exactly
- *       `repeat __cancel_one; try reflexivity` and {sep, sep_comm,
- *       sep_swap, sep_cong_r} are in scope.  Implements the same
- *       bring-to-front + strip loop as the scripted __cancel_one /__
- *       bring_to_front reference definitions (see separation_logic.py).
- *       The scripted definitions are still parsed (and serve as a
- *       readable spec and interpreter fallback), but are NOT called
- *       during normal execution when this compiled version is active.
+ *   compiled_sep_cancel  — attached to `cancel` (arity 0) when {sep,
+ *       sep_comm, sep_swap, sep_cong_r} are in scope.  Implements the
+ *       same bring-to-front + strip loop as the scripted __cancel_one /
+ *       __bring_to_front reference definitions (see separation_logic.py).
  */
 #include "src/tacticlanguage/compiled_tactics.h"
 
@@ -242,32 +239,10 @@ static TacticResult *compiled_sep_cancel(MEngineRuntime *rt, Expression *goal, v
     return engine_tactic_result_new(true, goals, NULL);
 }
 
-static bool is_call0(TacticExpr *expr, const char *name) {
-    return expr && expr->tag == TAC_CALL && expr->as.call.arg_count == 0 &&
-           strcmp(expr->as.call.name, name) == 0;
-}
-
-/* Returns true iff body has the shape `repeat __cancel_one; try reflexivity`. */
-static bool is_scripted_sep_cancel(TacticExpr *body) {
-    if (!body || body->tag != TAC_SEQ) {
-        return false;
-    }
-    TacticExpr *left = body->as.seq.left;
-    TacticExpr *right = body->as.seq.right;
-    return left && left->tag == TAC_REPEAT && is_call0(left->as.repeat.body, "__cancel_one") &&
-           right && right->tag == TAC_TRY && is_call0(right->as.try_expr.body, "reflexivity");
-}
-
-/* If def matches a known compiled pattern, replace its fn pointer in-place. */
-void tactic_def_attach_compiled(MEngineRuntime *rt, TacticDef *def) {
-    if (!rt || !def || strcmp(def->name, "cancel") != 0 || def->param_count != 0 ||
-        !is_scripted_sep_cancel(def->body)) {
-        return;
-    }
-
+static bool try_attach_sep_cancel(MEngineRuntime *rt, TacticDef *def) {
     SepCancelEnv *env = malloc(sizeof(SepCancelEnv));
     if (!env) {
-        return;
+        return false;
     }
     env->sep = ctx_lookup(rt->ctx, "sep");
     env->sep_comm = ctx_lookup(rt->ctx, "sep_comm");
@@ -275,9 +250,34 @@ void tactic_def_attach_compiled(MEngineRuntime *rt, TacticDef *def) {
     env->sep_cong_r = ctx_lookup(rt->ctx, "sep_cong_r");
     if (!env->sep || !env->sep_comm || !env->sep_swap || !env->sep_cong_r) {
         free(env);
-        return;
+        return false;
     }
-
     def->fn = compiled_sep_cancel;
     def->compiled_env = env;
+    return true;
+}
+
+typedef struct {
+    const char *name;
+    size_t arity;
+    bool (*try_attach)(MEngineRuntime *rt, TacticDef *def);
+} CompiledTacticEntry;
+
+static const CompiledTacticEntry compiled_tactics[] = {
+    { "cancel", 0, try_attach_sep_cancel },
+};
+
+/* If def matches a known compiled tactic by name and arity, attach the compiled
+ * implementation.  The scripted body is retained as a fallback and readable spec. */
+void tactic_def_attach_compiled(MEngineRuntime *rt, TacticDef *def) {
+    if (!rt || !def) {
+        return;
+    }
+    for (size_t i = 0; i < sizeof(compiled_tactics) / sizeof(compiled_tactics[0]); i++) {
+        if (def->param_count == compiled_tactics[i].arity &&
+            strcmp(def->name, compiled_tactics[i].name) == 0) {
+            compiled_tactics[i].try_attach(rt, def);
+            return;
+        }
+    }
 }
