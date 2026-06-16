@@ -143,25 +143,25 @@ static void config_mode(void) {
 
 #ifndef ORDER_USE_LL
     printf("ORDER_IMPL           : tag-range relabeling\n");
-#ifndef ORDER_DEMAIN_INSERT_STRATEGY
-#define ORDER_DEMAIN_INSERT_STRATEGY 0
+#ifndef ORDER_TAGRANGE_INSERT_STRATEGY
+#define ORDER_TAGRANGE_INSERT_STRATEGY 0
 #endif
-#ifndef ORDER_DEMAIN_THRESHOLD_T_NUM
-#define ORDER_DEMAIN_THRESHOLD_T_NUM 11
+#ifndef ORDER_TAGRANGE_THRESHOLD_T_NUM
+#define ORDER_TAGRANGE_THRESHOLD_T_NUM 11
 #endif
-#ifndef ORDER_DEMAIN_THRESHOLD_T_DEN
-#define ORDER_DEMAIN_THRESHOLD_T_DEN 10
+#ifndef ORDER_TAGRANGE_THRESHOLD_T_DEN
+#define ORDER_TAGRANGE_THRESHOLD_T_DEN 10
 #endif
-    printf("ORDER_DEMAIN_STRATEGY: %s\n",
-           ORDER_DEMAIN_INSERT_STRATEGY == 1 ? "plus-one-half" : "thirds");
-    printf("ORDER_DEMAIN_T        : %d/%d\n", ORDER_DEMAIN_THRESHOLD_T_NUM,
-           ORDER_DEMAIN_THRESHOLD_T_DEN);
-#ifdef ORDER_DEMAIN_INSTRUMENT
-    printf("ORDER_DEMAIN_STATS   : enabled\n");
-#elif defined(ORDER_DEMAIN_STATS) || defined(ORDER_DEMAIN_TIMING)
-    printf("ORDER_DEMAIN_STATS   : enabled\n");
+    printf("ORDER_TAGRANGE_STRATEGY: %s\n",
+           ORDER_TAGRANGE_INSERT_STRATEGY == 1 ? "plus-one-half" : "thirds");
+    printf("ORDER_TAGRANGE_T        : %d/%d\n", ORDER_TAGRANGE_THRESHOLD_T_NUM,
+           ORDER_TAGRANGE_THRESHOLD_T_DEN);
+#ifdef ORDER_TAGRANGE_INSTRUMENT
+    printf("ORDER_TAGRANGE_STATS   : enabled\n");
+#elif defined(ORDER_TAGRANGE_STATS) || defined(ORDER_TAGRANGE_TIMING)
+    printf("ORDER_TAGRANGE_STATS   : enabled\n");
 #else
-    printf("ORDER_DEMAIN_STATS   : disabled\n");
+    printf("ORDER_TAGRANGE_STATS   : disabled\n");
 #endif
 #else
     printf("ORDER_IMPL           : linked-list\n");

@@ -1,10 +1,10 @@
 CC = clang
 # Optional compile-time overrides, e.g.:
 # make TUNE_FLAGS="-DMAP_INITIAL_CAPACITY=32 -DHCMAP_INITIAL_CAPACITY=2048"
-# order_demain instrumentation/strategy examples:
-# make TUNE_FLAGS="-DORDER_DEMAIN_STATS=1"
-# make TUNE_FLAGS="-DORDER_DEMAIN_STATS=1 -DORDER_DEMAIN_INSERT_STRATEGY=1"
-# make TUNE_FLAGS="-DORDER_DEMAIN_STATS=1 -DORDER_DEMAIN_THRESHOLD_T_NUM=3 -DORDER_DEMAIN_THRESHOLD_T_DEN=2"
+# order_tagrange instrumentation/strategy examples:
+# make TUNE_FLAGS="-DORDER_TAGRANGE_STATS=1"
+# make TUNE_FLAGS="-DORDER_TAGRANGE_STATS=1 -DORDER_TAGRANGE_INSERT_STRATEGY=1"
+# make TUNE_FLAGS="-DORDER_TAGRANGE_STATS=1 -DORDER_TAGRANGE_THRESHOLD_T_NUM=3 -DORDER_TAGRANGE_THRESHOLD_T_DEN=2"
 
 # Order data structure toggle:
 # - tag-range relabeling (default): TUNE_USE_LL=0
@@ -141,7 +141,7 @@ ablation-binaries:
 	cp $(MENGINE_BIN) build/ablations/mengine-order-ll
 	$(MAKE) clean
 	$(MAKE) TUNE_USE_LL=0 TUNE_SUBST_MEMO=1 TUNE_EVAR_FREE_FILL=1
-	cp $(MENGINE_BIN) build/ablations/mengine-order-demain
+	cp $(MENGINE_BIN) build/ablations/mengine-order-tagrange
 	$(MAKE) clean
 	$(MAKE) TUNE_SUBST_MEMO=1 TUNE_EVAR_FREE_FILL=1
 

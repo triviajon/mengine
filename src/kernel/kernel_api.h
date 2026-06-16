@@ -800,7 +800,7 @@ Expression *kernel_normalize_whnf(Expression *expr);
 /*
  * Context ancestry cost depends on the order implementation:
  * - order_linkedlist: O(depth(context)) by walking parent pointers.
- * - order_demain: O(1) query using maintained Euler-tour tags; insertion/deletion
+ * - order_tagrange: O(1) query using maintained Euler-tour tags; insertion/deletion
  *   maintenance is paid when context variables are created/freed.
  */
 

@@ -2,7 +2,7 @@
 
 The generated program creates a deep context and repeatedly checks an early
 variable in the final context. This isolates valid_in_context/context ancestry:
-linked-list order pays for the depth of each query, while order_demain should
+linked-list order pays for the depth of each query, while order_tagrange should
 answer the same ancestry query in constant time after insertion maintenance.
 """
 
