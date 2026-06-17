@@ -369,6 +369,11 @@ Expression *init_lambda_expression_wc(Expression *bound_variable, Expression *bo
 // The context parameter should typically be the longer of context(func) and context(arg).
 Expression *init_app_expression_wc(Expression *func, Expression *arg, Context *context);
 
+// Like init_app_expression_wc but skips type computation; caller provides the already-computed type.
+// Use only when func/arg are unchanged (context-only relocation) so the type is known to be correct.
+Expression *init_app_expression_wc_with_known_type(Expression *func, Expression *arg,
+                                                   Context *context, Expression *type);
+
 // Create a new forall expression with a bound variable and body.
 // Typing rule:
 //    gamma, bound_variable : A |- body : s, s in {Prop, Type_i}

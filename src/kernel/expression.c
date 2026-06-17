@@ -278,7 +278,14 @@ Expression *_construct_app_type(Context *context, Expression *func, Expression *
     if (actual_arg_type == expected_arg_type ||
         (actual_arg_type->tag == PROP_EXPRESSION && expected_arg_type->tag == TYPE_EXPRESSION) ||
         conversion_holds_in_context(context, actual_arg_type, expected_arg_type)) {
-        result = new_subst(context, return_type, variable, arg);  // B[x -> arg]
+        // If variable does not appear free in return_type (i.e. variable is not in
+        // return_type's context chain), the substitution return_type[variable -> arg]
+        // is trivially return_type itself.  Skip the new_subst call in that case.
+        if (context_find(get_expression_context(return_type), variable) == NULL) {
+            result = return_type;
+        } else {
+            result = new_subst(context, return_type, variable, arg);  // B[x -> arg]
+        }
     } else {
         fprintf(stderr, ERROR "Application does not type check.\n" CRESET);
     }
@@ -417,6 +424,21 @@ Expression *init_lambda_expression_wc(Expression *bound_variable, Expression *bo
     SET_LAMBDA_BODY(expr, body);
     propagate_evar_refs(expr, bound_variable);
     propagate_evar_refs(expr, body);
+
+    return expr;
+}
+
+Expression *init_app_expression_wc_with_known_type(Expression *func, Expression *arg,
+                                                   Context *context, Expression *type) {
+    Expression *expr = _init_expression_base(
+        /* tag */ APP_EXPRESSION, /* context */ context,
+        /* ctx_size */ context->ctx_size,
+        /* type */ type);
+
+    SET_APP_FUNC(expr, func);
+    SET_APP_ARG(expr, arg);
+    propagate_evar_refs(expr, func);
+    propagate_evar_refs(expr, arg);
 
     return expr;
 }
