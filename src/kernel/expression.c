@@ -608,7 +608,8 @@ Expression *init_match_expression_wc(Expression *scrutinee, MatchBranch **branch
         Expression *branch_body_type = get_expression_type(branch->body);
         if (match_type == NULL) {
             match_type = branch_body_type;
-        } else if (!conversion_holds_in_context(context, branch_body_type, match_type)) {
+        } else if (!conversion_holds_in_context(get_expression_context(branch->body),
+                                               branch_body_type, match_type)) {
             fprintf(stderr, ERROR "Branch body types do not match.\n" CRESET);
             free(constructor_covered);
             return NULL;
