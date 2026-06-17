@@ -27,10 +27,10 @@
       "root": "~/mengine",
       "label": "order linked list"
     },
-    "order_tagrange": {
-      "path": "~/mengine/build/ablations/mengine-order-tagrange",
+    "order_demain": {
+      "path": "~/mengine/build/ablations/mengine-order-demain",
       "root": "~/mengine",
-      "label": "order tagrange"
+      "label": "order demain"
     }
   }
 }
