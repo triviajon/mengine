@@ -182,13 +182,53 @@ struct OrderBlock {
     int count;
 };
 
-#ifndef ORDER_TAGRANGE_BLOCK_CAPACITY
-#define ORDER_TAGRANGE_BLOCK_CAPACITY 256
+#ifndef ORDER_TAGRANGE_BLOCK_FACTOR
+#define ORDER_TAGRANGE_BLOCK_FACTOR 2
 #endif
 
-#if ORDER_TAGRANGE_BLOCK_CAPACITY < 8
+#ifndef ORDER_TAGRANGE_MIN_BLOCK_CAPACITY
+#define ORDER_TAGRANGE_MIN_BLOCK_CAPACITY 16
+#endif
+
+/* Capped near the word width: local tags live in a 2^64 universe, so a block of
+ * at most ~58 tokens can always find a local gap before it splits, keeping the
+ * bottom level O(1) without spurious gap reindexes. */
+#ifndef ORDER_TAGRANGE_MAX_BLOCK_CAPACITY
+#define ORDER_TAGRANGE_MAX_BLOCK_CAPACITY 56
+#endif
+
+#if ORDER_TAGRANGE_MIN_BLOCK_CAPACITY < 8
+#error "ORDER_TAGRANGE_MIN_BLOCK_CAPACITY must be at least 8"
+#endif
+
+#if ORDER_TAGRANGE_MAX_BLOCK_CAPACITY < ORDER_TAGRANGE_MIN_BLOCK_CAPACITY
+#error "ORDER_TAGRANGE_MAX_BLOCK_CAPACITY must be >= ORDER_TAGRANGE_MIN_BLOCK_CAPACITY"
+#endif
+
+#if defined(ORDER_TAGRANGE_BLOCK_CAPACITY) && ORDER_TAGRANGE_BLOCK_CAPACITY < 8
 #error "ORDER_TAGRANGE_BLOCK_CAPACITY must be at least 8"
 #endif
+
+/* Number of live Euler-tour tokens, used to size
+ * blocks at O(log N). The root is not counted. */
+static uint64_t g_order_tagrange_live_tokens = 0;
+
+static inline int order_tagrange_block_capacity(void) {
+#ifdef ORDER_TAGRANGE_BLOCK_CAPACITY
+    return ORDER_TAGRANGE_BLOCK_CAPACITY;
+#else
+    uint64_t n = g_order_tagrange_live_tokens;
+    int bits = (n == 0) ? 0 : 64 - __builtin_clzll(n);  // floor(log2 n) + 1
+    int capacity = bits * ORDER_TAGRANGE_BLOCK_FACTOR;
+    if (capacity < ORDER_TAGRANGE_MIN_BLOCK_CAPACITY) {
+        capacity = ORDER_TAGRANGE_MIN_BLOCK_CAPACITY;
+    }
+    if (capacity > ORDER_TAGRANGE_MAX_BLOCK_CAPACITY) {
+        capacity = ORDER_TAGRANGE_MAX_BLOCK_CAPACITY;
+    }
+    return capacity;
+#endif
+}
 
 static OrderToken root_out;
 static OrderBlock *g_root_block;
@@ -466,7 +506,8 @@ static void block_link_before(OrderBlock *succ_block, OrderBlock *new_block) {
 }
 
 static void split_block_if_needed(OrderBlock *block, bool preserve_local_tags) {
-    while (block->count > ORDER_TAGRANGE_BLOCK_CAPACITY) {
+    int capacity = order_tagrange_block_capacity();
+    while (block->count > capacity) {
 #ifdef ORDER_TAGRANGE_INSTRUMENT
         uint64_t split_start_ns = order_tagrange_now_ns();
         g_order_tagrange_stats.block_splits++;
@@ -517,6 +558,7 @@ static void insert_token_pair_before(OrderToken *succ_tok, OrderToken *in_tok,
         block->first = in_tok;
     }
     block->count += 2;
+    g_order_tagrange_live_tokens += 2;
     bool assigned_local_tags = false;
     if (succ_index - prev_index > 2) {
 #if ORDER_TAGRANGE_INSERT_STRATEGY == ORDER_TAGRANGE_STRATEGY_PLUS_ONE_HALF
@@ -532,7 +574,7 @@ static void insert_token_pair_before(OrderToken *succ_tok, OrderToken *in_tok,
         assigned_local_tags = true;
     }
 
-    if (block->count > ORDER_TAGRANGE_BLOCK_CAPACITY) {
+    if (block->count > order_tagrange_block_capacity()) {
         split_block_if_needed(block, assigned_local_tags);
     } else if (!assigned_local_tags) {
         in_tok->block = block;
@@ -575,6 +617,9 @@ static void remove_token(OrderToken *token) {
     OrderBlock *block = token->block;
     if (block == NULL) {
         return;
+    }
+    if (g_order_tagrange_live_tokens > 0) {
+        g_order_tagrange_live_tokens--;
     }
     if (token->prev != NULL) {
         token->prev->next = token->next;
