@@ -63,19 +63,23 @@ MEngineRuntime *mengine_runtime_new(MEngineOptions *options) {
 
     rt->tactic_env = tactic_env_new();
 
-    init_core(&rt->ctx);
+    if (!options->bare) {
+        init_core(&rt->ctx);
+    }
 
     rt->relation_registry = engine_relation_registry_create();
 
     mengine_runtime_command_mode(rt);
 
-    /* Load prelude (tactic definitions, relation registration) quietly */
-    bool saved_quiet = rt->options->quiet;
-    rt->options->quiet = true;
-    int prelude_rc = mengine_runtime_exec_file(rt, "prelude/tactics.me");
-    rt->options->quiet = saved_quiet;
-    if (prelude_rc != 0) {
-        fprintf(stderr, "Warning: could not load prelude/tactics.me\n");
+    if (!options->bare) {
+        /* Load prelude (tactic definitions, relation registration) quietly */
+        bool saved_quiet = rt->options->quiet;
+        rt->options->quiet = true;
+        int prelude_rc = mengine_runtime_exec_file(rt, "prelude/tactics.me");
+        rt->options->quiet = saved_quiet;
+        if (prelude_rc != 0) {
+            fprintf(stderr, "Warning: could not load prelude/tactics.me\n");
+        }
     }
 
     engine_rewrite_set_debug(options->debug);

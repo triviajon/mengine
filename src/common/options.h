@@ -21,6 +21,7 @@ typedef struct {
                                // after each update to the mode.
     bool quiet;                // If true, suppresses all printing to stdout
     bool time;                 // If true, print subsystem timing summary on exit
+    bool bare;                 // If true, load nothing at startup (no core, no prelude)
     MEngineExecutionType execution_type;
 } MEngineOptions;
 

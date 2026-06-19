@@ -26,11 +26,12 @@ static struct argp_option options[] = {
     {"print-mode", OPT_PRINT_MODE, 0, 0,
      "Print mode during execution (default: true, requires --debug)", 0},
     {"time", OPT_TIME, 0, 0, "Print subsystem timing summary on exit", 0},
+    {"bare", 'b', 0, 0, "Load nothing at startup (no core definitions, no prelude)", 0},
     {0}};
 struct arguments {
     char *filename;   // [FILENAME]
     char *load_file;  // -l/--load FILE
-    bool quiet, debug, debug__print_tokens, debug__print_ast, debug__print_mode, time;
+    bool quiet, debug, debug__print_tokens, debug__print_ast, debug__print_mode, time, bare;
 };
 static struct argp_child children[] = {{0}};
 
@@ -58,6 +59,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
             break;
         case OPT_TIME:
             arguments->time = true;
+            break;
+        case 'b':
+            arguments->bare = true;
             break;
         case ARGP_KEY_ARG:
             if (state->arg_num > 0) {
@@ -108,6 +112,7 @@ MEngineOptions build_options(struct arguments *args) {
     options.debug__print_mode = args->debug__print_mode;
     options.quiet = args->quiet;
     options.time = args->time;
+    options.bare = args->bare;
     return options;
 }
 
@@ -199,6 +204,7 @@ int main(int argc, char **argv) {
     arguments.debug__print_ast = true;
     arguments.debug__print_mode = true;
     arguments.time = false;
+    arguments.bare = false;
     arguments.filename = NULL;
     arguments.load_file = NULL;
 
