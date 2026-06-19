@@ -257,7 +257,7 @@ static void build_marked_set(Expression *root, Map *subst_map, uint64_t subtree_
     map_for_each(subst_map, mark_target, &a);
 }
 
-static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subst_map) {
+static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subst_map, Map *memo) {
     Expression *replacement = subst_replacement_for(subst_map, t);
     if (replacement) {
         return replacement;
@@ -267,22 +267,34 @@ static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subs
         return t;
     }
 
+#if MENGINE_SUBST_MEMO
+    if (memo) {
+        Expression *cached = (Expression *)map_get(memo, t);
+        if (cached) {
+            return cached;
+        }
+    }
+#endif
+
+    Expression *result;
     switch (t->tag) {
         case APP_EXPRESSION: {
             Expression *func = get_app_func(t);
             Expression *arg = get_app_arg(t);
-            Expression *func2 = _simple_topdown_psubst(ctx, func, subst_map);
-            Expression *arg2 = _simple_topdown_psubst(ctx, arg, subst_map);
+            Expression *func2 = _simple_topdown_psubst(ctx, func, subst_map, memo);
+            Expression *arg2 = _simple_topdown_psubst(ctx, arg, subst_map, memo);
             if (func2 == func && arg2 == arg && valid_in_context(t, ctx)) {
-                return t;
+                result = t;
+            } else {
+                result = init_app_expression_wc(func2, arg2, ctx);
             }
-            return init_app_expression_wc(func2, arg2, ctx);
+            break;
         }
         case LAMBDA_EXPRESSION: {
             Expression *x_bv = get_lambda_bound_variable(t);
             Expression *x_bv_type = get_expression_type(x_bv);
             Expression *body = get_lambda_body(t);
-            Expression *x_bv_type2 = _simple_topdown_psubst(ctx, x_bv_type, subst_map);
+            Expression *x_bv_type2 = _simple_topdown_psubst(ctx, x_bv_type, subst_map, memo);
             Expression *x_bv2;
             if (x_bv_type2 == x_bv_type && ctx == get_expression_context(x_bv)) {
                 x_bv2 = x_bv;
@@ -290,18 +302,22 @@ static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subs
                 x_bv2 = init_var_expression_wc(get_var_name(x_bv), x_bv_type2, ctx);
             }
             map_set(subst_map, x_bv, x_bv2);
-            Expression *body2 = _simple_topdown_psubst((Context *)x_bv2, body, subst_map);
+            Map *lambda_inner_memo = pool_map_alloc();
+            Expression *body2 = _simple_topdown_psubst((Context *)x_bv2, body, subst_map, lambda_inner_memo);
+            pool_map_free(lambda_inner_memo);
             map_del(subst_map, x_bv);
             if (x_bv2 == x_bv && body2 == body) {
-                return t;
+                result = t;
+            } else {
+                result = init_lambda_expression_wc(x_bv2, body2);
             }
-            return init_lambda_expression_wc(x_bv2, body2);
+            break;
         }
         case FORALL_EXPRESSION: {
             Expression *x_bv = get_forall_bound_variable(t);
             Expression *x_bv_type = get_expression_type(x_bv);
             Expression *body = get_forall_body(t);
-            Expression *x_bv_type2 = _simple_topdown_psubst(ctx, x_bv_type, subst_map);
+            Expression *x_bv_type2 = _simple_topdown_psubst(ctx, x_bv_type, subst_map, memo);
             Expression *x_bv2;
             if (x_bv_type2 == x_bv_type && ctx == get_expression_context(x_bv)) {
                 x_bv2 = x_bv;
@@ -309,16 +325,20 @@ static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subs
                 x_bv2 = init_var_expression_wc(get_var_name(x_bv), x_bv_type2, ctx);
             }
             map_set(subst_map, x_bv, x_bv2);
-            Expression *body2 = _simple_topdown_psubst((Context *)x_bv2, body, subst_map);
+            Map *forall_inner_memo = pool_map_alloc();
+            Expression *body2 = _simple_topdown_psubst((Context *)x_bv2, body, subst_map, forall_inner_memo);
+            pool_map_free(forall_inner_memo);
             map_del(subst_map, x_bv);
             if (x_bv2 == x_bv && body2 == body) {
-                return t;
+                result = t;
+            } else {
+                result = init_forall_expression_wc(x_bv2, body2);
             }
-            return init_forall_expression_wc(x_bv2, body2);
+            break;
         }
         case MATCH_EXPRESSION: {
             Expression *scrutinee = get_match_scrutinee(t);
-            Expression *scrutinee2 = _simple_topdown_psubst(ctx, scrutinee, subst_map);
+            Expression *scrutinee2 = _simple_topdown_psubst(ctx, scrutinee, subst_map, memo);
             int branch_count = t->as.match.branch_count;
             MatchBranch **branches2 = malloc(branch_count * sizeof(MatchBranch *));
             if (!branches2) {
@@ -333,7 +353,7 @@ static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subs
                     return NULL;
                 }
 
-                branch2->constructor = _simple_topdown_psubst(ctx, branch->constructor, subst_map);
+                branch2->constructor = _simple_topdown_psubst(ctx, branch->constructor, subst_map, memo);
                 branch2->pattern_var_count = branch->pattern_var_count;
                 branch2->pattern_variables =
                     branch->pattern_var_count > 0
@@ -345,7 +365,7 @@ static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subs
                     Expression *old_var = branch->pattern_variables[j];
                     Expression *old_var_type = get_expression_type(old_var);
                     Expression *new_var_type =
-                        _simple_topdown_psubst(branch_ctx, old_var_type, subst_map);
+                        _simple_topdown_psubst(branch_ctx, old_var_type, subst_map, NULL);
                     Expression *new_var;
                     if (new_var_type == old_var_type &&
                         branch_ctx == get_expression_context(old_var)) {
@@ -360,7 +380,9 @@ static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subs
                     changed = changed || new_var != old_var;
                 }
 
-                branch2->body = _simple_topdown_psubst(branch_ctx, branch->body, subst_map);
+                Map *branch_inner_memo = pool_map_alloc();
+                branch2->body = _simple_topdown_psubst(branch_ctx, branch->body, subst_map, branch_inner_memo);
+                pool_map_free(branch_inner_memo);
                 for (int j = branch->pattern_var_count - 1; j >= 0; j--) {
                     map_del(subst_map, branch->pattern_variables[j]);
                 }
@@ -376,14 +398,16 @@ static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subs
                     free(branches2[i]);
                 }
                 free(branches2);
-                return t;
+                result = t;
+            } else {
+                result = init_match_expression_wc(scrutinee2, branches2, branch_count, ctx);
             }
-            return init_match_expression_wc(scrutinee2, branches2, branch_count, ctx);
+            break;
         }
         case FIX_EXPRESSION: {
             Expression *rec_var = get_fix_recursive_var(t);
             Expression *rec_var_type = get_expression_type(rec_var);
-            Expression *rec_var_type2 = _simple_topdown_psubst(ctx, rec_var_type, subst_map);
+            Expression *rec_var_type2 = _simple_topdown_psubst(ctx, rec_var_type, subst_map, memo);
             Expression *rec_var2;
             if (rec_var_type2 == rec_var_type && ctx == get_expression_context(rec_var)) {
                 rec_var2 = rec_var;
@@ -401,11 +425,12 @@ static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subs
 
             bool changed = rec_var2 != rec_var;
             Expression **args = get_fix_args(t);
+            // Arg types are processed at incrementally-deepening contexts, so pass NULL.
             for (int i = 0; i < arg_count; i++) {
                 Expression *old_arg = args[i];
                 Expression *old_arg_type = get_expression_type(old_arg);
                 Expression *new_arg_type =
-                    _simple_topdown_psubst(body_ctx, old_arg_type, subst_map);
+                    _simple_topdown_psubst(body_ctx, old_arg_type, subst_map, NULL);
                 Expression *new_arg;
                 if (new_arg_type == old_arg_type && body_ctx == get_expression_context(old_arg)) {
                     new_arg = old_arg;
@@ -419,7 +444,9 @@ static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subs
             }
 
             Expression *body = get_fix_body(t);
-            Expression *body2 = _simple_topdown_psubst(body_ctx, body, subst_map);
+            Map *fix_inner_memo = pool_map_alloc();
+            Expression *body2 = _simple_topdown_psubst(body_ctx, body, subst_map, fix_inner_memo);
+            pool_map_free(fix_inner_memo);
             for (int i = arg_count - 1; i >= 0; i--) {
                 map_del(subst_map, args[i]);
             }
@@ -427,14 +454,25 @@ static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subs
 
             if (!changed && body2 == body && valid_in_context(t, ctx)) {
                 free(args2);
-                return t;
+                result = t;
+            } else {
+                result = init_fix_expression_wc(rec_var2, args2, arg_count,
+                                                get_fix_decreasing_arg_index(t), body2);
             }
-            return init_fix_expression_wc(rec_var2, args2, arg_count,
-                                          get_fix_decreasing_arg_index(t), body2);
+            break;
         }
         default:
-            return t;
+            result = t;
+            break;
     }
+
+#if MENGINE_SUBST_MEMO
+    if (memo) {
+        map_set(memo, t, result);
+    }
+#endif
+
+    return result;
 }
 
 static Expression *spine_rebuild(Context *ctx, Expression *node, Map *subst_map, Map *memo,
@@ -700,7 +738,9 @@ __attribute__((unused)) static Expression *_uplink_p_subst(Context *context, Exp
     g_uplink_subst_depth++;
 
     if (g_uplink_subst_depth > 1) {
-        Expression *result = _simple_topdown_psubst(context, t, subst_map);
+        Map *memo = pool_map_alloc();
+        Expression *result = _simple_topdown_psubst(context, t, subst_map, memo);
+        pool_map_free(memo);
         g_uplink_subst_depth--;
         return result;
     }
@@ -757,8 +797,10 @@ Expression *_p_subst(Context *context, Expression *t, DoublyLinkedList *old_expr
         o = o->next;
         n = n->next;
     }
-    Expression *result = _simple_topdown_psubst(context, t, subst_map);
+    Map *memo = pool_map_alloc();
+    Expression *result = _simple_topdown_psubst(context, t, subst_map, memo);
     pool_map_free(subst_map);
+    pool_map_free(memo);
     return result;
 }
 
@@ -766,7 +808,10 @@ Expression *new_p_subst(Context *context, Expression *t, Map *subst_map) {
     if (!subst_map) {
         return t;
     }
-    return _simple_topdown_psubst(context, t, subst_map);
+    Map *memo = pool_map_alloc();
+    Expression *result = _simple_topdown_psubst(context, t, subst_map, memo);
+    pool_map_free(memo);
+    return result;
 }
 
 Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a) {
@@ -775,8 +820,10 @@ Expression *_subst(Context *context, Expression *t, Expression *x, Expression *a
     }
     Map *subst_map = pool_map_alloc();
     map_set(subst_map, x, a);
-    Expression *result = _simple_topdown_psubst(context, t, subst_map);
+    Map *memo = pool_map_alloc();
+    Expression *result = _simple_topdown_psubst(context, t, subst_map, memo);
     pool_map_free(subst_map);
+    pool_map_free(memo);
     return result;
 }
 
@@ -795,8 +842,10 @@ Expression *new_subst(Context *context, Expression *t, Expression *x, Expression
         oc = get_expression_context(oc);
         fc = get_expression_context(fc);
     }
-    Expression *result = _simple_topdown_psubst(final_context, t, subst_map);
+    Map *memo = pool_map_alloc();
+    Expression *result = _simple_topdown_psubst(final_context, t, subst_map, memo);
     pool_map_free(subst_map);
+    pool_map_free(memo);
     return result;
 }
 
