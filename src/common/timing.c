@@ -38,10 +38,12 @@ static long long elapsed_ns(struct timespec *since) {
 }
 
 void timer_push(TimerSection s) {
-    if (!g_enabled) { return;
-}
-    if (g_stack_top >= TIMING_STACK_MAX) { return;
-}
+    if (!g_enabled) {
+        return;
+    }
+    if (g_stack_top >= TIMING_STACK_MAX) {
+        return;
+    }
 
     /* Flush time elapsed so far to the current top section. */
     if (g_stack_top > 0) {
@@ -53,10 +55,12 @@ void timer_push(TimerSection s) {
 }
 
 void timer_pop(void) {
-    if (!g_enabled) { return;
-}
-    if (g_stack_top == 0) { return;
-}
+    if (!g_enabled) {
+        return;
+    }
+    if (g_stack_top == 0) {
+        return;
+    }
 
     g_accum_ns[g_stack[g_stack_top - 1]] += elapsed_ns(&g_start);
     g_stack_top--;
@@ -68,8 +72,9 @@ void timer_pop(void) {
 }
 
 void timer_print_summary(void) {
-    if (!g_enabled) { return;
-}
+    if (!g_enabled) {
+        return;
+    }
 
     long long total_ns = 0;
     for (int i = 0; i < TIMER_COUNT; i++) {
