@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <sys/user.h>
 
 #include "src/common/color.h"
@@ -37,7 +36,7 @@ typedef struct ExprArenaPage {
     Expression nodes[EXPR_PAGE_NODES];
 } ExprArenaPage;
 
-static ExprArenaPage *g_arena_pages   = NULL;
+static ExprArenaPage *g_arena_pages = NULL;
 static ExprArenaPage *g_arena_current = NULL;
 
 // Arena allocator for Uplink nodes (intrusive list nodes).
@@ -50,7 +49,7 @@ typedef struct UplinkPage {
     Uplink nodes[UPLINK_PAGE_NODES];
 } UplinkPage;
 
-static UplinkPage *g_uplink_pages   = NULL;
+static UplinkPage *g_uplink_pages = NULL;
 static UplinkPage *g_uplink_current = NULL;
 
 static Uplink *uplink_arena_alloc(void) {
@@ -59,9 +58,9 @@ static Uplink *uplink_arena_alloc(void) {
         if (!page) {
             return NULL;
         }
-        page->next        = g_uplink_pages;
-        g_uplink_pages    = page;
-        g_uplink_current  = page;
+        page->next = g_uplink_pages;
+        g_uplink_pages = page;
+        g_uplink_current = page;
     }
     return &g_uplink_current->nodes[g_uplink_current->used++];
 }
@@ -72,8 +71,8 @@ static Expression *arena_alloc_expression(void) {
         if (!page) {
             return NULL;
         }
-        page->next      = g_arena_pages;
-        g_arena_pages   = page;
+        page->next = g_arena_pages;
+        g_arena_pages = page;
         g_arena_current = page;
     }
     // Nodes are pre-zeroed by calloc; return next available slot.
@@ -120,10 +119,10 @@ Uplink *add_to_parents(Expression *expression, void *ptr, Relation r) {
     if (!ul) {
         return NULL;
     }
-    ul->ptr      = ptr;
+    ul->ptr = ptr;
     ul->relation = r;
-    ul->prev     = NULL;
-    ul->next     = expression->uplinks;
+    ul->prev = NULL;
+    ul->next = expression->uplinks;
     if (expression->uplinks) {
         expression->uplinks->prev = ul;
     }
@@ -238,7 +237,7 @@ void expression_gc_shutdown(void) {
         free(page);
         page = next;
     }
-    g_arena_pages   = NULL;
+    g_arena_pages = NULL;
     g_arena_current = NULL;
 
     UplinkPage *upage = g_uplink_pages;
@@ -247,7 +246,7 @@ void expression_gc_shutdown(void) {
         free(upage);
         upage = unext;
     }
-    g_uplink_pages   = NULL;
+    g_uplink_pages = NULL;
     g_uplink_current = NULL;
 
     TYPE = NULL;
@@ -609,7 +608,7 @@ Expression *init_match_expression_wc(Expression *scrutinee, MatchBranch **branch
         if (match_type == NULL) {
             match_type = branch_body_type;
         } else if (!conversion_holds_in_context(get_expression_context(branch->body),
-                                               branch_body_type, match_type)) {
+                                                branch_body_type, match_type)) {
             fprintf(stderr, ERROR "Branch body types do not match.\n" CRESET);
             free(constructor_covered);
             return NULL;
@@ -851,9 +850,7 @@ Expression *init_fix_expression_wc(Expression *recursive_var, Expression **args,
     return expr;
 }
 
-Uplink *get_expression_uplinks(Expression *expression) {
-    return expression->uplinks;
-}
+Uplink *get_expression_uplinks(Expression *expression) { return expression->uplinks; }
 
 Expression *get_expression_type(Expression *expression) { return expression->type; }
 

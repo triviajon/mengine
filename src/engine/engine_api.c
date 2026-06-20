@@ -51,7 +51,8 @@ void engine_proof_state_add_goals(ProofState *ps, void *new_goals_list) {
 
 UnificationResult *engine_unify(Context *goal_context, Expression *lemma, Expression *goal) {
     timer_push(TIMER_ENGINE);
-    UnificationResult *r = unify_and_instantiate(goal_context, lemma, kernel_expr_type(lemma), goal);
+    UnificationResult *r =
+        unify_and_instantiate(goal_context, lemma, kernel_expr_type(lemma), goal);
     timer_pop();
     return r;
 }

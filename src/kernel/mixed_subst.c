@@ -212,7 +212,7 @@ static bool subst_map_touches_context(Context *ctx, Map *subst_map) {
     if (!ctx || ctx->tag != VAR_EXPRESSION) {
         return false;
     }
-    struct subst_ctx_check_ud s = { ctx, false };
+    struct subst_ctx_check_ud s = {ctx, false};
     map_for_each(subst_map, check_key_in_context_cb, &s);
     return s.found;
 }
@@ -303,7 +303,8 @@ static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subs
             }
             map_set(subst_map, x_bv, x_bv2);
             Map *lambda_inner_memo = pool_map_alloc();
-            Expression *body2 = _simple_topdown_psubst((Context *)x_bv2, body, subst_map, lambda_inner_memo);
+            Expression *body2 =
+                _simple_topdown_psubst((Context *)x_bv2, body, subst_map, lambda_inner_memo);
             pool_map_free(lambda_inner_memo);
             map_del(subst_map, x_bv);
             if (x_bv2 == x_bv && body2 == body) {
@@ -326,7 +327,8 @@ static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subs
             }
             map_set(subst_map, x_bv, x_bv2);
             Map *forall_inner_memo = pool_map_alloc();
-            Expression *body2 = _simple_topdown_psubst((Context *)x_bv2, body, subst_map, forall_inner_memo);
+            Expression *body2 =
+                _simple_topdown_psubst((Context *)x_bv2, body, subst_map, forall_inner_memo);
             pool_map_free(forall_inner_memo);
             map_del(subst_map, x_bv);
             if (x_bv2 == x_bv && body2 == body) {
@@ -353,7 +355,8 @@ static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subs
                     return NULL;
                 }
 
-                branch2->constructor = _simple_topdown_psubst(ctx, branch->constructor, subst_map, memo);
+                branch2->constructor =
+                    _simple_topdown_psubst(ctx, branch->constructor, subst_map, memo);
                 branch2->pattern_var_count = branch->pattern_var_count;
                 branch2->pattern_variables =
                     branch->pattern_var_count > 0
@@ -381,7 +384,8 @@ static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subs
                 }
 
                 Map *branch_inner_memo = pool_map_alloc();
-                branch2->body = _simple_topdown_psubst(branch_ctx, branch->body, subst_map, branch_inner_memo);
+                branch2->body =
+                    _simple_topdown_psubst(branch_ctx, branch->body, subst_map, branch_inner_memo);
                 pool_map_free(branch_inner_memo);
                 for (int j = branch->pattern_var_count - 1; j >= 0; j--) {
                     map_del(subst_map, branch->pattern_variables[j]);

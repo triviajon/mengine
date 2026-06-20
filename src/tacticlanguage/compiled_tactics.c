@@ -264,7 +264,7 @@ typedef struct {
 } CompiledTacticEntry;
 
 static const CompiledTacticEntry compiled_tactics[] = {
-    { "cancel", 0, try_attach_sep_cancel },
+    {"cancel", 0, try_attach_sep_cancel},
 };
 
 /* If def matches a known compiled tactic by name and arity, attach the compiled

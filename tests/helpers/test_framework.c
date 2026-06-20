@@ -114,8 +114,7 @@ void print_test_summary(void) {
     printf("  Passed: %d\n", global_test_stats.passed_tests);
     printf("  Failed: %d\n", global_test_stats.failed_tests);
     printf("========================================\n");
-    printf("PASSED: %d\nFAILED: %d\n",
-           global_test_stats.passed_tests,
+    printf("PASSED: %d\nFAILED: %d\n", global_test_stats.passed_tests,
            global_test_stats.failed_tests);
 }
 

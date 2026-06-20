@@ -9,34 +9,39 @@ static bool g_enabled = false;
 
 static long long g_accum_ns[TIMER_COUNT];
 static int g_stack[TIMING_STACK_MAX];
-static int g_stack_top = 0;       /* index of the next free slot */
-static struct timespec g_start;   /* when the current top section started */
+static int g_stack_top = 0;     /* index of the next free slot */
+static struct timespec g_start; /* when the current top section started */
 
 static const char *section_name(TimerSection s) {
     switch (s) {
-        case TIMER_PARSE:   return "parse";
-        case TIMER_COMMAND:  return "command";
-        case TIMER_TACTIC:   return "tactic";
-        case TIMER_ENGINE:   return "engine";
-        case TIMER_KERNEL:   return "kernel";
-        default:             return "unknown";
+        case TIMER_PARSE:
+            return "parse";
+        case TIMER_COMMAND:
+            return "command";
+        case TIMER_TACTIC:
+            return "tactic";
+        case TIMER_ENGINE:
+            return "engine";
+        case TIMER_KERNEL:
+            return "kernel";
+        default:
+            return "unknown";
     }
 }
 
-void timer_set_enabled(bool enabled) {
-    g_enabled = enabled;
-}
+void timer_set_enabled(bool enabled) { g_enabled = enabled; }
 
 static long long elapsed_ns(struct timespec *since) {
     struct timespec now;
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &now);
-    return (long long)(now.tv_sec - since->tv_sec) * 1000000000LL +
-           (now.tv_nsec - since->tv_nsec);
+    return (long long)(now.tv_sec - since->tv_sec) * 1000000000LL + (now.tv_nsec - since->tv_nsec);
 }
 
 void timer_push(TimerSection s) {
-    if (!g_enabled) return;
-    if (g_stack_top >= TIMING_STACK_MAX) return;
+    if (!g_enabled) { return;
+}
+    if (g_stack_top >= TIMING_STACK_MAX) { return;
+}
 
     /* Flush time elapsed so far to the current top section. */
     if (g_stack_top > 0) {
@@ -48,8 +53,10 @@ void timer_push(TimerSection s) {
 }
 
 void timer_pop(void) {
-    if (!g_enabled) return;
-    if (g_stack_top == 0) return;
+    if (!g_enabled) { return;
+}
+    if (g_stack_top == 0) { return;
+}
 
     g_accum_ns[g_stack[g_stack_top - 1]] += elapsed_ns(&g_start);
     g_stack_top--;
@@ -61,7 +68,8 @@ void timer_pop(void) {
 }
 
 void timer_print_summary(void) {
-    if (!g_enabled) return;
+    if (!g_enabled) { return;
+}
 
     long long total_ns = 0;
     for (int i = 0; i < TIMER_COUNT; i++) {

@@ -94,7 +94,8 @@ void kernel_match_branch_free(void *branch_) {
 Expression *kernel_match_create(Expression *scrutinee, void **branches, int branch_count,
                                 Context *context) {
     timer_push(TIMER_KERNEL);
-    Expression *r = init_match_expression_wc(scrutinee, (MatchBranch **)branches, branch_count, context);
+    Expression *r =
+        init_match_expression_wc(scrutinee, (MatchBranch **)branches, branch_count, context);
     timer_pop();
     return r;
 }
@@ -103,7 +104,8 @@ Expression *kernel_fix_create(Expression *recursive_var, Expression **args, int 
                               Expression *body, int decreasing_arg_index, Context *context) {
     timer_push(TIMER_KERNEL);
     (void)context;
-    Expression *r = init_fix_expression_wc(recursive_var, args, arg_count, decreasing_arg_index, body);
+    Expression *r =
+        init_fix_expression_wc(recursive_var, args, arg_count, decreasing_arg_index, body);
     timer_pop();
     return r;
 }

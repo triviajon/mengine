@@ -8,13 +8,13 @@
 #include "src/common/color.h"
 #include "src/common/doubly_linked_list.h"
 #include "src/common/options.h"
+#include "src/common/timing.h"
 #include "src/engine/engine_api.h"
 #include "src/kernel/kernel_api.h"
 #include "src/runtime/runtime.h"
 #include "src/tacticlanguage/compiled_tactics.h"
 #include "src/tacticlanguage/tactic_ast.h"
 #include "src/termlanguage/ast_to_expression.h"
-#include "src/common/timing.h"
 
 static int _handle_declaration_command(MEngineRuntime *rt, DeclarationCmd *decl_cmd) {
     Expression *var_type = ast_to_expression(decl_cmd->binder.type, rt->ctx);

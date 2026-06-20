@@ -121,7 +121,8 @@ static void order_tagrange_print_stats(void) {
     fprintf(stderr,
             "[order_tagrange] top_repair_interval_scans=%" PRIu64
             " top_repair_interval_blocks=%" PRIu64 " top_blocks_retagged=%" PRIu64 "\n",
-            g_order_tagrange_stats.repair_interval_scans, g_order_tagrange_stats.repair_interval_tokens,
+            g_order_tagrange_stats.repair_interval_scans,
+            g_order_tagrange_stats.repair_interval_tokens,
             g_order_tagrange_stats.repair_tokens_retagged);
     fprintf(stderr,
             "[order_tagrange] time_ms insert=%.3f fast=%.3f repair_interval=%.3f"

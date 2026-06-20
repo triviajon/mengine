@@ -252,8 +252,7 @@ static LocalDepName *push_local_dep(LocalDepName *head, LocalDepName *node, cons
 
 static bool dep_context_for_name(const char *name, Context *lexical_context,
                                  DoublyLinkedList *letbindings, TacticEnvEntry *tac_env,
-                                 LocalDepName *locals, SourceLetDeps *source_lets,
-                                 DepInfo *deps);
+                                 LocalDepName *locals, SourceLetDeps *source_lets, DepInfo *deps);
 
 static bool ast_collect_deps(AST *ast, Context *lexical_context, DoublyLinkedList *letbindings,
                              TacticEnvEntry *tac_env, LocalDepName *locals,
@@ -261,8 +260,7 @@ static bool ast_collect_deps(AST *ast, Context *lexical_context, DoublyLinkedLis
 
 static bool dep_context_for_name(const char *name, Context *lexical_context,
                                  DoublyLinkedList *letbindings, TacticEnvEntry *tac_env,
-                                 LocalDepName *locals, SourceLetDeps *source_lets,
-                                 DepInfo *deps) {
+                                 LocalDepName *locals, SourceLetDeps *source_lets, DepInfo *deps) {
     Expression *letbinding = letbindings_get(letbindings, name);
     if (letbinding) {
         return dep_add_ambient(deps, kernel_expr_context(letbinding));
@@ -405,8 +403,8 @@ static bool ast_collect_deps(AST *ast, Context *lexical_context, DoublyLinkedLis
             return ok;
         }
         case AST_MATCH: {
-            if (!ast_collect_deps(ast->value.match.scrutinee, lexical_context, letbindings,
-                                  tac_env, locals, source_lets, deps)) {
+            if (!ast_collect_deps(ast->value.match.scrutinee, lexical_context, letbindings, tac_env,
+                                  locals, source_lets, deps)) {
                 return false;
             }
             for (size_t i = 0; i < ast->value.match.branch_count; i++) {
@@ -436,11 +434,10 @@ static bool ast_collect_deps(AST *ast, Context *lexical_context, DoublyLinkedLis
 
             bool ok = true;
             for (size_t i = 0; ok && i < binder_count; i++) {
-                ok = ast_collect_deps(ast->value.fix.binders[i]->type, lexical_context,
-                                      letbindings, tac_env, fix_locals, source_lets, deps);
-                fix_locals =
-                    push_local_dep(fix_locals, &binder_nodes[i], ast->value.fix.binders[i]->name,
-                                   -1);
+                ok = ast_collect_deps(ast->value.fix.binders[i]->type, lexical_context, letbindings,
+                                      tac_env, fix_locals, source_lets, deps);
+                fix_locals = push_local_dep(fix_locals, &binder_nodes[i],
+                                            ast->value.fix.binders[i]->name, -1);
             }
             ok = ok && ast_collect_deps(ast->value.fix.return_type, lexical_context, letbindings,
                                         tac_env, fix_locals, source_lets, deps);
@@ -631,13 +628,12 @@ static Expression *elaborate_binder_telescope(AST *ast, Context *context,
     }
     ok = ok && ast_collect_deps(telescope.body, context, letbindings, tac_env, locals,
                                 /*source_lets*/ NULL, &body_deps);
-    ok = ok && compute_tail_summaries(type_deps, count, &body_deps, tail_ambient_after,
-                                      tail_max_before);
+    ok = ok &&
+         compute_tail_summaries(type_deps, count, &body_deps, tail_ambient_after, tail_max_before);
 
     for (size_t i = 0; ok && i < count; i++) {
         Context *type_ctx = context_for_deps(&type_deps[i], i, vars);
-        Context *body_ctx =
-            context_from_summary(tail_ambient_after[i], tail_max_before[i], vars);
+        Context *body_ctx = context_from_summary(tail_ambient_after[i], tail_max_before[i], vars);
         Context *scope_context = join_required_contexts(type_ctx, body_ctx);
         if (!scope_context) {
             ok = false;
