@@ -85,6 +85,18 @@ class Benchmark(ABC):
     def y_label(self) -> str:
         return "Time (seconds)"
 
+    @property
+    def default_exclude(self) -> list[str]:
+        """Regex patterns (matched against "engine/strategy") hidden by default
+        when plotting. Override per-benchmark; bypassed by `plot --show-all`."""
+        return []
+
+    @property
+    def default_no_ablations(self) -> bool:
+        """If True, plot only the baseline MEngine variant by default (drop
+        ablation variants). Override per-benchmark; bypassed by `plot --show-all`."""
+        return False
+
     @abstractmethod
     def generate(self, strategy: Strategy, params: dict[str, int], workdir: str) -> Optional[str]:
         """

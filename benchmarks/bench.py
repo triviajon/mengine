@@ -156,6 +156,8 @@ def make_run_config(cfg, args):
         variants[name] = {"path": parts[0]}
         if len(parts) == 2:
             variants[name]["root"] = parts[1]
+    if getattr(args, "no_ablations", False) and "baseline" in variants:
+        variants = {"baseline": variants["baseline"]}
     return RunConfig(
         mengine_path=cfg["mengine_path"],
         coq_path=cfg["coq_path"],
@@ -387,7 +389,19 @@ def cmd_plot(args):
             name, val = parse_fixed(fp)
             fixed_params[name] = val
 
+    apply_defaults = not getattr(args, "show_all", False)
+
     for name, bench in benchmarks.items():
+        # Per-benchmark plot defaults (bypassed by --show-all): hide selected
+        # strategies and drop MEngine ablation variants down to baseline.
+        exclude = list(args.exclude or [])
+        strategies = run_cfg.expand_strategies(bench.strategies)
+        if apply_defaults:
+            exclude += list(getattr(bench, "default_exclude", []))
+            if getattr(bench, "default_no_ablations", False) and not args.no_ablations:
+                strategies = [s for s in strategies
+                              if not (s.engine == "mengine" and s.variant
+                                      and s.variant != "baseline")]
         kwargs = {
             "results_dir": results_dir,
             "output_dir": plots_dir,
@@ -397,9 +411,9 @@ def cmd_plot(args):
             "log_x": args.log_x,
             "title": args.title,
             "show_failures": args.show_failures,
-            "exclude": args.exclude or [],
+            "exclude": exclude,
             "smooth": args.smooth,
-            "strategies_override": run_cfg.expand_strategies(bench.strategies),
+            "strategies_override": strategies,
         }
         
         if args.xlim:
@@ -598,6 +612,7 @@ def main():
     p_run.add_argument("--coq-timeout-multiplier", type=float, help="Rocq timeout multiplier")
     p_run.add_argument("--force", action="store_true", help="Re-run existing results")
     p_run.add_argument("--no-variants", action="store_true", help="Skip ablation variants, run only the base mengine binary")
+    p_run.add_argument("--no-ablations", action="store_true", help="Keep only the baseline MEngine variant (drop ablation variants)")
 
     # test
     p_test = subparsers.add_parser("test", help="Smoke-test each engine/strategy once")
@@ -607,6 +622,7 @@ def main():
                         help="Add/override an MEngine binary variant: NAME=PATH[:ROOT]")
     p_test.add_argument("--timeout", type=float, help="Timeout in seconds")
     p_test.add_argument("--no-variants", action="store_true", help="Skip ablation variants, run only the base mengine binary")
+    p_test.add_argument("--no-ablations", action="store_true", help="Keep only the baseline MEngine variant (drop ablation variants)")
 
     # plot
     p_plot = subparsers.add_parser("plot", help="Generate plots")
@@ -627,6 +643,8 @@ def main():
     p_plot.add_argument("--smooth", type=int, default=1, metavar="N",
                         help="Moving window average size for smoothing (default: 1 = no smoothing)")
     p_plot.add_argument("--no-variants", action="store_true", help="Skip ablation variants, plot only the base mengine binary")
+    p_plot.add_argument("--no-ablations", action="store_true", help="Plot only the baseline MEngine variant (drop ablation variants)")
+    p_plot.add_argument("--show-all", action="store_true", help="Ignore per-benchmark plot defaults (show hidden strategies and all ablation variants)")
 
     args = parser.parse_args()
 
