@@ -51,6 +51,23 @@ static void test_inductive_nat(void) {
            "Check nat_ind.\n");
 }
 
+/* The generated induction principle must carry an induction hypothesis for each
+ * recursive argument (not just case analysis).  This proof only type-checks if
+ * `case_S` is `forall n, P n -> P (S n)`: `step` would not match a hypothesis-
+ * free `forall n, P (S n)`. */
+static void test_induction_principle_has_ih(void) {
+    run_ok("induction principle carries the induction hypothesis",
+           "Inductive nat : Type := | O : nat | S : forall (_: nat), nat.\n"
+           "Axiom P : forall (_: nat), Prop.\n"
+           "Axiom base : P O.\n"
+           "Axiom step : forall (n : nat), forall (_: P n), P (S n).\n"
+           "Theorem allP : forall (n : nat), P n.\n"
+           "intro n.\n"
+           "apply (nat_ind P).\n"
+           "exact base.\n"
+           "exact step.\n");
+}
+
 static void test_inductive_match_pred(void) {
     run_ok("match expression: predecessor",
            "Inductive nat : Type := | O : nat | S : forall (_: nat), nat.\n"
@@ -390,6 +407,7 @@ void run_integration_tests(void) {
     test_axiom_and_check();
     test_definition();
     test_inductive_nat();
+    test_induction_principle_has_ih();
     test_inductive_match_pred();
     test_inductive_bool();
     test_fixpoint_add();
