@@ -260,10 +260,10 @@ static int _handle_print_command(MEngineRuntime *rt, PrintCmd *print_cmd) {
     return 0;
 }
 
-static Expression *_build_constructor_case_type(Expression *ctor_expr, Expression *ctor_type,
-                                                Expression *motive_var, Expression *ind_var,
-                                                Expression **param_vars, size_t param_count,
-                                                size_t index_count, Context *elim_ctx);
+static Expression *_build_constructor_case_type(Expression *ctor_expr, Expression *motive_var,
+                                                Expression *ind_var, Expression **param_vars,
+                                                size_t param_count, size_t index_count,
+                                                Context *elim_ctx);
 
 static Expression *_build_motive_type(Expression *ind_var, Expression **param_vars,
                                       size_t param_count, Context *ctx,
@@ -341,10 +341,23 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd, Expres
                                                    Context **contexts) {
     Context *elim_ctx = contexts[param_count];
 
+    // The inductive's own parameter variables (param_vars) were built in a context
+    // branch created *before* ind_var, so they are not in scope where the principle
+    // lives. Re-bind one shared set of parameters here, after ind_var; the motive,
+    // every constructor case, and the conclusion all refer to these. Parameter
+    // types are taken verbatim, which assumes a parameter's type does not mention
+    // earlier parameters (the usual case, e.g. `(A : Type)`).
+    Expression **params = malloc(param_count * sizeof(Expression *));
+    for (size_t i = 0; i < param_count; i++) {
+        params[i] = kernel_var_create(kernel_var_name(param_vars[i]),
+                                      kernel_expr_type(param_vars[i]), elim_ctx);
+        elim_ctx = params[i];
+    }
+
     Expression **index_vars = NULL;
     size_t index_count = 0;
     Expression *motive_type =
-        _build_motive_type(ind_var, param_vars, param_count, elim_ctx, &index_vars, &index_count);
+        _build_motive_type(ind_var, params, param_count, elim_ctx, &index_vars, &index_count);
     Expression *motive_var = kernel_var_create("P", motive_type, elim_ctx);
     elim_ctx = motive_var;
 
@@ -358,18 +371,19 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd, Expres
         Expression *ctor_expr = kernel_context_lookup(elim_ctx, ctor->name);
         if (!ctor_expr) {
             fprintf(stderr, ERROR "Constructor %s not found in context\n" CRESET, ctor->name);
+            free(params);
             free(case_vars);
             free(case_contexts);
             return NULL;
         }
 
-        Expression *ctor_type = kernel_expr_type(ctor_expr);
         Expression *case_type =
-            _build_constructor_case_type(ctor_expr, ctor_type, motive_var, ind_var, param_vars,
-                                         param_count, index_count, case_contexts[i]);
+            _build_constructor_case_type(ctor_expr, motive_var, ind_var, params, param_count,
+                                         index_count, case_contexts[i]);
 
         if (!case_type) {
             fprintf(stderr, ERROR "Failed to build case type for %s\n" CRESET, ctor->name);
+            free(params);
             free(case_vars);
             free(case_contexts);
             return NULL;
@@ -380,6 +394,7 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd, Expres
         case_vars[i] = kernel_var_create(case_name, case_type, case_contexts[i]);
         if (!case_vars[i]) {
             fprintf(stderr, ERROR "Failed to create case variable for %s\n" CRESET, ctor->name);
+            free(params);
             free(case_vars);
             free(case_contexts);
             return NULL;
@@ -407,13 +422,14 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd, Expres
     // Build (ind params concl_index_0 ... concl_index_n)
     Expression *ind_applied = ind_var;
     for (size_t i = 0; i < param_count; i++) {
-        ind_applied = kernel_app_create(ind_applied, param_vars[i], final_ctx);
+        ind_applied = kernel_app_create(ind_applied, params[i], final_ctx);
         if (!ind_applied) {
             fprintf(stderr,
                     ERROR
                     "Failed to apply parameter %zu to inductive in "
                     "conclusion\n" CRESET,
                     i);
+            free(params);
             free(case_vars);
             free(case_contexts);
             if (index_vars) {
@@ -441,6 +457,7 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd, Expres
     target_applied = kernel_app_create(target_applied, target_var, target_ctx);
     if (!target_applied) {
         fprintf(stderr, ERROR "Failed to apply motive to target\n" CRESET);
+        free(params);
         free(case_vars);
         free(case_contexts);
         if (index_vars) {
@@ -468,6 +485,7 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd, Expres
         result = kernel_forall_create(case_vars[i - 1], result);
         if (!result) {
             fprintf(stderr, ERROR "Failed to wrap with constructor case %zu\n" CRESET, i - 1);
+            free(params);
             free(case_vars);
             free(case_contexts);
             return NULL;
@@ -477,21 +495,24 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd, Expres
     result = kernel_forall_create(motive_var, result);
     if (!result) {
         fprintf(stderr, ERROR "Failed to wrap with motive P\n" CRESET);
+        free(params);
         free(case_vars);
         free(case_contexts);
         return NULL;
     }
 
     for (size_t i = param_count; i > 0; i--) {
-        result = kernel_forall_create(param_vars[i - 1], result);
+        result = kernel_forall_create(params[i - 1], result);
         if (!result) {
             fprintf(stderr, ERROR "Failed to wrap with parameter %zu\n" CRESET, i - 1);
+            free(params);
             free(case_vars);
             free(case_contexts);
             return NULL;
         }
     }
 
+    free(params);
     free(case_vars);
     free(case_contexts);
     if (index_vars) {
@@ -537,140 +558,110 @@ static Expression *_build_recursive_arg_hypothesis(Expression *arg_var, Expressi
     return kernel_app_create(hypothesis, arg_var, ctx);
 }
 
-static Expression *_build_constructor_case_type(Expression *ctor_expr, Expression *ctor_type,
-                                                Expression *motive_var, Expression *ind_var,
-                                                Expression **param_vars, size_t param_count,
-                                                size_t index_count, Context *elim_ctx) {
-    Expression *core_type = ctor_type;
-    for (size_t i = 0; i < param_count; i++) {
-        if (kernel_forall_var(core_type) != NULL) {
-            core_type = kernel_forall_body(core_type);
-        }
-    }
-
-    DoublyLinkedList *arg_types = dll_create();
-    Expression *current = core_type;
-    while (kernel_forall_var(current) != NULL) {
-        Expression *arg_type = kernel_expr_type(kernel_forall_var(current));
-        dll_insert_at_tail(arg_types, dll_new_node(arg_type));
-        current = kernel_forall_body(current);
-    }
-
+static Expression *_build_constructor_case_type(Expression *ctor_expr, Expression *motive_var,
+                                                Expression *ind_var, Expression **param_vars,
+                                                size_t param_count, size_t index_count,
+                                                Context *elim_ctx) {
+    // Instantiate the constructor at the principle's parameters by applying it,
+    // rather than stripping parameter binders from its type textually. The kernel
+    // substitutes the parameters into the resulting argument and return types, so
+    // everything below is expressed in terms of param_vars and valid in elim_ctx.
     Expression *ctor_app = ctor_expr;
     for (size_t i = 0; i < param_count; i++) {
         ctor_app = kernel_app_create(ctor_app, param_vars[i], elim_ctx);
         if (!ctor_app) {
             fprintf(stderr, ERROR "Failed to apply parameter %zu to constructor\n" CRESET, i);
-            dll_destroy(arg_types);
             return NULL;
         }
     }
 
-    size_t arg_count = dll_len(arg_types);
-    Expression **arg_vars = malloc(arg_count * sizeof(Expression *));
+    // Walk the parameter-instantiated constructor telescope, creating a fresh
+    // variable for each argument. After applying each fresh argument we recompute
+    // the remaining type from the partial application, so the kernel rebases the
+    // following argument and return types onto our fresh variables — keeping them
+    // valid here even when a type mentions an earlier argument or a parameter
+    // (e.g. cons's tail of type `list A`).
+    DoublyLinkedList *args = dll_create();
+    Expression *current = kernel_expr_type(ctor_app);
     Context *case_ctx = elim_ctx;
-
-    for (size_t i = 0; i < arg_count; i++) {
-        Expression *arg_type = (Expression *)dll_at(arg_types, i)->data;
+    size_t arg_i = 0;
+    while (kernel_forall_var(current) != NULL) {
+        Expression *arg_type = kernel_expr_type(kernel_forall_var(current));
         char arg_name[32];
-        sprintf(arg_name, "arg%zu", i);
-
-        arg_vars[i] = kernel_var_create(arg_name, arg_type, case_ctx);
-        case_ctx = arg_vars[i];
-        ctor_app = kernel_app_create(ctor_app, arg_vars[i], case_ctx);
+        sprintf(arg_name, "arg%zu", arg_i++);
+        Expression *arg_var = kernel_var_create(arg_name, arg_type, case_ctx);
+        dll_insert_at_tail(args, dll_new_node(arg_var));
+        case_ctx = arg_var;
+        ctor_app = kernel_app_create(ctor_app, arg_var, case_ctx);
         if (!ctor_app) {
-            fprintf(stderr, ERROR "Failed to apply constructor arg %zu\n" CRESET, i);
-            dll_destroy(arg_types);
-            free(arg_vars);
+            fprintf(stderr, ERROR "Failed to apply constructor argument\n" CRESET);
+            dll_destroy(args);
             return NULL;
         }
+        current = kernel_expr_type(ctor_app);
     }
+    size_t arg_count = dll_len(args);
 
-    // Extract indices from constructor return type
-    // current holds the return type after stripping foralls
+    // `current` now holds the return type `I params indices`; pull the indices out
+    // of its application spine (the arguments after the parameters).
     Expression **ctor_indices = NULL;
     if (index_count > 0) {
         ctor_indices = malloc(index_count * sizeof(Expression *));
-
-        // Parse the return type as a spine of applications
-        // For eq_refl: (((eq A) x) x) - we want to extract the indices (the
-        // trailing applications)
         DoublyLinkedList *spine = dll_create();
         Expression *head = current;
         while (kernel_app_func(head) != NULL) {
             dll_insert_at_head(spine, dll_new_node(kernel_app_arg(head)));
             head = kernel_app_func(head);
         }
-
-        // The spine now has all the arguments. Skip param_count, take
-        // index_count
-        size_t total_args = dll_len(spine);
-        if (total_args < param_count + index_count) {
+        if (dll_len(spine) < param_count + index_count) {
             fprintf(stderr, ERROR "Constructor return type has too few arguments\n" CRESET);
             dll_destroy(spine);
-            dll_destroy(arg_types);
-            free(arg_vars);
+            dll_destroy(args);
             free(ctor_indices);
             return NULL;
         }
-
-        // Extract the indices (skip parameters)
         for (size_t i = 0; i < index_count; i++) {
             ctor_indices[i] = (Expression *)dll_at(spine, param_count + i)->data;
         }
-
         dll_destroy(spine);
     }
 
-    // Apply motive to indices first, then to constructor application
+    // Conclusion: `P indices (c params args)`, valid in case_ctx (the innermost
+    // argument, or elim_ctx for a constructor with no arguments).
     Expression *case_result = motive_var;
     for (size_t i = 0; i < index_count; i++) {
         case_result = kernel_app_create(case_result, ctor_indices[i], case_ctx);
-        if (!case_result) {
-            fprintf(stderr, ERROR "Failed to apply motive to index %zu\n" CRESET, i);
-            dll_destroy(arg_types);
-            free(arg_vars);
-            if (ctor_indices) {
-                free(ctor_indices);
-            }
-            return NULL;
-        }
     }
-
     case_result = kernel_app_create(case_result, ctor_app, case_ctx);
-    if (!case_result) {
-        fprintf(stderr, ERROR "Failed to apply motive to constructor application\n" CRESET);
-        dll_destroy(arg_types);
-        free(arg_vars);
-        if (ctor_indices) {
-            free(ctor_indices);
-        }
-        return NULL;
-    }
-
     if (ctor_indices) {
         free(ctor_indices);
     }
+    if (!case_result) {
+        fprintf(stderr, ERROR "Failed to apply motive to constructor application\n" CRESET);
+        dll_destroy(args);
+        return NULL;
+    }
+
     Expression *case_type = case_result;
 
     // Wrap the conclusion with an induction hypothesis per recursive argument,
     // giving `IH_0 -> .. -> IH_k -> P (c args)`. These sit inside the argument
     // binders below because each hypothesis mentions its argument.
     for (size_t i = arg_count; i > 0; i--) {
-        Expression *arg_type = (Expression *)dll_at(arg_types, i - 1)->data;
+        Expression *arg_var = (Expression *)dll_at(args, i - 1)->data;
         Expression *hypothesis = _build_recursive_arg_hypothesis(
-            arg_vars[i - 1], arg_type, ind_var, motive_var, param_count, index_count, case_ctx);
+            arg_var, kernel_expr_type(arg_var), ind_var, motive_var, param_count, index_count,
+            case_ctx);
         if (hypothesis) {
             case_type = kernel_arrow_create(hypothesis, case_type, case_ctx);
         }
     }
 
     for (size_t i = arg_count; i > 0; i--) {
-        case_type = kernel_forall_create(arg_vars[i - 1], case_type);
+        case_type = kernel_forall_create((Expression *)dll_at(args, i - 1)->data, case_type);
     }
 
-    dll_destroy(arg_types);
-    free(arg_vars);
+    dll_destroy(args);
     return case_type;
 }
 
@@ -842,16 +833,8 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
     char *ind_principle_name = malloc(strlen(name) + 5);
     sprintf(ind_principle_name, "%s_ind", name);
 
-    /* The induction principle builder uses the original param_vars, but
-     * constructor types now use fresh parameter copies.  The resulting case
-     * types would fail the application type check (fresh_param != original_param).
-     * Skip the induction principle for parametric inductives; it is not needed
-     * by the tactics that use parametric types (e.g., sep_list in cancel). */
-    Expression *ind_principle_type = NULL;
-    if (param_count == 0) {
-        ind_principle_type =
-            _build_induction_principle_type(ind_cmd, ind_var, param_vars, param_count, contexts);
-    }
+    Expression *ind_principle_type =
+        _build_induction_principle_type(ind_cmd, ind_var, param_vars, param_count, contexts);
 
     Expression *ind_principle_var = NULL;
     if (ind_principle_type) {

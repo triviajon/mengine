@@ -1,0 +1,19 @@
+(* SEGFAULT (exit 139). Pre-existing kernel crash, not fixed on this branch.
+
+   Type-checking a fully explicit eliminator proof term crashes in the step case,
+   where `add (S n) O` must convert to `S (add n O)` under the `n` binder. The
+   bare conversion on its own fails *cleanly* (see note_clean_conversion_failure.me);
+   only wrapping it in the eliminator application crashes.
+
+   Run: ./build/mengine -q bugs/segfault_exact_eliminator_fixpoint.me *)
+
+Inductive nat : Type := | O : nat | S : forall (_: nat), nat.
+
+Fixpoint add (n : nat) (m : nat) {struct n} : nat :=
+  match n with | O => m | S p => S (add p m) end.
+
+Axiom f_equal_S : forall (a : nat), forall (b : nat), forall (_: eq nat a b),
+  eq nat (S a) (S b).
+
+Check (nat_ind (fun (k : nat) => eq nat (add k O) k) (eq_refl nat O)
+        (fun (n : nat) => fun (ih : eq nat (add n O) n) => f_equal_S (add n O) n ih)).

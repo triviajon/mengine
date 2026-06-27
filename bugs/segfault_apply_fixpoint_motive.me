@@ -1,0 +1,16 @@
+(* SEGFAULT (exit 139). Pre-existing kernel crash, not fixed on this branch.
+
+   Applying an induction principle whose motive mentions a Fixpoint crashes the
+   `apply` tactic while it unifies the principle with the goal and builds the
+   subgoals. This is the natural route an induction proof of `add n O = n` takes.
+
+   Run: ./build/mengine -q bugs/segfault_apply_fixpoint_motive.me *)
+
+Inductive nat : Type := | O : nat | S : forall (_: nat), nat.
+
+Fixpoint add (n : nat) (m : nat) {struct n} : nat :=
+  match n with | O => m | S p => S (add p m) end.
+
+Theorem add_O_r : forall (n : nat), eq nat (add n O) n.
+intro n.
+apply (nat_ind (fun (k : nat) => eq nat (add k O) k)).
