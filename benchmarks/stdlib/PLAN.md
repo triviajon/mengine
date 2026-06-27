@@ -26,8 +26,9 @@ A pure text-level translator of *arbitrary* stdlib files is **not** feasible. Tw
   reflexivity/split/left/right/exists/assumption`) plus a thin prelude. There is still no native
   `induction`/`destruct` *tactic*, but the engine now **generates the induction principle**
   `<T>_ind` (with IH) for every inductive, so `induction`/`destruct` can be *emulated* by applying
-  it (sec. 5a). Still missing: `constructor`, `simpl`, `lia`, `ring`, real `auto`, `symmetry`,
-  `trivial`, `inversion`. Most real stdlib proofs use several of these on line one.
+  it (sec. 5a). `constructor` is emulated in the compat prelude (sec. 6a). Still missing: `simpl`,
+  `lia`, `ring`, real `auto`, `symmetry`, `trivial`, `inversion`. Most real stdlib proofs use
+  several of these on line one.
 
 Structural gaps too: no `Require`/`Import`/`Module`/`Section`/`Notation`/`Record`/`Class`/`Scope`,
 no implicit args `{A}`, single-binder `forall (x:T),`, mandatory `{struct n}` on `Fixpoint`, no
@@ -118,9 +119,11 @@ on `.` respecting `(* *)` comments and strings), not a full Coq parser. Ordered 
   left/right/exists/assumption`).
 - Map known aliases to compat-prelude tactics: `simpl`->`cbv`, `symmetry`/`trivial`/`now`/`easy`
   -> compat equivalents (sec. 6).
+- `constructor` / `constructor n` -> pass through to the compat-prelude `constructor` tactic
+  (sec. 6a), but only when the goal head is one the prelude enumerates; otherwise flag.
 - `induction x` / `destruct x` -> emit the generated-principle application (sec. 5a), but only when
   it is safe (motive free of fixpoints; step case needs no symbolic reduction). Otherwise flag.
-- Remaining unsupported tactics (`lia/ring/inversion/auto/constructor/...`) -> **hard stop**:
+- Remaining unsupported tactics (`lia/ring/inversion/auto/...`) -> **hard stop**:
   unit marked `manual`, excluded from Tier A; `--report` lists the offending tactic.
 
 Principle: **flag, never guess.** A wrong translation that happens to compile would corrupt the
@@ -194,6 +197,45 @@ Hand-written MEngine, loaded ahead of every translated unit. Contents:
     complex eliminations stay Tier 2 / Tier B.
 - Each emulated tactic carries a comment stating exactly how it differs from Rocq's, so divergence
   is auditable and lives in one reviewable file.
+
+## 6a. `constructor` (compat prelude, no engine change)
+
+`constructor` is **not** a static-translation problem and does not need a new engine primitive. It
+is the generalization of `split`/`left`/`right`, which the existing prelude already implements as
+runtime tactics via `match Goal with … => eapply <ctor>`. The tactic language supplies the three
+primitives needed: `match Goal with` (read the goal head), `first [ … | … ]` (try constructors in
+declaration order), and `eapply` (which leaves a multi-arg constructor's arguments as subgoals/evars,
+exactly as `split` leaves two subgoals).
+
+Because the compat prelude already *defines* every inductive the corpus uses, we enumerate their
+constructors once in a single dispatch tactic, e.g.
+
+```
+Tactic constructor := match Goal with
+| [ |- True ]          => exact I
+| [ |- ((and ?A) ?B) ] => eapply ((conj A) B)
+| [ |- ((or  ?A) ?B) ] => first [ eapply (or_introl A B) | eapply (or_intror A B) ]
+| [ |- ((le  ?n) ?m) ] => first [ eapply (le_n n)        | eapply (le_S n ...) ]
+| ...                              (* one arm per relational predicate in the corpus *)
+end.
+```
+
+`first` over the constructors reproduces Rocq's "try each in declaration order" semantics, and each
+arm builds a full proof term, so this stays sound under **flag, never guess** — the arms are
+hand-verified, exactly like `split`. `constructor n` translates directly to `eapply C_n`, no
+dispatch needed.
+
+This is high leverage: the lemmas already reachable today (sec. 5a: relational/predicate lemmas
+such as `le`, ordering, custom inductive predicates) are precisely the ones whose proofs lead with
+`constructor`, so adding it promotes a chunk of current hard-stops into Tier A at near-zero cost. It
+is orthogonal to the two Tier-2 engine caveats (those gate computational induction, not `constructor`).
+
+Limitations, kept honest: witness-guessing (`constructor` on `ex`, i.e. `eexists`) stays out, the
+same boundary as today; and a goal whose head the prelude does not enumerate is still flagged — but
+the supported set is now "every inductive in the compat prelude," not "none." A fully generic
+`constructor` over *any* inductive would want a small engine primitive that reads the goal's
+inductive and tries each stored constructor (the engine already keeps that list — it generates
+`<T>_ind` from it); that is the "do it once properly" path, deferred and out of scope here.
 
 ## 7. Faithfulness validation (integrity)
 
