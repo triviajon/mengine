@@ -4,8 +4,13 @@ Status: plan (not yet implemented). Scope decisions locked with the user:
 - **Granularity:** per-file first; per-proof is a later optional phase.
 - **Corpus scope:** Tier A only — files the translator handles with **zero manual edits**.
   Tier B (manual/aligned) and Tier C (out of scope) are documented but not built initially.
-- **Constraint:** do **not** edit the MEngine implementation (`src/`, `Makefile`). All work is
-  new files under `benchmarks/stdlib/`.
+- **Engine baseline:** this branch is rebased on `induction-principle-with-ih`, so the benchmark
+  targets a MEngine that **generates proper induction principles** — `<T>_ind` with induction
+  hypotheses, for both parametric and non-parametric inductives. The original "do not touch the
+  engine" rule has been relaxed: the user is willing to make targeted kernel fixes that unblock the
+  benchmark. Remaining engine gaps are tracked as **Tier 2** (sec. 5a); taking them on
+  substantially widens the corpus. The benchmark *machinery itself* still lives entirely under
+  `benchmarks/stdlib/`.
 
 ---
 
@@ -18,9 +23,11 @@ A pure text-level translator of *arbitrary* stdlib files is **not** feasible. Tw
   `forall (_:A), B`, `eq nat x y`, prefix application, and `S (S O)` constructors. Every one must
   be desugared.
 - **Tactics.** MEngine has ~14 primitives (`intro/intros/apply/eapply/exact/rewrite/cbv/
-  reflexivity/split/left/right/exists/assumption`) plus a thin prelude. It has **no** `induction`,
-  `destruct`, `constructor`, `simpl`, `lia`, `ring`, real `auto`, `symmetry`, `trivial`,
-  `inversion`. Most real stdlib proofs use these on line one.
+  reflexivity/split/left/right/exists/assumption`) plus a thin prelude. There is still no native
+  `induction`/`destruct` *tactic*, but the engine now **generates the induction principle**
+  `<T>_ind` (with IH) for every inductive, so `induction`/`destruct` can be *emulated* by applying
+  it (sec. 5a). Still missing: `constructor`, `simpl`, `lia`, `ring`, real `auto`, `symmetry`,
+  `trivial`, `inversion`. Most real stdlib proofs use several of these on line one.
 
 Structural gaps too: no `Require`/`Import`/`Module`/`Section`/`Notation`/`Record`/`Class`/`Scope`,
 no implicit args `{A}`, single-binder `forall (x:T),`, mandatory `{struct n}` on `Fixpoint`, no
@@ -34,8 +41,11 @@ Grounding facts verified in-tree:
 
 **Consequence:** viable benchmark over a *curated Tier-A subset* — the computational/equational
 corners of the stdlib (Bool, basic Arith provable by `rewrite`/`reflexivity`/`cbv`, structural
-list lemmas) — reached through a layered pipeline (mechanical translator + hand-written compat
-prelude). `bench`/runner only builds Rocq files that successfully translate.
+list lemmas) plus **structural induction proofs** now reachable through the generated `<T>_ind`
+(sec. 5a) — reached through a layered pipeline (mechanical translator + hand-written compat
+prelude). Two engine gaps (sec. 5a) still block *computational* induction (the bulk of stdlib
+arithmetic); closing them is the main lever for growing the corpus. `bench`/runner only builds Rocq
+files that successfully translate.
 
 ## 2. Granularity
 
@@ -108,11 +118,64 @@ on `.` respecting `(* *)` comments and strings), not a full Coq parser. Ordered 
   left/right/exists/assumption`).
 - Map known aliases to compat-prelude tactics: `simpl`->`cbv`, `symmetry`/`trivial`/`now`/`easy`
   -> compat equivalents (sec. 6).
-- Any unsupported tactic (`induction/destruct/lia/ring/inversion/auto/...`) -> **hard stop**:
+- `induction x` / `destruct x` -> emit the generated-principle application (sec. 5a), but only when
+  it is safe (motive free of fixpoints; step case needs no symbolic reduction). Otherwise flag.
+- Remaining unsupported tactics (`lia/ring/inversion/auto/constructor/...`) -> **hard stop**:
   unit marked `manual`, excluded from Tier A; `--report` lists the offending tactic.
 
 Principle: **flag, never guess.** A wrong translation that happens to compile would corrupt the
 benchmark, so the translator refuses rather than emit an unjustified rewrite.
+
+## 5a. Induction (generated `<T>_ind`)
+
+The engine now generates, for every inductive `T`, the principle `T_ind` carrying an induction
+hypothesis for each recursive argument — e.g.
+
+```
+nat_ind  : forall (P : nat -> Prop), P O -> (forall n, P n -> P (S n)) -> forall n, P n
+list_ind : forall (A : Type) (P : list A -> Prop),
+             P (nil A) -> (forall a l, P l -> P (cons A a l)) -> forall l, P l
+```
+
+**Translating `induction x`.** Emit an explicit application of the principle:
+
+```
+intro x.
+apply (T_ind (fun (x : T) => <goal body>)).
+<case_0> ... <case_n>        (* one focused subgoal per constructor, in declaration order *)
+```
+
+Verified against the engine:
+- The `intro x` **then** `apply (T_ind motive)` order matters. MEngine's first-order `apply` can't
+  match the principle's conclusion under the goal's outer `forall`, so `x` is introduced first and
+  the conclusion then unifies at the concrete `x`. (`apply` of the bare principle, or with a motive
+  but no prior `intro`, fails with `fill: hole fill failed`.)
+- The motive `fun (x:T) => <goal body>` is computed textually. The clean case is `induction x` on a
+  **leading** universally-quantified variable (goal `forall (x:T), Body`, so the body is `Body`).
+  `induction` after intros, on a non-leading variable, or with hypotheses depending on `x` (which
+  Rocq auto-reverts) is Tier B / out of scope.
+- Each constructor yields one focused subgoal in declaration order; the step case exposes the
+  recursive arguments and the IH. The translator introduces them and names the IH as Rocq does
+  (`IH<x>`) so the remaining ported lines line up.
+- `destruct x` is the same application, ignoring the IH in the step case(s).
+
+**Tier-2 caveats (these gate the computational majority).** Two engine issues — each with a minimal
+reproducer in `bugs/` on the engine branch — block induction over goals stated with a `Fixpoint`:
+
+1. **`apply` with a fixpoint-mentioning motive segfaults.** When `<goal body>` applies a defined
+   `Fixpoint` to `x` (e.g. `eq nat (add x O) x`), the `apply (T_ind motive)` step crashes. So any
+   equational arithmetic/list lemma whose *statement* uses a recursive function is unreachable by
+   induction right now.
+2. **Ground-only iota.** `simpl`/`cbv` do not reduce a fixpoint applied to a constructor-headed
+   *symbolic* term (`add (S n) m`, `app (cons a l) m`), so step cases that must unfold a recursive
+   function on `S n` / `cons a l` cannot progress.
+
+Until (1) and (2) are fixed, the translator must **detect and exclude** induction whose motive
+mentions a defined fixpoint or whose step case needs symbolic reduction, keeping such units out of
+Tier A. What works **today**: structural induction with a fixpoint-free motive whose cases close via
+the IH, constructors, `apply`/`rewrite` with lemmas, and `assumption` — i.e. relational/predicate
+lemmas rather than computational equalities. Fixing (1) and (2) is the highest-leverage corpus
+expansion and is now in scope (the engine is already being modified on the parent branch).
 
 ## 6. Compat prelude (`compat/stdlib_compat.me`)
 
@@ -125,9 +188,10 @@ Hand-written MEngine, loaded ahead of every translated unit. Contents:
   - `symmetry` := `apply eq_sym` (with a provided `eq_sym`).
   - `trivial`/`easy`/`now` := `try reflexivity; try assumption` (+ `intros`).
   - `simpl` := `cbv beta delta iota fix`.
-  - limited `destruct`/`induction` helpers: `match Goal` to find the inductive head, then `apply`
-    the auto-generated induction principle (MEngine builds these for `Inductive` decls). Clean
-    structural cases only; complex eliminations stay Tier B.
+  - `destruct`/`induction` support built on the generated `<T>_ind` (now IH-bearing, sec. 5a).
+    Whether this lives as a compat tactic or as direct translator-emitted `apply (T_ind motive)`
+    is decided in implementation; either way, clean structural cases only — computational and
+    complex eliminations stay Tier 2 / Tier B.
 - Each emulated tactic carries a comment stating exactly how it differs from Rocq's, so divergence
   is auditable and lives in one reviewable file.
 
@@ -168,7 +232,8 @@ Reuses `framework/runner.run_single` timing logic; subcommands mirror `bench.py`
    `nat`/`bool` + 2-3 tactics, `stdlib_bench.py` (`test`/`run`), one hand-made Tier-A unit (e.g.
    `add_0_r`). Proves translate->validate->time->report before scaling.
 2. **Translator core.** Structural stripping + term desugaring + supported-tactic passthrough +
-   `--report`. Sanity-check against `examples/*.me` and the first units.
+   the `induction`/`destruct` rule (sec. 5a) with fixpoint-motive exclusion + `--report`.
+   Sanity-check against `examples/*.me` and the first units (include one structural induction unit).
 3. **Triage.** Run `--report` over a Rocq stdlib checkout; populate `manifest.json`; lock the
    Tier-A set (Tier B/C recorded but not built).
 4. **Corpus build-out.** Auto-translate Tier A; expand compat prelude as recurring needs surface.
@@ -179,9 +244,12 @@ Reuses `framework/runner.run_single` timing logic; subcommands mirror `bench.py`
 
 ## 11. Key risks
 
-- **Tier A is small.** Likely, given the tactic gap. Mitigation: lean on the compat prelude;
-  accept "useful benchmark" = tens of representative equational/structural proofs, not breadth.
-  Tier B (manual, deferred) is the growth path if more coverage is wanted later.
+- **Tier A is small.** Likely, given the tactic gap. Induction principles widen it to structural
+  inductive proofs, but the Tier-2 gaps (sec. 5a) keep *computational* induction — most stdlib
+  arithmetic — out for now. Mitigations, in leverage order: (1) take on the Tier-2 engine fixes
+  (the single biggest corpus multiplier, now in scope); (2) lean on the compat prelude; (3) accept
+  "useful benchmark" = tens of representative proofs, not breadth. Tier B (manual, deferred) is a
+  further growth path.
 - **Mistranslation that compiles** (silent unfaithfulness — the worst failure). Mitigation:
   flag-not-guess translator + sec. 7 statement-correspondence check.
 - **Fairness of the Rocq baseline.** One-theorem `.v` against installed stdlib includes Rocq
