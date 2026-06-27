@@ -401,6 +401,26 @@ static void test_parametric_list(void) {
            "Check cons.\n");
 }
 
+/* Parametric inductives also get an induction principle (parameters bound once,
+ * out front), with an induction hypothesis on the recursive argument. This proof
+ * only type-checks if list_ind has the shape
+ *   forall A P, P (nil A) -> (forall a l, P l -> P (cons A a l)) -> forall l, P l. */
+static void test_parametric_induction_principle(void) {
+    run_ok("parametric induction principle is usable",
+           "Inductive list (A : Type) : Type :=\n"
+           "  | nil : list A\n"
+           "  | cons : forall (_: A), forall (_: list A), list A.\n"
+           "Axiom A : Type.\n"
+           "Axiom P : forall (_: list A), Prop.\n"
+           "Axiom base : P (nil A).\n"
+           "Axiom step : forall (a : A), forall (l : list A), forall (_: P l), P (cons A a l).\n"
+           "Theorem allL : forall (l : list A), P l.\n"
+           "intro l.\n"
+           "apply (list_ind A P).\n"
+           "exact base.\n"
+           "exact step.\n");
+}
+
 void run_integration_tests(void) {
     test_suite_start("Integration Tests");
 
@@ -408,6 +428,7 @@ void run_integration_tests(void) {
     test_definition();
     test_inductive_nat();
     test_induction_principle_has_ih();
+    test_parametric_induction_principle();
     test_inductive_match_pred();
     test_inductive_bool();
     test_fixpoint_add();
