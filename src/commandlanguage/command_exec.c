@@ -261,9 +261,9 @@ static int _handle_print_command(MEngineRuntime *rt, PrintCmd *print_cmd) {
 }
 
 static Expression *_build_constructor_case_type(Expression *ctor_expr, Expression *ctor_type,
-                                                Expression *motive_var, Expression **param_vars,
-                                                size_t param_count, size_t index_count,
-                                                Context *elim_ctx);
+                                                Expression *motive_var, Expression *ind_var,
+                                                Expression **param_vars, size_t param_count,
+                                                size_t index_count, Context *elim_ctx);
 
 static Expression *_build_motive_type(Expression *ind_var, Expression **param_vars,
                                       size_t param_count, Context *ctx,
@@ -365,8 +365,8 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd, Expres
 
         Expression *ctor_type = kernel_expr_type(ctor_expr);
         Expression *case_type =
-            _build_constructor_case_type(ctor_expr, ctor_type, motive_var, param_vars, param_count,
-                                         index_count, case_contexts[i]);
+            _build_constructor_case_type(ctor_expr, ctor_type, motive_var, ind_var, param_vars,
+                                         param_count, index_count, case_contexts[i]);
 
         if (!case_type) {
             fprintf(stderr, ERROR "Failed to build case type for %s\n" CRESET, ctor->name);
@@ -500,10 +500,47 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd, Expres
     return result;
 }
 
+// Build the induction hypothesis for a single constructor argument, or NULL when
+// the argument is not a recursive occurrence of the inductive being defined.
+//
+// An argument `arg : I p0..p_{m-1} x0..x_{k-1}` (the inductive applied to its
+// parameters and indices) yields the hypothesis `P x0..x_{k-1} arg` — the motive
+// applied to the argument's own indices and then the argument itself. This is
+// what turns the generated principle from plain case analysis into induction.
+//
+// Only first-order recursion is recognised; a higher-order argument such as
+// `(nat -> I)` is treated as non-recursive and gets no hypothesis.
+static Expression *_build_recursive_arg_hypothesis(Expression *arg_var, Expression *arg_type,
+                                                   Expression *ind_var, Expression *motive_var,
+                                                   size_t param_count, size_t index_count,
+                                                   Context *ctx) {
+    if (!kernel_expr_congruent(kernel_expr_head(arg_type), ind_var)) {
+        return NULL;
+    }
+
+    Expression *hypothesis = motive_var;
+    if (index_count > 0) {
+        // arg_type is the spine `I p0..p_{m-1} x0..x_{k-1}`; the indices are the
+        // arguments past the parameters.
+        DoublyLinkedList *spine = dll_create();
+        Expression *head = arg_type;
+        while (kernel_app_func(head) != NULL) {
+            dll_insert_at_head(spine, dll_new_node(kernel_app_arg(head)));
+            head = kernel_app_func(head);
+        }
+        for (size_t i = 0; i < index_count; i++) {
+            Expression *index = (Expression *)dll_at(spine, param_count + i)->data;
+            hypothesis = kernel_app_create(hypothesis, index, ctx);
+        }
+        dll_destroy(spine);
+    }
+    return kernel_app_create(hypothesis, arg_var, ctx);
+}
+
 static Expression *_build_constructor_case_type(Expression *ctor_expr, Expression *ctor_type,
-                                                Expression *motive_var, Expression **param_vars,
-                                                size_t param_count, size_t index_count,
-                                                Context *elim_ctx) {
+                                                Expression *motive_var, Expression *ind_var,
+                                                Expression **param_vars, size_t param_count,
+                                                size_t index_count, Context *elim_ctx) {
     Expression *core_type = ctor_type;
     for (size_t i = 0; i < param_count; i++) {
         if (kernel_forall_var(core_type) != NULL) {
@@ -615,6 +652,19 @@ static Expression *_build_constructor_case_type(Expression *ctor_expr, Expressio
         free(ctor_indices);
     }
     Expression *case_type = case_result;
+
+    // Wrap the conclusion with an induction hypothesis per recursive argument,
+    // giving `IH_0 -> .. -> IH_k -> P (c args)`. These sit inside the argument
+    // binders below because each hypothesis mentions its argument.
+    for (size_t i = arg_count; i > 0; i--) {
+        Expression *arg_type = (Expression *)dll_at(arg_types, i - 1)->data;
+        Expression *hypothesis = _build_recursive_arg_hypothesis(
+            arg_vars[i - 1], arg_type, ind_var, motive_var, param_count, index_count, case_ctx);
+        if (hypothesis) {
+            case_type = kernel_arrow_create(hypothesis, case_type, case_ctx);
+        }
+    }
+
     for (size_t i = arg_count; i > 0; i--) {
         case_type = kernel_forall_create(arg_vars[i - 1], case_type);
     }
