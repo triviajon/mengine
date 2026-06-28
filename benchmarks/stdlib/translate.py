@@ -1062,6 +1062,9 @@ def translate_unit(text, report, elab=None):
             continue
         if kw in ("Inductive", "Fixpoint", "CoFixpoint"):
             raise Untranslatable(f"'{kw}' in unit (define it in the compat prelude)")
+        # Separate each top-level item (statement + proof) with a blank line.
+        if out_lines:
+            out_lines.append("")
         if kw in ("Axiom", "Parameter", "Conjecture", "Variable", "Hypothesis"):
             out_lines.append(translate_axiom(s, report, elab))
             i += 1

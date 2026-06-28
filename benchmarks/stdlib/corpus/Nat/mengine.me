@@ -1,12 +1,16 @@
 Theorem add_2_2 : (((eq nat) ((add (S (S O))) (S (S O)))) (S (S (S (S O))))).
 reflexivity.
+
 Theorem mul_2_3 : (((eq nat) ((mul (S (S O))) (S (S (S O))))) (S (S (S (S (S (S O))))))).
 reflexivity.
+
 Theorem sub_5_2 : (((eq nat) ((sub (S (S (S (S (S O)))))) (S (S O)))) (S (S (S O)))).
 reflexivity.
+
 Theorem add_0_l : forall (n : nat), (((eq nat) ((add O) n)) n).
 intro n.
 reflexivity.
+
 Theorem add_0_r : forall (n : nat), (((eq nat) ((add n) O)) n).
 intro n.
 apply (nat_ind (fun (n : nat) => (((eq nat) ((add n) O)) n))).
@@ -18,6 +22,7 @@ simpl.
 simpl.
 rewrite IHn with eq.
 reflexivity.
+
 Theorem add_succ_r : forall (n : nat), forall (m : nat), (((eq nat) ((add n) (S m))) (S ((add n) m))).
 intro n.
 apply (nat_ind (fun (n : nat) => forall (m : nat), (((eq nat) ((add n) (S m))) (S ((add n) m))))).
@@ -31,6 +36,7 @@ intro m.
 simpl.
 rewrite IHn with eq.
 reflexivity.
+
 Theorem add_comm : forall (n : nat), forall (m : nat), (((eq nat) ((add n) m)) ((add m) n)).
 intro n.
 apply (nat_ind (fun (n : nat) => forall (m : nat), (((eq nat) ((add n) m)) ((add m) n)))).
@@ -49,6 +55,7 @@ rewrite IHn with eq.
 symmetry.
 rewrite add_succ_r with eq.
 reflexivity.
+
 Theorem add_assoc : forall (n : nat), forall (m : nat), forall (p : nat), (((eq nat) ((add n) ((add m) p))) ((add ((add n) m)) p)).
 intro n.
 apply (nat_ind (fun (n : nat) => forall (m : nat), forall (p : nat), (((eq nat) ((add n) ((add m) p))) ((add ((add n) m)) p)))).
@@ -64,6 +71,7 @@ intro p.
 simpl.
 rewrite IHn with eq.
 reflexivity.
+
 Theorem mul_0_r : forall (n : nat), (((eq nat) ((mul n) O)) O).
 intro n.
 apply (nat_ind (fun (n : nat) => (((eq nat) ((mul n) O)) O))).
@@ -75,11 +83,13 @@ simpl.
 simpl.
 rewrite IHn with eq.
 reflexivity.
+
 Theorem mul_1_l : forall (n : nat), (((eq nat) ((mul (S O)) n)) n).
 intro n.
 simpl.
 rewrite add_0_r with eq.
 reflexivity.
+
 Theorem mul_1_r : forall (n : nat), (((eq nat) ((mul n) (S O))) n).
 intro n.
 apply (nat_ind (fun (n : nat) => (((eq nat) ((mul n) (S O))) n))).
@@ -91,6 +101,7 @@ simpl.
 simpl.
 rewrite IHn with eq.
 reflexivity.
+
 Theorem eqb_refl : forall (n : nat), (((eq bool) ((eqb n) n)) true).
 intro n.
 apply (nat_ind (fun (n : nat) => (((eq bool) ((eqb n) n)) true))).
@@ -102,6 +113,7 @@ simpl.
 simpl.
 rewrite IHn with eq.
 reflexivity.
+
 Theorem leb_refl : forall (n : nat), (((eq bool) ((leb n) n)) true).
 intro n.
 apply (nat_ind (fun (n : nat) => (((eq bool) ((leb n) n)) true))).

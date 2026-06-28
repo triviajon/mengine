@@ -1,9 +1,11 @@
 Theorem andb_true_l : forall (b : bool), (((eq bool) ((andb true) b)) b).
 intro b.
 reflexivity.
+
 Theorem andb_false_l : forall (b : bool), (((eq bool) ((andb false) b)) false).
 intro b.
 reflexivity.
+
 Theorem andb_true_r : forall (b : bool), (((eq bool) ((andb b) true)) b).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) ((andb b) true)) b))).
@@ -11,6 +13,7 @@ simpl.
 reflexivity.
 simpl.
 reflexivity.
+
 Theorem andb_false_r : forall (b : bool), (((eq bool) ((andb b) false)) false).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) ((andb b) false)) false))).
@@ -18,6 +21,7 @@ simpl.
 reflexivity.
 simpl.
 reflexivity.
+
 Theorem andb_b_b : forall (b : bool), (((eq bool) ((andb b) b)) b).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) ((andb b) b)) b))).
@@ -25,12 +29,15 @@ simpl.
 reflexivity.
 simpl.
 reflexivity.
+
 Theorem orb_true_l : forall (b : bool), (((eq bool) ((orb true) b)) true).
 intro b.
 reflexivity.
+
 Theorem orb_false_l : forall (b : bool), (((eq bool) ((orb false) b)) b).
 intro b.
 reflexivity.
+
 Theorem orb_true_r : forall (b : bool), (((eq bool) ((orb b) true)) true).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) ((orb b) true)) true))).
@@ -38,6 +45,7 @@ simpl.
 reflexivity.
 simpl.
 reflexivity.
+
 Theorem orb_false_r : forall (b : bool), (((eq bool) ((orb b) false)) b).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) ((orb b) false)) b))).
@@ -45,6 +53,7 @@ simpl.
 reflexivity.
 simpl.
 reflexivity.
+
 Theorem orb_b_b : forall (b : bool), (((eq bool) ((orb b) b)) b).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) ((orb b) b)) b))).
@@ -52,10 +61,13 @@ simpl.
 reflexivity.
 simpl.
 reflexivity.
+
 Theorem negb_true : (((eq bool) (negb true)) false).
 reflexivity.
+
 Theorem negb_false : (((eq bool) (negb false)) true).
 reflexivity.
+
 Theorem negb_involutive : forall (b : bool), (((eq bool) (negb (negb b))) b).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) (negb (negb b))) b))).
@@ -63,12 +75,15 @@ simpl.
 reflexivity.
 simpl.
 reflexivity.
+
 Theorem implb_true_l : forall (b : bool), (((eq bool) ((implb true) b)) b).
 intro b.
 reflexivity.
+
 Theorem implb_false_l : forall (b : bool), (((eq bool) ((implb false) b)) true).
 intro b.
 reflexivity.
+
 Theorem implb_b_b : forall (b : bool), (((eq bool) ((implb b) b)) true).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) ((implb b) b)) true))).
@@ -76,9 +91,11 @@ simpl.
 reflexivity.
 simpl.
 reflexivity.
+
 Theorem xorb_false_l : forall (b : bool), (((eq bool) ((xorb false) b)) b).
 intro b.
 reflexivity.
+
 Theorem xorb_b_b : forall (b : bool), (((eq bool) ((xorb b) b)) false).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) ((xorb b) b)) false))).

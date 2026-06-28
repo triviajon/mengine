@@ -1,6 +1,7 @@
 Theorem app_nil_l : forall (A : Type), forall (l : (list A)), (((eq (list A)) (((app A) (nil A)) l)) l).
 intro A. intro l.
 reflexivity.
+
 Theorem app_nil_r : forall (A : Type), forall (l : (list A)), (((eq (list A)) (((app A) l) (nil A))) l).
 intro A.
 intro l.
@@ -14,6 +15,7 @@ simpl.
 simpl.
 rewrite IHl with eq.
 reflexivity.
+
 Theorem app_assoc : forall (A : Type), forall (l : (list A)), forall (m : (list A)), forall (n : (list A)), (((eq (list A)) (((app A) l) (((app A) m) n))) (((app A) (((app A) l) m)) n)).
 intro A.
 intro l.
@@ -31,6 +33,7 @@ intro n.
 simpl.
 rewrite IHl with eq.
 reflexivity.
+
 Theorem length_app : forall (A : Type), forall (l : (list A)), forall (m : (list A)), (((eq nat) ((length A) (((app A) l) m))) ((add ((length A) l)) ((length A) m))).
 intro A.
 intro l.
