@@ -94,13 +94,15 @@ benchmarks/stdlib/
   PLAN.md                  design document
   README.md                this file
   translate.py             Rocq .v -> MEngine .me translator (+ --report triage)
-  stdlib_bench.py          corpus runner: list / test / run / report / manifest / triage / fidelity
+  stdlib_bench.py          corpus runner: list / test / run / report / manifest / triage / fidelity / proof-fidelity
   report.py                markdown table + log-log scatter plot
   fidelity.py              statement-vs-stdlib correspondence check (via Rocq's kernel)
+  proof_fidelity.py        proof-script vs stdlib-proof gap (re-extracted from installed stdlib)
   compat/stdlib_compat.me  compat prelude: nat/bool/list/option + le + emulated tactics
   corpus/
     manifest.json          locked Tier-A set + per-statement digests + excluded boundary
     stdlib_map.json        each curated lemma -> its real stdlib counterpart (or "original")
+    PROOF_FIDELITY.md      generated: each corpus proof vs the real stdlib proof + why they diverge
     <Module>/rocq.v        benchmarked Rocq source (one stdlib module per file)
     <Module>/mengine.me    auto-translated MEngine source
   results/stdlib.json      per-module timings + per-engine startup baselines
@@ -119,6 +121,7 @@ python3 stdlib/stdlib_bench.py report    # regenerate REPORT.md + scatter plot
 python3 stdlib/stdlib_bench.py manifest  # regenerate corpus/manifest.json
 python3 stdlib/stdlib_bench.py triage    # translate.py --report over the stdlib
 python3 stdlib/stdlib_bench.py fidelity  # check each statement vs the real stdlib
+python3 stdlib/stdlib_bench.py proof-fidelity  # regenerate corpus/PROOF_FIDELITY.md
 ```
 
 Run a single unit: `… run le_0_n`, `… test bool_negb_involutive`.
@@ -179,6 +182,45 @@ corpus), it is a separate command rather than part of the frequently-run `test`
 gate; run it after editing any `rocq.v` statement or `stdlib_map.json`.  It
 needs `coqc` on `PATH` (or `coq_path` in `config.json`) and the modules named in
 the map's `preamble` (`Bool.Bool`, `Arith.PeanoNat`, `Lists.List`) installed.
+
+## Proof-script fidelity vs the real stdlib (`proof-fidelity`)
+
+`fidelity` settles the *statements*: every curated `.v` statement is convertible
+to its stdlib counterpart, so the two engines are benchmarked on the **same
+theorem**.  The *proof scripts*, however, are deliberately **not** the stdlib's
+verbatim proofs — and for almost every lemma they structurally **cannot** be.
+`stdlib_bench.py proof-fidelity` documents that gap: it regenerates
+`corpus/PROOF_FIDELITY.md`, re-extracting each lemma's real proof straight from
+the **installed** stdlib (it asks `coqc` `About <ref>` for the exact source
+location, then reads back the verbatim `Proof … Qed` block — never guessed) and
+classifying *why* the corpus proof differs:
+
+- `near-match` — the library proof is `reflexivity`/`trivial` and the corpus
+  proof has the same shape (the only category that *could* be verbatim).
+- `untranslatable` — a concrete script exists but uses tactics MEngine has no
+  equivalent of: the `destr_bool` Ltac macro (all of `Bool`), `;` chaining +
+  `auto` + `f_equal` (`Lists`), `destruct N` + `trivial` (`Logic` `eq_sym`/
+  `f_equal`).
+- `functor` — the lemma (most of the arithmetic: `add_0_r`, `add_comm`,
+  `add_assoc`, `mul_*`, `eqb_refl`, `leb_refl`, `Nat.le_0_l`) is produced by
+  module-functor `Include` over Rocq's abstract `Numbers`/`Structures`
+  framework.  Its only script lives in the abstract functor, over setoid
+  equality `==` with custom Ltac (`nzinduct`/`nzsimpl`); **no concrete-`nat`
+  proof script exists to copy at all**.
+- `constructor` — the lemma maps to an inductive **constructor** (`conj`,
+  `or_introl`, `ex_intro`, `eq_refl`, `le_n`): the library has no proof script
+  for it; the corpus builds the same term with `split`/`left`/`right`/`exists`/
+  `reflexivity`/`constructor`.
+- `original` — no named stdlib counterpart (ground computation / bespoke), so
+  there is no library proof to be faithful to.
+
+This is the concrete answer to "why not generate the corpus `.v` from the stdlib
+verbatim": the *statements* are (and are kernel-checked to be) the library's, but
+the *proofs* must be re-derived in MEngine's tactic subset, because the
+library's own proofs are Ltac macros, functor-generated abstract proofs with no
+concrete script, or constructors with no script.  Like `fidelity`, it shells out
+to `coqc` (one `About` per mapped lemma) and so is a separate command from the
+fast `test` gate; re-run it after editing any `rocq.v` proof or `stdlib_map.json`.
 
 ## Scope (Tier A) and the engine boundary
 

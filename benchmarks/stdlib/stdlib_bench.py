@@ -16,6 +16,11 @@ Subcommands:
     triage [--dir D]     run translate.py --report over a stdlib checkout
     fidelity [module ...] verify each curated statement matches its real stdlib
                          counterpart (corpus/stdlib_map.json), via Rocq's kernel
+    proof-fidelity [module ...]  regenerate corpus/PROOF_FIDELITY.md: each
+                         corpus proof vs the real stdlib proof, with the
+                         structural reason the two diverge (re-extracted from
+                         the installed stdlib; statements are still checked by
+                         `fidelity`)
 """
 
 import argparse
@@ -410,6 +415,11 @@ def cmd_fidelity(cfg, args):
     return fidelity.run(cfg, args.modules or None)
 
 
+def cmd_proof_fidelity(cfg, args):
+    import proof_fidelity
+    return proof_fidelity.run(cfg, args.modules or None)
+
+
 # ───────────────────────────── results io ────────────────────────────────────
 
 def load_results(path):
@@ -438,12 +448,13 @@ def main():
     sub.add_parser("manifest")
     p_tri = sub.add_parser("triage"); p_tri.add_argument("--dir")
     p_fid = sub.add_parser("fidelity"); p_fid.add_argument("modules", nargs="*")
+    p_pf = sub.add_parser("proof-fidelity"); p_pf.add_argument("modules", nargs="*")
     args = ap.parse_args()
 
     dispatch = {
         "list": cmd_list, "test": cmd_test, "run": cmd_run,
         "report": cmd_report, "manifest": cmd_manifest, "triage": cmd_triage,
-        "fidelity": cmd_fidelity,
+        "fidelity": cmd_fidelity, "proof-fidelity": cmd_proof_fidelity,
     }
     rc = dispatch[args.command](cfg, args)
     sys.exit(rc or 0)
