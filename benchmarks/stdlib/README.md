@@ -1,17 +1,34 @@
 # Rocq standard-library benchmark for MEngine
 
-A per-unit benchmark comparing **MEngine** against **Rocq** on a curated,
+A per-module benchmark comparing **MEngine** against **Rocq** on a curated,
 auto-translated subset of the Rocq standard library.  See [`PLAN.md`](PLAN.md)
 for the full design and rationale; this README is the operator's guide.
 
 ## What it measures
 
-Each *unit* is one stdlib-style lemma in two forms:
+Each *unit* is one stdlib **module** — a single file grouping the Tier-A lemmas
+drawn from that module, mirroring the standard library's own file structure
+(`coqc` compiles a `.v` file, not a lemma) rather than splitting each lemma into
+its own file.  The corpus currently has four modules:
 
-- `corpus/<unit>/rocq.v` — the Rocq source (compiles against the installed
-  stdlib; `Coq.Init` is auto-loaded, so most units need no `Require`).
-- `corpus/<unit>/mengine.me` — the MEngine source, produced **mechanically** by
+| Module  | Source                                  | Lemmas |
+|---------|-----------------------------------------|--------|
+| `Bool`  | `Coq.Bool.Bool` (ops from `Init.Datatypes`) | 11 |
+| `Logic` | `Coq.Init.Logic` (eq, and/or, ex)       | 13 |
+| `Nat`   | `Coq.Init.Nat` (ground arithmetic)      | 5  |
+| `Peano` | `Coq.Init.Peano` (the `le` order)       | 4  |
+
+Each module has two forms:
+
+- `corpus/<Module>/rocq.v` — the Rocq source (compiles against the installed
+  stdlib; `Coq.Init` is auto-loaded, so the corpus needs no `Require`).
+- `corpus/<Module>/mengine.me` — the MEngine source, produced **mechanically** by
   [`translate.py`](translate.py) with zero manual edits (Tier A).
+
+Grouping by module also lifts the proof work above each engine's fixed startup
+cost (see "Startup-subtracted times" below): a one-lemma file's proof is far
+smaller than process startup, so its timing is pure startup noise; a whole
+module's proofs are measurable.
 
 ### How statements are translated (`Set Printing All`)
 
@@ -69,9 +86,9 @@ benchmarks/stdlib/
   compat/stdlib_compat.me  compat prelude: nat/bool/list/option + le + emulated tactics
   corpus/
     manifest.json          locked Tier-A set + per-statement digests + excluded boundary
-    <unit>/rocq.v          benchmarked Rocq source
-    <unit>/mengine.me      auto-translated MEngine source
-  results/stdlib.json      per-unit timings
+    <Module>/rocq.v        benchmarked Rocq source (one stdlib module per file)
+    <Module>/mengine.me    auto-translated MEngine source
+  results/stdlib.json      per-module timings + per-engine startup baselines
   results/REPORT.md        generated table + geometric-mean summary
   plots/stdlib_scatter.png generated scatter (Rocq x vs MEngine y, log-log)
 ```
@@ -172,5 +189,8 @@ reports, per file, the first blocking construct.  Real files are saturated with
 `Notation`/`Ltac`/`Variant`/`Register`/multi-scrutinee `match`/qualified names,
 so essentially none translate as a whole file (≈1/16 even in `Coq.Init`).  This
 is exactly the feasibility verdict in `PLAN.md §1`, and the reason the corpus is
-built from curated, single-lemma units drawn from stdlib content rather than from
-whole files.
+built from curated lemmas drawn from stdlib content rather than from verbatim
+stdlib files.  Those curated lemmas are then grouped one file per stdlib module
+(`Bool`, `Logic`, `Nat`, `Peano`), so each benchmark file matches the library's
+own file structure even though it holds only the Tier-A-provable subset of that
+module's lemmas.

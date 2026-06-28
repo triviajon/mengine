@@ -1,5 +1,0 @@
-Theorem f_equal2_ex : forall (A : Type), forall (B : Type), forall (C : Type), forall (f : forall (_ : A), forall (_ : B), C), forall (x1 : A), forall (y1 : A), forall (x2 : B), forall (y2 : B), forall (_ : (((eq A) x1) y1)), forall (_ : (((eq B) x2) y2)), (((eq C) ((f x1) x2)) ((f y1) y2)).
-intro A. intro B. intro C. intro f. intro x1. intro y1. intro x2. intro y2. intro H1. intro H2.
-rewrite_s (H1).
-rewrite_s (H2).
-reflexivity.

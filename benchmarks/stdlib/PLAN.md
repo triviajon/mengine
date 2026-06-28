@@ -3,8 +3,9 @@
 Status: **implemented** (Tier A). See `README.md` for the operator's guide and
 the realized scope; the per-proof mode (phase 6) remains optional/future. The
 sections below are the original design; where the implementation refined a
-decision (e.g. corpus drawn from curated single-lemma units rather than whole
-stdlib files, two targeted kernel fixes landed, the symbolic-fixpoint induction
+decision (e.g. corpus drawn from curated lemmas — grouped one file per stdlib
+module, mirroring the library's file structure — rather than verbatim stdlib
+files, two targeted kernel fixes landed, the symbolic-fixpoint induction
 crash deferred, **statement types elaborated through Rocq's `Set Printing All`
 instead of hand-desugared** — see §5), `README.md` is authoritative.
 

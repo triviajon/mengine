@@ -1,0 +1,20 @@
+Theorem le_refl_n : forall (n : nat), ((le n) n).
+intro n.
+constructor.
+Theorem le_0_n : forall (n : nat), ((le O) n).
+intro n.
+apply (nat_ind (fun (n : nat) => ((le O) n))).
+simpl.
+constructor.
+simpl.
+intro n.
+intro IHn.
+constructor.
+exact (IHn).
+Theorem le_1_2 : ((le (S O)) (S (S O))).
+constructor.
+constructor.
+Theorem le_2_4 : ((le (S (S O))) (S (S (S (S O))))).
+constructor.
+constructor.
+constructor.

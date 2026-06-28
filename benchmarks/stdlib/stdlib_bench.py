@@ -57,21 +57,11 @@ def load_config():
 
 # ─────────────────────────── corpus discovery ────────────────────────────────
 
-# Tier inferred from the unit-name prefix; kept in sync with the manifest.
+# Each unit is now a whole stdlib *module* file (Bool, Logic, Nat, Peano),
+# mirroring how the standard library is organized — not a one-lemma fragment.
+# The category is simply the module name.
 def unit_tier(name):
-    if name.startswith("bool_"):
-        return "bool"
-    if name.startswith("nat_"):
-        return "nat_ground"
-    if name.startswith("le_"):
-        return "le"
-    if name.startswith("logic_"):
-        return "logic"
-    if name.startswith("eq_"):
-        return "eq"
-    if name.startswith("ex_"):
-        return "ex"
-    return "other"
+    return name
 
 
 def discover_units(cfg):
@@ -327,14 +317,18 @@ EXCLUDED_DOC = [
 
 def cmd_list(cfg, args):
     units = discover_units(cfg)
-    by_cat = {}
+    total = 0
+    print(f"Corpus: {len(units)} Tier-A module files under "
+          f"{os.path.relpath(cfg['corpus_dir'])} "
+          f"(one file per stdlib module)\n")
     for u in units:
-        by_cat.setdefault(unit_tier(u), []).append(u)
-    print(f"Corpus: {len(units)} Tier-A units under {os.path.relpath(cfg['corpus_dir'])}\n")
-    for cat in sorted(by_cat):
-        print(f"  {cat} ({len(by_cat[cat])}):")
-        for u in by_cat[cat]:
-            print(f"    - {u}")
+        _v, mepath, _d = unit_paths(cfg, u)
+        names = [n for n, _dg in translate.statement_digests(open(mepath).read())]
+        total += len(names)
+        print(f"  {u} ({len(names)} lemmas):")
+        for n in names:
+            print(f"    - {n}")
+    print(f"\n{total} lemmas across {len(units)} modules.")
 
 
 def cmd_test(cfg, args):

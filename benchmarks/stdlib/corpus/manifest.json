@@ -3,76 +3,51 @@
   "engine_note": "Requires the cbv applied-fix and GC-dedup kernel fixes (see benchmarks/stdlib/README.md).",
   "units": [
     {
-      "name": "bool_andb_b_b",
+      "name": "Bool",
       "tier": "A",
-      "category": "bool",
-      "rocq_sha256": "bb6fd4757e68f40f",
-      "statements": [
-        {
-          "name": "andb_b_b",
-          "digest": "forall (b : bool), (((eq bool) ((andb b) b)) b)"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "bool_andb_false_l",
-      "tier": "A",
-      "category": "bool",
-      "rocq_sha256": "b576ea7c73624fa1",
-      "statements": [
-        {
-          "name": "andb_false_l",
-          "digest": "forall (b : bool), (((eq bool) ((andb false) b)) false)"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "bool_andb_true_l",
-      "tier": "A",
-      "category": "bool",
-      "rocq_sha256": "e6759cbfe1607bfb",
+      "category": "Bool",
+      "rocq_sha256": "220db106935f67d5",
       "statements": [
         {
           "name": "andb_true_l",
           "digest": "forall (b : bool), (((eq bool) ((andb true) b)) b)"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "bool_andb_true_r",
-      "tier": "A",
-      "category": "bool",
-      "rocq_sha256": "d7645d3fc67c777d",
-      "statements": [
+        },
         {
           "name": "andb_true_r",
           "digest": "forall (b : bool), (((eq bool) ((andb b) true)) b)"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "bool_negb_false",
-      "tier": "A",
-      "category": "bool",
-      "rocq_sha256": "09f84fafa77d9395",
-      "statements": [
+        },
+        {
+          "name": "andb_false_l",
+          "digest": "forall (b : bool), (((eq bool) ((andb false) b)) false)"
+        },
+        {
+          "name": "andb_b_b",
+          "digest": "forall (b : bool), (((eq bool) ((andb b) b)) b)"
+        },
+        {
+          "name": "orb_true_l",
+          "digest": "forall (b : bool), (((eq bool) ((orb true) b)) true)"
+        },
+        {
+          "name": "orb_false_l",
+          "digest": "forall (b : bool), (((eq bool) ((orb false) b)) b)"
+        },
+        {
+          "name": "orb_false_r",
+          "digest": "forall (b : bool), (((eq bool) ((orb b) false)) b)"
+        },
+        {
+          "name": "orb_b_b",
+          "digest": "forall (b : bool), (((eq bool) ((orb b) b)) b)"
+        },
+        {
+          "name": "negb_true",
+          "digest": "(((eq bool) (negb true)) false)"
+        },
         {
           "name": "negb_false",
           "digest": "(((eq bool) (negb false)) true)"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "bool_negb_involutive",
-      "tier": "A",
-      "category": "bool",
-      "rocq_sha256": "8e276bfb5c9c03c9",
-      "statements": [
+        },
         {
           "name": "negb_involutive",
           "digest": "forall (b : bool), (((eq bool) (negb (negb b))) b)"
@@ -81,141 +56,59 @@
       "deps": "Coq.Init (auto-loaded)"
     },
     {
-      "name": "bool_negb_true",
+      "name": "Logic",
       "tier": "A",
-      "category": "bool",
-      "rocq_sha256": "51354009e04ddc4d",
-      "statements": [
-        {
-          "name": "negb_true",
-          "digest": "(((eq bool) (negb true)) false)"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "bool_orb_b_b",
-      "tier": "A",
-      "category": "bool",
-      "rocq_sha256": "2a38ffca93cbbfe9",
-      "statements": [
-        {
-          "name": "orb_b_b",
-          "digest": "forall (b : bool), (((eq bool) ((orb b) b)) b)"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "bool_orb_false_l",
-      "tier": "A",
-      "category": "bool",
-      "rocq_sha256": "ce76fae07e4ad729",
-      "statements": [
-        {
-          "name": "orb_false_l",
-          "digest": "forall (b : bool), (((eq bool) ((orb false) b)) b)"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "bool_orb_false_r",
-      "tier": "A",
-      "category": "bool",
-      "rocq_sha256": "4278dd784a67cf5c",
-      "statements": [
-        {
-          "name": "orb_false_r",
-          "digest": "forall (b : bool), (((eq bool) ((orb b) false)) b)"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "bool_orb_true_l",
-      "tier": "A",
-      "category": "bool",
-      "rocq_sha256": "edfc7caf147b57c7",
-      "statements": [
-        {
-          "name": "orb_true_l",
-          "digest": "forall (b : bool), (((eq bool) ((orb true) b)) true)"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "eq_f_equal",
-      "tier": "A",
-      "category": "eq",
-      "rocq_sha256": "fd0d2a3478438ee8",
-      "statements": [
-        {
-          "name": "f_equal_ex",
-          "digest": "forall (A : Type), forall (B : Type), forall (f : forall (_ : A), B), forall (x : A), forall (y : A), forall (_ : (((eq A) x) y)), (((eq B) (f x)) (f y))"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "eq_f_equal2",
-      "tier": "A",
-      "category": "eq",
-      "rocq_sha256": "269f4f06a8e69e7a",
-      "statements": [
-        {
-          "name": "f_equal2_ex",
-          "digest": "forall (A : Type), forall (B : Type), forall (C : Type), forall (f : forall (_ : A), forall (_ : B), C), forall (x1 : A), forall (y1 : A), forall (x2 : B), forall (y2 : B), forall (_ : (((eq A) x1) y1)), forall (_ : (((eq B) x2) y2)), (((eq C) ((f x1) x2)) ((f y1) y2))"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "eq_refl_x",
-      "tier": "A",
-      "category": "eq",
-      "rocq_sha256": "6701e0b00941e4e4",
+      "category": "Logic",
+      "rocq_sha256": "b7817d43bcd6fee5",
       "statements": [
         {
           "name": "eq_refl_x",
           "digest": "forall (A : Type), forall (x : A), (((eq A) x) x)"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "eq_sym",
-      "tier": "A",
-      "category": "eq",
-      "rocq_sha256": "7bad55101a4d8c3b",
-      "statements": [
+        },
         {
           "name": "eq_sym_ex",
           "digest": "forall (A : Type), forall (x : A), forall (y : A), forall (_ : (((eq A) x) y)), (((eq A) y) x)"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "eq_trans",
-      "tier": "A",
-      "category": "eq",
-      "rocq_sha256": "76a3d8e1b93d6489",
-      "statements": [
+        },
         {
           "name": "eq_trans_ex",
           "digest": "forall (A : Type), forall (x : A), forall (y : A), forall (z : A), forall (_ : (((eq A) x) y)), forall (_ : (((eq A) y) z)), (((eq A) x) z)"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "ex_eq",
-      "tier": "A",
-      "category": "ex",
-      "rocq_sha256": "baf4f4142fabaf30",
-      "statements": [
+        },
+        {
+          "name": "f_equal_ex",
+          "digest": "forall (A : Type), forall (B : Type), forall (f : forall (_ : A), B), forall (x : A), forall (y : A), forall (_ : (((eq A) x) y)), (((eq B) (f x)) (f y))"
+        },
+        {
+          "name": "f_equal2_ex",
+          "digest": "forall (A : Type), forall (B : Type), forall (C : Type), forall (f : forall (_ : A), forall (_ : B), C), forall (x1 : A), forall (y1 : A), forall (x2 : B), forall (y2 : B), forall (_ : (((eq A) x1) y1)), forall (_ : (((eq B) x2) y2)), (((eq C) ((f x1) x2)) ((f y1) y2))"
+        },
+        {
+          "name": "imp_refl",
+          "digest": "forall (A : Prop), forall (_ : A), A"
+        },
+        {
+          "name": "imp_trans",
+          "digest": "forall (A : Prop), forall (B : Prop), forall (C : Prop), forall (_ : forall (_ : A), B), forall (_ : forall (_ : B), C), forall (_ : A), C"
+        },
+        {
+          "name": "and_intro",
+          "digest": "forall (A : Prop), forall (B : Prop), forall (_ : A), forall (_ : B), ((and A) B)"
+        },
+        {
+          "name": "and_intro3",
+          "digest": "forall (A : Prop), forall (B : Prop), forall (C : Prop), forall (_ : A), forall (_ : B), forall (_ : C), ((and A) ((and B) C))"
+        },
+        {
+          "name": "or_introl_ex",
+          "digest": "forall (A : Prop), forall (B : Prop), forall (_ : A), ((or A) B)"
+        },
+        {
+          "name": "or_intror_ex",
+          "digest": "forall (A : Prop), forall (B : Prop), forall (_ : B), ((or A) B)"
+        },
+        {
+          "name": "ex_intro_ex",
+          "digest": "forall (A : Type), forall (P : forall (_ : A), Prop), forall (x : A), forall (_ : (P x)), ((ex A) (fun (y : A) => (P y)))"
+        },
         {
           "name": "ex_eq",
           "digest": "forall (A : Type), forall (x : A), ((ex A) (fun (y : A) => (((eq A) y) x)))"
@@ -224,209 +117,55 @@
       "deps": "Coq.Init (auto-loaded)"
     },
     {
-      "name": "ex_intro",
+      "name": "Nat",
       "tier": "A",
-      "category": "ex",
-      "rocq_sha256": "e9ed5cda9c65d8ab",
-      "statements": [
-        {
-          "name": "ex_intro_ex",
-          "digest": "forall (A : Type), forall (P : forall (_ : A), Prop), forall (x : A), forall (_ : (P x)), ((ex A) (fun (y : A) => (P y)))"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "le_0_n",
-      "tier": "A",
-      "category": "le",
-      "rocq_sha256": "29e8d73394141b57",
-      "statements": [
-        {
-          "name": "le_0_n",
-          "digest": "forall (n : nat), ((le O) n)"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "le_1_2",
-      "tier": "A",
-      "category": "le",
-      "rocq_sha256": "48dc552042d6d716",
-      "statements": [
-        {
-          "name": "le_1_2",
-          "digest": "((le (S O)) (S (S O)))"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "le_2_4",
-      "tier": "A",
-      "category": "le",
-      "rocq_sha256": "5fbd2e68c028de33",
-      "statements": [
-        {
-          "name": "le_2_4",
-          "digest": "((le (S (S O))) (S (S (S (S O)))))"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "le_refl_n",
-      "tier": "A",
-      "category": "le",
-      "rocq_sha256": "d575fd73054c51aa",
-      "statements": [
-        {
-          "name": "le_refl_n",
-          "digest": "forall (n : nat), ((le n) n)"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "logic_and_intro",
-      "tier": "A",
-      "category": "logic",
-      "rocq_sha256": "eae706b5389b59e9",
-      "statements": [
-        {
-          "name": "and_intro",
-          "digest": "forall (A : Prop), forall (B : Prop), forall (_ : A), forall (_ : B), ((and A) B)"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "logic_and_intro3",
-      "tier": "A",
-      "category": "logic",
-      "rocq_sha256": "2a9cea4035ecf0c2",
-      "statements": [
-        {
-          "name": "and_intro3",
-          "digest": "forall (A : Prop), forall (B : Prop), forall (C : Prop), forall (_ : A), forall (_ : B), forall (_ : C), ((and A) ((and B) C))"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "logic_imp_refl",
-      "tier": "A",
-      "category": "logic",
-      "rocq_sha256": "c6106300d85b26c5",
-      "statements": [
-        {
-          "name": "imp_refl",
-          "digest": "forall (A : Prop), forall (_ : A), A"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "logic_imp_trans",
-      "tier": "A",
-      "category": "logic",
-      "rocq_sha256": "a929b5af77369b8d",
-      "statements": [
-        {
-          "name": "imp_trans",
-          "digest": "forall (A : Prop), forall (B : Prop), forall (C : Prop), forall (_ : forall (_ : A), B), forall (_ : forall (_ : B), C), forall (_ : A), C"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "logic_or_introl",
-      "tier": "A",
-      "category": "logic",
-      "rocq_sha256": "2929c04519ab5518",
-      "statements": [
-        {
-          "name": "or_introl_ex",
-          "digest": "forall (A : Prop), forall (B : Prop), forall (_ : A), ((or A) B)"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "logic_or_intror",
-      "tier": "A",
-      "category": "logic",
-      "rocq_sha256": "0d0f413a63402857",
-      "statements": [
-        {
-          "name": "or_intror_ex",
-          "digest": "forall (A : Prop), forall (B : Prop), forall (_ : B), ((or A) B)"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "nat_add_0_l",
-      "tier": "A",
-      "category": "nat_ground",
-      "rocq_sha256": "e2ce1d82d2849368",
+      "category": "Nat",
+      "rocq_sha256": "27abb967551db470",
       "statements": [
         {
           "name": "add_0_l",
           "digest": "forall (n : nat), (((eq nat) ((add O) n)) n)"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "nat_add_2_2",
-      "tier": "A",
-      "category": "nat_ground",
-      "rocq_sha256": "4cee85a5832ae338",
-      "statements": [
+        },
         {
           "name": "add_2_2",
           "digest": "(((eq nat) ((add (S (S O))) (S (S O)))) (S (S (S (S O)))))"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "nat_add_3_4",
-      "tier": "A",
-      "category": "nat_ground",
-      "rocq_sha256": "690d9c4cb2067639",
-      "statements": [
+        },
         {
           "name": "add_3_4",
           "digest": "(((eq nat) ((add (S (S (S O)))) (S (S (S (S O)))))) (S (S (S (S (S (S (S O))))))))"
-        }
-      ],
-      "deps": "Coq.Init (auto-loaded)"
-    },
-    {
-      "name": "nat_mul_2_3",
-      "tier": "A",
-      "category": "nat_ground",
-      "rocq_sha256": "14247e3010ce343c",
-      "statements": [
+        },
         {
           "name": "mul_2_3",
           "digest": "(((eq nat) ((mul (S (S O))) (S (S (S O))))) (S (S (S (S (S (S O)))))))"
+        },
+        {
+          "name": "sub_5_2",
+          "digest": "(((eq nat) ((sub (S (S (S (S (S O)))))) (S (S O)))) (S (S (S O))))"
         }
       ],
       "deps": "Coq.Init (auto-loaded)"
     },
     {
-      "name": "nat_sub_5_2",
+      "name": "Peano",
       "tier": "A",
-      "category": "nat_ground",
-      "rocq_sha256": "8797257b18b9858e",
+      "category": "Peano",
+      "rocq_sha256": "389a70a76026303a",
       "statements": [
         {
-          "name": "sub_5_2",
-          "digest": "(((eq nat) ((sub (S (S (S (S (S O)))))) (S (S O)))) (S (S (S O))))"
+          "name": "le_refl_n",
+          "digest": "forall (n : nat), ((le n) n)"
+        },
+        {
+          "name": "le_0_n",
+          "digest": "forall (n : nat), ((le O) n)"
+        },
+        {
+          "name": "le_1_2",
+          "digest": "((le (S O)) (S (S O)))"
+        },
+        {
+          "name": "le_2_4",
+          "digest": "((le (S (S O))) (S (S (S (S O)))))"
         }
       ],
       "deps": "Coq.Init (auto-loaded)"

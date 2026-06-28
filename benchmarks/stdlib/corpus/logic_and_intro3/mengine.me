@@ -1,7 +1,0 @@
-Theorem and_intro3 : forall (A : Prop), forall (B : Prop), forall (C : Prop), forall (_ : A), forall (_ : B), forall (_ : C), ((and A) ((and B) C)).
-intro A. intro B. intro C. intro HA. intro HB. intro HC.
-split.
-exact (HA).
-split.
-exact (HB).
-exact (HC).

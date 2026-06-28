@@ -1,4 +1,0 @@
-Theorem ex_intro_ex : forall (A : Type), forall (P : forall (_ : A), Prop), forall (x : A), forall (_ : (P x)), ((ex A) (fun (y : A) => (P y))).
-intro A. intro P. intro x. intro H.
-exists (x).
-exact (H).

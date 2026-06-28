@@ -12,11 +12,8 @@ import os
 
 
 def _category(name):
-    for pre, cat in (("bool_", "bool"), ("nat_", "nat"), ("le_", "le"),
-                     ("logic_", "logic"), ("eq_", "eq"), ("ex_", "ex")):
-        if name.startswith(pre):
-            return cat
-    return "other"
+    # Each unit is a stdlib module file (Bool/Logic/Nat/Peano); category == module.
+    return name
 
 
 MENGINE_BASELINE_KEY = "mengine__startup_baseline"
@@ -47,11 +44,22 @@ def _proof_time(total, floor):
     return max(0.0, total - floor)
 
 
+def _lemma_counts(cfg):
+    """Map module name -> number of statements, read from the corpus manifest."""
+    path = os.path.join(cfg.get("corpus_dir", ""), "manifest.json")
+    if not os.path.exists(path):
+        return {}
+    with open(path) as f:
+        manifest = json.load(f)
+    return {u["name"]: len(u.get("statements", [])) for u in manifest.get("units", [])}
+
+
 def _load(cfg):
     with open(cfg["results"]) as f:
         results = json.load(f)
     m_floor, m_noise = _baseline(results, MENGINE_BASELINE_KEY)
     r_floor, r_noise = _baseline(results, ROCQ_BASELINE_KEY)
+    counts = _lemma_counts(cfg)
     unit_keys = {k.split("_", 1)[1] for k in results
                  if "_" in k and k not in (MENGINE_BASELINE_KEY, ROCQ_BASELINE_KEY)}
     rows = []
@@ -63,7 +71,7 @@ def _load(cfg):
         mt = m["time_taken"] if m["success"] else None
         rt = r["time_taken"] if r["success"] else None
         rows.append({
-            "unit": u, "category": _category(u),
+            "unit": u, "category": _category(u), "nlemmas": counts.get(u),
             "mengine": mt, "rocq": rt,
             "mengine_proof": _proof_time(mt, m_floor),
             "rocq_proof": _proof_time(rt, r_floor),
@@ -71,6 +79,7 @@ def _load(cfg):
     meta = {
         "mengine_floor": m_floor, "mengine_noise": m_noise,
         "rocq_floor": r_floor, "rocq_noise": r_noise,
+        "nlemmas": sum(c for c in counts.values()) if counts else None,
     }
     return rows, meta
 
@@ -105,23 +114,24 @@ def generate(cfg):
             f"(±{r_noise*1000:.1f}), MEngine {_fmt_ms(m_floor)} ms "
             f"(±{m_noise*1000:.1f}). A proof residual at or below its engine's "
             "jitter (±) is reported as `~0` — indistinguishable from startup.\n")
-        lines.append("| Unit | Category | Rocq total (ms) | Rocq proof (ms) | "
+        lines.append("| Module | Lemmas | Rocq total (ms) | Rocq proof (ms) | "
                      "MEngine total (ms) | MEngine proof (ms) | Proof speedup |")
-        lines.append("|------|----------|-----------------|-----------------|"
+        lines.append("|--------|--------|-----------------|-----------------|"
                      "--------------------|--------------------|---------------|")
     else:
-        lines.append("Per-unit wall-clock (best of N trials), whole-process: each "
+        lines.append("Per-module wall-clock (best of N trials), whole-process: each "
                      "engine pays its own startup. **No startup baseline recorded** — "
                      "re-run `stdlib_bench.py run` to get startup-subtracted proof "
                      "times.\n")
-        lines.append("| Unit | Category | Rocq (ms) | MEngine (ms) | "
+        lines.append("| Module | Lemmas | Rocq (ms) | MEngine (ms) | "
                      "Speedup (Rocq/MEngine) |")
-        lines.append("|------|----------|-----------|--------------|"
+        lines.append("|--------|--------|-----------|--------------|"
                      "------------------------|")
 
     speedups = []
     below_noise = 0
-    for row in sorted(rows, key=lambda r: (r["category"], r["unit"])):
+    for row in sorted(rows, key=lambda r: r["unit"]):
+        nl = row["nlemmas"] if row["nlemmas"] is not None else "?"
         if have_baselines:
             mp, rp = row["mengine_proof"], row["rocq_proof"]
             m_below = mp is not None and mp <= m_noise
@@ -137,7 +147,7 @@ def generate(cfg):
                 sp_s = f"{sp:.2f}×"
             else:
                 sp_s = "-"
-            lines.append(f"| `{row['unit']}` | {row['category']} | "
+            lines.append(f"| `{row['unit']}` | {nl} | "
                          f"{_fmt_ms(row['rocq'])} | {rp_s} | "
                          f"{_fmt_ms(row['mengine'])} | {mp_s} | {sp_s} |")
         else:
@@ -148,11 +158,14 @@ def generate(cfg):
                 sp_s = f"{sp:.2f}×"
             else:
                 sp_s = "-"
-            lines.append(f"| `{row['unit']}` | {row['category']} | {_fmt_ms(r)} | "
+            lines.append(f"| `{row['unit']}` | {nl} | {_fmt_ms(r)} | "
                          f"{_fmt_ms(m)} | {sp_s} |")
 
+    nlem = meta.get("nlemmas")
+    lem_s = f", {nlem} lemmas" if nlem else ""
     lines.append("")
-    lines.append(f"**Units:** {len(rows)} (all Tier A).")
+    lines.append(f"**Modules:** {len(rows)}{lem_s} (all Tier A) — one benchmark file "
+                 "per stdlib module, matching the library's own file structure.")
     if have_baselines:
         lines.append(f"**Below startup-noise floor (proof time ~0 on either engine):** "
                      f"{below_noise} of {len(rows)}.")
@@ -160,14 +173,21 @@ def generate(cfg):
             geo = math.exp(sum(math.log(s) for s in speedups) / len(speedups))
             med = sorted(speedups)[len(speedups) // 2]
             lines.append(f"**Proof-only speedup (Rocq/MEngine), over the "
-                         f"{len(speedups)} units above the noise floor:** "
+                         f"{len(speedups)} module(s) above the noise floor:** "
                          f"{geo:.2f}× geomean (median {med:.2f}×).")
         lines.append("")
-        lines.append("> For this corpus the per-unit proofs are trivial: their "
-                     "startup-subtracted cost is at or below measurement jitter for "
-                     "both engines, so the headline whole-file ratio (~30×) is really "
-                     "a *process-startup* ratio, not a proof-speed ratio. Heavier "
-                     "units are needed to measure proof speed above the noise floor.")
+        if below_noise == len(rows):
+            lines.append("> Even grouped per module, these Tier-A proofs are cheap "
+                         "enough that their startup-subtracted cost stays at or below "
+                         "measurement jitter on both engines — so the whole-file ratio "
+                         "is still mostly a *process-startup* ratio. Heavier modules "
+                         "(computational induction, list reasoning) are needed to "
+                         "measure proof speed clearly above the noise floor.")
+        else:
+            lines.append("> Proof columns are startup-subtracted; modules above the "
+                         "noise floor give a real proof-speed comparison, while the "
+                         "whole-file columns still include each engine's fixed "
+                         "per-invocation cost (which dominates the raw ratio).")
     elif speedups:
         geo = math.exp(sum(math.log(s) for s in speedups) / len(speedups))
         med = sorted(speedups)[len(speedups) // 2]
@@ -193,9 +213,8 @@ def _scatter(cfg, rows, meta=None):
         return
 
     meta = meta or {}
-    colors = {"bool": "tab:blue", "nat": "tab:green", "le": "tab:orange",
-              "logic": "tab:red", "eq": "tab:purple", "ex": "tab:brown",
-              "other": "gray"}
+    colors = {"Bool": "tab:blue", "Nat": "tab:green", "Peano": "tab:orange",
+              "Logic": "tab:red"}
     pts = [r for r in rows if r["mengine"] and r["rocq"]]
     if not pts:
         return
@@ -228,7 +247,7 @@ def _scatter(cfg, rows, meta=None):
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
     ax.set_xlabel("Rocq time (ms, log)")
     ax.set_ylabel("MEngine time (ms, log)")
-    ax.set_title("Rocq stdlib units: MEngine vs Rocq")
+    ax.set_title("Rocq stdlib modules: MEngine vs Rocq")
     ax.legend(fontsize=8, loc="best")
     ax.grid(True, which="both", ls=":", alpha=0.4)
     os.makedirs(cfg["plots_dir"], exist_ok=True)

@@ -1,7 +1,0 @@
-Theorem andb_true_r : forall (b : bool), (((eq bool) ((andb b) true)) b).
-intro b.
-apply (bool_ind (fun (b : bool) => (((eq bool) ((andb b) true)) b))).
-simpl.
-reflexivity.
-simpl.
-reflexivity.

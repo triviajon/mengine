@@ -1,4 +1,0 @@
-Theorem eq_trans_ex : forall (A : Type), forall (x : A), forall (y : A), forall (z : A), forall (_ : (((eq A) x) y)), forall (_ : (((eq A) y) z)), (((eq A) x) z).
-intro A. intro x. intro y. intro z. intro H1. intro H2.
-rewrite_s (H1).
-exact (H2).
