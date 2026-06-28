@@ -91,6 +91,10 @@ Fixpoint leb (n : nat) (m : nat) {struct n} : bool :=
 Definition ltb : forall (_ : nat), forall (_ : nat), bool :=
   fun (n : nat) => fun (m : nat) => leb (S n) m.
 
+(* pred (Coq.Init.Nat): predecessor, with pred O = O. *)
+Definition pred : forall (_ : nat), nat :=
+  fun (n : nat) => match n with | O => O | S k => k end.
+
 (* ── list functions (Coq.Lists.List / Coq.Init.Datatypes) ──────────── *)
 
 Fixpoint app (A : Type) (l : list A) (k : list A) {struct l} : list A :=

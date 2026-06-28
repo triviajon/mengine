@@ -328,6 +328,7 @@ def parse_term(s):
 NAME_MAP = {
     "Nat.add": "add", "Nat.mul": "mul", "Nat.sub": "sub",
     "Nat.eqb": "eqb", "Nat.leb": "leb", "Nat.ltb": "ltb",
+    "Nat.pred": "pred",
 }
 
 ELAB_TOKEN_RE = re.compile(r"""

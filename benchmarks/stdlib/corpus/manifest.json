@@ -6,7 +6,7 @@
       "name": "Bool",
       "tier": "A",
       "category": "Bool",
-      "rocq_sha256": "0bda947ccc37fa01",
+      "rocq_sha256": "0ca352ef11940789",
       "statements": [
         {
           "name": "andb_true_l",
@@ -61,6 +61,18 @@
           "digest": "forall (b : bool), (((eq bool) (negb (negb b))) b)"
         },
         {
+          "name": "negb_involutive_reverse",
+          "digest": "forall (b : bool), (((eq bool) b) (negb (negb b)))"
+        },
+        {
+          "name": "andb_negb_r",
+          "digest": "forall (b : bool), (((eq bool) ((andb b) (negb b))) false)"
+        },
+        {
+          "name": "orb_negb_r",
+          "digest": "forall (b : bool), (((eq bool) ((orb b) (negb b))) true)"
+        },
+        {
           "name": "implb_true_l",
           "digest": "forall (b : bool), (((eq bool) ((implb true) b)) b)"
         },
@@ -77,6 +89,18 @@
           "digest": "forall (b : bool), (((eq bool) ((xorb false) b)) b)"
         },
         {
+          "name": "xorb_false_r",
+          "digest": "forall (b : bool), (((eq bool) ((xorb b) false)) b)"
+        },
+        {
+          "name": "xorb_true_l",
+          "digest": "forall (b : bool), (((eq bool) ((xorb true) b)) (negb b))"
+        },
+        {
+          "name": "xorb_true_r",
+          "digest": "forall (b : bool), (((eq bool) ((xorb b) true)) (negb b))"
+        },
+        {
           "name": "xorb_b_b",
           "digest": "forall (b : bool), (((eq bool) ((xorb b) b)) false)"
         }
@@ -87,7 +111,7 @@
       "name": "Lists",
       "tier": "A",
       "category": "Lists",
-      "rocq_sha256": "7d1949371ea945fc",
+      "rocq_sha256": "6c594c76b9f9d612",
       "statements": [
         {
           "name": "app_nil_l",
@@ -96,6 +120,10 @@
         {
           "name": "app_nil_r",
           "digest": "forall (A : Type), forall (l : (list A)), (((eq (list A)) (((app A) l) (nil A))) l)"
+        },
+        {
+          "name": "app_comm_cons",
+          "digest": "forall (A : Type), forall (l : (list A)), forall (m : (list A)), forall (a : A), (((eq (list A)) (((cons A) a) (((app A) l) m))) (((app A) (((cons A) a) l)) m))"
         },
         {
           "name": "app_assoc",
@@ -112,7 +140,7 @@
       "name": "Logic",
       "tier": "A",
       "category": "Logic",
-      "rocq_sha256": "b7817d43bcd6fee5",
+      "rocq_sha256": "7d8d987d4b524d8d",
       "statements": [
         {
           "name": "eq_refl_x",
@@ -133,6 +161,10 @@
         {
           "name": "f_equal2_ex",
           "digest": "forall (A : Type), forall (B : Type), forall (C : Type), forall (f : forall (_ : A), forall (_ : B), C), forall (x1 : A), forall (y1 : A), forall (x2 : B), forall (y2 : B), forall (_ : (((eq A) x1) y1)), forall (_ : (((eq B) x2) y2)), (((eq C) ((f x1) x2)) ((f y1) y2))"
+        },
+        {
+          "name": "f_equal3_ex",
+          "digest": "forall (A1 : Type), forall (A2 : Type), forall (A3 : Type), forall (B : Type), forall (f : forall (_ : A1), forall (_ : A2), forall (_ : A3), B), forall (x1 : A1), forall (y1 : A1), forall (x2 : A2), forall (y2 : A2), forall (x3 : A3), forall (y3 : A3), forall (_ : (((eq A1) x1) y1)), forall (_ : (((eq A2) x2) y2)), forall (_ : (((eq A3) x3) y3)), (((eq B) (((f x1) x2) x3)) (((f y1) y2) y3))"
         },
         {
           "name": "imp_refl",
@@ -173,7 +205,7 @@
       "name": "Nat",
       "tier": "A",
       "category": "Nat",
-      "rocq_sha256": "ae5c0765215a26d9",
+      "rocq_sha256": "8688e906c72e7dd4",
       "statements": [
         {
           "name": "add_2_2",
@@ -192,6 +224,18 @@
           "digest": "forall (n : nat), (((eq nat) ((add O) n)) n)"
         },
         {
+          "name": "add_succ_l",
+          "digest": "forall (n : nat), forall (m : nat), (((eq nat) ((add (S n)) m)) (S ((add n) m)))"
+        },
+        {
+          "name": "add_1_l",
+          "digest": "forall (n : nat), (((eq nat) ((add (S O)) n)) (S n))"
+        },
+        {
+          "name": "add_1_r",
+          "digest": "forall (n : nat), (((eq nat) ((add n) (S O))) (S n))"
+        },
+        {
           "name": "add_0_r",
           "digest": "forall (n : nat), (((eq nat) ((add n) O)) n)"
         },
@@ -208,8 +252,36 @@
           "digest": "forall (n : nat), forall (m : nat), forall (p : nat), (((eq nat) ((add n) ((add m) p))) ((add ((add n) m)) p))"
         },
         {
+          "name": "mul_0_l",
+          "digest": "forall (n : nat), (((eq nat) ((mul O) n)) O)"
+        },
+        {
           "name": "mul_0_r",
           "digest": "forall (n : nat), (((eq nat) ((mul n) O)) O)"
+        },
+        {
+          "name": "mul_succ_l",
+          "digest": "forall (n : nat), forall (m : nat), (((eq nat) ((mul (S n)) m)) ((add ((mul n) m)) m))"
+        },
+        {
+          "name": "mul_succ_r",
+          "digest": "forall (n : nat), forall (m : nat), (((eq nat) ((mul n) (S m))) ((add ((mul n) m)) n))"
+        },
+        {
+          "name": "mul_comm",
+          "digest": "forall (n : nat), forall (m : nat), (((eq nat) ((mul n) m)) ((mul m) n))"
+        },
+        {
+          "name": "mul_add_distr_r",
+          "digest": "forall (n : nat), forall (m : nat), forall (p : nat), (((eq nat) ((mul ((add n) m)) p)) ((add ((mul n) p)) ((mul m) p)))"
+        },
+        {
+          "name": "mul_add_distr_l",
+          "digest": "forall (n : nat), forall (m : nat), forall (p : nat), (((eq nat) ((mul n) ((add m) p))) ((add ((mul n) m)) ((mul n) p)))"
+        },
+        {
+          "name": "mul_assoc",
+          "digest": "forall (n : nat), forall (m : nat), forall (p : nat), (((eq nat) ((mul n) ((mul m) p))) ((mul ((mul n) m)) p))"
         },
         {
           "name": "mul_1_l",
@@ -218,6 +290,22 @@
         {
           "name": "mul_1_r",
           "digest": "forall (n : nat), (((eq nat) ((mul n) (S O))) n)"
+        },
+        {
+          "name": "sub_0_l",
+          "digest": "forall (n : nat), (((eq nat) ((sub O) n)) O)"
+        },
+        {
+          "name": "sub_0_r",
+          "digest": "forall (n : nat), (((eq nat) ((sub n) O)) n)"
+        },
+        {
+          "name": "sub_diag",
+          "digest": "forall (n : nat), (((eq nat) ((sub n) n)) O)"
+        },
+        {
+          "name": "pred_succ",
+          "digest": "forall (n : nat), (((eq nat) (pred (S n))) n)"
         },
         {
           "name": "eqb_refl",
@@ -234,7 +322,7 @@
       "name": "Peano",
       "tier": "A",
       "category": "Peano",
-      "rocq_sha256": "389a70a76026303a",
+      "rocq_sha256": "d20b6ba9efd68bce",
       "statements": [
         {
           "name": "le_refl_n",
@@ -243,6 +331,10 @@
         {
           "name": "le_0_n",
           "digest": "forall (n : nat), ((le O) n)"
+        },
+        {
+          "name": "le_succ_diag_r",
+          "digest": "forall (n : nat), ((le n) (S n))"
         },
         {
           "name": "le_1_2",

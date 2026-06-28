@@ -9,22 +9,30 @@ for the full design and rationale; this README is the operator's guide.
 Each *unit* is one stdlib **module** — a single file grouping the Tier-A lemmas
 drawn from that module, mirroring the standard library's own file structure
 (`coqc` compiles a `.v` file, not a lemma) rather than splitting each lemma into
-its own file.  The corpus currently has four modules:
+its own file.  The corpus currently has five modules (75 lemmas):
 
 | Module  | Source                                  | Lemmas |
 |---------|-----------------------------------------|--------|
-| `Bool`  | `Coq.Bool.Bool` (ops from `Init.Datatypes`) | 18 |
-| `Lists` | `Coq.Lists.List` (app/length over `list A`) | 4 |
-| `Logic` | `Coq.Init.Logic` (eq, and/or, ex)       | 13 |
-| `Nat`   | `Coq.Init.Nat` (ground + inductive arithmetic) | 13 |
-| `Peano` | `Coq.Init.Peano` (the `le` order)       | 4  |
+| `Bool`  | `Coq.Bool.Bool` (ops from `Init.Datatypes`) | 24 |
+| `Lists` | `Coq.Lists.List` (app/length over `list A`) | 5 |
+| `Logic` | `Coq.Init.Logic` (eq, and/or, ex)       | 14 |
+| `Nat`   | `Coq.Init.Nat` (ground + inductive arithmetic) | 27 |
+| `Peano` | `Coq.Init.Peano` (the `le` order)       | 5  |
 
-Computational induction over the `add`/`mul` fixpoints (`n + 0 = n`,
-`n + m = m + n`, `n+(m+p) = (n+m)+p`, …) is now in Tier A: the kernel reduces a
+Computational induction over the `add`/`mul` fixpoints is now in Tier A, and the
+`Nat` module carries the full additive and multiplicative theory up to
+`mul_assoc` and both distributive laws: `add_comm`/`add_assoc`,
+`mul_comm`/`mul_succ_r`, `mul_add_distr_r`/`mul_add_distr_l`, `mul_assoc`, plus
+the `sub`/`pred` reductions (`n - n = 0`, `pred (S n) = n`).  The kernel reduces a
 fixpoint applied to a *symbolic* constructor-headed argument (`add (S n) m ↝
 S (add n m)`) while leaving a stuck recursive call constant-headed, and `rewrite`
 on a quantified induction hypothesis works.  The translator emits these as an
-`apply (nat_ind <motive>)` with one focused subgoal per constructor.  Remaining
+`apply (nat_ind <motive>)` with one focused subgoal per constructor.  Because the
+scripted `rewrite` only fires on the goal equation's **left** side, the multi-step
+arithmetic proofs (`mul_comm`, `mul_assoc`, …) interleave `symmetry` to bring each
+rewrite target to the left and use *fully-applied* lemma instances (e.g.
+`rewrite (mul_comm m n)`) where the leftmost occurrence would otherwise be wrong —
+mirroring the standard library's reassociation, just spelled out.  Remaining
 out-of-scope cases are listed under `excluded` in `corpus/manifest.json`
 (multi-variable/nested case analysis and induction over an inductive relation).
 **Parametric `list` induction is now in Tier A** (the `Lists` module): the kernel
@@ -98,7 +106,7 @@ benchmarks/stdlib/
   report.py                markdown table + log-log scatter plot
   fidelity.py              statement-vs-stdlib correspondence check (via Rocq's kernel)
   proof_fidelity.py        proof-script vs stdlib-proof gap (re-extracted from installed stdlib)
-  compat/stdlib_compat.me  compat prelude: nat/bool/list/option + le + emulated tactics
+  compat/stdlib_compat.me  compat prelude: nat/bool/list/option + pred/le + emulated tactics
   corpus/
     manifest.json          locked Tier-A set + per-statement digests + excluded boundary
     stdlib_map.json        each curated lemma -> its real stdlib counterpart (or "original")
@@ -354,6 +362,6 @@ so essentially none translate as a whole file (≈1/16 even in `Coq.Init`).  Thi
 is exactly the feasibility verdict in `PLAN.md §1`, and the reason the corpus is
 built from curated lemmas drawn from stdlib content rather than from verbatim
 stdlib files.  Those curated lemmas are then grouped one file per stdlib module
-(`Bool`, `Logic`, `Nat`, `Peano`), so each benchmark file matches the library's
+(`Bool`, `Lists`, `Logic`, `Nat`, `Peano`), so each benchmark file matches the library's
 own file structure even though it holds only the Tier-A-provable subset of that
 module's lemmas.

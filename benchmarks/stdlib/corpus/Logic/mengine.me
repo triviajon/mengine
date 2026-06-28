@@ -23,6 +23,13 @@ rewrite H1 with eq.
 rewrite H2 with eq.
 reflexivity.
 
+Theorem f_equal3_ex : forall (A1 : Type), forall (A2 : Type), forall (A3 : Type), forall (B : Type), forall (f : forall (_ : A1), forall (_ : A2), forall (_ : A3), B), forall (x1 : A1), forall (y1 : A1), forall (x2 : A2), forall (y2 : A2), forall (x3 : A3), forall (y3 : A3), forall (_ : (((eq A1) x1) y1)), forall (_ : (((eq A2) x2) y2)), forall (_ : (((eq A3) x3) y3)), (((eq B) (((f x1) x2) x3)) (((f y1) y2) y3)).
+intro A1. intro A2. intro A3. intro B. intro f. intro x1. intro y1. intro x2. intro y2. intro x3. intro y3. intro H1. intro H2. intro H3.
+rewrite H1 with eq.
+rewrite H2 with eq.
+rewrite H3 with eq.
+reflexivity.
+
 Theorem imp_refl : forall (A : Prop), forall (_ : A), A.
 intro A.
 intro H.

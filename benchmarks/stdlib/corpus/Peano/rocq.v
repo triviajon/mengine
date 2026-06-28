@@ -9,6 +9,9 @@ Proof. induction n.
   - constructor. exact IHn.
 Qed.
 
+Lemma le_succ_diag_r : forall n : nat, n <= S n.
+Proof. intro n. constructor. constructor. Qed.
+
 Lemma le_1_2 : 1 <= 2.
 Proof. constructor. constructor. Qed.
 

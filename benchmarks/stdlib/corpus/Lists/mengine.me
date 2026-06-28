@@ -16,6 +16,10 @@ simpl.
 f_equal.
 exact (IHl).
 
+Theorem app_comm_cons : forall (A : Type), forall (l : (list A)), forall (m : (list A)), forall (a : A), (((eq (list A)) (((cons A) a) (((app A) l) m))) (((app A) (((cons A) a) l)) m)).
+intro A. intro l. intro m. intro a.
+reflexivity.
+
 Theorem app_assoc : forall (A : Type), forall (l : (list A)), forall (m : (list A)), forall (n : (list A)), (((eq (list A)) (((app A) l) (((app A) m) n))) (((app A) (((app A) l) m)) n)).
 intro A.
 intro l.

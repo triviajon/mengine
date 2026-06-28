@@ -61,6 +61,24 @@ Proof. induction b.
   - reflexivity.
 Qed.
 
+Lemma negb_involutive_reverse : forall b : bool, b = negb (negb b).
+Proof. induction b.
+  - reflexivity.
+  - reflexivity.
+Qed.
+
+Lemma andb_negb_r : forall b : bool, andb b (negb b) = false.
+Proof. induction b.
+  - reflexivity.
+  - reflexivity.
+Qed.
+
+Lemma orb_negb_r : forall b : bool, orb b (negb b) = true.
+Proof. induction b.
+  - reflexivity.
+  - reflexivity.
+Qed.
+
 Lemma implb_true_l : forall b : bool, implb true b = b.
 Proof. intro b. reflexivity. Qed.
 
@@ -75,6 +93,21 @@ Qed.
 
 Lemma xorb_false_l : forall b : bool, xorb false b = b.
 Proof. intro b. reflexivity. Qed.
+
+Lemma xorb_false_r : forall b : bool, xorb b false = b.
+Proof. induction b.
+  - reflexivity.
+  - reflexivity.
+Qed.
+
+Lemma xorb_true_l : forall b : bool, xorb true b = negb b.
+Proof. intro b. reflexivity. Qed.
+
+Lemma xorb_true_r : forall b : bool, xorb b true = negb b.
+Proof. induction b.
+  - reflexivity.
+  - reflexivity.
+Qed.
 
 Lemma xorb_b_b : forall b : bool, xorb b b = false.
 Proof. induction b.

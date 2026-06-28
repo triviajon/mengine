@@ -15,6 +15,9 @@ Proof. intros A B f x y H. rewrite H. reflexivity. Qed.
 Lemma f_equal2_ex : forall (A B C : Type) (f : A -> B -> C) (x1 y1 : A) (x2 y2 : B), x1 = y1 -> x2 = y2 -> f x1 x2 = f y1 y2.
 Proof. intros A B C f x1 y1 x2 y2 H1 H2. rewrite H1. rewrite H2. reflexivity. Qed.
 
+Lemma f_equal3_ex : forall (A1 A2 A3 B : Type) (f : A1 -> A2 -> A3 -> B) (x1 y1 : A1) (x2 y2 : A2) (x3 y3 : A3), x1 = y1 -> x2 = y2 -> x3 = y3 -> f x1 x2 x3 = f y1 y2 y3.
+Proof. intros A1 A2 A3 B f x1 y1 x2 y2 x3 y3 H1 H2 H3. rewrite H1. rewrite H2. rewrite H3. reflexivity. Qed.
+
 Lemma imp_refl : forall A : Prop, A -> A.
 Proof. intro A. intro H. exact H. Qed.
 
