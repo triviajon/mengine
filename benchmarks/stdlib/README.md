@@ -9,21 +9,24 @@ for the full design and rationale; this README is the operator's guide.
 Each *unit* is one stdlib **module** — a single file grouping the Tier-A lemmas
 drawn from that module, mirroring the standard library's own file structure
 (`coqc` compiles a `.v` file, not a lemma) rather than splitting each lemma into
-its own file.  The corpus currently has five modules (75 lemmas):
+its own file.  The corpus currently has five modules (88 lemmas):
 
 | Module  | Source                                  | Lemmas |
 |---------|-----------------------------------------|--------|
 | `Bool`  | `Coq.Bool.Bool` (ops from `Init.Datatypes`) | 24 |
-| `Lists` | `Coq.Lists.List` (app/length/map/rev over `list A`) | 9 |
+| `Lists` | `Coq.Lists.List` (app/length/map/rev over `list A`) | 11 |
 | `Logic` | `Coq.Init.Logic` (eq, and/or, ex)       | 14 |
-| `Nat`   | `Coq.Init.Nat` (ground + inductive arithmetic) | 27 |
+| `Nat`   | `Coq.Init.Nat` (ground + inductive arithmetic, max/min) | 34 |
 | `Peano` | `Coq.Init.Peano` (the `le` order)       | 5  |
 
 Computational induction over the `add`/`mul` fixpoints is now in Tier A, and the
 `Nat` module carries the full additive and multiplicative theory up to
 `mul_assoc` and both distributive laws: `add_comm`/`add_assoc`,
 `mul_comm`/`mul_succ_r`, `mul_add_distr_r`/`mul_add_distr_l`, `mul_assoc`, plus
-the `sub`/`pred` reductions (`n - n = 0`, `pred (S n) = n`).  The kernel reduces a
+the `sub`/`pred` reductions (`n - n = 0`, `S n - S m = n - m`, `pred (S n) = n`)
+and the `max`/`min` identities (`max 0 n = n`, `max n 0 = n`, `max n n = n`, and
+their `min` duals — the `_0_r` cases by `destruct`, the idempotents by induction).
+The kernel reduces a
 fixpoint applied to a *symbolic* constructor-headed argument (`add (S n) m ↝
 S (add n m)`) while leaving a stuck recursive call constant-headed, and `rewrite`
 on a quantified induction hypothesis works.  The translator emits these as an
@@ -38,9 +41,11 @@ out-of-scope cases are listed under `excluded` in `corpus/manifest.json`
 **Parametric `list` induction is now in Tier A** (the `Lists` module): the kernel
 reduces a fixpoint over a parametric constructor and `induction l` translates to
 `apply (list_ind A <motive>)`.  The `Lists` module covers `app`/`length` plus the
-`map`/`rev` theory — `map_app`, `length_map`, `rev_app_distr`, `rev_involutive` —
-the last two by `rewrite`ing the (folded) `rev` recursive call with the induction
-hypothesis, exactly as on `nat`.
+`map`/`rev` theory — `map_app`, `length_map`, `map_map`, `rev_app_distr`,
+`rev_involutive`, `rev_unit` — the `rev` lemmas by `rewrite`ing the (folded) `rev`
+recursive call with the induction hypothesis, exactly as on `nat` (`rev_unit`
+straight-line via `rev_app_distr`), and `map_map` by `f_equal` peeling the shared
+`cons` head down to the induction hypothesis.
 
 Each module has two forms:
 
@@ -115,7 +120,7 @@ benchmarks/stdlib/
   report.py                markdown table + log-log scatter plot
   fidelity.py              statement-vs-stdlib correspondence check (via Rocq's kernel)
   proof_fidelity.py        proof-script vs stdlib-proof gap (re-extracted from installed stdlib)
-  compat/stdlib_compat.me  compat prelude: nat/bool/list/option + pred/le + emulated tactics
+  compat/stdlib_compat.me  compat prelude: nat/bool/list/option + pred/max/min/le + emulated tactics
   corpus/
     manifest.json          locked Tier-A set + per-statement digests + excluded boundary
     stdlib_map.json        each curated lemma -> its real stdlib counterpart (or "original")

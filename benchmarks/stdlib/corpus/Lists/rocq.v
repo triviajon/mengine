@@ -70,3 +70,13 @@ Proof. induction l as [| x l IHl].
   - reflexivity.
   - simpl; rewrite rev_app_distr; simpl; rewrite IHl; reflexivity.
 Qed.
+
+Lemma map_map : forall (A B C : Type) (f : A -> B) (g : B -> C) (l : list A),
+  map g (map f l) = map (fun x => g (f x)) l.
+Proof. induction l as [| x l IHl].
+  - reflexivity.
+  - simpl; f_equal; exact IHl.
+Qed.
+
+Lemma rev_unit : forall (A : Type) (l : list A) (a : A), rev (l ++ a :: nil) = a :: rev l.
+Proof. intros A l a. rewrite rev_app_distr; simpl; reflexivity. Qed.

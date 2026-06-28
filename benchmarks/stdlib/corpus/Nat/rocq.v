@@ -113,6 +113,39 @@ Proof. induction n.
   - simpl; rewrite IHn; reflexivity.
 Qed.
 
+Lemma sub_succ : forall n m : nat, S n - S m = n - m.
+Proof. intros n m. reflexivity. Qed.
+
+Lemma max_0_l : forall n : nat, Nat.max 0 n = n.
+Proof. intro n. reflexivity. Qed.
+
+Lemma max_0_r : forall n : nat, Nat.max n 0 = n.
+Proof. destruct n.
+  - reflexivity.
+  - reflexivity.
+Qed.
+
+Lemma min_0_l : forall n : nat, Nat.min 0 n = 0.
+Proof. intro n. reflexivity. Qed.
+
+Lemma min_0_r : forall n : nat, Nat.min n 0 = 0.
+Proof. destruct n.
+  - reflexivity.
+  - reflexivity.
+Qed.
+
+Lemma max_id : forall n : nat, Nat.max n n = n.
+Proof. induction n.
+  - reflexivity.
+  - simpl; rewrite IHn; reflexivity.
+Qed.
+
+Lemma min_id : forall n : nat, Nat.min n n = n.
+Proof. induction n.
+  - reflexivity.
+  - simpl; rewrite IHn; reflexivity.
+Qed.
+
 Lemma pred_succ : forall n : nat, Nat.pred (S n) = n.
 Proof. intro n. reflexivity. Qed.
 

@@ -103,3 +103,23 @@ intro l.
 intro IHl.
 simpl.
 simpl; rewrite rev_app_distr with eq; simpl; rewrite IHl with eq; reflexivity.
+
+Theorem map_map : forall (A : Type), forall (B : Type), forall (C : Type), forall (f : forall (_ : A), B), forall (g : forall (_ : B), C), forall (l : (list A)), (((eq (list C)) ((((map B) C) g) ((((map A) B) f) l))) ((((map A) C) (fun (x : A) => (g (f x)))) l)).
+intro A.
+intro B.
+intro C.
+intro f.
+intro g.
+intro l.
+apply (list_ind A (fun (l : (list A)) => (((eq (list C)) ((((map B) C) g) ((((map A) B) f) l))) ((((map A) C) (fun (x : A) => (g (f x)))) l)))).
+simpl.
+reflexivity.
+intro x.
+intro l.
+intro IHl.
+simpl.
+simpl; f_equal; exact (IHl).
+
+Theorem rev_unit : forall (A : Type), forall (l : (list A)), forall (a : A), (((eq (list A)) ((rev A) (((app A) l) (((cons A) a) (nil A))))) (((cons A) a) ((rev A) l))).
+intro A. intro l. intro a.
+rewrite rev_app_distr with eq; simpl; reflexivity.

@@ -189,6 +189,58 @@ intro IHn.
 simpl.
 simpl; rewrite IHn with eq; reflexivity.
 
+Theorem sub_succ : forall (n : nat), forall (m : nat), (((eq nat) ((sub (S n)) (S m))) ((sub n) m)).
+intro n. intro m.
+reflexivity.
+
+Theorem max_0_l : forall (n : nat), (((eq nat) ((max O) n)) n).
+intro n.
+reflexivity.
+
+Theorem max_0_r : forall (n : nat), (((eq nat) ((max n) O)) n).
+intro n.
+apply (nat_ind (fun (n : nat) => (((eq nat) ((max n) O)) n))).
+simpl.
+reflexivity.
+intro n.
+intro.
+simpl.
+reflexivity.
+
+Theorem min_0_l : forall (n : nat), (((eq nat) ((min O) n)) O).
+intro n.
+reflexivity.
+
+Theorem min_0_r : forall (n : nat), (((eq nat) ((min n) O)) O).
+intro n.
+apply (nat_ind (fun (n : nat) => (((eq nat) ((min n) O)) O))).
+simpl.
+reflexivity.
+intro n.
+intro.
+simpl.
+reflexivity.
+
+Theorem max_id : forall (n : nat), (((eq nat) ((max n) n)) n).
+intro n.
+apply (nat_ind (fun (n : nat) => (((eq nat) ((max n) n)) n))).
+simpl.
+reflexivity.
+intro n.
+intro IHn.
+simpl.
+simpl; rewrite IHn with eq; reflexivity.
+
+Theorem min_id : forall (n : nat), (((eq nat) ((min n) n)) n).
+intro n.
+apply (nat_ind (fun (n : nat) => (((eq nat) ((min n) n)) n))).
+simpl.
+reflexivity.
+intro n.
+intro IHn.
+simpl.
+simpl; rewrite IHn with eq; reflexivity.
+
 Theorem pred_succ : forall (n : nat), (((eq nat) (pred (S n))) n).
 intro n.
 reflexivity.

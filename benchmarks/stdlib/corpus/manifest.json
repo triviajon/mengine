@@ -111,7 +111,7 @@
       "name": "Lists",
       "tier": "A",
       "category": "Lists",
-      "rocq_sha256": "168e784a2976ea81",
+      "rocq_sha256": "bf27ff9a508134f4",
       "statements": [
         {
           "name": "app_nil_l",
@@ -148,6 +148,14 @@
         {
           "name": "rev_involutive",
           "digest": "forall (A : Type), forall (l : (list A)), (((eq (list A)) ((rev A) ((rev A) l))) l)"
+        },
+        {
+          "name": "map_map",
+          "digest": "forall (A : Type), forall (B : Type), forall (C : Type), forall (f : forall (_ : A), B), forall (g : forall (_ : B), C), forall (l : (list A)), (((eq (list C)) ((((map B) C) g) ((((map A) B) f) l))) ((((map A) C) (fun (x : A) => (g (f x)))) l))"
+        },
+        {
+          "name": "rev_unit",
+          "digest": "forall (A : Type), forall (l : (list A)), forall (a : A), (((eq (list A)) ((rev A) (((app A) l) (((cons A) a) (nil A))))) (((cons A) a) ((rev A) l)))"
         }
       ],
       "deps": "Coq.Init (auto-loaded)"
@@ -221,7 +229,7 @@
       "name": "Nat",
       "tier": "A",
       "category": "Nat",
-      "rocq_sha256": "768e91d8b8103d10",
+      "rocq_sha256": "bc54196e853bdf4f",
       "statements": [
         {
           "name": "add_2_2",
@@ -318,6 +326,34 @@
         {
           "name": "sub_diag",
           "digest": "forall (n : nat), (((eq nat) ((sub n) n)) O)"
+        },
+        {
+          "name": "sub_succ",
+          "digest": "forall (n : nat), forall (m : nat), (((eq nat) ((sub (S n)) (S m))) ((sub n) m))"
+        },
+        {
+          "name": "max_0_l",
+          "digest": "forall (n : nat), (((eq nat) ((max O) n)) n)"
+        },
+        {
+          "name": "max_0_r",
+          "digest": "forall (n : nat), (((eq nat) ((max n) O)) n)"
+        },
+        {
+          "name": "min_0_l",
+          "digest": "forall (n : nat), (((eq nat) ((min O) n)) O)"
+        },
+        {
+          "name": "min_0_r",
+          "digest": "forall (n : nat), (((eq nat) ((min n) O)) O)"
+        },
+        {
+          "name": "max_id",
+          "digest": "forall (n : nat), (((eq nat) ((max n) n)) n)"
+        },
+        {
+          "name": "min_id",
+          "digest": "forall (n : nat), (((eq nat) ((min n) n)) n)"
         },
         {
           "name": "pred_succ",

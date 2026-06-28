@@ -95,6 +95,21 @@ Definition ltb : forall (_ : nat), forall (_ : nat), bool :=
 Definition pred : forall (_ : nat), nat :=
   fun (n : nat) => match n with | O => O | S k => k end.
 
+(* max/min (Coq.Init.Nat): Rocq matches on both n and m; here nested
+   single-scrutinee matches, extensionally identical (the `S p, O` arm returns
+   the outer scrutinee `n` = `S p`, exactly as Nat.max/Nat.min do). *)
+Fixpoint max (n : nat) (m : nat) {struct n} : nat :=
+  match n with
+  | O => m
+  | S p => match m with | O => n | S q => S (max p q) end
+  end.
+
+Fixpoint min (n : nat) (m : nat) {struct n} : nat :=
+  match n with
+  | O => O
+  | S p => match m with | O => O | S q => S (min p q) end
+  end.
+
 (* ── list functions (Coq.Lists.List / Coq.Init.Datatypes) ──────────── *)
 
 Fixpoint app (A : Type) (l : list A) (k : list A) {struct l} : list A :=
