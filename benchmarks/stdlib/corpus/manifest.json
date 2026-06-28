@@ -111,7 +111,7 @@
       "name": "Lists",
       "tier": "A",
       "category": "Lists",
-      "rocq_sha256": "6c594c76b9f9d612",
+      "rocq_sha256": "a873fbb27d342349",
       "statements": [
         {
           "name": "app_nil_l",
@@ -132,6 +132,22 @@
         {
           "name": "length_app",
           "digest": "forall (A : Type), forall (l : (list A)), forall (m : (list A)), (((eq nat) ((length A) (((app A) l) m))) ((add ((length A) l)) ((length A) m)))"
+        },
+        {
+          "name": "map_app",
+          "digest": "forall (A : Type), forall (B : Type), forall (f : forall (_ : A), B), forall (l : (list A)), forall (m : (list A)), (((eq (list B)) ((((map A) B) f) (((app A) l) m))) (((app B) ((((map A) B) f) l)) ((((map A) B) f) m)))"
+        },
+        {
+          "name": "length_map",
+          "digest": "forall (A : Type), forall (B : Type), forall (f : forall (_ : A), B), forall (l : (list A)), (((eq nat) ((length B) ((((map A) B) f) l))) ((length A) l))"
+        },
+        {
+          "name": "rev_app_distr",
+          "digest": "forall (A : Type), forall (l : (list A)), forall (m : (list A)), (((eq (list A)) ((rev A) (((app A) l) m))) (((app A) ((rev A) m)) ((rev A) l)))"
+        },
+        {
+          "name": "rev_involutive",
+          "digest": "forall (A : Type), forall (l : (list A)), (((eq (list A)) ((rev A) ((rev A) l))) l)"
         }
       ],
       "deps": "Coq.Init (auto-loaded)"

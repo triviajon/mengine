@@ -686,7 +686,31 @@ Expression *init_match_expression_wc(Expression *scrutinee, MatchBranch **branch
         // All branches must have the same type up to definitional equality.
         Expression *branch_body_type = get_expression_type(branch->body);
         if (match_type == NULL) {
-            match_type = branch_body_type;
+            // Transport the seed type out to the outer match `context` by
+            // substituting away this branch's parameter-slot pattern variables
+            // (each a delta-alias to one of the scrutinee's type arguments).
+            // Otherwise match_type keeps *this* branch's pattern-var context,
+            // which is not an ancestor of a sibling branch's context, so the
+            // (sound) convertibility check below spuriously rejects a valid
+            // non-dependent match whose branch type mentions the inductive's
+            // parameter -- e.g. a `nil A` branch, of type `list A`.  (app/length
+            // escape only because their first branch is a variable/`O`, whose
+            // type already lives in the outer context.)  Substituting a
+            // delta-alias for its body is meaning-preserving, so this only
+            // relocates the type, never changes it.
+            Expression *seed = branch_body_type;
+            for (int j = branch->pattern_var_count - 1; j >= 0; j--) {
+                Expression *pv = branch->pattern_variables[j];
+                Expression *pv_body = get_var_body(pv);
+                if (pv_body != NULL) {
+                    Expression *lowered =
+                        new_subst(get_expression_context(seed), seed, pv, pv_body);
+                    if (lowered != NULL) {
+                        seed = lowered;
+                    }
+                }
+            }
+            match_type = seed;
         } else if (!conversion_holds_in_context(get_expression_context(branch->body),
                                                 branch_body_type, match_type)) {
             fprintf(stderr, ERROR "Branch body types do not match.\n" CRESET);

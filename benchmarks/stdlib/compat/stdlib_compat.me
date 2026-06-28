@@ -109,6 +109,19 @@ Fixpoint length (A : Type) (l : list A) {struct l} : nat :=
   | cons _ x xs => S (length A xs)
   end.
 
+Fixpoint map (A : Type) (B : Type) (f : forall (_ : A), B) (l : list A) {struct l} : list B :=
+  match l with
+  | nil _ => nil B
+  | cons _ x xs => cons B (f x) (map A B f xs)
+  end.
+
+(* rev: Coq.Lists.List's naive reverse, rev (x :: xs) = rev xs ++ (x :: nil). *)
+Fixpoint rev (A : Type) (l : list A) {struct l} : list A :=
+  match l with
+  | nil _ => nil A
+  | cons _ x xs => app A (rev A xs) (cons A x (nil A))
+  end.
+
 (* ── Relational predicates (Coq.Init.Peano / Coq.Init.Datatypes) ───── *)
 
 (* le, as in Coq.Init.Peano: le n n and le n m -> le n (S m). *)

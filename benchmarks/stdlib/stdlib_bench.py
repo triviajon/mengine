@@ -208,9 +208,61 @@ def run_rocq_baseline(cfg, timeout, trials):
     return res
 
 
+# Sentence heads that make up a module's Rocq preamble (Require/Import/Open/…).
+PREAMBLE_HEADS = ("Require", "From", "Import", "Export", "Open", "Close", "Set",
+                  "Unset", "Declare", "Global", "Local", "Hint", "Arguments")
+
+
+def module_rocq_preamble(vpath):
+    """The leading directive sentences of a corpus rocq.v (everything before its
+    first Lemma/Theorem): its Require/Import/Open lines.  Returns a .v source
+    string, possibly empty (a Require-free module)."""
+    with open(vpath) as f:
+        text = translate.strip_comments(f.read())
+    out = []
+    for s in translate.split_sentences(text):
+        s = s.strip()
+        head = s.split(None, 1)[0] if s else ""
+        if head in PREAMBLE_HEADS:
+            out.append(s + ".")
+        else:
+            break
+    return "\n".join(out)
+
+
+def run_rocq_module_baseline(cfg, name, timeout, trials):
+    """Time a .v holding only this module's Require/Import preamble — the module's
+    own Rocq startup floor.  A `Require`-free module yields an empty file, i.e.
+    the same Prelude-only floor as the global baseline; a module that loads a
+    library (Lists -> `Require Import List`) pays that load here, so the report
+    subtracts it instead of charging it to the proof.  Run from the unit dir so
+    load paths resolve exactly as the unit's own compile does."""
+    import tempfile
+    vpath, _m, d = unit_paths(cfg, name)
+    pre = module_rocq_preamble(vpath)
+    fd, path = tempfile.mkstemp(suffix=".v", prefix="stdlib_pre_", dir=d)
+    with os.fdopen(fd, "w") as f:
+        f.write(pre + "\n")
+    try:
+        cmd = [cfg["coq_path"], "-q", os.path.basename(path)]
+        to = timeout * cfg["coq_timeout_multiplier"]
+        res = time_command(cmd, d, to, trials)
+        _clean_coqc_artifacts(path, d)
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
+    return res
+
+
 # Keys under which baselines are stored in results (alongside per-unit keys).
+# Baseline keys use a double underscore so report's per-unit key discovery (which
+# splits on the first '_') can exclude them by testing for "__".
 MENGINE_BASELINE_KEY = "mengine__startup_baseline"
 ROCQ_BASELINE_KEY = "coq__startup_baseline"
+
+
+def rocq_module_baseline_key(name):
+    return f"coq__baseline__{name}"
 
 
 # ─────────────────────────── faithfulness gate ───────────────────────────────
@@ -373,15 +425,25 @@ def cmd_run(cfg, args):
           f"MEngine={mb_t*1000:8.1f}ms  Rocq={rb_t*1000:8.1f}ms\n")
 
     for u in units:
+        # Each module's own Rocq startup floor: its Require/Import preamble timed
+        # alone.  Require-free modules match the global empty-.v floor; Lists
+        # (`Require Import List`) pays the library load here so the report does
+        # not charge it to the proof.
+        rmb = run_rocq_module_baseline(cfg, u, cfg["timeout"], base_trials)
+        results[rocq_module_baseline_key(u)] = rmb
+        rb_u = rmb["time_taken"] if rmb["success"] else rb_t
+
         mr = run_mengine(cfg, u, cfg["timeout"], cfg["trials"])
         rr = run_rocq(cfg, u, cfg["timeout"], cfg["trials"])
         results[f"mengine_{u}"] = mr
         results[f"coq_{u}"] = rr
         save_results(cfg["results"], results)
         # Proof-only = whole-file minus the engine's startup floor (clamped at 0;
-        # a tiny proof can dip below baseline jitter).
+        # a tiny proof can dip below baseline jitter).  Rocq uses the module's own
+        # preamble floor (rb_u); MEngine's preamble (the compat prelude) is the
+        # same for every module.
         mp = max(0.0, mr["time_taken"] - mb_t) if mr["success"] else None
-        rp = max(0.0, rr["time_taken"] - rb_t) if rr["success"] else None
+        rp = max(0.0, rr["time_taken"] - rb_u) if rr["success"] else None
         ms = f"{mr['time_taken']*1000:.1f}ms" if mr["success"] else "FAIL"
         rs = f"{rr['time_taken']*1000:.1f}ms" if rr["success"] else "FAIL"
         mps = f"{mp*1000:.1f}ms" if mp is not None else "FAIL"

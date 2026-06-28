@@ -14,7 +14,7 @@ its own file.  The corpus currently has five modules (75 lemmas):
 | Module  | Source                                  | Lemmas |
 |---------|-----------------------------------------|--------|
 | `Bool`  | `Coq.Bool.Bool` (ops from `Init.Datatypes`) | 24 |
-| `Lists` | `Coq.Lists.List` (app/length over `list A`) | 5 |
+| `Lists` | `Coq.Lists.List` (app/length/map/rev over `list A`) | 9 |
 | `Logic` | `Coq.Init.Logic` (eq, and/or, ex)       | 14 |
 | `Nat`   | `Coq.Init.Nat` (ground + inductive arithmetic) | 27 |
 | `Peano` | `Coq.Init.Peano` (the `le` order)       | 5  |
@@ -37,12 +37,17 @@ out-of-scope cases are listed under `excluded` in `corpus/manifest.json`
 (multi-variable/nested case analysis and induction over an inductive relation).
 **Parametric `list` induction is now in Tier A** (the `Lists` module): the kernel
 reduces a fixpoint over a parametric constructor and `induction l` translates to
-`apply (list_ind A <motive>)`.
+`apply (list_ind A <motive>)`.  The `Lists` module covers `app`/`length` plus the
+`map`/`rev` theory — `map_app`, `length_map`, `rev_app_distr`, `rev_involutive` —
+the last two by `rewrite`ing the (folded) `rev` recursive call with the induction
+hypothesis, exactly as on `nat`.
 
 Each module has two forms:
 
 - `corpus/<Module>/rocq.v` — the Rocq source (compiles against the installed
-  stdlib; `Coq.Init` is auto-loaded, so the corpus needs no `Require`).
+  stdlib).  Four modules need no `Require` (`Coq.Init` is auto-loaded); `Lists`
+  alone `Require`s `Coq.Lists.List` for `map`/`rev`, and is timed against its own
+  preamble baseline (see "Startup-subtracted times").
 - `corpus/<Module>/mengine.me` — the MEngine source, produced **mechanically** by
   [`translate.py`](translate.py) with zero manual edits (Tier A).
 
@@ -84,10 +89,14 @@ loads its auto-loaded `Prelude` (~65 ms).  At this problem size the *whole-file*
 number is almost entirely this per-invocation cost, not the proof.
 
 **Startup-subtracted ("proof") times.**  To compare proof cost fairly, `run`
-first times each engine's preamble *alone* — an empty `.v` (the corpus has no
-`Require`, so this loads exactly the same `Prelude` every unit does) and the
-compat prelude with no unit appended — and records it as a startup baseline.
-`report` subtracts that floor from each unit's whole-file time (clamped at 0) to
+first times each engine's preamble *alone* and records it as a startup baseline:
+for MEngine the compat prelude with no unit appended; for Rocq **each module's
+own Require/Import preamble** (a `.v` holding just its leading directives).  Four
+modules `Require` nothing, so their Rocq baseline is an empty `.v` loading the
+same auto-loaded `Prelude` they do; `Lists` `Require`s `Coq.Lists.List`, so its
+baseline loads `List` too (~138 ms vs the ~64 ms empty floor) — that library load
+is therefore subtracted from Lists' time, not mistaken for proof cost.
+`report` subtracts each module's floor from its whole-file time (clamped at 0) to
 get the marginal statement+proof cost, and reports a residual at or below the
 baseline's own run-to-run jitter as `~0` (indistinguishable from startup).  For
 the current Tier-A corpus every proof is trivial enough that its
@@ -321,6 +330,23 @@ still pass):
    under a normal build).  nat's `S` (one argument → resizes to a power of two)
    never hit it.  Rounding the requested capacity up to the next power of two fixes
    it for every caller.
+9. **A match branch may return the matched parametric inductive**
+   (`src/kernel/expression.c`).  `init_match_expression_wc` seeded the match's
+   result type from the *first* branch's body type, keeping that branch's
+   pattern-variable context, then checked the other branches against it.  When the
+   seed type mentions the inductive's parameter — e.g. a `nil A` branch of type
+   `list A` — that context is not an ancestor of a sibling branch's context, so
+   the (sound) `list A` ≡ `list A` convertibility check spuriously failed with
+   "Branch body types do not match" (`app`/`length` escaped only because their
+   first branch is a variable/`O`, whose type already lives in the outer context).
+   The seed type is now transported to the outer context by substituting away the
+   branch's parameter-slot pattern variables — each a delta-alias to a scrutinee
+   type argument, so the substitution is meaning-preserving (it relocates the
+   type, never changes it).  Without this, the direct `Fixpoint map`/`Fixpoint rev`
+   the proofs rely on could not be defined (their base branch is `nil <T>`); the
+   work-around of routing through `fold_right` makes `map`/`rev` *Definitions*,
+   which `simpl` then delta-unfolds, breaking the `rewrite <IH>` the rev proofs
+   need.  All 431 kernel tests and every `examples/*.me` still pass.
 
 Now **in Tier A** (previously excluded, unblocked by the kernel work below):
 
@@ -342,15 +368,21 @@ Now **in Tier A** (previously excluded, unblocked by the kernel work below):
   a full, Coq-checkable proof.  Its `as` clause therefore names only the
   constructor arguments (`destruct l as [| x l]`), not the IH that `induction`'s
   would (`induction l as [| x l IHl]`).
-- **Parametric `list` induction** (`app_nil_r`, `app_assoc`, `length_app` over
-  `list A`): the compat prelude declares `list`/`option` with `A` as a *parameter*,
-  so MEngine generates the Rocq-shaped `list_ind : forall (A : Type) (P : list A ->
-  Prop), …`, and `induction l` translates to `intro A. intro l. apply (list_ind A
-  <motive>)` with one focused subgoal per constructor (the `cons` case introducing
-  the head, tail, and the IH).  Unblocked by engine fixes 7–8: list computations
-  reduce, and the pattern-substitution map no longer hangs on a multi-argument
-  constructor.  The translator names the case binders from the proof's `induction l
-  as [| x l IHl]` intro-pattern, so the ported case lines line up.
+- **Parametric `list` induction** (`app_nil_r`, `app_assoc`, `length_app`,
+  `map_app`, `length_map`, `rev_app_distr`, `rev_involutive` over `list A`): the
+  compat prelude declares `list`/`option` with `A` as a *parameter*, so MEngine
+  generates the Rocq-shaped `list_ind : forall (A : Type) (P : list A -> Prop), …`,
+  and `induction l` translates to `intro A. intro l. apply (list_ind A <motive>)`
+  with one focused subgoal per constructor (the `cons` case introducing the head,
+  tail, and the IH).  Unblocked by engine fixes 7–9: list computations reduce, the
+  pattern-substitution map no longer hangs on a multi-argument constructor, and
+  `map`/`rev` can be defined as direct `Fixpoint`s — whose base branch is `nil <T>`
+  (fix 9) — so they stay folded under `simpl` and the rev proofs can `rewrite` a
+  recursive call with the IH (`rev_app_distr`, `rev_involutive`), exactly as the
+  arithmetic proofs do on `nat`.  The translator names the case binders from the
+  proof's `induction l as [| x l IHl]` intro-pattern, so the ported case lines line
+  up, and now peels a function-typed leading binder (`f : A -> B` in `map_app`)
+  whose printed type contains a comma.
 
 What stays **out of Tier A** (documented in `corpus/manifest.json` → `excluded`):
 

@@ -60,8 +60,9 @@ def _load(cfg):
     m_floor, m_noise = _baseline(results, MENGINE_BASELINE_KEY)
     r_floor, r_noise = _baseline(results, ROCQ_BASELINE_KEY)
     counts = _lemma_counts(cfg)
-    unit_keys = {k.split("_", 1)[1] for k in results
-                 if "_" in k and k not in (MENGINE_BASELINE_KEY, ROCQ_BASELINE_KEY)}
+    # Per-unit keys are `mengine_<u>` / `coq_<u>` (single underscore); every
+    # baseline key uses a double underscore, so exclude those.
+    unit_keys = {k.split("_", 1)[1] for k in results if "_" in k and "__" not in k}
     rows = []
     for u in sorted(unit_keys):
         m = results.get(f"mengine_{u}")
@@ -70,11 +71,18 @@ def _load(cfg):
             continue
         mt = m["time_taken"] if m["success"] else None
         rt = r["time_taken"] if r["success"] else None
+        # Rocq's startup floor is this module's own Require/Import preamble (so a
+        # module that loads a library has that load subtracted, not charged to the
+        # proof); fall back to the global empty-.v floor if not recorded.
+        ru_floor, ru_noise = _baseline(results, f"coq__baseline__{u}")
+        if ru_floor is None:
+            ru_floor, ru_noise = r_floor, r_noise
         rows.append({
             "unit": u, "category": _category(u), "nlemmas": counts.get(u),
             "mengine": mt, "rocq": rt,
             "mengine_proof": _proof_time(mt, m_floor),
-            "rocq_proof": _proof_time(rt, r_floor),
+            "rocq_proof": _proof_time(rt, ru_floor),
+            "rocq_floor": ru_floor, "rocq_noise": ru_noise,
         })
     meta = {
         "mengine_floor": m_floor, "mengine_noise": m_noise,
@@ -135,7 +143,7 @@ def generate(cfg):
         if have_baselines:
             mp, rp = row["mengine_proof"], row["rocq_proof"]
             m_below = mp is not None and mp <= m_noise
-            r_below = rp is not None and rp <= r_noise
+            r_below = rp is not None and rp <= row.get("rocq_noise", r_noise)
             mp_s = "~0" if m_below else _fmt_ms(mp)
             rp_s = "~0" if r_below else _fmt_ms(rp)
             if m_below or r_below:

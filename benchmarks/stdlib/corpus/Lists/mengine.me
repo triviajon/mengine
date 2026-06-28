@@ -53,3 +53,74 @@ intro m.
 simpl.
 f_equal.
 exact ((IHl m)).
+
+Theorem map_app : forall (A : Type), forall (B : Type), forall (f : forall (_ : A), B), forall (l : (list A)), forall (m : (list A)), (((eq (list B)) ((((map A) B) f) (((app A) l) m))) (((app B) ((((map A) B) f) l)) ((((map A) B) f) m))).
+intro A.
+intro B.
+intro f.
+intro l.
+apply (list_ind A (fun (l : (list A)) => forall (m : (list A)), (((eq (list B)) ((((map A) B) f) (((app A) l) m))) (((app B) ((((map A) B) f) l)) ((((map A) B) f) m))))).
+simpl.
+intro m.
+reflexivity.
+intro x.
+intro l.
+intro IHl.
+simpl.
+intro m.
+simpl.
+f_equal.
+exact ((IHl m)).
+
+Theorem length_map : forall (A : Type), forall (B : Type), forall (f : forall (_ : A), B), forall (l : (list A)), (((eq nat) ((length B) ((((map A) B) f) l))) ((length A) l)).
+intro A.
+intro B.
+intro f.
+intro l.
+apply (list_ind A (fun (l : (list A)) => (((eq nat) ((length B) ((((map A) B) f) l))) ((length A) l)))).
+simpl.
+reflexivity.
+intro x.
+intro l.
+intro IHl.
+simpl.
+simpl.
+f_equal.
+exact (IHl).
+
+Theorem rev_app_distr : forall (A : Type), forall (l : (list A)), forall (m : (list A)), (((eq (list A)) ((rev A) (((app A) l) m))) (((app A) ((rev A) m)) ((rev A) l))).
+intro A.
+intro l.
+apply (list_ind A (fun (l : (list A)) => forall (m : (list A)), (((eq (list A)) ((rev A) (((app A) l) m))) (((app A) ((rev A) m)) ((rev A) l))))).
+simpl.
+intro m.
+simpl.
+symmetry.
+rewrite app_nil_r with eq.
+reflexivity.
+intro x.
+intro l.
+intro IHl.
+simpl.
+intro m.
+simpl.
+rewrite IHl with eq.
+symmetry.
+rewrite app_assoc with eq.
+reflexivity.
+
+Theorem rev_involutive : forall (A : Type), forall (l : (list A)), (((eq (list A)) ((rev A) ((rev A) l))) l).
+intro A.
+intro l.
+apply (list_ind A (fun (l : (list A)) => (((eq (list A)) ((rev A) ((rev A) l))) l))).
+simpl.
+reflexivity.
+intro x.
+intro l.
+intro IHl.
+simpl.
+simpl.
+rewrite rev_app_distr with eq.
+simpl.
+rewrite IHl with eq.
+reflexivity.

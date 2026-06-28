@@ -40,7 +40,11 @@
       "app_nil_r": {"stdlib": "app_nil_r"},
       "app_comm_cons": {"stdlib": "app_comm_cons"},
       "app_assoc": {"stdlib": "app_assoc"},
-      "length_app": {"stdlib": "length_app"}
+      "length_app": {"stdlib": "length_app"},
+      "map_app": {"stdlib": "map_app"},
+      "length_map": {"stdlib": "length_map"},
+      "rev_app_distr": {"stdlib": "rev_app_distr"},
+      "rev_involutive": {"stdlib": "rev_involutive"}
     },
     "Logic": {
       "eq_refl_x": {"stdlib": "@eq_refl"},

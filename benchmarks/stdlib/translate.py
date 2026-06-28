@@ -838,12 +838,42 @@ def _split_semicolons(s):
 # ──────────────────────────── proof translation ──────────────────────────────
 
 def parse_statement_leading_binder(type_out):
-    """From an emitted 'forall (x : T), Body' string, return (x, T, Body) or None."""
-    m = re.match(r"^forall \(([A-Za-z_][A-Za-z0-9_']*) : ([^,]+)\), (.*)$",
-                 type_out, re.S)
-    if not m:
+    """From an emitted 'forall (x : T), Body' string, return (x, T, Body) or None.
+
+    The binder type T may itself contain commas / nested parentheses — e.g. a
+    function-typed binder `f : forall (_ : A), B` — so the binder's closing `)`
+    is found by matching parentheses from the `(` after `forall `, rather than
+    by a comma-naive regex (which would stop inside T)."""
+    prefix = "forall ("
+    if not type_out.startswith(prefix):
         return None
-    return m.group(1), m.group(2).strip(), m.group(3).strip()
+    depth = 0
+    i = len("forall ")  # index of the binder's opening '('
+    start = i
+    while i < len(type_out):
+        c = type_out[i]
+        if c == "(":
+            depth += 1
+        elif c == ")":
+            depth -= 1
+            if depth == 0:
+                break
+        i += 1
+    if depth != 0 or i >= len(type_out):
+        return None
+    inner = type_out[start + 1:i]   # 'x : T'
+    rest = type_out[i + 1:]
+    if not rest.startswith(", "):
+        return None
+    body = rest[2:].strip()
+    ci = inner.find(" : ")
+    if ci < 0:
+        return None
+    name = inner[:ci].strip()
+    ty = inner[ci + 3:].strip()
+    if not re.match(r"^[A-Za-z_][A-Za-z0-9_']*$", name):
+        return None
+    return name, ty, body
 
 
 def translate_proof(proof_sentences, stmt_type_out, report):
