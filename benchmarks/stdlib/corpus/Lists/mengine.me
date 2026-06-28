@@ -13,8 +13,8 @@ intro l.
 intro IHl.
 simpl.
 simpl.
-rewrite IHl with eq.
-reflexivity.
+f_equal.
+exact (IHl).
 
 Theorem app_assoc : forall (A : Type), forall (l : (list A)), forall (m : (list A)), forall (n : (list A)), (((eq (list A)) (((app A) l) (((app A) m) n))) (((app A) (((app A) l) m)) n)).
 intro A.
@@ -31,8 +31,8 @@ simpl.
 intro m.
 intro n.
 simpl.
-rewrite IHl with eq.
-reflexivity.
+f_equal.
+exact (((IHl m) n)).
 
 Theorem length_app : forall (A : Type), forall (l : (list A)), forall (m : (list A)), (((eq nat) ((length A) (((app A) l) m))) ((add ((length A) l)) ((length A) m))).
 intro A.
@@ -47,5 +47,5 @@ intro IHl.
 simpl.
 intro m.
 simpl.
-rewrite IHl with eq.
-reflexivity.
+f_equal.
+exact ((IHl m)).

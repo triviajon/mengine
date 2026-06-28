@@ -152,3 +152,32 @@ Tactic constructor := match Goal with
 | [ |- ((or ?A) ?B) ]    => first [ eapply ((or_introl A) B) | eapply ((or_intror A) B) ]
 | [ |- ((le ?n) ?m) ]    => first [ eapply (le_n n) | eapply (le_S n) ]
 end.
+
+(* f_equal (approximation): reduce a goal `eq T (h .. a) (h .. b)` to its
+   differing-argument subgoals, discharging the unchanged layers by reflexivity.
+   Built on the kernel congruence `Bad_App_Congruence : forall A B (f g : A -> B)
+   (x y : A), f = g -> x = y -> f x = g y` — the *same* congruence the prelude's
+   `rewrite` is built on — so it adds no new trust.  One application layer of the
+   goal becomes two subgoals, `eq (A -> T) f g` (the function) and `eq A x y`
+   (the argument); `try reflexivity` closes the layers that didn't change and the
+   recursive `try f_equal` peels nested applications, so `f_equal` on
+   `cons A a X = cons A a Y` leaves exactly `X = Y`.
+
+   How it differs from Rocq's `f_equal`: it peels exactly one application layer
+   and reads the head `?f`/`?g` off the goal first-order (no higher-order
+   unification).  `try reflexivity` discharges the function subgoal when the head
+   is unchanged (the common case — `cons A a`, `S`) and the argument subgoal when
+   the arguments are convertible, leaving any genuinely-different argument as the
+   single remaining goal.  It deliberately does **not** recurse into that
+   argument subgoal: an argument that is itself a compound application (e.g.
+   `app A l (app A m n)`) is the proof obligation to discharge (here, by the
+   induction hypothesis), not a congruence to peel further — recursing there
+   would manufacture false subgoals.  So this is a single-layer structural
+   congruence adequate for the `cons`/`S` goals an induction step produces, not a
+   general multi-argument `f_equal`.  A bare `f_equal` on a non-application
+   equality fails (no match arm), as Rocq's does. *)
+Tactic f_equal := match Goal with
+| [ |- (((eq ?T) (?f ?x)) (?g ?y)) ] =>
+  let A := type_of x in
+  apply ((((((Bad_App_Congruence A) T) f) g) x) y); try reflexivity
+end.

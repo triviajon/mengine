@@ -6,8 +6,14 @@
    so the unit needs no Require; the list notations live in list_scope.
 
    `induction l` keeps any binder after `l` (here `m`, `n`) quantified in both the
-   goal and the induction hypothesis, so each case introduces them before
-   rewriting — exactly as the Nat add_assoc proof does for its `m`/`p`. *)
+   goal and the induction hypothesis, so each case introduces them first.  The
+   cons case then uses `f_equal` to peel the shared head (`cons x _`) / successor
+   (`S _`), mirroring the standard library's own proofs (`induction l; simpl;
+   f_equal; auto`); MEngine's compat prelude supplies a single-layer `f_equal`
+   (compat/stdlib_compat.me).  Where the stdlib closes the peeled argument goal
+   with `auto`, here it is discharged explicitly with the induction hypothesis
+   (MEngine's `apply` cannot instantiate the quantified, redex-typed IH, so the
+   IH is applied by hand via `exact (IHl m n)`). *)
 
 Open Scope list_scope.
 
@@ -17,17 +23,17 @@ Proof. intros A l. reflexivity. Qed.
 Lemma app_nil_r : forall (A : Type) (l : list A), l ++ nil = l.
 Proof. induction l as [| x l IHl].
   - reflexivity.
-  - simpl. rewrite IHl. reflexivity.
+  - simpl. f_equal. exact IHl.
 Qed.
 
 Lemma app_assoc : forall (A : Type) (l m n : list A), l ++ (m ++ n) = (l ++ m) ++ n.
 Proof. induction l as [| x l IHl].
   - intro m. intro n. reflexivity.
-  - intro m. intro n. simpl. rewrite IHl. reflexivity.
+  - intro m. intro n. simpl. f_equal. exact (IHl m n).
 Qed.
 
 Lemma length_app : forall (A : Type) (l m : list A), length (l ++ m) = length l + length m.
 Proof. induction l as [| x l IHl].
   - intro m. reflexivity.
-  - intro m. simpl. rewrite IHl. reflexivity.
+  - intro m. simpl. f_equal. exact (IHl m).
 Qed.

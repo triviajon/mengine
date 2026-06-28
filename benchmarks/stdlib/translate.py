@@ -721,11 +721,15 @@ INDUCTIVES = {
 DIRECT_TACTICS = {
     "reflexivity", "assumption", "split", "left", "right", "auto",
     "constructor", "simpl", "symmetry", "trivial", "easy", "idtac",
+    # f_equal is emulated in the compat prelude (a single-layer structural
+    # congruence on Bad_App_Congruence — see compat/stdlib_compat.me); the
+    # translator passes it through like the other compat-prelude tactics.
+    "f_equal",
 }
 
 UNSUPPORTED = {
     "lia", "ring", "omega", "nia", "field", "auto with", "eauto", "inversion",
-    "congruence", "f_equal", "unfold", "fold", "replace", "generalize",
+    "congruence", "unfold", "fold", "replace", "generalize",
     "revert", "case", "pose", "set", "specialize", "discriminate", "injection",
     "contradiction", "exfalso", "cbn", "red", "change", "rename", "clear",
     "remember", "induction'", "dependent", "functional", "decide", "destruct'",

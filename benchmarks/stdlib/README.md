@@ -197,13 +197,14 @@ classifying *why* the corpus proof differs:
 
 - `near-match` — the library proof is `reflexivity`/`trivial` and the corpus
   proof has the same shape (the only category that *could* be verbatim).
-- `untranslatable` — a concrete script exists but uses *leaf* tactics /
-  automation MEngine lacks: the `destr_bool` Ltac macro (all of `Bool`),
-  `f_equal` (`Lists` `app_*`), `auto` stronger than MEngine's emulation
-  (`Lists` `length_app`), `destruct N` on a premise (`Logic` `eq_sym`/`f_equal`).
-  This is **not** about sequencing: MEngine *does* have `;`, `||`, `try`,
-  `repeat`, `first […]`, `match Goal`, and emulated `auto`/`trivial`/`simpl`/
-  `symmetry` — the corpus proofs use `;` themselves (`split; assumption`).
+- `untranslatable` — a concrete script exists but uses *leaf* tactics MEngine
+  lacks (the `destr_bool` Ltac macro — all of `Bool`; `destruct N` on a premise —
+  `Logic` `eq_sym`/`f_equal`) or only approximates/emulates more weakly
+  (`f_equal`, now a single-layer compat-prelude tactic — `Lists` `app_*`; `auto`
+  — `Lists` `length_app`).  This is **not** about sequencing: MEngine *does* have
+  `;`, `||`, `try`, `repeat`, `first […]`, `match Goal`, and emulated
+  `auto`/`trivial`/`simpl`/`symmetry`/`f_equal` — the corpus proofs use `;`
+  themselves (`split; assumption`).
 - `functor` — the lemma (most of the arithmetic: `add_0_r`, `add_comm`,
   `add_assoc`, `mul_*`, `eqb_refl`, `leb_refl`, `Nat.le_0_l`) is produced by
   module-functor `Include` over Rocq's abstract `Numbers`/`Structures`
