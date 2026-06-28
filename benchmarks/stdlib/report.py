@@ -227,7 +227,6 @@ def _scatter(cfg, rows, meta=None):
 
     allv = [r["rocq"] * 1000 for r in pts] + [r["mengine"] * 1000 for r in pts]
     lo, hi = min(allv) * 0.7, max(allv) * 1.4
-    ax.plot([lo, hi], [lo, hi], "k--", lw=1, label="parity")
 
     # Startup floors: every point sits essentially on this cross because the
     # proofs are below the per-invocation cost. Drawing the floors makes that
@@ -242,6 +241,24 @@ def _scatter(cfg, rows, meta=None):
         lo = min(lo, m_floor * 1000 * 0.7)
         ax.axhline(m_floor * 1000, color="tab:cyan", ls=":", lw=1,
                    label="MEngine startup floor")
+
+    # Parity line.  A whole-file time is startup + proof, so *equal proof cost*
+    # is not y = x (that assumes zero startup and makes every point look far
+    # below parity — the dishonest, startup-dominated ratio).  It is
+    # y - m0 = x - r0: a slope-1 line in linear space anchored where the two
+    # startup floors meet, (r0, m0).  A point on it has equal proof time on both
+    # engines; below it MEngine's proof is faster, above it slower.  On log-log
+    # axes this is a curve that bends at the floor cross and asymptotes to y = x.
+    # Without baselines we cannot subtract startup, so fall back to naive y = x.
+    if r_floor and m_floor:
+        r0, m0 = r_floor * 1000, m_floor * 1000
+        npts = 200
+        xs_line = [r0 + (hi - r0) * k / (npts - 1) for k in range(npts)]
+        ys_line = [m0 + (x - r0) for x in xs_line]
+        ax.plot(xs_line, ys_line, "k--", lw=1, label="parity (equal proof time)")
+        ax.plot([r0], [m0], "k.", ms=7, zorder=5)  # the floor cross = origin
+    else:
+        ax.plot([lo, hi], [lo, hi], "k--", lw=1, label="parity")
 
     ax.set_xscale("log"); ax.set_yscale("log")
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)

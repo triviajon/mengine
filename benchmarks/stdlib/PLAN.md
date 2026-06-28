@@ -306,7 +306,9 @@ Reuses `framework/runner.run_single` timing logic; subcommands mirror `bench.py`
 
 - **Markdown table:** per unit — Rocq time, MEngine time, ratio, tier, status — drop-in for
   `README.md` like the existing benchmark table.
-- **Scatter plot:** Rocq time (x) vs MEngine time (y), log-log, parity diagonal, colored by tier.
+- **Scatter plot:** Rocq time (x) vs MEngine time (y), log-log, colored by tier, with a
+  parity line for *equal proof time* — slope-1 anchored where the two startup floors meet
+  (`y - m0 = x - r0`), not the naive `y = x` through the origin (which ignores startup).
 - **Summary:** geometric-mean speedup over Tier A; counts (translated / built-in-both / excluded).
 
 ## 10. Phased roadmap (per-file, Tier A)
