@@ -14,6 +14,8 @@ Subcommands:
     report               regenerate the markdown table + scatter plot
     manifest             regenerate corpus/manifest.json from the corpus dir
     triage [--dir D]     run translate.py --report over a stdlib checkout
+    fidelity [module ...] verify each curated statement matches its real stdlib
+                         counterpart (corpus/stdlib_map.json), via Rocq's kernel
 """
 
 import argparse
@@ -343,6 +345,8 @@ def cmd_test(cfg, args):
             print(f"  [ OK ] {u}")
             npass += 1
     print(f"\n{npass}/{len(units)} units pass the faithfulness gate.")
+    print("(statement-vs-stdlib correspondence is a separate check: "
+          "stdlib_bench.py fidelity)")
     return 0 if npass == len(units) else 1
 
 
@@ -401,6 +405,11 @@ def cmd_triage(cfg, args):
     subprocess.run(["python3", os.path.join(HERE, "translate.py"), "--report", "--dir", d])
 
 
+def cmd_fidelity(cfg, args):
+    import fidelity
+    return fidelity.run(cfg, args.modules or None)
+
+
 # ───────────────────────────── results io ────────────────────────────────────
 
 def load_results(path):
@@ -428,11 +437,13 @@ def main():
     sub.add_parser("report")
     sub.add_parser("manifest")
     p_tri = sub.add_parser("triage"); p_tri.add_argument("--dir")
+    p_fid = sub.add_parser("fidelity"); p_fid.add_argument("modules", nargs="*")
     args = ap.parse_args()
 
     dispatch = {
         "list": cmd_list, "test": cmd_test, "run": cmd_run,
         "report": cmd_report, "manifest": cmd_manifest, "triage": cmd_triage,
+        "fidelity": cmd_fidelity,
     }
     rc = dispatch[args.command](cfg, args)
     sys.exit(rc or 0)

@@ -94,11 +94,13 @@ benchmarks/stdlib/
   PLAN.md                  design document
   README.md                this file
   translate.py             Rocq .v -> MEngine .me translator (+ --report triage)
-  stdlib_bench.py          corpus runner: list / test / run / report / manifest / triage
+  stdlib_bench.py          corpus runner: list / test / run / report / manifest / triage / fidelity
   report.py                markdown table + log-log scatter plot
+  fidelity.py              statement-vs-stdlib correspondence check (via Rocq's kernel)
   compat/stdlib_compat.me  compat prelude: nat/bool/list/option + le + emulated tactics
   corpus/
     manifest.json          locked Tier-A set + per-statement digests + excluded boundary
+    stdlib_map.json        each curated lemma -> its real stdlib counterpart (or "original")
     <Module>/rocq.v        benchmarked Rocq source (one stdlib module per file)
     <Module>/mengine.me    auto-translated MEngine source
   results/stdlib.json      per-module timings + per-engine startup baselines
@@ -116,6 +118,7 @@ python3 stdlib/stdlib_bench.py run       # time both engines, write results
 python3 stdlib/stdlib_bench.py report    # regenerate REPORT.md + scatter plot
 python3 stdlib/stdlib_bench.py manifest  # regenerate corpus/manifest.json
 python3 stdlib/stdlib_bench.py triage    # translate.py --report over the stdlib
+python3 stdlib/stdlib_bench.py fidelity  # check each statement vs the real stdlib
 ```
 
 Run a single unit: `… run le_0_n`, `… test bool_negb_involutive`.
@@ -136,6 +139,45 @@ it cannot translate soundly is reported and the unit is excluded, rather than
 mistranslated.  A wrong translation that happened to compile would silently
 benchmark two *different* theorems — the worst failure — so the translator
 refuses instead.
+
+## Statement fidelity vs the real stdlib (`fidelity`)
+
+`test` checks that the MEngine `.me` faithfully follows the curated `.v`
+(`.me` ← `.v`).  It does **not** check that the curated `.v` statement matches
+the standard-library lemma it claims to be — and that hand-curation (`.v` ←
+stdlib) is the one place a corpus statement could silently drift from the
+library, because the corpus is re-stated by hand rather than extracted verbatim
+(see "Why whole stdlib files don't translate").
+
+`stdlib_bench.py fidelity` closes that gap by letting **Rocq's own kernel**
+compare each curated statement to its real counterpart in the *installed*
+stdlib.  `corpus/stdlib_map.json` maps every curated lemma to one of:
+
+- a stdlib lemma — checked by `Check (<stdlib_ref> : <curated statement>).`;
+  Rocq accepts it iff the library lemma's type is **convertible** to the curated
+  one (notation, implicit arguments, and numerals are handled by Rocq, so there
+  is nothing to guess).  Reported `match`.
+- a stdlib lemma whose statement is the **mirror** of the curated one
+  (`"relation": "symmetry"`) — verified by `Goal <curated>. Proof. intros;
+  symmetry; apply <stdlib_ref>. Qed.`, confirming they are equivalent up to
+  `eq_sym`.  Reported `symmetry`.  Two corpus lemmas are like this:
+  `Nat.add_assoc` and `List.app_assoc` are both stated in the opposite
+  orientation in stdlib, so the curated `add_assoc`/`app_assoc` are their
+  mirrors.
+- `"original"` — a ground computation (`2 + 2 = 4`, `1 <= 2`) or bespoke
+  combination (`and_intro3`, `imp_trans`) with **no named stdlib lemma**.
+  Reported `original` and not checked, with the reason recorded in the map.
+
+The map is the single source of truth and must cover **every** curated lemma: an
+unmapped lemma, a map entry with no curated lemma, a non-convertible `match`
+claim, or a stdlib ref that does not resolve all fail the check (exit 1).  Like
+the translator, the map is **flag, never guess** — every ref and relation was
+confirmed against the installed Rocq before being recorded.  Because the check
+shells out to `coqc` (one invocation per mapped lemma, ~6 s for the whole
+corpus), it is a separate command rather than part of the frequently-run `test`
+gate; run it after editing any `rocq.v` statement or `stdlib_map.json`.  It
+needs `coqc` on `PATH` (or `coq_path` in `config.json`) and the modules named in
+the map's `preamble` (`Bool.Bool`, `Arith.PeanoNat`, `Lists.List`) installed.
 
 ## Scope (Tier A) and the engine boundary
 

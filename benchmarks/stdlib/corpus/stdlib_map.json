@@ -1,0 +1,77 @@
+{
+  "description": "Maps each curated corpus lemma to its real Rocq standard-library counterpart, so `stdlib_bench.py fidelity` can verify (via Rocq's kernel) that the curated *statement* matches the library's. Each entry is either {\"stdlib\": <ref>} (the curated type must be convertible to the stdlib lemma's type, checked by `Check (<ref> : <curated type>).`), {\"stdlib\": <ref>, \"relation\": \"symmetry\"} (the curated type is the mirror of the stdlib lemma, verified by `intros; symmetry; apply <ref>`), or {\"original\": <reason>} (a ground computation or bespoke combination with no named stdlib lemma; not checked). The mapping is hand-maintained: every curated lemma MUST appear here, and the stdlib refs / relations were each confirmed against the installed Rocq before being recorded (flag, never guess).",
+  "rocq_version": "9.0.1",
+  "preamble": [
+    "From Stdlib Require Import Bool.Bool.",
+    "From Stdlib Require Import Arith.PeanoNat.",
+    "From Stdlib Require Import Lists.List.",
+    "Import ListNotations.",
+    "Open Scope list_scope."
+  ],
+  "modules": {
+    "Bool": {
+      "andb_true_l": {"stdlib": "andb_true_l"},
+      "andb_false_l": {"stdlib": "andb_false_l"},
+      "andb_true_r": {"stdlib": "andb_true_r"},
+      "andb_false_r": {"stdlib": "andb_false_r"},
+      "andb_b_b": {"stdlib": "andb_diag"},
+      "orb_true_l": {"stdlib": "orb_true_l"},
+      "orb_false_l": {"stdlib": "orb_false_l"},
+      "orb_true_r": {"stdlib": "orb_true_r"},
+      "orb_false_r": {"stdlib": "orb_false_r"},
+      "orb_b_b": {"stdlib": "orb_diag"},
+      "negb_true": {"original": "ground reflexivity fact (negb true = false); no named stdlib lemma"},
+      "negb_false": {"original": "ground reflexivity fact (negb false = true); no named stdlib lemma"},
+      "negb_involutive": {"stdlib": "negb_involutive"},
+      "implb_true_l": {"stdlib": "implb_true_l"},
+      "implb_false_l": {"stdlib": "implb_false_l"},
+      "implb_b_b": {"stdlib": "implb_same"},
+      "xorb_false_l": {"stdlib": "xorb_false_l"},
+      "xorb_b_b": {"stdlib": "xorb_nilpotent"}
+    },
+    "Lists": {
+      "app_nil_l": {"stdlib": "app_nil_l"},
+      "app_nil_r": {"stdlib": "app_nil_r"},
+      "app_assoc": {"stdlib": "app_assoc", "relation": "symmetry",
+                    "note": "stdlib app_assoc is l ++ (m ++ n) = (l ++ m) ++ n; curated states the mirror"},
+      "length_app": {"stdlib": "length_app"}
+    },
+    "Logic": {
+      "eq_refl_x": {"stdlib": "@eq_refl"},
+      "eq_sym_ex": {"stdlib": "eq_sym"},
+      "eq_trans_ex": {"stdlib": "eq_trans"},
+      "f_equal_ex": {"stdlib": "f_equal"},
+      "f_equal2_ex": {"stdlib": "f_equal2"},
+      "imp_refl": {"original": "forall A:Prop, A -> A; not a named stdlib lemma"},
+      "imp_trans": {"original": "forall A B C:Prop, (A->B)->(B->C)->A->C; not a named stdlib lemma"},
+      "and_intro": {"stdlib": "@conj"},
+      "and_intro3": {"original": "nested conjunction introduction; bespoke combination, no single stdlib lemma"},
+      "or_introl_ex": {"stdlib": "@or_introl"},
+      "or_intror_ex": {"stdlib": "@or_intror"},
+      "ex_intro_ex": {"stdlib": "@ex_intro"},
+      "ex_eq": {"original": "exists y, y = x; bespoke existential, no named stdlib lemma"}
+    },
+    "Nat": {
+      "add_2_2": {"original": "ground computation 2 + 2 = 4; no stdlib lemma"},
+      "mul_2_3": {"original": "ground computation 2 * 3 = 6; no stdlib lemma"},
+      "sub_5_2": {"original": "ground computation 5 - 2 = 3; no stdlib lemma"},
+      "add_0_l": {"stdlib": "Nat.add_0_l"},
+      "add_0_r": {"stdlib": "Nat.add_0_r"},
+      "add_succ_r": {"stdlib": "Nat.add_succ_r"},
+      "add_comm": {"stdlib": "Nat.add_comm"},
+      "add_assoc": {"stdlib": "Nat.add_assoc", "relation": "symmetry",
+                    "note": "stdlib add_assoc is n + (m + p) = (n + m) + p; curated states the mirror"},
+      "mul_0_r": {"stdlib": "Nat.mul_0_r"},
+      "mul_1_l": {"stdlib": "Nat.mul_1_l"},
+      "mul_1_r": {"stdlib": "Nat.mul_1_r"},
+      "eqb_refl": {"stdlib": "Nat.eqb_refl"},
+      "leb_refl": {"stdlib": "Nat.leb_refl"}
+    },
+    "Peano": {
+      "le_refl_n": {"stdlib": "le_n"},
+      "le_0_n": {"stdlib": "Nat.le_0_l"},
+      "le_1_2": {"original": "ground fact 1 <= 2; no named stdlib lemma"},
+      "le_2_4": {"original": "ground fact 2 <= 4; no named stdlib lemma"}
+    }
+  }
+}
