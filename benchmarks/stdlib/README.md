@@ -13,10 +13,20 @@ its own file.  The corpus currently has four modules:
 
 | Module  | Source                                  | Lemmas |
 |---------|-----------------------------------------|--------|
-| `Bool`  | `Coq.Bool.Bool` (ops from `Init.Datatypes`) | 11 |
+| `Bool`  | `Coq.Bool.Bool` (ops from `Init.Datatypes`) | 18 |
 | `Logic` | `Coq.Init.Logic` (eq, and/or, ex)       | 13 |
-| `Nat`   | `Coq.Init.Nat` (ground arithmetic)      | 5  |
+| `Nat`   | `Coq.Init.Nat` (ground + inductive arithmetic) | 13 |
 | `Peano` | `Coq.Init.Peano` (the `le` order)       | 4  |
+
+Computational induction over the `add`/`mul` fixpoints (`n + 0 = n`,
+`n + m = m + n`, `(n+m)+p = n+(m+p)`, …) is now in Tier A: the kernel reduces a
+fixpoint applied to a *symbolic* constructor-headed argument (`add (S n) m ↝
+S (add n m)`) while leaving a stuck recursive call constant-headed, and `rewrite`
+on a quantified induction hypothesis works.  The translator emits these as an
+`apply (nat_ind <motive>)` with one focused subgoal per constructor.  Remaining
+out-of-scope cases are listed under `excluded` in `corpus/manifest.json`
+(multi-variable/nested case analysis, parametric `list` induction, and induction
+over an inductive relation).
 
 Each module has two forms:
 
@@ -150,8 +160,9 @@ compat prelude:
   …` of `ex A (fun y => …)`) was printed without parentheses, which MEngine's
   parser rejects; `emit` now parenthesizes `fun`/`forall`/`arrow` arguments.
 
-Two engine fixes on this branch enable the computational part (both are pure,
-soundness-preserving kernel changes; all 431 kernel tests still pass):
+Several engine fixes on this branch enable the computational part (all are pure,
+soundness-preserving kernel changes; all 431 kernel tests + every `examples/*.me`
+still pass):
 
 1. **`cbv` reduces applied fixpoints** (`src/kernel/normalize.c`).  `_normalize_cbv`
    now unfolds `(fix …) arg` like `normalize_whnf` already did, so `cbv`/`Eval`
@@ -162,25 +173,54 @@ soundness-preserving kernel changes; all 431 kernel tests still pass):
    but reuse its branches); shutdown now frees each exactly once.  This removes a
    crash that fired whenever a computational eliminator was type-checked
    (e.g. `destruct b` on `negb (negb b) = b`).
+3. **Symbolic-fixpoint reduction leaves stuck calls constant-headed**
+   (`src/kernel/fix_reduction.c`, `src/kernel/normalize.c`).  `cbv`/`whnf` hold a
+   fixpoint *constant* folded until its decreasing argument is constructor-headed
+   (`fix_reduce_app` unfolds and fires it), so `add (S n) m` reduces to
+   `S (add n m)` while the stuck `add n m` stays headed by the `add` constant —
+   which is what lets `rewrite`/congruence match a recursive call after `simpl`.
+4. **`rewrite` works with a quantified induction hypothesis**
+   (`src/engine/unify.c`, `src/engine/rewrite_internal.c`,
+   `src/tacticlanguage/tactic_interp.c`, `src/runtime/core.c`).  An IH's stored
+   type is the eliminator's beta-redex `(motive) n`; the rewrite path now
+   weak-head-normalizes it before reading off / instantiating the equality, and
+   `_get_lhs_eq` returns `NULL` (clean failure) instead of dereferencing a
+   non-eq type.
+5. **Applying a function whose type is a Pi only up to reduction**
+   (`src/kernel/expression.c`).  `init_app_expression_wc` no longer pre-rejects a
+   non-syntactic-`forall` function type; `_construct_app_type` already
+   weak-head-normalizes, so a redex-typed IH (`(motive) n`) can be applied.
+6. **The eliminator's index hole is recorded during `fill`**
+   (`src/kernel/type_compat.c`).  With a quantified motive the induction index is
+   left as an evar inside the term's type; `_open_compat`'s actual-side hole branch
+   now records the assignment (symmetric to the expected side) so `fill_hole`
+   cascade-fills it instead of leaving a stray open goal.
+
+Now **in Tier A** (previously excluded, unblocked by the kernel work below):
+
+- **Computational induction over a `Fixpoint`** (`add n 0 = n`, `n + m = m + n`,
+  `(n+m)+p = n+(m+p)`, `mul` lemmas): the kernel now reduces a fixpoint applied to
+  a *symbolic* constructor-headed argument (`add (S n) m ↝ S (add n m)`) while
+  leaving a stuck recursive call headed by the `add`/`mul` *constant* (not a bare
+  fix node), so `simpl` makes progress and `rewrite` matches it.  `rewrite` on a
+  *quantified* induction hypothesis (whose type is the eliminator's beta-redex
+  `(motive) n`) works too.  The old `bugs/segfault_*` reproducers run to
+  completion, and `examples/computational_induction_rewrite.me` is the regression.
+- **Single-variable `destruct`/`case` with a constant RHS** (`andb b false =
+  false`): proved by `apply (bool_ind <motive>)` + per-case `simpl`/`reflexivity`.
 
 What stays **out of Tier A** (documented in `corpus/manifest.json` → `excluded`):
 
-- **Computational induction over a `Fixpoint`** (`add n 0 = n`, `n + 0 = n`):
-  needs symbolic-argument fixpoint conversion, which hits a pre-existing kernel
-  stack-overflow (`bugs/segfault_apply_fixpoint_motive.me`,
-  `bugs/segfault_exact_eliminator_fixpoint.me`).  This is the highest-leverage
-  remaining expansion (plan §5a, §11) and is genuinely hard kernel work.
-- **`destruct`/`case` with a constant RHS** (`andb b false = false`): MEngine's
-  first-order `apply` cannot solve the eliminator's scrutinee evar when the
-  scrutinee variable has no *bare* occurrence in the goal, because the unifier
-  whnf-folds the function application into a stuck `match`.
-- **Polymorphic list reasoning** (`app`/`length` lemmas): the *statement* now
-  translates faithfully — `Set Printing All` supplies the element type, so
-  `nil ++ l = l` becomes `eq (list A) (app A (nil A) l) l` with no inference (the
-  old element-type-inference blocker is gone).  What still keeps these out of
-  Tier A is the *proof/engine* side: reducing a parametric `Fixpoint` (`app`)
-  over `list A` hits the same symbolic-fixpoint conversion limits as
-  computational `nat` induction below.
+- **Multi-variable / nested case analysis** (`andb_comm`, `orb b1 b2 = orb b2 b1`,
+  de Morgan): the translator emits one `apply (<T>_ind motive)` and segments a
+  single level of cases; a second `destruct` *inside* a case is not yet generated.
+- **Polymorphic / parametric induction** (`app`/`length`/`rev` over `list A`): the
+  *statement* translates faithfully (`Set Printing All` supplies the element type),
+  but applying the generated parametric `list_ind` — whose motive ranges over the
+  type parameter — currently fails to type-check the eliminator application.
+- **Induction over an inductive relation** (`le_trans`, `le_n_S` via `le_ind`):
+  the eliminator's motive is dependent on the derivation; the translator only
+  builds non-dependent `fun (x:T) => <body>` motives.
 
 ## Why whole stdlib files don't translate
 

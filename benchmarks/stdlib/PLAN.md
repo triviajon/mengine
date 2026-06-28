@@ -184,6 +184,18 @@ Verified against the engine:
   (`IH<x>`) so the remaining ported lines line up.
 - `destruct x` is the same application, ignoring the IH in the step case(s).
 
+> **Update (resolved):** the two Tier-2 caveats below are now **fixed**, so
+> computational induction over the `add`/`mul` fixpoints (`add n 0 = n`,
+> `add_comm`, `add_assoc`, …) is in Tier A. `apply (T_ind motive)` with a
+> fixpoint-mentioning motive no longer crashes, and `simpl`/`cbv` reduce a
+> fixpoint on a constructor-headed *symbolic* argument while leaving a stuck
+> recursive call constant-headed (so `rewrite` matches it). See
+> `benchmarks/stdlib/README.md` → "engine fixes" for the full list and the
+> additional fixes that made `rewrite` on a quantified IH work. What remains out
+> of Tier A is now narrower (`corpus/manifest.json` → `excluded`): multi-variable
+> /nested case analysis, parametric `list` induction, and induction over an
+> inductive relation. The original caveat text is kept below for history.
+
 **Tier-2 caveats (these gate the computational majority).** Two engine issues — each with a minimal
 reproducer in `bugs/` on the engine branch — block induction over goals stated with a `Fixpoint`:
 

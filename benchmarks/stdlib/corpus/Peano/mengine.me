@@ -6,9 +6,9 @@ intro n.
 apply (nat_ind (fun (n : nat) => ((le O) n))).
 simpl.
 constructor.
-simpl.
 intro n.
 intro IHn.
+simpl.
 constructor.
 exact (IHn).
 Theorem le_1_2 : ((le (S O)) (S (S O))).

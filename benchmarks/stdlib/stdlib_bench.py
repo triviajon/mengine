@@ -298,18 +298,23 @@ def build_manifest(cfg):
 
 # Documented Tier-2 boundary (kept out of Tier A); see README.
 EXCLUDED_DOC = [
-    {"pattern": "destruct/case-analysis with a constant RHS "
-                "(e.g. andb b false = false)",
-     "boundary": "tier2-unify",
-     "reason": "apply cannot solve the eliminator's scrutinee evar when the "
-               "scrutinee variable has no bare occurrence in the goal; the "
-               "unifier whnf-folds the function application into a stuck match."},
-    {"pattern": "computational induction over a Fixpoint "
-                "(e.g. add n 0 = n, n + 0 = n)",
-     "boundary": "tier2-symbolic",
-     "reason": "needs symbolic-argument fixpoint conversion; hits the documented "
-               "stack-overflow (bugs/segfault_apply_fixpoint_motive.me, "
-               "bugs/segfault_exact_eliminator_fixpoint.me)."},
+    {"pattern": "multi-variable case analysis / nested induction "
+                "(e.g. andb_comm, orb b1 b2 = orb b2 b1, de Morgan)",
+     "boundary": "tier2-nested",
+     "reason": "the translator emits one `apply (<T>_ind motive)` per proof and "
+               "segments a single level of cases; a second destruct inside a case "
+               "(needed to decide a goal in two booleans) is not yet generated."},
+    {"pattern": "polymorphic / parametric induction (e.g. app_nil_r, "
+                "app_assoc over `list A`)",
+     "boundary": "tier2-parametric",
+     "reason": "applying the generated parametric `list_ind` (whose motive ranges "
+               "over the type parameter) currently fails to type-check the "
+               "eliminator application; non-parametric nat/bool induction works."},
+    {"pattern": "induction over an inductive relation "
+                "(e.g. le_trans, le_n_S via le_ind)",
+     "boundary": "tier2-relational",
+     "reason": "the eliminator has a dependent motive over the derivation; the "
+               "translator only builds non-dependent `fun (x:T) => <body>` motives."},
 ]
 
 

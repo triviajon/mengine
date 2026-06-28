@@ -774,11 +774,14 @@ def translate_tactic_atom(atom, report):
     if name == "rewrite":
         rest = atom[len("rewrite"):].strip()
         if rest.startswith("<-"):
-            raise Untranslatable("rewrite <- (Tier B: rewrite_s is forward-only)")
+            raise Untranslatable("rewrite <- (Tier B: builtin rewrite is forward-only)")
         if " in " in f" {rest} ":
             raise Untranslatable("rewrite ... in H (Tier B)")
         report.add_handled("tac:rewrite")
-        return f"rewrite_s ({translate_term(rest)})"
+        # Builtin C rewrite (Leibniz eq).  Routed through the kernel rewrite engine
+        # rather than the scripted `rewrite_s`, which cannot read the equality off an
+        # induction hypothesis whose type is the eliminator's beta-redex `(motive) x`.
+        return f"rewrite {translate_term(rest)} with eq"
 
     if name in ("now",):
         # now tac  ≈  tac; easy.  Bare 'now' is unusual; treat 'now' alone as easy.
@@ -915,12 +918,19 @@ def _translate_induction(kind, var, remainder, stmt_type_out, report):
 
     report.add_handled(f"tac:{kind}")
     for (ctor, rec_flags), case_body in zip(info["cases"], cases):
-        case_lines = ["simpl."]
-        if kind == "induction":
+        # Leading `simpl` reduces the eliminator's `motive O` / `motive (S x)` redex
+        # (MEngine does not beta-reduce it automatically as Rocq does). For the step
+        # case the constructor arguments and IH are bound *first*, so the `simpl` that
+        # exposes the `forall`s of `motive (S x)` must come *after* those intros.
+        if kind == "induction" and rec_flags:
+            case_lines = []
             # Introduce recursive args and their IHs (named like Rocq: IH<var>).
             for _ in rec_flags:
                 case_lines.append(f"intro {x}.")
                 case_lines.append(f"intro IH{x}.")
+            case_lines.append("simpl.")
+        else:
+            case_lines = ["simpl."]
         for s in case_body:
             t = translate_tactic_sentence(s, report)
             if t:

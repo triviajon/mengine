@@ -6,19 +6,23 @@
       "name": "Bool",
       "tier": "A",
       "category": "Bool",
-      "rocq_sha256": "220db106935f67d5",
+      "rocq_sha256": "0bda947ccc37fa01",
       "statements": [
         {
           "name": "andb_true_l",
           "digest": "forall (b : bool), (((eq bool) ((andb true) b)) b)"
         },
         {
+          "name": "andb_false_l",
+          "digest": "forall (b : bool), (((eq bool) ((andb false) b)) false)"
+        },
+        {
           "name": "andb_true_r",
           "digest": "forall (b : bool), (((eq bool) ((andb b) true)) b)"
         },
         {
-          "name": "andb_false_l",
-          "digest": "forall (b : bool), (((eq bool) ((andb false) b)) false)"
+          "name": "andb_false_r",
+          "digest": "forall (b : bool), (((eq bool) ((andb b) false)) false)"
         },
         {
           "name": "andb_b_b",
@@ -31,6 +35,10 @@
         {
           "name": "orb_false_l",
           "digest": "forall (b : bool), (((eq bool) ((orb false) b)) b)"
+        },
+        {
+          "name": "orb_true_r",
+          "digest": "forall (b : bool), (((eq bool) ((orb b) true)) true)"
         },
         {
           "name": "orb_false_r",
@@ -51,6 +59,26 @@
         {
           "name": "negb_involutive",
           "digest": "forall (b : bool), (((eq bool) (negb (negb b))) b)"
+        },
+        {
+          "name": "implb_true_l",
+          "digest": "forall (b : bool), (((eq bool) ((implb true) b)) b)"
+        },
+        {
+          "name": "implb_false_l",
+          "digest": "forall (b : bool), (((eq bool) ((implb false) b)) true)"
+        },
+        {
+          "name": "implb_b_b",
+          "digest": "forall (b : bool), (((eq bool) ((implb b) b)) true)"
+        },
+        {
+          "name": "xorb_false_l",
+          "digest": "forall (b : bool), (((eq bool) ((xorb false) b)) b)"
+        },
+        {
+          "name": "xorb_b_b",
+          "digest": "forall (b : bool), (((eq bool) ((xorb b) b)) false)"
         }
       ],
       "deps": "Coq.Init (auto-loaded)"
@@ -120,19 +148,11 @@
       "name": "Nat",
       "tier": "A",
       "category": "Nat",
-      "rocq_sha256": "27abb967551db470",
+      "rocq_sha256": "09ed4b709affa813",
       "statements": [
-        {
-          "name": "add_0_l",
-          "digest": "forall (n : nat), (((eq nat) ((add O) n)) n)"
-        },
         {
           "name": "add_2_2",
           "digest": "(((eq nat) ((add (S (S O))) (S (S O)))) (S (S (S (S O)))))"
-        },
-        {
-          "name": "add_3_4",
-          "digest": "(((eq nat) ((add (S (S (S O)))) (S (S (S (S O)))))) (S (S (S (S (S (S (S O))))))))"
         },
         {
           "name": "mul_2_3",
@@ -141,6 +161,46 @@
         {
           "name": "sub_5_2",
           "digest": "(((eq nat) ((sub (S (S (S (S (S O)))))) (S (S O)))) (S (S (S O))))"
+        },
+        {
+          "name": "add_0_l",
+          "digest": "forall (n : nat), (((eq nat) ((add O) n)) n)"
+        },
+        {
+          "name": "add_0_r",
+          "digest": "forall (n : nat), (((eq nat) ((add n) O)) n)"
+        },
+        {
+          "name": "add_succ_r",
+          "digest": "forall (n : nat), forall (m : nat), (((eq nat) ((add n) (S m))) (S ((add n) m)))"
+        },
+        {
+          "name": "add_comm",
+          "digest": "forall (n : nat), forall (m : nat), (((eq nat) ((add n) m)) ((add m) n))"
+        },
+        {
+          "name": "add_assoc",
+          "digest": "forall (n : nat), forall (m : nat), forall (p : nat), (((eq nat) ((add ((add n) m)) p)) ((add n) ((add m) p)))"
+        },
+        {
+          "name": "mul_0_r",
+          "digest": "forall (n : nat), (((eq nat) ((mul n) O)) O)"
+        },
+        {
+          "name": "mul_1_l",
+          "digest": "forall (n : nat), (((eq nat) ((mul (S O)) n)) n)"
+        },
+        {
+          "name": "mul_1_r",
+          "digest": "forall (n : nat), (((eq nat) ((mul n) (S O))) n)"
+        },
+        {
+          "name": "eqb_refl",
+          "digest": "forall (n : nat), (((eq bool) ((eqb n) n)) true)"
+        },
+        {
+          "name": "leb_refl",
+          "digest": "forall (n : nat), (((eq bool) ((leb n) n)) true)"
         }
       ],
       "deps": "Coq.Init (auto-loaded)"
@@ -173,14 +233,19 @@
   ],
   "excluded": [
     {
-      "pattern": "destruct/case-analysis with a constant RHS (e.g. andb b false = false)",
-      "boundary": "tier2-unify",
-      "reason": "apply cannot solve the eliminator's scrutinee evar when the scrutinee variable has no bare occurrence in the goal; the unifier whnf-folds the function application into a stuck match."
+      "pattern": "multi-variable case analysis / nested induction (e.g. andb_comm, orb b1 b2 = orb b2 b1, de Morgan)",
+      "boundary": "tier2-nested",
+      "reason": "the translator emits one `apply (<T>_ind motive)` per proof and segments a single level of cases; a second destruct inside a case (needed to decide a goal in two booleans) is not yet generated."
     },
     {
-      "pattern": "computational induction over a Fixpoint (e.g. add n 0 = n, n + 0 = n)",
-      "boundary": "tier2-symbolic",
-      "reason": "needs symbolic-argument fixpoint conversion; hits the documented stack-overflow (bugs/segfault_apply_fixpoint_motive.me, bugs/segfault_exact_eliminator_fixpoint.me)."
+      "pattern": "polymorphic / parametric induction (e.g. app_nil_r, app_assoc over `list A`)",
+      "boundary": "tier2-parametric",
+      "reason": "applying the generated parametric `list_ind` (whose motive ranges over the type parameter) currently fails to type-check the eliminator application; non-parametric nat/bool induction works."
+    },
+    {
+      "pattern": "induction over an inductive relation (e.g. le_trans, le_n_S via le_ind)",
+      "boundary": "tier2-relational",
+      "reason": "the eliminator has a dependent motive over the derivation; the translator only builds non-dependent `fun (x:T) => <body>` motives."
     }
   ]
 }
