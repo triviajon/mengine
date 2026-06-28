@@ -58,6 +58,10 @@ results/
 !benchmarks/plots/**
 !benchmarks/results/
 !benchmarks/results/**
+!benchmarks/stdlib/plots/
+!benchmarks/stdlib/plots/**
+!benchmarks/stdlib/results/
+!benchmarks/stdlib/results/**
 benchmarks/flame_trends/
 
 # Local profiling and packaging artifacts.

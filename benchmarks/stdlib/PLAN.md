@@ -1,6 +1,13 @@
 # Plan: Rocq Standard Library Benchmark Suite for MEngine
 
-Status: plan (not yet implemented). Scope decisions locked with the user:
+Status: **implemented** (Tier A). See `README.md` for the operator's guide and
+the realized scope; the per-proof mode (phase 6) remains optional/future. The
+sections below are the original design; where the implementation refined a
+decision (e.g. corpus drawn from curated single-lemma units rather than whole
+stdlib files, two targeted kernel fixes landed, the symbolic-fixpoint induction
+crash deferred), `README.md` is authoritative.
+
+Scope decisions locked with the user:
 - **Granularity:** per-file first; per-proof is a later optional phase.
 - **Corpus scope:** Tier A only — files the translator handles with **zero manual edits**.
   Tier B (manual/aligned) and Tier C (out of scope) are documented but not built initially.

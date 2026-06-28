@@ -1,0 +1,3 @@
+Theorem and_intro : forall (A : Prop), forall (B : Prop), forall (_ : A), forall (_ : B), ((and A) B).
+intro A. intro B. intro HA. intro HB.
+split; assumption.

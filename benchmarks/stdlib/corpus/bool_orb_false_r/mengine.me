@@ -1,0 +1,7 @@
+Theorem orb_false_r : forall (b : bool), (((eq bool) ((orb b) false)) b).
+intro b.
+apply (bool_ind (fun (b : bool) => (((eq bool) ((orb b) false)) b))).
+simpl.
+reflexivity.
+simpl.
+reflexivity.

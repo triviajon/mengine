@@ -1,0 +1,147 @@
+(* stdlib_compat.me — compatibility prelude for the Rocq-stdlib benchmark.
+
+   Loaded ahead of every translated unit (the translator prepends it).  It
+   supplies the base datatypes and functions that the Rocq standard library
+   assumes but that MEngine's C core (src/runtime/core.c) does not provide
+   (core.c only defines eq/and/or/ex/Reflexive), plus a handful of emulated
+   tactics written in the tactic language.
+
+   Each datatype/function mirrors the *semantics* of its Rocq counterpart so
+   that a translated theorem statement denotes the same proposition and ground
+   computation reduces identically.  Function bodies use single-scrutinee
+   matches (MEngine has no multi-scrutinee match); this is extensionally equal
+   to Rocq's definitions, which is all the benchmark requires.
+
+   Every emulated tactic carries a comment stating exactly how it differs from
+   Rocq's, so divergence is auditable in one place. *)
+
+(* ── Base datatypes ─────────────────────────────────────────────────── *)
+
+Inductive True : Prop := | I : True.
+
+Inductive bool : Type := | true : bool | false : bool.
+
+Inductive nat : Type :=
+| O : nat
+| S : forall (n : nat), nat.
+
+Inductive list : forall (A : Type), Type :=
+| nil  : forall (A : Type), list A
+| cons : forall (A : Type), forall (x : A), forall (l : list A), list A.
+
+Inductive option : forall (A : Type), Type :=
+| None : forall (A : Type), option A
+| Some : forall (A : Type), forall (x : A), option A.
+
+(* ── bool functions (Coq.Init.Datatypes) ───────────────────────────── *)
+
+Definition negb : forall (_ : bool), bool :=
+  fun (b : bool) => match b with | true => false | false => true end.
+
+Definition andb : forall (_ : bool), forall (_ : bool), bool :=
+  fun (b1 : bool) => fun (b2 : bool) => match b1 with | true => b2 | false => false end.
+
+Definition orb : forall (_ : bool), forall (_ : bool), bool :=
+  fun (b1 : bool) => fun (b2 : bool) => match b1 with | true => true | false => b2 end.
+
+Definition implb : forall (_ : bool), forall (_ : bool), bool :=
+  fun (b1 : bool) => fun (b2 : bool) => match b1 with | true => b2 | false => true end.
+
+Definition xorb : forall (_ : bool), forall (_ : bool), bool :=
+  fun (b1 : bool) => fun (b2 : bool) =>
+    match b1 with
+    | true  => match b2 with | true => false | false => true end
+    | false => b2
+    end.
+
+(* ── nat functions (Coq.Init.Nat) ──────────────────────────────────── *)
+
+Fixpoint add (n : nat) (m : nat) {struct n} : nat :=
+  match n with | O => m | S p => S (add p m) end.
+
+Fixpoint mul (n : nat) (m : nat) {struct n} : nat :=
+  match n with | O => O | S p => add m (mul p m) end.
+
+(* sub: Rocq matches on both n and m; here nested single-scrutinee matches. *)
+Fixpoint sub (n : nat) (m : nat) {struct n} : nat :=
+  match n with
+  | O => O
+  | S k => match m with | O => n | S l => sub k l end
+  end.
+
+Fixpoint eqb (n : nat) (m : nat) {struct n} : bool :=
+  match n with
+  | O => match m with | O => true | S q => false end
+  | S p => match m with | O => false | S q => eqb p q end
+  end.
+
+Fixpoint leb (n : nat) (m : nat) {struct n} : bool :=
+  match n with
+  | O => true
+  | S p => match m with | O => false | S q => leb p q end
+  end.
+
+Definition ltb : forall (_ : nat), forall (_ : nat), bool :=
+  fun (n : nat) => fun (m : nat) => leb (S n) m.
+
+(* ── list functions (Coq.Lists.List / Coq.Init.Datatypes) ──────────── *)
+
+Fixpoint app (A : Type) (l : list A) (k : list A) {struct l} : list A :=
+  match l with
+  | nil _ => k
+  | cons _ x xs => cons A x (app A xs k)
+  end.
+
+Fixpoint length (A : Type) (l : list A) {struct l} : nat :=
+  match l with
+  | nil _ => O
+  | cons _ x xs => S (length A xs)
+  end.
+
+(* ── Relational predicates (Coq.Init.Peano / Coq.Init.Datatypes) ───── *)
+
+(* le, as in Coq.Init.Peano: le n n and le n m -> le n (S m). *)
+Inductive le : forall (_ : nat), forall (_ : nat), Prop :=
+| le_n : forall (n : nat), le n n
+| le_S : forall (n : nat), forall (m : nat), forall (_ : le n m), le n (S m).
+
+(* ── Emulated tactics ──────────────────────────────────────────────── *)
+
+(* reflexivity (override): build `eq_refl A x` for a goal `eq A x y` and let
+   the kernel's conversion checker verify `x` converts to `y`.  Differs from
+   the prelude's reflexivity, which matches `eq ?A ?x ?x` purely syntactically
+   (pointer equality) and so cannot close a goal whose two sides are equal only
+   up to computation, e.g. `eq nat (add (S O) O) (S O)`.  Like Rocq's
+   `reflexivity`, it fails (cleanly) when the sides are not convertible. *)
+Tactic reflexivity := match Goal with
+| [ |- (((eq ?A) ?x) ?y) ] => exact ((eq_refl A) x)
+end.
+
+(* symmetry := apply eq_sym.  eq_sym : forall A x y, eq A x y -> eq A y x, so
+   applying it to `eq A y x` leaves the subgoal `eq A x y`.  Identical to Rocq. *)
+Tactic symmetry := apply eq_sym.
+
+(* simpl := cbv (full beta/delta/iota/fix normalization).  Rocq's simpl is a
+   heuristic partial reduction that avoids unfolding some applications; cbv is
+   strictly more aggressive but agrees with simpl whenever simpl makes progress
+   on the closed/structural goals in this corpus. *)
+Tactic simpl := cbv.
+
+(* trivial / easy / now : close trivial goals.  Rocq's are stronger (trivial
+   runs a hint database; easy/now also discharge by `congruence`/`lia`-free
+   automation).  Here: try reflexivity, then try assumption. *)
+Tactic trivial := try reflexivity; try assumption.
+Tactic easy := intros; try reflexivity; try assumption.
+Tactic now := intros; try reflexivity; try assumption.
+
+(* constructor (sec. 6a): generalization of split/left/right.  One arm per
+   inductive whose constructors this corpus uses.  `first` tries them in
+   declaration order, exactly like Rocq's `constructor`.  Each arm builds a
+   full proof term, so this stays sound under flag-never-guess.  Witness-guessing
+   (constructor on `ex`, i.e. eexists) is intentionally excluded. *)
+Tactic constructor := match Goal with
+| [ |- True ]            => exact I
+| [ |- ((and ?A) ?B) ]   => eapply ((conj A) B)
+| [ |- ((or ?A) ?B) ]    => first [ eapply ((or_introl A) B) | eapply ((or_intror A) B) ]
+| [ |- ((le ?n) ?m) ]    => first [ eapply (le_n n) | eapply (le_S n) ]
+end.

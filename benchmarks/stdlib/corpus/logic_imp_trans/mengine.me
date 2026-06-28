@@ -1,0 +1,5 @@
+Theorem imp_trans : forall (A : Prop), forall (B : Prop), forall (C : Prop), forall (_ : forall (_ : A), B), forall (_ : forall (_ : B), C), forall (_ : A), C.
+intro A. intro B. intro C. intro HAB. intro HBC. intro HA.
+apply (HBC).
+apply (HAB).
+exact (HA).
