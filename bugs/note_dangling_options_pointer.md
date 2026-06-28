@@ -1,9 +1,10 @@
-# Not fixed: dangling `MEngineOptions *` (use-after-return under ASan)
+# Fixed: dangling `MEngineOptions *` (use-after-return under ASan)
 
-**Status:** pre-existing, **not fixed**.  Discovered while validating the
-parametric-list kernel fixes (`stdlib-benchmark` branch) under AddressSanitizer;
-unrelated to those fixes.  Documented here so the next person who runs `make
-check` under ASan knows it is a known, separate issue rather than a regression.
+**Status:** **fixed** — `mengine_runtime_new` now owns a private copy of the
+options (`src/runtime/runtime.c`).  Discovered while validating the
+parametric-list kernel fixes under AddressSanitizer; pre-existing and unrelated to
+those fixes.  Kept as a note because the symptom is subtle (benign without ASan)
+and the by-reference API was a footgun.
 
 ## Symptom
 
@@ -69,17 +70,21 @@ reclaimed frame.  The next lex/parse dereferences it → stack-use-after-return.
 `src/main.c` avoids the trap only by luck of lifetime: its options struct lives in
 `main`'s frame, which outlives the runtime, so the borrowed pointer never dangles.
 
-## Fix options (when someone takes this on)
+## The fix
 
-1. **Own the options (preferred):** make `mengine_runtime_new` copy the struct
-   (`rt->options = malloc(sizeof *options); *rt->options = *options;`) and free it
-   in `mengine_runtime_free`.  Removes the lifetime footgun for every caller.
-   Watch for code that *mutates* `rt->options` and expects the caller to observe
-   it (e.g. `runtime.c:76-79` toggles `quiet`; that stays internal, so a copy is
-   fine) and for callers that share one options struct across runtimes.
-2. **Fix the caller only:** give `make_rt`'s options a lifetime ≥ the runtime
-   (a `static`/heap allocation).  Narrower; leaves the by-reference API as a trap
-   for the next caller.
+Option 1 (own the options) was taken: `mengine_runtime_new` allocates
+`rt->options = malloc(sizeof(MEngineOptions))` and copies the caller's struct into
+it (`*rt->options = *options`), and `mengine_runtime_free` frees it.  This removes
+the lifetime footgun for every caller — the runtime no longer depends on the
+caller keeping the options struct alive.  The transient mutations through
+`rt->options` (the `quiet` toggle while loading the prelude, `execution_type`)
+were already internal to the runtime, so copying does not change observable
+behaviour; `main.c` passes options by value and never reads them back.
 
-No `.me` reproducer: this is a C-level lifetime bug in the runtime/test harness,
-not a kernel or proof-checking bug, and it cannot affect proof soundness.
+The alternative (give the test's options a lifetime ≥ the runtime) was rejected as
+narrower — it would have left the by-reference API as a trap for the next caller.
+
+Verified: `make check` built with AddressSanitizer now runs to completion (431/431,
+no `stack-use-after-return`).  No `.me` reproducer — this is a C-level lifetime bug
+in the runtime, not a kernel or proof-checking bug, and it cannot affect proof
+soundness.

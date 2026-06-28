@@ -53,10 +53,22 @@ MEngineRuntime *mengine_runtime_new(MEngineOptions *options) {
 
     rt->proof_state = NULL;
     rt->pending_theorem = NULL;
-    rt->options = options;
+
+    // Own a private copy of the options rather than borrowing the caller's
+    // pointer.  The runtime reads through rt->options for its whole life (and
+    // even mutates it transiently, e.g. the quiet toggle below), so a borrowed
+    // pointer to a caller stack local would dangle the moment that caller
+    // returns.  See bugs/note_dangling_options_pointer.md.
+    rt->options = malloc(sizeof(MEngineOptions));
+    if (!rt->options) {
+        free(rt);
+        return NULL;
+    }
+    *rt->options = *options;
 
     rt->ctx = kernel_context_empty();
     if (!rt->ctx) {
+        free(rt->options);
         free(rt);
         return NULL;
     }
@@ -110,6 +122,7 @@ void mengine_runtime_free(MEngineRuntime *rt) {
     engine_rewrite_print_cumulative_stats();
 
     kernel_context_free(rt->ctx);
+    free(rt->options);
     free(rt);
 
     kernel_expression_gc_shutdown();
