@@ -891,15 +891,6 @@ Expression *init_fix_expression_wc(Expression *recursive_var, Expression **args,
         }
     }
 
-    Expression *body_bound = body;
-    for (int i = arg_count - 1; i >= 0; i--) {
-        body_bound = init_lambda_expression_wc(args[i], body_bound);
-        if (!body_bound) {
-            fprintf(stderr, ERROR "Failed to create body bound.\n" CRESET);
-            return NULL;
-        }
-    }
-
     Expression *expr = _init_expression_base(/* tag */ FIX_EXPRESSION, /* context */ gamma,
                                              /* ctx_size */ gamma->ctx_size,
                                              /* type */ get_expression_type(recursive_var));
@@ -921,7 +912,13 @@ Expression *init_fix_expression_wc(Expression *recursive_var, Expression **args,
     }
     propagate_evar_refs(expr, body);
 
-    if (!register_fix_body_to_expression(recursive_var, body_bound)) {
+    // Register the fix node itself as the recursive variable's definition. Unfolding
+    // the constant therefore yields a fix node (a value), so reduction is governed by
+    // the guarded fix rule (see fix_reduce_app): it fires only once the decreasing
+    // argument is constructor-headed. Registering the eta-expanded lambda form instead
+    // would make the constant delta-unfold unconditionally and loop on symbolic
+    // recursive arguments.
+    if (!register_fix_body_to_expression(recursive_var, expr)) {
         fprintf(stderr, ERROR "Failed to register body to recursive variable.\n" CRESET);
         free_expression(expr);
         return NULL;

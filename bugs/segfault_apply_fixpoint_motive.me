@@ -1,8 +1,10 @@
-(* SEGFAULT (exit 139). Pre-existing kernel crash, not fixed on this branch.
+(* FIXED (now exit 0). This used to SIGSEGV (exit 139).
 
-   Applying an induction principle whose motive mentions a Fixpoint crashes the
-   `apply` tactic while it unifies the principle with the goal and builds the
-   subgoals. This is the natural route an induction proof of `add n O = n` takes.
+   Applying an induction principle whose motive mentions a Fixpoint crashed the
+   `apply` tactic while it unified the principle with the goal and built the
+   subgoals — the natural route an induction proof of `add n O = n` takes. The
+   guarded fix rule (src/kernel/fix_reduction.c) now keeps the conversion
+   terminating; see bugs/README.md.
 
    Run: ./build/mengine -q bugs/segfault_apply_fixpoint_motive.me *)
 

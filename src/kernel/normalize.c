@@ -39,30 +39,34 @@ static Expression *_normalize_cbv(Expression *expr, ReductionFlags flags) {
                     }
                 }
 
-                // Try fix reduction on an applied fixpoint (mirrors normalize_whnf).
-                // Unfolds `(fix ...) arg` one step so the surrounding match can then
-                // iota-reduce; without this, cbv leaves applied fixpoints stuck.
-                if ((flags & REDUCE_FIX) && norm_func->tag == FIX_EXPRESSION &&
-                    is_fix_reducible(norm_func)) {
-                    Expression *unfolded = fix_reduce(norm_func);
-                    if (unfolded) {
-                        next = init_app_expression_wc(unfolded, norm_arg, ctx);
-                        if (next) {
-                            current = next;
-                            changed = true;
-                            continue;
-                        }
+                // Rebuild the application with normalized subexpressions (the args
+                // are now values, since cbv normalizes them first).
+                Expression *rebuilt = current;
+                if (norm_func != func || norm_arg != arg) {
+                    rebuilt = init_app_expression_wc(norm_func, norm_arg, ctx);
+                    if (!rebuilt) {
+                        break;
                     }
                 }
 
-                // Rebuild application if subexpressions changed
-                if (norm_func != func || norm_arg != arg) {
-                    next = init_app_expression_wc(norm_func, norm_arg, ctx);
-                    if (next) {
-                        current = next;
+                // Guarded fix reduction on an applied fixpoint (mirrors
+                // normalize_whnf): unfold `(fix ...) args` one step only when the
+                // decreasing argument is constructor-headed, so the surrounding match
+                // can then iota-reduce. The guard prevents runaway unfolding on a
+                // symbolic recursive argument.
+                if (flags & REDUCE_FIX) {
+                    Expression *unfolded = fix_reduce_app(rebuilt, normalize_whnf);
+                    if (unfolded) {
+                        current = unfolded;
                         changed = true;
                         continue;
                     }
+                }
+
+                if (rebuilt != current) {
+                    current = rebuilt;
+                    changed = true;
+                    continue;
                 }
                 break;
             }
@@ -83,17 +87,8 @@ static Expression *_normalize_cbv(Expression *expr, ReductionFlags flags) {
             }
 
             case FIX_EXPRESSION: {
-                // Try fix reduction if enabled
-                if ((flags & REDUCE_FIX) && is_fix_reducible(current)) {
-                    next = fix_reduce(current);
-                    if (next) {
-                        // Continue normalizing the result of fix reduction
-                        current = next;
-                        changed = true;
-                        continue;
-                    }
-                }
-                // FIX expressions that can't be reduced are in normal form
+                // A bare fix is a value; it reduces only once applied to a
+                // constructor-headed decreasing argument (see the APP case).
                 return current;
             }
 
@@ -199,25 +194,21 @@ Expression *normalize_whnf(Expression *expr) {
                     continue;
                 }
 
-                if (norm_func->tag == FIX_EXPRESSION && is_fix_reducible(norm_func)) {
-                    Expression *unfolded = fix_reduce(norm_func);
-                    if (unfolded) {
-                        current = init_app_expression_wc(unfolded, arg, ctx);
-                        continue;
-                    }
+                // Guarded fix reduction: only fire when the decreasing argument is
+                // constructor-headed (see fix_reduce_app), preventing runaway
+                // unfolding on symbolic recursive arguments.
+                Expression *fix_unfolded = fix_reduce_app(current, normalize_whnf);
+                if (fix_unfolded) {
+                    current = fix_unfolded;
+                    continue;
                 }
 
                 return current;
             }
 
             case FIX_EXPRESSION: {
-                if (is_fix_reducible(current)) {
-                    Expression *next = fix_reduce(current);
-                    if (next) {
-                        current = next;
-                        continue;
-                    }
-                }
+                // A bare fix is a value; reduction happens in APP_EXPRESSION once a
+                // constructor-headed decreasing argument is applied.
                 return current;
             }
 

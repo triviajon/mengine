@@ -281,16 +281,14 @@ static Expression *conversion_whnf(Expression *expr) {
                     }
                 }
 
-                if (norm_func->tag == FIX_EXPRESSION && is_fix_reducible(norm_func)) {
-                    Expression *unfolded = fix_reduce(norm_func);
-                    if (unfolded) {
-                        Expression *next = init_app_expression_wc(unfolded, arg, ctx);
-                        if (next) {
-                            conversion_record_step(ctx, current, next, CONVERSION_FIX);
-                            current = next;
-                            continue;
-                        }
-                    }
+                // Reduce a fix at the head of the spine only when its decreasing
+                // argument is constructor-headed (guards against non-termination on
+                // symbolic recursive arguments).
+                Expression *fix_unfolded = fix_reduce_app(current, conversion_whnf);
+                if (fix_unfolded) {
+                    conversion_record_step(ctx, current, fix_unfolded, CONVERSION_FIX);
+                    current = fix_unfolded;
+                    continue;
                 }
 
                 conversion_record_whnf(current, current);
@@ -299,15 +297,8 @@ static Expression *conversion_whnf(Expression *expr) {
             }
 
             case FIX_EXPRESSION: {
-                if (is_fix_reducible(current)) {
-                    Expression *next = fix_reduce(current);
-                    if (next) {
-                        conversion_record_step(get_expression_context(current), current, next,
-                                               CONVERSION_FIX);
-                        current = next;
-                        continue;
-                    }
-                }
+                // A bare fix is a value; it reduces only once applied to a
+                // constructor-headed decreasing argument (handled in APP_EXPRESSION).
                 conversion_record_whnf(current, current);
                 conversion_record_whnf(start, current);
                 return current;

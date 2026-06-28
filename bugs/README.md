@@ -1,55 +1,75 @@
-# Known segfaults: induction over computational goals
+# Fixed: induction over computational goals (symbolic-fixpoint reduction)
 
-These two minimal examples crash the engine (SIGSEGV). They are **pre-existing**
-kernel issues, not caused by the induction-principle generator change on this
-branch — that change only fixed the *type* of the generated `_ind`. They surface
-now because a correct, IH-bearing induction principle can finally be applied to a
-goal stated with a `Fixpoint`.
+The three examples here exercise induction over a goal stated with a `Fixpoint`.
+Two of them (`segfault_apply_fixpoint_motive.me`, `segfault_exact_eliminator_fixpoint.me`)
+used to crash the engine with SIGSEGV (exit 139); the third
+(`note_clean_conversion_failure.me`) used to fail cleanly with a type error. **All
+three now run to completion** (exit 0). They are kept as minimal reproducers and
+regression notes.
 
-Both involve the same shape: an induction principle whose motive applies a
-fixpoint (`add`) to a constructor-headed *symbolic* argument, so type-checking the
-step case must reduce/convert `add (S n) O` with `n` a variable. (MEngine's
-reduction is ground-only — `add (S n) O` does not reduce when `n` is symbolic; see
-`bugs/note_clean_conversion_failure.me`, which fails *cleanly* with exit 1 rather
-than crashing.) The crash is specific to the eliminator-*application* paths below.
+All involve the same shape: an induction principle whose motive applies a fixpoint
+(`add`) to a *symbolic* recursive argument, so type-checking the step case must
+convert `add (S n) O` to `S (add n O)` with `n` a variable.
 
 Run them with:
 
 ```bash
-./build/mengine -q bugs/segfault_apply_fixpoint_motive.me      # exit 139
-./build/mengine -q bugs/segfault_exact_eliminator_fixpoint.me  # exit 139
+./build/mengine -q bugs/segfault_apply_fixpoint_motive.me      # exit 0
+./build/mengine -q bugs/segfault_exact_eliminator_fixpoint.me  # exit 0
+./build/mengine -q bugs/note_clean_conversion_failure.me       # exit 0
 ```
 
-## 1. `segfault_apply_fixpoint_motive.me` — the `apply` / unifier path
+A complete worked proof of `forall n, add n O = n` by induction now lives in
+`examples/computational_eliminator.me` as permanent regression coverage.
 
-`apply (nat_ind <motive>)`, where the motive mentions the `add` fixpoint, crashes
-while the tactic unifies the principle against the goal and builds the subgoals.
-This is the direct route a real induction proof would take, so it currently blocks
-proving e.g. `forall n, add n O = n` by induction.
+## Root cause
 
-## 2. `segfault_exact_eliminator_fixpoint.me` — the kernel type-check path
+The shared root cause was non-termination when a fixpoint is unfolded on a
+*symbolic* (variable) recursive argument. Three issues conspired:
 
-`Check` (equivalently `exact`) of a fully explicit eliminator proof term crashes
-while type-checking the step case, where `add (S n) O` must be converted to
-`S (add n O)` under the `n` binder. This isolates the crash to the kernel's
-handling of the eliminator application itself: the bare conversion alone does not
-crash (it fails cleanly), but wrapping it in the eliminator application does.
+1. **Unconditional fix reduction.** `conversion_whnf` / `normalize_whnf` / `cbv`
+   reduced a fixpoint application regardless of its decreasing argument. With `n`
+   a variable, `add n O` unfolded to `match n with O => O | S p => S (add p O)`;
+   `conversion_derivable` then recursed into the `S` branch (`add p O`), which
+   unfolded again, forever — a stack overflow / SIGSEGV in the eliminator paths.
 
-## Still not fixed here (the two reproducers above)
+2. **A fixpoint constant was delta-reducible to its eta-expanded lambda form.**
+   `Fixpoint add …` registered the recursive variable's body as
+   `λn. λm. body`, so `add` unfolded unconditionally via delta+beta and a fix
+   node never actually appeared during reduction — the guard in (3) had nothing to
+   bite on.
 
-Both reproducers above still crash. Fixing them is the remaining "Tier 2" work:
-make iota/fix reduction fire on symbolic constructor-headed arguments, and harden
-the eliminator application / conversion path against it. The shared root cause is
-non-termination in `conversion_whnf`/`conversion_derivable` when a fixpoint is
-unfolded on a symbolic (variable) recursive argument (`is_fix_reducible` is
-unconditional), so the standard guard — reduce a fix only when its decreasing
-argument is in constructor head normal form — is the proper repair.
+3. **`fix_reduce` captured shared binders.** It substituted the fix node inline
+   for the recursive variable, but the fix shares its argument binders with the
+   body, so re-wrapping them in lambdas double-bound those variables.
 
-## Fixed on the stdlib-benchmark branch (related, but distinct)
+## The fix
 
-Two adjacent crashes/limitations *were* fixed to unblock the Rocq-stdlib
+- `src/kernel/fix_reduction.c` adds `fix_reduce_app`, the guarded fix rule: an
+  application whose head is a fix reduces only once its decreasing argument is in
+  constructor head normal form. `conversion_whnf`, `normalize_whnf`, and `cbv`
+  call it instead of reducing fixpoints unconditionally; a bare fix is now a
+  value. So `add n O` (symbolic `n`) stays stuck and conversion compares it
+  structurally — terminating.
+
+- `src/kernel/expression.c` registers the **fix node itself** as the recursive
+  variable's definitional body (not the eta-expanded lambda). Unfolding the
+  constant now yields a fix node, so the guard governs it. Recursive calls inside
+  the body resolve through the recursive variable (via delta), so `fix_reduce`
+  no longer substitutes inline — it just strips the fix to its lambda abstraction,
+  avoiding the binder capture in (3).
+
+- `src/commandlanguage/command_exec.c` makes the `Definition` command accept a
+  declared type that is *convertible* (not merely structurally congruent) to the
+  inferred type, so computational types such as `add O O = O` are accepted.
+
+All 431 kernel tests and every `examples/*.me` still pass.
+
+## Previously fixed on this branch (related, but distinct)
+
+Two adjacent crashes/limitations were fixed earlier to unblock the Rocq-stdlib
 benchmark (`benchmarks/stdlib/`); they are independent of the symbolic-fixpoint
-crash above and all 431 kernel tests still pass:
+crash above:
 
 1. **`cbv` did not reduce applied fixpoints.** `_normalize_cbv` only tried beta
    on an application spine, so `cbv`/`Eval` left `add (S O) O` stuck even though

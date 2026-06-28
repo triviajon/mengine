@@ -1,10 +1,10 @@
-(* NOT a crash: this fails cleanly (exit 1) with a type error.
+(* FIXED (now exit 0). This used to fail cleanly (exit 1) with a type error.
 
-   It shows the underlying limitation behind the two segfaults: MEngine's
-   reduction is ground-only, so `add (S n) O` does not reduce to `S (add n O)`
-   when `n` is a variable, and the conversion is rejected. On its own this is a
-   clean rejection; only the eliminator-application paths (the two segfault_*.me
-   files) turn it into a crash.
+   It showed the underlying limitation behind the two segfaults: a Fixpoint applied
+   to a constructor-headed *symbolic* argument, `add (S n) O`, must reduce to
+   `S (add n O)` with `n` a variable. The `Definition` command also now accepts a
+   declared type convertible (not merely structurally congruent) to the inferred
+   one, so this is checked by reduction; see bugs/README.md.
 
    Run: ./build/mengine -q bugs/note_clean_conversion_failure.me *)
 

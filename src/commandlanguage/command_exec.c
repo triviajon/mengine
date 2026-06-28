@@ -98,7 +98,21 @@ static int _handle_definition_command(MEngineRuntime *rt, DefinitionCmd *defn_cm
         fprintf(stderr, ERROR "Error:" CRESET " definition '%s' has a invalid type.\n", name);
     }
 
-    if (!kernel_expr_congruent(inferred_type_def_body, expected_type_def_body)) {
+    // Accept the definition when the inferred and declared types are convertible,
+    // not merely structurally congruent. The fast structural check avoids the cost of
+    // full conversion in the common case; the fallback lets computational types match
+    // (e.g. a declared `add O O` against an inferred `O`).
+    bool types_match = kernel_expr_congruent(inferred_type_def_body, expected_type_def_body);
+    if (!types_match) {
+        Conversion *conv = kernel_expr_conversion_in_context(
+            rendered_type_ctx, inferred_type_def_body, expected_type_def_body);
+        if (conv) {
+            types_match = true;
+            kernel_conversion_free(conv);
+        }
+    }
+
+    if (!types_match) {
         fprintf(stderr, ERROR "Type error:" CRESET " definition '%s' has a mismatched type.\n",
                 name);
         char *_s1 = kernel_expr_to_string(expected_type_def_body);

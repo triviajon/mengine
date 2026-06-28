@@ -34,3 +34,21 @@ Fixpoint add (n : nat) (m : nat) {struct n} : nat :=
 (* cbv must reduce the applied fixpoint for these to print their normal forms. *)
 Eval cbv in (add (S O) O).
 Eval cbv in (add (S (S O)) (S (S O))).
+
+(* Induction over a goal stated with a Fixpoint applied to a *symbolic* recursive
+   argument.  Proving this by `nat_ind` used to SIGSEGV (exit 139): type-checking the
+   step case converts `add (S p) O` with `p` a variable, and fix reduction was
+   unconditional, so a fixpoint unfolded forever on its non-constructor recursive
+   argument.  Reduction now fires only once the decreasing argument is
+   constructor-headed (see src/kernel/fix_reduction.c), so `add p O` stays stuck and
+   the conversion terminates.  If that regresses, this proof crashes or fails. *)
+Axiom f_equal_S : forall (a : nat), forall (b : nat), forall (_ : eq nat a b),
+  eq nat (S a) (S b).
+
+Theorem add_O_r : forall (n : nat), eq nat (add n O) n.
+intro n.
+apply (nat_ind (fun (k : nat) => eq nat (add k O) k)).
+cbv. reflexivity.
+intro p.
+intro ih.
+cbv. apply f_equal_S. exact ih.

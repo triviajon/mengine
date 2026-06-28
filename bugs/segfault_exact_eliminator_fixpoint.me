@@ -1,9 +1,10 @@
-(* SEGFAULT (exit 139). Pre-existing kernel crash, not fixed on this branch.
+(* FIXED (now exit 0). This used to SIGSEGV (exit 139).
 
-   Type-checking a fully explicit eliminator proof term crashes in the step case,
-   where `add (S n) O` must convert to `S (add n O)` under the `n` binder. The
-   bare conversion on its own fails *cleanly* (see note_clean_conversion_failure.me);
-   only wrapping it in the eliminator application crashes.
+   Type-checking a fully explicit eliminator proof term crashed in the step case,
+   where `add (S n) O` must convert to `S (add n O)` under the `n` binder. Fix
+   reduction is now guarded on the decreasing argument being constructor-headed,
+   so `add n O` (symbolic `n`) stays stuck instead of unfolding forever; see
+   bugs/README.md.
 
    Run: ./build/mengine -q bugs/segfault_exact_eliminator_fixpoint.me *)
 
