@@ -332,8 +332,16 @@ Now **in Tier A** (previously excluded, unblocked by the kernel work below):
   *quantified* induction hypothesis (whose type is the eliminator's beta-redex
   `(motive) n`) works too.  The old `bugs/segfault_*` reproducers run to
   completion, and `examples/computational_induction_rewrite.me` is the regression.
-- **Single-variable `destruct`/`case` with a constant RHS** (`andb b false =
-  false`): proved by `apply (bool_ind <motive>)` + per-case `simpl`/`reflexivity`.
+- **Single-variable `destruct`/`case`**, on `bool` *and* on a recursive type
+  (`nat`/`list`).  MEngine generates no non-recursive `<T>_rec`/case principle,
+  only the recursive `<T>_ind`, so `destruct` is emulated through that same
+  eliminator: the step case still binds an induction hypothesis (`P n -> P (S n)`),
+  which the translator introduces and immediately **discards with a bare
+  `intro.`** before the case body (`sub_0_r`, `n - 0 = n`, is `destruct n`).  The
+  resulting term is exactly what `induction` would build with the IH left unused —
+  a full, Coq-checkable proof.  Its `as` clause therefore names only the
+  constructor arguments (`destruct l as [| x l]`), not the IH that `induction`'s
+  would (`induction l as [| x l IHl]`).
 - **Parametric `list` induction** (`app_nil_r`, `app_assoc`, `length_app` over
   `list A`): the compat prelude declares `list`/`option` with `A` as a *parameter*,
   so MEngine generates the Rocq-shaped `list_ind : forall (A : Type) (P : list A ->

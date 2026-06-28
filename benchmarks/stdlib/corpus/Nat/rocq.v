@@ -102,7 +102,7 @@ Lemma sub_0_l : forall n : nat, 0 - n = 0.
 Proof. intro n. reflexivity. Qed.
 
 Lemma sub_0_r : forall n : nat, n - 0 = n.
-Proof. induction n.
+Proof. destruct n.
   - reflexivity.
   - reflexivity.
 Qed.

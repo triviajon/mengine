@@ -205,7 +205,7 @@
       "name": "Nat",
       "tier": "A",
       "category": "Nat",
-      "rocq_sha256": "8688e906c72e7dd4",
+      "rocq_sha256": "c9a36e34165ad451",
       "statements": [
         {
           "name": "add_2_2",

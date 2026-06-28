@@ -757,8 +757,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
   Lemma sub_0_r n : n - 0 = n.
   Proof. now destruct n. Qed.
   ```
-- **corpus** (`Nat/rocq.v`): `induction n. - reflexivity. - reflexivity.`
-- **why it diverges:** A concrete script exists but uses `destruct` of a hypothesis, which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction n. - reflexivity. - reflexivity.`).
+- **corpus** (`Nat/rocq.v`): `destruct n. - reflexivity. - reflexivity.`
+- **why it diverges:** A concrete script exists but uses `destruct` of a hypothesis, which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`destruct n. - reflexivity. - reflexivity.`).
 
 ### `sub_diag` → `Nat.sub_diag`  *(proof: functor)*
 

@@ -947,18 +947,41 @@ def _parse_as_clause(as_clause, ncases):
 
 
 def _case_intro_lines(kind, var, rec_flags, names):
-    """intro lines for one constructor case: every constructor argument in order,
-    then one induction hypothesis per recursive argument (induction only).  With
-    an explicit `as` group the names come verbatim; otherwise default to Rocq's
-    auto-naming (reuse the induction variable for the recursive argument), which
-    is only well-defined when the constructor has no non-recursive arguments."""
-    n_ih = sum(1 for f in rec_flags if f) if kind == "induction" else 0
+    """intro lines for one constructor case.
+
+    The eliminator is always the *recursive* `<T>_ind`, whose step case binds an
+    induction hypothesis (`P <rec-arg>`) for every recursive argument.  So each
+    case must introduce: every constructor argument in order, then one
+    hypothesis per recursive argument — for *both* `induction` and `destruct`,
+    because both go through `<T>_ind` (MEngine generates no non-recursive
+    `<T>_rec`/case principle).  They differ only in how that hypothesis is
+    handled:
+
+      - `induction` names it (from the `as` clause, else `IH<var>`) so the case
+        body can use it.
+      - `destruct` has no induction hypothesis in Rocq; here it is an artifact
+        of emulating case analysis with `<T>_ind`, so it is discarded with a
+        bare `intro.` (which still exposes `P (ctor ...)`), and the `as` clause
+        names only the constructor arguments.  The resulting term is the same
+        proof `induction` would build with the IH left unused — a full,
+        Coq-checkable term — so this stays within flag-never-guess.
+
+    With an explicit `as` group the argument names come verbatim; otherwise the
+    arguments default to Rocq's auto-naming (reuse the variable for the single
+    recursive argument), which is only well-defined when the constructor has no
+    non-recursive arguments."""
+    n_rec = sum(1 for f in rec_flags if f)
     if names is not None:
-        if len(names) != len(rec_flags) + n_ih:
+        # induction `as` lists args + IHs; destruct `as` lists only the args.
+        n_named_ih = n_rec if kind == "induction" else 0
+        if len(names) != len(rec_flags) + n_named_ih:
             raise Untranslatable(
                 f"`as` case lists {len(names)} names, expected "
-                f"{len(rec_flags) + n_ih}")
-        return [f"intro {nm}." for nm in names]
+                f"{len(rec_flags) + n_named_ih}")
+        lines = [f"intro {nm}." for nm in names]
+        if kind != "induction":
+            lines += ["intro." for _ in range(n_rec)]  # discard the IH(s)
+        return lines
     if any(not f for f in rec_flags):
         raise Untranslatable(
             "induction/destruct without `as` on a constructor with "
@@ -966,6 +989,8 @@ def _case_intro_lines(kind, var, rec_flags, names):
     lines = [f"intro {var}." for _ in rec_flags]
     if kind == "induction":
         lines += [f"intro IH{var}." for f in rec_flags if f]
+    else:
+        lines += ["intro." for f in rec_flags if f]  # discard the IH(s)
     return lines
 
 
