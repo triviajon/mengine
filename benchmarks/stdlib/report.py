@@ -225,20 +225,23 @@ def _scatter(cfg, rows, meta=None):
         ax.scatter(xs, ys, label=cat, color=colors.get(cat, "gray"),
                    s=40, alpha=0.8, edgecolors="k", linewidths=0.3)
 
-    allv = [r["rocq"] * 1000 for r in pts] + [r["mengine"] * 1000 for r in pts]
-    lo, hi = min(allv) * 0.7, max(allv) * 1.4
-
-    # Startup floors: every point sits essentially on this cross because the
-    # proofs are below the per-invocation cost. Drawing the floors makes that
-    # explicit — the whole-file scatter is comparing startup, not proof time.
+    # Independent x/y limits, each padded around its own data and startup floor.
+    # The data now sits in one corner (Rocq is startup-bound, MEngine proofs are
+    # ~ms), so a shared square range would waste most of the canvas; the parity
+    # line is an explicit curve, not a 45° diagonal, so equal aspect isn't needed.
+    LO_PAD, HI_PAD = 0.85, 1.25
     r_floor, m_floor = meta.get("rocq_floor"), meta.get("mengine_floor")
+    xvals = [r["rocq"] * 1000 for r in pts] + ([r_floor * 1000] if r_floor else [])
+    yvals = [r["mengine"] * 1000 for r in pts] + ([m_floor * 1000] if m_floor else [])
+    xlo, xhi = min(xvals) * LO_PAD, max(xvals) * HI_PAD
+    ylo, yhi = min(yvals) * LO_PAD, max(yvals) * HI_PAD
+
+    # Startup floors: the scatter is dominated by per-invocation cost, so drawing
+    # the floors makes explicit that the whole-file comparison is mostly startup.
     if r_floor:
-        lo = min(lo, r_floor * 1000 * 0.7)
-        hi = max(hi, r_floor * 1000 * 1.4)
         ax.axvline(r_floor * 1000, color="tab:gray", ls=":", lw=1,
                    label="Rocq startup floor")
     if m_floor:
-        lo = min(lo, m_floor * 1000 * 0.7)
         ax.axhline(m_floor * 1000, color="tab:cyan", ls=":", lw=1,
                    label="MEngine startup floor")
 
@@ -253,15 +256,15 @@ def _scatter(cfg, rows, meta=None):
     if r_floor and m_floor:
         r0, m0 = r_floor * 1000, m_floor * 1000
         npts = 200
-        xs_line = [r0 + (hi - r0) * k / (npts - 1) for k in range(npts)]
+        xs_line = [r0 + (xhi - r0) * k / (npts - 1) for k in range(npts)]
         ys_line = [m0 + (x - r0) for x in xs_line]
         ax.plot(xs_line, ys_line, "k--", lw=1, label="parity (equal proof time)")
         ax.plot([r0], [m0], "k.", ms=7, zorder=5)  # the floor cross = origin
     else:
-        ax.plot([lo, hi], [lo, hi], "k--", lw=1, label="parity")
+        ax.plot([xlo, xhi], [ylo, yhi], "k--", lw=1, label="parity")
 
     ax.set_xscale("log"); ax.set_yscale("log")
-    ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
+    ax.set_xlim(xlo, xhi); ax.set_ylim(ylo, yhi)
     ax.set_xlabel("Rocq time (ms, log)")
     ax.set_ylabel("MEngine time (ms, log)")
     ax.set_title("Rocq stdlib modules: MEngine vs Rocq")
