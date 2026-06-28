@@ -9,26 +9,20 @@ reflexivity.
 Theorem andb_true_r : forall (b : bool), (((eq bool) ((andb b) true)) b).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) ((andb b) true)) b))).
-simpl.
-reflexivity.
-simpl.
-reflexivity.
+simpl; reflexivity.
+simpl; reflexivity.
 
 Theorem andb_false_r : forall (b : bool), (((eq bool) ((andb b) false)) false).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) ((andb b) false)) false))).
-simpl.
-reflexivity.
-simpl.
-reflexivity.
+simpl; reflexivity.
+simpl; reflexivity.
 
 Theorem andb_b_b : forall (b : bool), (((eq bool) ((andb b) b)) b).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) ((andb b) b)) b))).
-simpl.
-reflexivity.
-simpl.
-reflexivity.
+simpl; reflexivity.
+simpl; reflexivity.
 
 Theorem orb_true_l : forall (b : bool), (((eq bool) ((orb true) b)) true).
 intro b.
@@ -41,26 +35,20 @@ reflexivity.
 Theorem orb_true_r : forall (b : bool), (((eq bool) ((orb b) true)) true).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) ((orb b) true)) true))).
-simpl.
-reflexivity.
-simpl.
-reflexivity.
+simpl; reflexivity.
+simpl; reflexivity.
 
 Theorem orb_false_r : forall (b : bool), (((eq bool) ((orb b) false)) b).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) ((orb b) false)) b))).
-simpl.
-reflexivity.
-simpl.
-reflexivity.
+simpl; reflexivity.
+simpl; reflexivity.
 
 Theorem orb_b_b : forall (b : bool), (((eq bool) ((orb b) b)) b).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) ((orb b) b)) b))).
-simpl.
-reflexivity.
-simpl.
-reflexivity.
+simpl; reflexivity.
+simpl; reflexivity.
 
 Theorem negb_true : (((eq bool) (negb true)) false).
 reflexivity.
@@ -71,34 +59,26 @@ reflexivity.
 Theorem negb_involutive : forall (b : bool), (((eq bool) (negb (negb b))) b).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) (negb (negb b))) b))).
-simpl.
-reflexivity.
-simpl.
-reflexivity.
+simpl; reflexivity.
+simpl; reflexivity.
 
 Theorem negb_involutive_reverse : forall (b : bool), (((eq bool) b) (negb (negb b))).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) b) (negb (negb b))))).
-simpl.
-reflexivity.
-simpl.
-reflexivity.
+simpl; reflexivity.
+simpl; reflexivity.
 
 Theorem andb_negb_r : forall (b : bool), (((eq bool) ((andb b) (negb b))) false).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) ((andb b) (negb b))) false))).
-simpl.
-reflexivity.
-simpl.
-reflexivity.
+simpl; reflexivity.
+simpl; reflexivity.
 
 Theorem orb_negb_r : forall (b : bool), (((eq bool) ((orb b) (negb b))) true).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) ((orb b) (negb b))) true))).
-simpl.
-reflexivity.
-simpl.
-reflexivity.
+simpl; reflexivity.
+simpl; reflexivity.
 
 Theorem implb_true_l : forall (b : bool), (((eq bool) ((implb true) b)) b).
 intro b.
@@ -111,10 +91,8 @@ reflexivity.
 Theorem implb_b_b : forall (b : bool), (((eq bool) ((implb b) b)) true).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) ((implb b) b)) true))).
-simpl.
-reflexivity.
-simpl.
-reflexivity.
+simpl; reflexivity.
+simpl; reflexivity.
 
 Theorem xorb_false_l : forall (b : bool), (((eq bool) ((xorb false) b)) b).
 intro b.
@@ -123,10 +101,8 @@ reflexivity.
 Theorem xorb_false_r : forall (b : bool), (((eq bool) ((xorb b) false)) b).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) ((xorb b) false)) b))).
-simpl.
-reflexivity.
-simpl.
-reflexivity.
+simpl; reflexivity.
+simpl; reflexivity.
 
 Theorem xorb_true_l : forall (b : bool), (((eq bool) ((xorb true) b)) (negb b)).
 intro b.
@@ -135,15 +111,11 @@ reflexivity.
 Theorem xorb_true_r : forall (b : bool), (((eq bool) ((xorb b) true)) (negb b)).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) ((xorb b) true)) (negb b)))).
-simpl.
-reflexivity.
-simpl.
-reflexivity.
+simpl; reflexivity.
+simpl; reflexivity.
 
 Theorem xorb_b_b : forall (b : bool), (((eq bool) ((xorb b) b)) false).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) ((xorb b) b)) false))).
-simpl.
-reflexivity.
-simpl.
-reflexivity.
+simpl; reflexivity.
+simpl; reflexivity.

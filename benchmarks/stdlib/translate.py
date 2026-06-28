@@ -890,11 +890,18 @@ def translate_proof(proof_sentences, stmt_type_out, report):
         raise Untranslatable("empty proof")
 
     first = body[0].strip()
+    # The induction/destruct line may carry a uniform semicolon tail
+    # (`induction b; reflexivity`) — a chain applied to *every* resulting
+    # subgoal, the stdlib's idiom for case-splits all cases close the same way
+    # (e.g. `destr_bool` ≈ `destruct b; simpl; reflexivity`).  It is only sound
+    # when no case needs per-case intros, so `_translate_induction` restricts it
+    # to all-nullary inductives (bool); anything else is flagged.
     m = re.match(r"^(induction|destruct)\s+([A-Za-z_][A-Za-z0-9_']*)"
-                 r"\s*(?:as\s+(\[.*\]))?\s*$", first, re.S)
+                 r"\s*(?:as\s+(\[.*?\]))?\s*(?:;\s*(.+))?$", first, re.S)
     if m:
         return _translate_induction(m.group(1), m.group(2), m.group(3), body[1:],
-                                    stmt_type_out, report)
+                                    stmt_type_out, report,
+                                    uniform_tail=m.group(4))
 
     # Shape (A): straight-line.  Forbid any later induction/destruct.
     for s in body:
@@ -1024,7 +1031,8 @@ def _case_intro_lines(kind, var, rec_flags, names):
     return lines
 
 
-def _translate_induction(kind, var, as_clause, remainder, stmt_type_out, report):
+def _translate_induction(kind, var, as_clause, remainder, stmt_type_out, report,
+                         uniform_tail=None):
     # Peel leading binders, introducing each, until we reach the induction
     # variable.  Binders before it (e.g. the type parameter A of `list A`) are
     # introduced and then supplied to the eliminator via the variable's own type.
@@ -1054,6 +1062,42 @@ def _translate_induction(kind, var, as_clause, remainder, stmt_type_out, report)
     motive = f"fun ({var} : {var_ty}) => {body}"
     param_prefix = f"{params} " if params else ""
     lines = [f"intro {b}." for b in intros]
+
+    if uniform_tail is not None:
+        # `induction x; t1; t2` — Rocq runs the chain on every subgoal of the
+        # eliminator.  MEngine has `;` too, but its cross-goal form
+        # (`apply (<T>_ind ...); t1; t2`) normalizes the sibling case goals
+        # before either is closed, and `simpl`/`cbv` over the shared motive then
+        # corrupts the not-yet-solved case.  So the chain is instead replayed
+        # *per case, sequentially* — `apply (...)`, then `t1; t2` once for each
+        # constructor — which yields the same proof term without the cross-goal
+        # hazard.  Sound only when no case binds constructor arguments / an IH
+        # (otherwise the chain would hit an unintroduced `forall`), so restrict
+        # to all-nullary inductives (bool).
+        if as_clause is not None:
+            raise Untranslatable("uniform `;` tail with an `as` clause")
+        if remainder:
+            raise Untranslatable("uniform `;` tail followed by more tactics")
+        if any(rec_flags for _ctor, rec_flags in info["cases"]):
+            raise Untranslatable(
+                f"uniform `;` tail on '{head}' (a constructor takes arguments; "
+                "the chain cannot introduce them per case)")
+        report.add_handled(f"tac:{kind}")
+        tail_atoms = []
+        for atom in _split_semicolons(uniform_tail):
+            t = translate_tactic_atom(atom, report)
+            if t is None:
+                continue
+            if "." in t:
+                raise Untranslatable(
+                    f"uniform `;` tail step '{atom}' is not a single tactic")
+            tail_atoms.append(t)
+        lines.append(f"apply ({info['ind']} {param_prefix}({motive})).")
+        case_tail = "; ".join(tail_atoms) + "."
+        for _case in info["cases"]:
+            lines.append(case_tail)
+        return lines
+
     lines.append(f"apply ({info['ind']} {param_prefix}({motive})).")
 
     names_per_case = _parse_as_clause(as_clause, len(info["cases"]))

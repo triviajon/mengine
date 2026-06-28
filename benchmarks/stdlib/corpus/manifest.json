@@ -6,7 +6,7 @@
       "name": "Bool",
       "tier": "A",
       "category": "Bool",
-      "rocq_sha256": "0ca352ef11940789",
+      "rocq_sha256": "57717e8f4cd73683",
       "statements": [
         {
           "name": "andb_true_l",
@@ -111,7 +111,7 @@
       "name": "Lists",
       "tier": "A",
       "category": "Lists",
-      "rocq_sha256": "a873fbb27d342349",
+      "rocq_sha256": "168e784a2976ea81",
       "statements": [
         {
           "name": "app_nil_l",
@@ -156,7 +156,7 @@
       "name": "Logic",
       "tier": "A",
       "category": "Logic",
-      "rocq_sha256": "7d8d987d4b524d8d",
+      "rocq_sha256": "18da5c45506334bf",
       "statements": [
         {
           "name": "eq_refl_x",
@@ -221,7 +221,7 @@
       "name": "Nat",
       "tier": "A",
       "category": "Nat",
-      "rocq_sha256": "c9a36e34165ad451",
+      "rocq_sha256": "768e91d8b8103d10",
       "statements": [
         {
           "name": "add_2_2",
@@ -338,7 +338,7 @@
       "name": "Peano",
       "tier": "A",
       "category": "Peano",
-      "rocq_sha256": "d20b6ba9efd68bce",
+      "rocq_sha256": "d7b577b66a69a0aa",
       "statements": [
         {
           "name": "le_refl_n",

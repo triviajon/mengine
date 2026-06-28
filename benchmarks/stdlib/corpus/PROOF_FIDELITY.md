@@ -50,8 +50,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     destr_bool.
   Qed.
   ```
-- **corpus** (`Bool/rocq.v`): `induction b. - reflexivity. - reflexivity.`
-- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction b. - reflexivity. - reflexivity.`).
+- **corpus** (`Bool/rocq.v`): `destruct b; simpl; reflexivity.`
+- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`destruct b; simpl; reflexivity.`).
 
 ### `andb_false_r` → `andb_false_r`  *(proof: untranslatable)*
 
@@ -62,8 +62,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     destr_bool.
   Qed.
   ```
-- **corpus** (`Bool/rocq.v`): `induction b. - reflexivity. - reflexivity.`
-- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction b. - reflexivity. - reflexivity.`).
+- **corpus** (`Bool/rocq.v`): `destruct b; simpl; reflexivity.`
+- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`destruct b; simpl; reflexivity.`).
 
 ### `andb_b_b` → `andb_diag`  *(proof: untranslatable)*
 
@@ -74,8 +74,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
    destr_bool.
   Qed.
   ```
-- **corpus** (`Bool/rocq.v`): `induction b. - reflexivity. - reflexivity.`
-- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction b. - reflexivity. - reflexivity.`).
+- **corpus** (`Bool/rocq.v`): `destruct b; simpl; reflexivity.`
+- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`destruct b; simpl; reflexivity.`).
 
 ### `orb_true_l` → `orb_true_l`  *(proof: near-match)*
 
@@ -110,8 +110,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     destr_bool.
   Qed.
   ```
-- **corpus** (`Bool/rocq.v`): `induction b. - reflexivity. - reflexivity.`
-- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction b. - reflexivity. - reflexivity.`).
+- **corpus** (`Bool/rocq.v`): `destruct b; simpl; reflexivity.`
+- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`destruct b; simpl; reflexivity.`).
 
 ### `orb_false_r` → `orb_false_r`  *(proof: untranslatable)*
 
@@ -122,8 +122,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     destr_bool.
   Qed.
   ```
-- **corpus** (`Bool/rocq.v`): `induction b. - reflexivity. - reflexivity.`
-- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction b. - reflexivity. - reflexivity.`).
+- **corpus** (`Bool/rocq.v`): `destruct b; simpl; reflexivity.`
+- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`destruct b; simpl; reflexivity.`).
 
 ### `orb_b_b` → `orb_diag`  *(proof: untranslatable)*
 
@@ -134,8 +134,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
    destr_bool.
   Qed.
   ```
-- **corpus** (`Bool/rocq.v`): `induction b. - reflexivity. - reflexivity.`
-- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction b. - reflexivity. - reflexivity.`).
+- **corpus** (`Bool/rocq.v`): `destruct b; simpl; reflexivity.`
+- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`destruct b; simpl; reflexivity.`).
 
 ### `negb_true`  *(proof: original)*
 
@@ -156,8 +156,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     destr_bool.
   Qed.
   ```
-- **corpus** (`Bool/rocq.v`): `induction b. - reflexivity. - reflexivity.`
-- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction b. - reflexivity. - reflexivity.`).
+- **corpus** (`Bool/rocq.v`): `destruct b; simpl; reflexivity.`
+- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`destruct b; simpl; reflexivity.`).
 
 ### `negb_involutive_reverse` → `negb_involutive_reverse`  *(proof: untranslatable)*
 
@@ -168,8 +168,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     destr_bool.
   Qed.
   ```
-- **corpus** (`Bool/rocq.v`): `induction b. - reflexivity. - reflexivity.`
-- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction b. - reflexivity. - reflexivity.`).
+- **corpus** (`Bool/rocq.v`): `destruct b; simpl; reflexivity.`
+- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`destruct b; simpl; reflexivity.`).
 
 ### `andb_negb_r` → `andb_negb_r`  *(proof: untranslatable)*
 
@@ -180,8 +180,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     destr_bool.
   Qed.
   ```
-- **corpus** (`Bool/rocq.v`): `induction b. - reflexivity. - reflexivity.`
-- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction b. - reflexivity. - reflexivity.`).
+- **corpus** (`Bool/rocq.v`): `destruct b; simpl; reflexivity.`
+- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`destruct b; simpl; reflexivity.`).
 
 ### `orb_negb_r` → `orb_negb_r`  *(proof: untranslatable)*
 
@@ -192,8 +192,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     destr_bool.
   Qed.
   ```
-- **corpus** (`Bool/rocq.v`): `induction b. - reflexivity. - reflexivity.`
-- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction b. - reflexivity. - reflexivity.`).
+- **corpus** (`Bool/rocq.v`): `destruct b; simpl; reflexivity.`
+- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`destruct b; simpl; reflexivity.`).
 
 ### `implb_true_l` → `implb_true_l`  *(proof: untranslatable)*
 
@@ -228,8 +228,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     destr_bool.
   Qed.
   ```
-- **corpus** (`Bool/rocq.v`): `induction b. - reflexivity. - reflexivity.`
-- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction b. - reflexivity. - reflexivity.`).
+- **corpus** (`Bool/rocq.v`): `destruct b; simpl; reflexivity.`
+- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`destruct b; simpl; reflexivity.`).
 
 ### `xorb_false_l` → `xorb_false_l`  *(proof: untranslatable)*
 
@@ -252,8 +252,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     destr_bool.
   Qed.
   ```
-- **corpus** (`Bool/rocq.v`): `induction b. - reflexivity. - reflexivity.`
-- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction b. - reflexivity. - reflexivity.`).
+- **corpus** (`Bool/rocq.v`): `destruct b; simpl; reflexivity.`
+- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`destruct b; simpl; reflexivity.`).
 
 ### `xorb_true_l` → `xorb_true_l`  *(proof: near-match)*
 
@@ -276,8 +276,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     reflexivity.
   Qed.
   ```
-- **corpus** (`Bool/rocq.v`): `induction b. - reflexivity. - reflexivity.`
-- **why it diverges:** The library proof is `reflexivity.`; the corpus proof is the same modulo MEngine's surface syntax (`induction b. - reflexivity. - reflexivity.`).
+- **corpus** (`Bool/rocq.v`): `destruct b; simpl; reflexivity.`
+- **why it diverges:** The library proof is `reflexivity.`; the corpus proof is the same modulo MEngine's surface syntax (`destruct b; simpl; reflexivity.`).
 
 ### `xorb_b_b` → `xorb_nilpotent`  *(proof: untranslatable)*
 
@@ -288,8 +288,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     destr_bool.
   Qed.
   ```
-- **corpus** (`Bool/rocq.v`): `induction b. - reflexivity. - reflexivity.`
-- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction b. - reflexivity. - reflexivity.`).
+- **corpus** (`Bool/rocq.v`): `destruct b; simpl; reflexivity.`
+- **why it diverges:** A concrete script exists but uses the `destr_bool` Ltac macro (`destruct_all bool; simpl in *; trivial; try discriminate`), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`destruct b; simpl; reflexivity.`).
 
 ## Lists
 
@@ -314,8 +314,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
       induction l; simpl; f_equal; auto.
     Qed.
   ```
-- **corpus** (`Lists/rocq.v`): `induction l as [| x l IHl]. - reflexivity. - simpl. f_equal. exact IHl.`
-- **why it diverges:** A concrete script exists but uses `f_equal` (the compat prelude now provides a single-layer approximation built on `Bad_App_Congruence`; Rocq's is a general recursive congruence), `auto` (MEngine's emulated `auto` is `repeat intro; try assumption; try reflexivity` — far weaker than Rocq's hint search) — which MEngine only approximates / emulates more weakly than Rocq, so it cannot replay the proof verbatim.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction l as [| x l IHl]. - reflexivity. - simpl. f_equal. exact IHl.`).
+- **corpus** (`Lists/rocq.v`): `induction l as [| x l IHl]. - reflexivity. - simpl; f_equal; exact IHl.`
+- **why it diverges:** A concrete script exists but uses `f_equal` (the compat prelude now provides a single-layer approximation built on `Bad_App_Congruence`; Rocq's is a general recursive congruence), `auto` (MEngine's emulated `auto` is `repeat intro; try assumption; try reflexivity` — far weaker than Rocq's hint search) — which MEngine only approximates / emulates more weakly than Rocq, so it cannot replay the proof verbatim.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction l as [| x l IHl]. - reflexivity. - simpl; f_equal; exact IHl.`).
 
 ### `app_comm_cons` → `app_comm_cons`  *(proof: near-match)*
 
@@ -338,8 +338,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
       induction l; simpl; f_equal; auto.
     Qed.
   ```
-- **corpus** (`Lists/rocq.v`): `induction l as [| x l IHl]. - intro m. intro n. reflexivity. - intro m. intro n. simpl. f_equal. exact (IHl m n).`
-- **why it diverges:** A concrete script exists but uses `f_equal` (the compat prelude now provides a single-layer approximation built on `Bad_App_Congruence`; Rocq's is a general recursive congruence), `auto` (MEngine's emulated `auto` is `repeat intro; try assumption; try reflexivity` — far weaker than Rocq's hint search) — which MEngine only approximates / emulates more weakly than Rocq, so it cannot replay the proof verbatim.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction l as [| x l IHl]. - intro m. intro n. reflexivity. - intro m. intro n. simpl. f_equal. exact (IHl m n).`).
+- **corpus** (`Lists/rocq.v`): `induction l as [| x l IHl]. - intro m. intro n. reflexivity. - intro m. intro n. simpl; f_equal; exact (IHl m n).`
+- **why it diverges:** A concrete script exists but uses `f_equal` (the compat prelude now provides a single-layer approximation built on `Bad_App_Congruence`; Rocq's is a general recursive congruence), `auto` (MEngine's emulated `auto` is `repeat intro; try assumption; try reflexivity` — far weaker than Rocq's hint search) — which MEngine only approximates / emulates more weakly than Rocq, so it cannot replay the proof verbatim.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction l as [| x l IHl]. - intro m. intro n. reflexivity. - intro m. intro n. simpl; f_equal; exact (IHl m n).`).
 
 ### `length_app` → `length_app`  *(proof: untranslatable)*
 
@@ -350,8 +350,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
       intro l; induction l; simpl; auto.
     Qed.
   ```
-- **corpus** (`Lists/rocq.v`): `induction l as [| x l IHl]. - intro m. reflexivity. - intro m. simpl. f_equal. exact (IHl m).`
-- **why it diverges:** A concrete script exists but uses `auto` (MEngine's emulated `auto` is `repeat intro; try assumption; try reflexivity` — far weaker than Rocq's hint search) — which MEngine only approximates / emulates more weakly than Rocq, so it cannot replay the proof verbatim.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction l as [| x l IHl]. - intro m. reflexivity. - intro m. simpl. f_equal. exact (IHl m).`).
+- **corpus** (`Lists/rocq.v`): `induction l as [| x l IHl]. - intro m. reflexivity. - intro m. simpl; f_equal; exact (IHl m).`
+- **why it diverges:** A concrete script exists but uses `auto` (MEngine's emulated `auto` is `repeat intro; try assumption; try reflexivity` — far weaker than Rocq's hint search) — which MEngine only approximates / emulates more weakly than Rocq, so it cannot replay the proof verbatim.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction l as [| x l IHl]. - intro m. reflexivity. - intro m. simpl; f_equal; exact (IHl m).`).
 
 ### `map_app` → `map_app`  *(proof: untranslatable)*
 
@@ -364,8 +364,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
       intros; rewrite IHl; auto.
     Qed.
   ```
-- **corpus** (`Lists/rocq.v`): `induction l as [| x l IHl]. - intro m. reflexivity. - intro m. simpl. f_equal. exact (IHl m).`
-- **why it diverges:** A concrete script exists but uses `auto` (MEngine's emulated `auto` is `repeat intro; try assumption; try reflexivity` — far weaker than Rocq's hint search) — which MEngine only approximates / emulates more weakly than Rocq, so it cannot replay the proof verbatim.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction l as [| x l IHl]. - intro m. reflexivity. - intro m. simpl. f_equal. exact (IHl m).`).
+- **corpus** (`Lists/rocq.v`): `induction l as [| x l IHl]. - intro m. reflexivity. - intro m. simpl; f_equal; exact (IHl m).`
+- **why it diverges:** A concrete script exists but uses `auto` (MEngine's emulated `auto` is `repeat intro; try assumption; try reflexivity` — far weaker than Rocq's hint search) — which MEngine only approximates / emulates more weakly than Rocq, so it cannot replay the proof verbatim.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction l as [| x l IHl]. - intro m. reflexivity. - intro m. simpl; f_equal; exact (IHl m).`).
 
 ### `length_map` → `length_map`  *(proof: untranslatable)*
 
@@ -376,8 +376,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
       intro l; induction l; simpl; auto.
     Qed.
   ```
-- **corpus** (`Lists/rocq.v`): `induction l as [| x l IHl]. - reflexivity. - simpl. f_equal. exact IHl.`
-- **why it diverges:** A concrete script exists but uses `auto` (MEngine's emulated `auto` is `repeat intro; try assumption; try reflexivity` — far weaker than Rocq's hint search) — which MEngine only approximates / emulates more weakly than Rocq, so it cannot replay the proof verbatim.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction l as [| x l IHl]. - reflexivity. - simpl. f_equal. exact IHl.`).
+- **corpus** (`Lists/rocq.v`): `induction l as [| x l IHl]. - reflexivity. - simpl; f_equal; exact IHl.`
+- **why it diverges:** A concrete script exists but uses `auto` (MEngine's emulated `auto` is `repeat intro; try assumption; try reflexivity` — far weaker than Rocq's hint search) — which MEngine only approximates / emulates more weakly than Rocq, so it cannot replay the proof verbatim.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction l as [| x l IHl]. - reflexivity. - simpl; f_equal; exact IHl.`).
 
 ### `rev_app_distr` → `rev_app_distr`  *(proof: untranslatable)*
 
@@ -390,8 +390,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
       - now rewrite IHl, app_assoc.
     Qed.
   ```
-- **corpus** (`Lists/rocq.v`): `induction l as [| x l IHl]. - intro m. simpl. symmetry. rewrite app_nil_r. reflexivity. - intro m. simpl. rewrite IHl. symmetry. rewrite app_assoc. reflexivity.`
-- **why it diverges:** A concrete script exists but relies on automation/structure MEngine's translator does not reproduce mechanically.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction l as [| x l IHl]. - intro m. simpl. symmetry. rewrite app_nil_r. reflexivity. - intro m. simpl. rewrite IHl. symmetry. rewrite app_assoc. reflexivity.`).
+- **corpus** (`Lists/rocq.v`): `induction l as [| x l IHl]. - intro m. simpl; symmetry; rewrite app_nil_r; reflexivity. - intro m. simpl; rewrite IHl; symmetry; rewrite app_assoc; reflexivity.`
+- **why it diverges:** A concrete script exists but relies on automation/structure MEngine's translator does not reproduce mechanically.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction l as [| x l IHl]. - intro m. simpl; symmetry; rewrite app_nil_r; reflexivity. - intro m. simpl; rewrite IHl; symmetry; rewrite app_assoc; reflexivity.`).
 
 ### `rev_involutive` → `rev_involutive`  *(proof: untranslatable)*
 
@@ -404,8 +404,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
       - cbn. now rewrite rev_unit, IHl.
     Qed.
   ```
-- **corpus** (`Lists/rocq.v`): `induction l as [| x l IHl]. - reflexivity. - simpl. rewrite rev_app_distr. simpl. rewrite IHl. reflexivity.`
-- **why it diverges:** A concrete script exists but relies on automation/structure MEngine's translator does not reproduce mechanically.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction l as [| x l IHl]. - reflexivity. - simpl. rewrite rev_app_distr. simpl. rewrite IHl. reflexivity.`).
+- **corpus** (`Lists/rocq.v`): `induction l as [| x l IHl]. - reflexivity. - simpl; rewrite rev_app_distr; simpl; rewrite IHl; reflexivity.`
+- **why it diverges:** A concrete script exists but relies on automation/structure MEngine's translator does not reproduce mechanically.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`induction l as [| x l IHl]. - reflexivity. - simpl; rewrite rev_app_distr; simpl; rewrite IHl; reflexivity.`).
 
 ## Logic
 
@@ -427,8 +427,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
         destruct 1; trivial.
       Defined.
   ```
-- **corpus** (`Logic/rocq.v`): `intros A x y H. symmetry. exact H.`
-- **why it diverges:** A concrete script exists but uses `destruct N` (case-analyse the N-th premise — MEngine only eliminates a named/leading variable), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`intros A x y H. symmetry. exact H.`).
+- **corpus** (`Logic/rocq.v`): `intros A x y H. symmetry; exact H.`
+- **why it diverges:** A concrete script exists but uses `destruct N` (case-analyse the N-th premise — MEngine only eliminates a named/leading variable), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`intros A x y H. symmetry; exact H.`).
 
 ### `eq_trans_ex` → `eq_trans`  *(proof: untranslatable)*
 
@@ -439,8 +439,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
         destruct 2; trivial.
       Defined.
   ```
-- **corpus** (`Logic/rocq.v`): `intros A x y z H1 H2. rewrite H1. exact H2.`
-- **why it diverges:** A concrete script exists but uses `destruct N` (case-analyse the N-th premise — MEngine only eliminates a named/leading variable), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`intros A x y z H1 H2. rewrite H1. exact H2.`).
+- **corpus** (`Logic/rocq.v`): `intros A x y z H1 H2. rewrite H1; exact H2.`
+- **why it diverges:** A concrete script exists but uses `destruct N` (case-analyse the N-th premise — MEngine only eliminates a named/leading variable), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`intros A x y z H1 H2. rewrite H1; exact H2.`).
 
 ### `f_equal_ex` → `f_equal`  *(proof: untranslatable)*
 
@@ -451,8 +451,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
         destruct 1; trivial.
       Defined.
   ```
-- **corpus** (`Logic/rocq.v`): `intros A B f x y H. rewrite H. reflexivity.`
-- **why it diverges:** A concrete script exists but uses `destruct N` (case-analyse the N-th premise — MEngine only eliminates a named/leading variable), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`intros A B f x y H. rewrite H. reflexivity.`).
+- **corpus** (`Logic/rocq.v`): `intros A B f x y H. rewrite H; reflexivity.`
+- **why it diverges:** A concrete script exists but uses `destruct N` (case-analyse the N-th premise — MEngine only eliminates a named/leading variable), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`intros A B f x y H. rewrite H; reflexivity.`).
 
 ### `f_equal2_ex` → `f_equal2`  *(proof: untranslatable)*
 
@@ -465,8 +465,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     destruct 1; destruct 1; reflexivity.
   Qed.
   ```
-- **corpus** (`Logic/rocq.v`): `intros A B C f x1 y1 x2 y2 H1 H2. rewrite H1. rewrite H2. reflexivity.`
-- **why it diverges:** A concrete script exists but uses `destruct N` (case-analyse the N-th premise — MEngine only eliminates a named/leading variable), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`intros A B C f x1 y1 x2 y2 H1 H2. rewrite H1. rewrite H2. reflexivity.`).
+- **corpus** (`Logic/rocq.v`): `intros A B C f x1 y1 x2 y2 H1 H2. rewrite H1; rewrite H2; reflexivity.`
+- **why it diverges:** A concrete script exists but uses `destruct N` (case-analyse the N-th premise — MEngine only eliminates a named/leading variable), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`intros A B C f x1 y1 x2 y2 H1 H2. rewrite H1; rewrite H2; reflexivity.`).
 
 ### `f_equal3_ex` → `f_equal3`  *(proof: untranslatable)*
 
@@ -480,8 +480,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     destruct 1; destruct 1; destruct 1; reflexivity.
   Qed.
   ```
-- **corpus** (`Logic/rocq.v`): `intros A1 A2 A3 B f x1 y1 x2 y2 x3 y3 H1 H2 H3. rewrite H1. rewrite H2. rewrite H3. reflexivity.`
-- **why it diverges:** A concrete script exists but uses `destruct N` (case-analyse the N-th premise — MEngine only eliminates a named/leading variable), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`intros A1 A2 A3 B f x1 y1 x2 y2 x3 y3 H1 H2 H3. rewrite H1. rewrite H2. rewrite H3. reflexivity.`).
+- **corpus** (`Logic/rocq.v`): `intros A1 A2 A3 B f x1 y1 x2 y2 x3 y3 H1 H2 H3. rewrite H1; rewrite H2; rewrite H3; reflexivity.`
+- **why it diverges:** A concrete script exists but uses `destruct N` (case-analyse the N-th premise — MEngine only eliminates a named/leading variable), which MEngine has no equivalent of.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`intros A1 A2 A3 B f x1 y1 x2 y2 x3 y3 H1 H2 H3. rewrite H1; rewrite H2; rewrite H3; reflexivity.`).
 
 ### `imp_refl`  *(proof: original)*
 
@@ -490,7 +490,7 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
 
 ### `imp_trans`  *(proof: original)*
 
-- **corpus** (`Logic/rocq.v`): `intros A B C HAB HBC HA. apply HBC. apply HAB. exact HA.`
+- **corpus** (`Logic/rocq.v`): `intros A B C HAB HBC HA. apply HBC; apply HAB; exact HA.`
 - **why it diverges:** No named stdlib lemma (forall A B C:Prop, (A->B)->(B->C)->A->C; not a named stdlib lemma); there is no library proof to be faithful to.
 
 ### `and_intro` → `@conj`  *(proof: constructor)*
@@ -531,12 +531,12 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
   ```coq
     ex_intro : forall x:A, P x -> ex (A:=A) P.
   ```
-- **corpus** (`Logic/rocq.v`): `intros A P x H. exists x. exact H.`
-- **why it diverges:** `@ex_intro` is an inductive **constructor** — the library has no proof script for it.  The corpus introduces the hypotheses and builds the same proof term (`intros A P x H. exists x. exact H.`).
+- **corpus** (`Logic/rocq.v`): `intros A P x H. exists x; exact H.`
+- **why it diverges:** `@ex_intro` is an inductive **constructor** — the library has no proof script for it.  The corpus introduces the hypotheses and builds the same proof term (`intros A P x H. exists x; exact H.`).
 
 ### `ex_eq`  *(proof: original)*
 
-- **corpus** (`Logic/rocq.v`): `intros A x. exists x. reflexivity.`
+- **corpus** (`Logic/rocq.v`): `intros A x. exists x; reflexivity.`
 - **why it diverges:** No named stdlib lemma (exists y, y = x; bespoke existential, no named stdlib lemma); there is no library proof to be faithful to.
 
 ## Nat
@@ -597,8 +597,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
   intro n; now nzsimpl'.
   Qed.
   ```
-- **corpus** (`Nat/rocq.v`): `induction n. - reflexivity. - simpl. rewrite IHn. reflexivity.`
-- **why it diverges:** `Nat.add_1_r` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZAdd.v:71`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - reflexivity. - simpl. rewrite IHn. reflexivity.`).
+- **corpus** (`Nat/rocq.v`): `induction n. - reflexivity. - simpl; rewrite IHn; reflexivity.`
+- **why it diverges:** `Nat.add_1_r` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZAdd.v:71`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - reflexivity. - simpl; rewrite IHn; reflexivity.`).
 
 ### `add_0_r` → `Nat.add_0_r`  *(proof: functor)*
 
@@ -611,8 +611,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     - intro. nzsimpl. now rewrite succ_inj_wd.
   Qed.
   ```
-- **corpus** (`Nat/rocq.v`): `induction n. - reflexivity. - simpl. rewrite IHn. reflexivity.`
-- **why it diverges:** `Nat.add_0_r` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZAdd.v:38`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzinduct`, the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - reflexivity. - simpl. rewrite IHn. reflexivity.`).
+- **corpus** (`Nat/rocq.v`): `induction n. - reflexivity. - simpl; rewrite IHn; reflexivity.`
+- **why it diverges:** `Nat.add_0_r` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZAdd.v:38`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzinduct`, the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - reflexivity. - simpl; rewrite IHn; reflexivity.`).
 
 ### `add_succ_r` → `Nat.add_succ_r`  *(proof: functor)*
 
@@ -625,8 +625,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     - intro. nzsimpl. now rewrite succ_inj_wd.
   Qed.
   ```
-- **corpus** (`Nat/rocq.v`): `induction n. - intro m. reflexivity. - intro m. simpl. rewrite IHn. reflexivity.`
-- **why it diverges:** `Nat.add_succ_r` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZAdd.v:45`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzinduct`, the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - intro m. reflexivity. - intro m. simpl. rewrite IHn. reflexivity.`).
+- **corpus** (`Nat/rocq.v`): `induction n. - intro m. reflexivity. - intro m. simpl; rewrite IHn; reflexivity.`
+- **why it diverges:** `Nat.add_succ_r` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZAdd.v:45`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzinduct`, the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - intro m. reflexivity. - intro m. simpl; rewrite IHn; reflexivity.`).
 
 ### `add_comm` → `Nat.add_comm`  *(proof: functor)*
 
@@ -639,8 +639,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     - intro. nzsimpl. now rewrite succ_inj_wd.
   Qed.
   ```
-- **corpus** (`Nat/rocq.v`): `induction n. - intro m. simpl. symmetry. rewrite add_0_r. reflexivity. - intro m. simpl. rewrite IHn. symmetry. rewrite add_succ_r. reflexivity.`
-- **why it diverges:** `Nat.add_comm` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZAdd.v:59`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzinduct`, the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - intro m. simpl. symmetry. rewrite add_0_r. reflexivity. - intro m. simpl. rewrite IHn. symmetry. rewrite add_succ_r. reflexivity.`).
+- **corpus** (`Nat/rocq.v`): `induction n. - intro m. simpl; symmetry; rewrite add_0_r; reflexivity. - intro m. simpl; rewrite IHn; symmetry; rewrite add_succ_r; reflexivity.`
+- **why it diverges:** `Nat.add_comm` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZAdd.v:59`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzinduct`, the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - intro m. simpl; symmetry; rewrite add_0_r; reflexivity. - intro m. simpl; rewrite IHn; symmetry; rewrite add_succ_r; reflexivity.`).
 
 ### `add_assoc` → `Nat.add_assoc`  *(proof: functor)*
 
@@ -653,8 +653,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     - intro. nzsimpl. now rewrite succ_inj_wd.
   Qed.
   ```
-- **corpus** (`Nat/rocq.v`): `induction n. - intro m. intro p. reflexivity. - intro m. intro p. simpl. rewrite IHn. reflexivity.`
-- **why it diverges:** `Nat.add_assoc` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZAdd.v:78`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzinduct`, the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - intro m. intro p. reflexivity. - intro m. intro p. simpl. rewrite IHn. reflexivity.`).
+- **corpus** (`Nat/rocq.v`): `induction n. - intro m. intro p. reflexivity. - intro m. intro p. simpl; rewrite IHn; reflexivity.`
+- **why it diverges:** `Nat.add_assoc` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZAdd.v:78`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzinduct`, the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - intro m. intro p. reflexivity. - intro m. intro p. simpl; rewrite IHn; reflexivity.`).
 
 ### `mul_0_l` → `Nat.mul_0_l`  *(proof: near-match)*
 
@@ -675,8 +675,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
   intro n; nzinduct n; intros; now nzsimpl.
   Qed.
   ```
-- **corpus** (`Nat/rocq.v`): `induction n. - reflexivity. - simpl. rewrite IHn. reflexivity.`
-- **why it diverges:** `Nat.mul_0_r` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZMul.v:35`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzinduct`, the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - reflexivity. - simpl. rewrite IHn. reflexivity.`).
+- **corpus** (`Nat/rocq.v`): `induction n. - reflexivity. - simpl; rewrite IHn; reflexivity.`
+- **why it diverges:** `Nat.mul_0_r` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZMul.v:35`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzinduct`, the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - reflexivity. - simpl; rewrite IHn; reflexivity.`).
 
 ### `mul_succ_l` → `Nat.mul_succ_l`  *(proof: untranslatable)*
 
@@ -691,8 +691,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     now rewrite comm.
   Qed.
   ```
-- **corpus** (`Nat/rocq.v`): `intros n m. simpl. rewrite add_comm. reflexivity.`
-- **why it diverges:** A concrete script exists but uses `f_equal` (the compat prelude now provides a single-layer approximation built on `Bad_App_Congruence`; Rocq's is a general recursive congruence), `auto` (MEngine's emulated `auto` is `repeat intro; try assumption; try reflexivity` — far weaker than Rocq's hint search) — which MEngine only approximates / emulates more weakly than Rocq, so it cannot replay the proof verbatim.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`intros n m. simpl. rewrite add_comm. reflexivity.`).
+- **corpus** (`Nat/rocq.v`): `intros n m. simpl; rewrite add_comm; reflexivity.`
+- **why it diverges:** A concrete script exists but uses `f_equal` (the compat prelude now provides a single-layer approximation built on `Bad_App_Congruence`; Rocq's is a general recursive congruence), `auto` (MEngine's emulated `auto` is `repeat intro; try assumption; try reflexivity` — far weaker than Rocq's hint search) — which MEngine only approximates / emulates more weakly than Rocq, so it cannot replay the proof verbatim.  (MEngine *does* have `;`, `try`, `repeat`, `first`, `match Goal` and emulated `auto`/`trivial`/`simpl`/`f_equal` — the gap is the leaf tactics above, not sequencing.)  The corpus proves the same statement with MEngine's primitive tactics (`intros n m. simpl; rewrite add_comm; reflexivity.`).
 
 ### `mul_succ_r` → `Nat.mul_succ_r`  *(proof: functor)*
 
@@ -706,8 +706,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
       now rewrite add_cancel_r.
   Qed.
   ```
-- **corpus** (`Nat/rocq.v`): `induction n. - intro m. reflexivity. - intro m. simpl. rewrite IHn. rewrite add_assoc. symmetry. rewrite add_succ_r. reflexivity.`
-- **why it diverges:** `Nat.mul_succ_r` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZMul.v:40`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzinduct`, the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - intro m. reflexivity. - intro m. simpl. rewrite IHn. rewrite add_assoc. symmetry. rewrite add_succ_r. reflexivity.`).
+- **corpus** (`Nat/rocq.v`): `induction n. - intro m. reflexivity. - intro m. simpl; rewrite IHn; rewrite add_assoc; symmetry; rewrite add_succ_r; reflexivity.`
+- **why it diverges:** `Nat.mul_succ_r` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZMul.v:40`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzinduct`, the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - intro m. reflexivity. - intro m. simpl; rewrite IHn; rewrite add_assoc; symmetry; rewrite add_succ_r; reflexivity.`).
 
 ### `mul_comm` → `Nat.mul_comm`  *(proof: functor)*
 
@@ -720,8 +720,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     - intro. nzsimpl. now rewrite add_cancel_r.
   Qed.
   ```
-- **corpus** (`Nat/rocq.v`): `induction n. - intro m. simpl. symmetry. rewrite mul_0_r. reflexivity. - intro m. simpl. rewrite IHn. symmetry. rewrite mul_succ_r. rewrite add_comm. reflexivity.`
-- **why it diverges:** `Nat.mul_comm` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZMul.v:50`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzinduct`, the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - intro m. simpl. symmetry. rewrite mul_0_r. reflexivity. - intro m. simpl. rewrite IHn. symmetry. rewrite mul_succ_r. rewrite add_comm. reflexivity.`).
+- **corpus** (`Nat/rocq.v`): `induction n. - intro m. simpl; symmetry; rewrite mul_0_r; reflexivity. - intro m. simpl; rewrite IHn; symmetry; rewrite mul_succ_r; rewrite add_comm; reflexivity.`
+- **why it diverges:** `Nat.mul_comm` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZMul.v:50`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzinduct`, the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - intro m. simpl; symmetry; rewrite mul_0_r; reflexivity. - intro m. simpl; rewrite IHn; symmetry; rewrite mul_succ_r; rewrite add_comm; reflexivity.`).
 
 ### `mul_add_distr_r` → `Nat.mul_add_distr_r`  *(proof: functor)*
 
@@ -735,8 +735,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
       now rewrite add_cancel_r.
   Qed.
   ```
-- **corpus** (`Nat/rocq.v`): `induction n. - intro m. intro p. reflexivity. - intro m. intro p. simpl. rewrite IHn. rewrite add_assoc. reflexivity.`
-- **why it diverges:** `Nat.mul_add_distr_r` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZMul.v:57`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzinduct`, the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - intro m. intro p. reflexivity. - intro m. intro p. simpl. rewrite IHn. rewrite add_assoc. reflexivity.`).
+- **corpus** (`Nat/rocq.v`): `induction n. - intro m. intro p. reflexivity. - intro m. intro p. simpl; rewrite IHn; rewrite add_assoc; reflexivity.`
+- **why it diverges:** `Nat.mul_add_distr_r` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZMul.v:57`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzinduct`, the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - intro m. intro p. reflexivity. - intro m. intro p. simpl; rewrite IHn; rewrite add_assoc; reflexivity.`).
 
 ### `mul_add_distr_l` → `Nat.mul_add_distr_l`  *(proof: functor)*
 
@@ -749,8 +749,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
   apply mul_add_distr_r.
   Qed.
   ```
-- **corpus** (`Nat/rocq.v`): `intros n m p. rewrite mul_comm. rewrite mul_add_distr_r. rewrite (mul_comm m n). rewrite (mul_comm p n). reflexivity.`
-- **why it diverges:** `Nat.mul_add_distr_l` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZMul.v:65`) over setoid equality `==` (not Leibniz `=`), written with abstract-functor Ltac.  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`intros n m p. rewrite mul_comm. rewrite mul_add_distr_r. rewrite (mul_comm m n). rewrite (mul_comm p n). reflexivity.`).
+- **corpus** (`Nat/rocq.v`): `intros n m p. rewrite mul_comm; rewrite mul_add_distr_r; rewrite (mul_comm m n); rewrite (mul_comm p n); reflexivity.`
+- **why it diverges:** `Nat.mul_add_distr_l` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZMul.v:65`) over setoid equality `==` (not Leibniz `=`), written with abstract-functor Ltac.  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`intros n m p. rewrite mul_comm; rewrite mul_add_distr_r; rewrite (mul_comm m n); rewrite (mul_comm p n); reflexivity.`).
 
 ### `mul_assoc` → `Nat.mul_assoc`  *(proof: functor)*
 
@@ -763,8 +763,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
       now rewrite add_cancel_r.
   Qed.
   ```
-- **corpus** (`Nat/rocq.v`): `induction n. - intro m. intro p. reflexivity. - intro m. intro p. simpl. rewrite IHn. symmetry. rewrite mul_add_distr_r. reflexivity.`
-- **why it diverges:** `Nat.mul_assoc` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZMul.v:72`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzinduct`, the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - intro m. intro p. reflexivity. - intro m. intro p. simpl. rewrite IHn. symmetry. rewrite mul_add_distr_r. reflexivity.`).
+- **corpus** (`Nat/rocq.v`): `induction n. - intro m. intro p. reflexivity. - intro m. intro p. simpl; rewrite IHn; symmetry; rewrite mul_add_distr_r; reflexivity.`
+- **why it diverges:** `Nat.mul_assoc` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZMul.v:72`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzinduct`, the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - intro m. intro p. reflexivity. - intro m. intro p. simpl; rewrite IHn; symmetry; rewrite mul_add_distr_r; reflexivity.`).
 
 ### `mul_1_l` → `Nat.mul_1_l`  *(proof: functor)*
 
@@ -775,8 +775,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
   intro n. now nzsimpl'.
   Qed.
   ```
-- **corpus** (`Nat/rocq.v`): `intro n. simpl. rewrite add_0_r. reflexivity.`
-- **why it diverges:** `Nat.mul_1_l` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZMul.v:79`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`intro n. simpl. rewrite add_0_r. reflexivity.`).
+- **corpus** (`Nat/rocq.v`): `intro n. simpl; rewrite add_0_r; reflexivity.`
+- **why it diverges:** `Nat.mul_1_l` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZMul.v:79`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`intro n. simpl; rewrite add_0_r; reflexivity.`).
 
 ### `mul_1_r` → `Nat.mul_1_r`  *(proof: functor)*
 
@@ -787,8 +787,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
   intro n. now nzsimpl'.
   Qed.
   ```
-- **corpus** (`Nat/rocq.v`): `induction n. - reflexivity. - simpl. rewrite IHn. reflexivity.`
-- **why it diverges:** `Nat.mul_1_r` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZMul.v:84`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - reflexivity. - simpl. rewrite IHn. reflexivity.`).
+- **corpus** (`Nat/rocq.v`): `induction n. - reflexivity. - simpl; rewrite IHn; reflexivity.`
+- **why it diverges:** `Nat.mul_1_r` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZMul.v:84`) over setoid equality `==` (not Leibniz `=`), written with the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`).  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - reflexivity. - simpl; rewrite IHn; reflexivity.`).
 
 ### `sub_0_l` → `Nat.sub_0_l`  *(proof: functor)*
 
@@ -825,8 +825,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     - intros n IH; rewrite sub_succ; now rewrite IH.
   Qed.
   ```
-- **corpus** (`Nat/rocq.v`): `induction n. - reflexivity. - simpl. rewrite IHn. reflexivity.`
-- **why it diverges:** `Nat.sub_diag` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/Natural/Abstract/NSub.v:32`) over setoid equality `==` (not Leibniz `=`), written with abstract-functor Ltac.  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - reflexivity. - simpl. rewrite IHn. reflexivity.`).
+- **corpus** (`Nat/rocq.v`): `induction n. - reflexivity. - simpl; rewrite IHn; reflexivity.`
+- **why it diverges:** `Nat.sub_diag` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/Natural/Abstract/NSub.v:32`) over setoid equality `==` (not Leibniz `=`), written with abstract-functor Ltac.  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - reflexivity. - simpl; rewrite IHn; reflexivity.`).
 
 ### `pred_succ` → `Nat.pred_succ`  *(proof: near-match)*
 
@@ -847,8 +847,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
   now apply eqb_eq.
   Qed.
   ```
-- **corpus** (`Nat/rocq.v`): `induction n. - reflexivity. - simpl. rewrite IHn. reflexivity.`
-- **why it diverges:** `Nat.eqb_refl` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Structures/Equalities.v:219`), written with abstract-functor Ltac.  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - reflexivity. - simpl. rewrite IHn. reflexivity.`).
+- **corpus** (`Nat/rocq.v`): `induction n. - reflexivity. - simpl; rewrite IHn; reflexivity.`
+- **why it diverges:** `Nat.eqb_refl` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Structures/Equalities.v:219`), written with abstract-functor Ltac.  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - reflexivity. - simpl; rewrite IHn; reflexivity.`).
 
 ### `leb_refl` → `Nat.leb_refl`  *(proof: functor)*
 
@@ -859,8 +859,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
   apply leb_le. apply lt_eq_cases. now right.
   Qed.
   ```
-- **corpus** (`Nat/rocq.v`): `induction n. - reflexivity. - simpl. rewrite IHn. reflexivity.`
-- **why it diverges:** `Nat.leb_refl` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Structures/OrdersFacts.v:423`), written with abstract-functor Ltac.  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - reflexivity. - simpl. rewrite IHn. reflexivity.`).
+- **corpus** (`Nat/rocq.v`): `induction n. - reflexivity. - simpl; rewrite IHn; reflexivity.`
+- **why it diverges:** `Nat.leb_refl` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Structures/OrdersFacts.v:423`), written with abstract-functor Ltac.  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - reflexivity. - simpl; rewrite IHn; reflexivity.`).
 
 ## Peano
 
@@ -888,8 +888,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
       * symmetry in H; false_hyp H neq_succ_0.
   Qed.
   ```
-- **corpus** (`Peano/rocq.v`): `induction n. - constructor. - constructor. exact IHn.`
-- **why it diverges:** `Nat.le_0_l` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/Natural/Abstract/NBase.v:40`), written with the abstract-functor Ltac `nzinduct`, `destruct` of a hypothesis, `apply … in H` (forward reasoning into a hypothesis), the `false_hyp` Ltac.  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - constructor. - constructor. exact IHn.`).
+- **corpus** (`Peano/rocq.v`): `induction n. - constructor. - constructor; exact IHn.`
+- **why it diverges:** `Nat.le_0_l` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/Natural/Abstract/NBase.v:40`), written with the abstract-functor Ltac `nzinduct`, `destruct` of a hypothesis, `apply … in H` (forward reasoning into a hypothesis), the `false_hyp` Ltac.  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`induction n. - constructor. - constructor; exact IHn.`).
 
 ### `le_succ_diag_r` → `Nat.le_succ_diag_r`  *(proof: functor)*
 
@@ -900,16 +900,16 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
   intro; apply lt_le_incl; apply lt_succ_diag_r.
   Qed.
   ```
-- **corpus** (`Peano/rocq.v`): `intro n. constructor. constructor.`
-- **why it diverges:** `Nat.le_succ_diag_r` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZOrder.v:66`), written with abstract-functor Ltac.  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`intro n. constructor. constructor.`).
+- **corpus** (`Peano/rocq.v`): `intro n. constructor; constructor.`
+- **why it diverges:** `Nat.le_succ_diag_r` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZOrder.v:66`), written with abstract-functor Ltac.  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`intro n. constructor; constructor.`).
 
 ### `le_1_2`  *(proof: original)*
 
-- **corpus** (`Peano/rocq.v`): `constructor. constructor.`
+- **corpus** (`Peano/rocq.v`): `constructor; constructor.`
 - **why it diverges:** No named stdlib lemma (ground fact 1 <= 2; no named stdlib lemma); there is no library proof to be faithful to.
 
 ### `le_2_4`  *(proof: original)*
 
-- **corpus** (`Peano/rocq.v`): `constructor. constructor. constructor.`
+- **corpus** (`Peano/rocq.v`): `constructor; constructor; constructor.`
 - **why it diverges:** No named stdlib lemma (ground fact 2 <= 4; no named stdlib lemma); there is no library proof to be faithful to.
 

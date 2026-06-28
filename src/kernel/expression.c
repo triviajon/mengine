@@ -1578,6 +1578,71 @@ bool fill_hole(Expression *hole, Expression *term) {
                     SET_EXPR_TYPE(ptr, term);
                     break;
                 }
+                case (MATCH_SCRUTINEE): {
+                    Expression *ptr = (Expression *)ul->ptr;
+                    SET_MATCH_SCRUTINEE(ptr, term);
+                    break;
+                }
+                // Branch/arg slots are array-indexed and the uplink carries no
+                // index, so locate the slot(s) still pointing at this hole and
+                // rebind them to term (the same hole may occupy more than one).
+                case (MATCH_BRANCH_BODY): {
+                    Expression *ptr = (Expression *)ul->ptr;
+                    for (int bi = 0; bi < ptr->as.match.branch_count; bi++) {
+                        MatchBranch *br = ptr->as.match.branches[bi];
+                        if (br->body == hole) {
+                            br->body = term;
+                            br->body_uplink_node = add_to_parents(term, ptr, MATCH_BRANCH_BODY);
+                        }
+                    }
+                    break;
+                }
+                case (MATCH_BRANCH_CONSTRUCTOR): {
+                    Expression *ptr = (Expression *)ul->ptr;
+                    for (int bi = 0; bi < ptr->as.match.branch_count; bi++) {
+                        MatchBranch *br = ptr->as.match.branches[bi];
+                        if (br->constructor == hole) {
+                            br->constructor = term;
+                            br->constructor_uplink_node =
+                                add_to_parents(term, ptr, MATCH_BRANCH_CONSTRUCTOR);
+                        }
+                    }
+                    break;
+                }
+                case (MATCH_BRANCH_PATTERN_VAR): {
+                    Expression *ptr = (Expression *)ul->ptr;
+                    for (int bi = 0; bi < ptr->as.match.branch_count; bi++) {
+                        MatchBranch *br = ptr->as.match.branches[bi];
+                        for (int pj = 0; pj < br->pattern_var_count; pj++) {
+                            if (br->pattern_variables[pj] == hole) {
+                                br->pattern_variables[pj] = term;
+                                br->pattern_variables_uplink_nodes[pj] =
+                                    add_to_parents(term, ptr, MATCH_BRANCH_PATTERN_VAR);
+                            }
+                        }
+                    }
+                    break;
+                }
+                case (FIX_RECURSIVE_VAR): {
+                    Expression *ptr = (Expression *)ul->ptr;
+                    SET_FIX_RECURSIVE_VAR(ptr, term);
+                    break;
+                }
+                case (FIX_ARG): {
+                    Expression *ptr = (Expression *)ul->ptr;
+                    for (int ai = 0; ai < ptr->as.fix.arg_count; ai++) {
+                        if (ptr->as.fix.args[ai] == hole) {
+                            ptr->as.fix.args[ai] = term;
+                            ptr->as.fix.args_uplink_nodes[ai] = add_to_parents(term, ptr, FIX_ARG);
+                        }
+                    }
+                    break;
+                }
+                case (FIX_BODY): {
+                    Expression *ptr = (Expression *)ul->ptr;
+                    SET_FIX_BODY(ptr, term);
+                    break;
+                }
                 default:
                     fprintf(stderr, WARNING "todo: fill_hole for relation %d.\n" CRESET,
                             ul->relation);

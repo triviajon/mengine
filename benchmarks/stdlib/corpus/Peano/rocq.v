@@ -6,14 +6,14 @@ Proof. intro n. constructor. Qed.
 Lemma le_0_n : forall n : nat, 0 <= n.
 Proof. induction n.
   - constructor.
-  - constructor. exact IHn.
+  - constructor; exact IHn.
 Qed.
 
 Lemma le_succ_diag_r : forall n : nat, n <= S n.
-Proof. intro n. constructor. constructor. Qed.
+Proof. intro n. constructor; constructor. Qed.
 
 Lemma le_1_2 : 1 <= 2.
-Proof. constructor. constructor. Qed.
+Proof. constructor; constructor. Qed.
 
 Lemma le_2_4 : 2 <= 4.
-Proof. constructor. constructor. constructor. Qed.
+Proof. constructor; constructor; constructor. Qed.

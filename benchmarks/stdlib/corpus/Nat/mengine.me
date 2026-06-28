@@ -27,9 +27,7 @@ reflexivity.
 intro n.
 intro IHn.
 simpl.
-simpl.
-rewrite IHn with eq.
-reflexivity.
+simpl; rewrite IHn with eq; reflexivity.
 
 Theorem add_0_r : forall (n : nat), (((eq nat) ((add n) O)) n).
 intro n.
@@ -39,9 +37,7 @@ reflexivity.
 intro n.
 intro IHn.
 simpl.
-simpl.
-rewrite IHn with eq.
-reflexivity.
+simpl; rewrite IHn with eq; reflexivity.
 
 Theorem add_succ_r : forall (n : nat), forall (m : nat), (((eq nat) ((add n) (S m))) (S ((add n) m))).
 intro n.
@@ -53,28 +49,19 @@ intro n.
 intro IHn.
 simpl.
 intro m.
-simpl.
-rewrite IHn with eq.
-reflexivity.
+simpl; rewrite IHn with eq; reflexivity.
 
 Theorem add_comm : forall (n : nat), forall (m : nat), (((eq nat) ((add n) m)) ((add m) n)).
 intro n.
 apply (nat_ind (fun (n : nat) => forall (m : nat), (((eq nat) ((add n) m)) ((add m) n)))).
 simpl.
 intro m.
-simpl.
-symmetry.
-rewrite add_0_r with eq.
-reflexivity.
+simpl; symmetry; rewrite add_0_r with eq; reflexivity.
 intro n.
 intro IHn.
 simpl.
 intro m.
-simpl.
-rewrite IHn with eq.
-symmetry.
-rewrite add_succ_r with eq.
-reflexivity.
+simpl; rewrite IHn with eq; symmetry; rewrite add_succ_r with eq; reflexivity.
 
 Theorem add_assoc : forall (n : nat), forall (m : nat), forall (p : nat), (((eq nat) ((add n) ((add m) p))) ((add ((add n) m)) p)).
 intro n.
@@ -88,9 +75,7 @@ intro IHn.
 simpl.
 intro m.
 intro p.
-simpl.
-rewrite IHn with eq.
-reflexivity.
+simpl; rewrite IHn with eq; reflexivity.
 
 Theorem mul_0_l : forall (n : nat), (((eq nat) ((mul O) n)) O).
 intro n.
@@ -104,15 +89,11 @@ reflexivity.
 intro n.
 intro IHn.
 simpl.
-simpl.
-rewrite IHn with eq.
-reflexivity.
+simpl; rewrite IHn with eq; reflexivity.
 
 Theorem mul_succ_l : forall (n : nat), forall (m : nat), (((eq nat) ((mul (S n)) m)) ((add ((mul n) m)) m)).
 intro n. intro m.
-simpl.
-rewrite add_comm with eq.
-reflexivity.
+simpl; rewrite add_comm with eq; reflexivity.
 
 Theorem mul_succ_r : forall (n : nat), forall (m : nat), (((eq nat) ((mul n) (S m))) ((add ((mul n) m)) n)).
 intro n.
@@ -124,32 +105,19 @@ intro n.
 intro IHn.
 simpl.
 intro m.
-simpl.
-rewrite IHn with eq.
-rewrite add_assoc with eq.
-symmetry.
-rewrite add_succ_r with eq.
-reflexivity.
+simpl; rewrite IHn with eq; rewrite add_assoc with eq; symmetry; rewrite add_succ_r with eq; reflexivity.
 
 Theorem mul_comm : forall (n : nat), forall (m : nat), (((eq nat) ((mul n) m)) ((mul m) n)).
 intro n.
 apply (nat_ind (fun (n : nat) => forall (m : nat), (((eq nat) ((mul n) m)) ((mul m) n)))).
 simpl.
 intro m.
-simpl.
-symmetry.
-rewrite mul_0_r with eq.
-reflexivity.
+simpl; symmetry; rewrite mul_0_r with eq; reflexivity.
 intro n.
 intro IHn.
 simpl.
 intro m.
-simpl.
-rewrite IHn with eq.
-symmetry.
-rewrite mul_succ_r with eq.
-rewrite add_comm with eq.
-reflexivity.
+simpl; rewrite IHn with eq; symmetry; rewrite mul_succ_r with eq; rewrite add_comm with eq; reflexivity.
 
 Theorem mul_add_distr_r : forall (n : nat), forall (m : nat), forall (p : nat), (((eq nat) ((mul ((add n) m)) p)) ((add ((mul n) p)) ((mul m) p))).
 intro n.
@@ -163,18 +131,11 @@ intro IHn.
 simpl.
 intro m.
 intro p.
-simpl.
-rewrite IHn with eq.
-rewrite add_assoc with eq.
-reflexivity.
+simpl; rewrite IHn with eq; rewrite add_assoc with eq; reflexivity.
 
 Theorem mul_add_distr_l : forall (n : nat), forall (m : nat), forall (p : nat), (((eq nat) ((mul n) ((add m) p))) ((add ((mul n) m)) ((mul n) p))).
 intro n. intro m. intro p.
-rewrite mul_comm with eq.
-rewrite mul_add_distr_r with eq.
-rewrite ((mul_comm m) n) with eq.
-rewrite ((mul_comm p) n) with eq.
-reflexivity.
+rewrite mul_comm with eq; rewrite mul_add_distr_r with eq; rewrite ((mul_comm m) n) with eq; rewrite ((mul_comm p) n) with eq; reflexivity.
 
 Theorem mul_assoc : forall (n : nat), forall (m : nat), forall (p : nat), (((eq nat) ((mul n) ((mul m) p))) ((mul ((mul n) m)) p)).
 intro n.
@@ -188,17 +149,11 @@ intro IHn.
 simpl.
 intro m.
 intro p.
-simpl.
-rewrite IHn with eq.
-symmetry.
-rewrite mul_add_distr_r with eq.
-reflexivity.
+simpl; rewrite IHn with eq; symmetry; rewrite mul_add_distr_r with eq; reflexivity.
 
 Theorem mul_1_l : forall (n : nat), (((eq nat) ((mul (S O)) n)) n).
 intro n.
-simpl.
-rewrite add_0_r with eq.
-reflexivity.
+simpl; rewrite add_0_r with eq; reflexivity.
 
 Theorem mul_1_r : forall (n : nat), (((eq nat) ((mul n) (S O))) n).
 intro n.
@@ -208,9 +163,7 @@ reflexivity.
 intro n.
 intro IHn.
 simpl.
-simpl.
-rewrite IHn with eq.
-reflexivity.
+simpl; rewrite IHn with eq; reflexivity.
 
 Theorem sub_0_l : forall (n : nat), (((eq nat) ((sub O) n)) O).
 intro n.
@@ -234,9 +187,7 @@ reflexivity.
 intro n.
 intro IHn.
 simpl.
-simpl.
-rewrite IHn with eq.
-reflexivity.
+simpl; rewrite IHn with eq; reflexivity.
 
 Theorem pred_succ : forall (n : nat), (((eq nat) (pred (S n))) n).
 intro n.
@@ -250,9 +201,7 @@ reflexivity.
 intro n.
 intro IHn.
 simpl.
-simpl.
-rewrite IHn with eq.
-reflexivity.
+simpl; rewrite IHn with eq; reflexivity.
 
 Theorem leb_refl : forall (n : nat), (((eq bool) ((leb n) n)) true).
 intro n.
@@ -262,6 +211,4 @@ reflexivity.
 intro n.
 intro IHn.
 simpl.
-simpl.
-rewrite IHn with eq.
-reflexivity.
+simpl; rewrite IHn with eq; reflexivity.

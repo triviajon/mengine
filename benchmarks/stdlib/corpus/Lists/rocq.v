@@ -29,7 +29,7 @@ Proof. intros A l. reflexivity. Qed.
 Lemma app_nil_r : forall (A : Type) (l : list A), l ++ nil = l.
 Proof. induction l as [| x l IHl].
   - reflexivity.
-  - simpl. f_equal. exact IHl.
+  - simpl; f_equal; exact IHl.
 Qed.
 
 Lemma app_comm_cons : forall (A : Type) (l m : list A) (a : A), a :: (l ++ m) = (a :: l) ++ m.
@@ -38,35 +38,35 @@ Proof. intros A l m a. reflexivity. Qed.
 Lemma app_assoc : forall (A : Type) (l m n : list A), l ++ (m ++ n) = (l ++ m) ++ n.
 Proof. induction l as [| x l IHl].
   - intro m. intro n. reflexivity.
-  - intro m. intro n. simpl. f_equal. exact (IHl m n).
+  - intro m. intro n. simpl; f_equal; exact (IHl m n).
 Qed.
 
 Lemma length_app : forall (A : Type) (l m : list A), length (l ++ m) = length l + length m.
 Proof. induction l as [| x l IHl].
   - intro m. reflexivity.
-  - intro m. simpl. f_equal. exact (IHl m).
+  - intro m. simpl; f_equal; exact (IHl m).
 Qed.
 
 Lemma map_app : forall (A B : Type) (f : A -> B) (l m : list A), map f (l ++ m) = map f l ++ map f m.
 Proof. induction l as [| x l IHl].
   - intro m. reflexivity.
-  - intro m. simpl. f_equal. exact (IHl m).
+  - intro m. simpl; f_equal; exact (IHl m).
 Qed.
 
 Lemma length_map : forall (A B : Type) (f : A -> B) (l : list A), length (map f l) = length l.
 Proof. induction l as [| x l IHl].
   - reflexivity.
-  - simpl. f_equal. exact IHl.
+  - simpl; f_equal; exact IHl.
 Qed.
 
 Lemma rev_app_distr : forall (A : Type) (l m : list A), rev (l ++ m) = rev m ++ rev l.
 Proof. induction l as [| x l IHl].
-  - intro m. simpl. symmetry. rewrite app_nil_r. reflexivity.
-  - intro m. simpl. rewrite IHl. symmetry. rewrite app_assoc. reflexivity.
+  - intro m. simpl; symmetry; rewrite app_nil_r; reflexivity.
+  - intro m. simpl; rewrite IHl; symmetry; rewrite app_assoc; reflexivity.
 Qed.
 
 Lemma rev_involutive : forall (A : Type) (l : list A), rev (rev l) = l.
 Proof. induction l as [| x l IHl].
   - reflexivity.
-  - simpl. rewrite rev_app_distr. simpl. rewrite IHl. reflexivity.
+  - simpl; rewrite rev_app_distr; simpl; rewrite IHl; reflexivity.
 Qed.
