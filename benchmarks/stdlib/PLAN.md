@@ -306,9 +306,15 @@ Reuses `framework/runner.run_single` timing logic; subcommands mirror `bench.py`
 
 - **Markdown table:** per unit — Rocq time, MEngine time, ratio, tier, status — drop-in for
   `README.md` like the existing benchmark table.
-- **Scatter plot:** Rocq time (x) vs MEngine time (y), log-log, colored by tier, with a
-  parity line for *equal proof time* — slope-1 anchored where the two startup floors meet
-  (`y - m0 = x - r0`), not the naive `y = x` through the origin (which ignores startup).
+- **Scatter plot:** *(refined — see `README.md`, "The scatter plots proof time, not
+  whole-file time".)* The original design plotted whole-file Rocq (x) vs MEngine (y) with a
+  parity line anchored at the startup-floor cross (`y - m0 = x - r0`). That breaks once
+  modules have *different* Rocq floors: `Lists` `Require`s `Coq.Lists.List` (~128 ms floor,
+  double the ~62 ms others), and a single line anchored at the global floor cannot credit
+  that back, so Lists falls below parity and reads as an MEngine win when its proof is in
+  fact ~2× slower. The implementation therefore plots each module's **own-floor-subtracted
+  proof time**, where the honest parity is plain `y = x` (above = MEngine slower, below =
+  faster), with a noise-floor band; whole-file numbers stay in the table's `total` columns.
 - **Summary:** geometric-mean speedup over Tier A; counts (translated / built-in-both / excluded).
 
 ## 10. Phased roadmap (per-file, Tier A)

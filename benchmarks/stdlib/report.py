@@ -221,62 +221,78 @@ def _scatter(cfg, rows, meta=None):
         return
 
     meta = meta or {}
-    colors = {"Bool": "tab:blue", "Nat": "tab:green", "Peano": "tab:orange",
-              "Logic": "tab:red"}
-    pts = [r for r in rows if r["mengine"] and r["rocq"]]
+    colors = {"Bool": "tab:blue", "Lists": "tab:purple", "Logic": "tab:red",
+              "Nat": "tab:green", "Peano": "tab:orange"}
+    m_floor = meta.get("mengine_floor")
+    m_noise = meta.get("mengine_noise") or 0.0
+
+    # Plot *startup-subtracted proof times*, not whole-file times.  This is the
+    # one honest axis choice when modules have different startup floors: `Lists`
+    # `Require`s `Coq.Lists.List`, so its Rocq floor (~128 ms) is double every
+    # other module's (~62 ms).  A whole-file scatter charges that library load to
+    # Lists' x-coordinate, and a single parity line — anchored at the *global*
+    # Rocq floor — credits Rocq only ~62 ms of it, so Lists drops below parity
+    # and reads as an MEngine win when MEngine's proof is in fact ~2× slower.
+    # Each point here instead carries its *own* module's floor (subtracted in
+    # `_load` via `coq__baseline__<unit>`), so the axes are directly comparable
+    # and the parity line is the honest y = x: above it MEngine's proof is
+    # slower, below it faster.  (Whole-file numbers remain in REPORT.md's table.)
+    pts = []
+    dropped = []
+    for r in rows:
+        rp, mp = r.get("rocq_proof"), r.get("mengine_proof")
+        if rp is None or mp is None or rp <= 0 or mp <= 0:
+            dropped.append(r["unit"])
+            continue
+        pts.append(r)
     if not pts:
+        print("(skipping scatter plot: no module has a measurable proof residual; "
+              f"all at/below startup floor: {', '.join(dropped) or 'none'})")
         return
+    if dropped:
+        print(f"(scatter: {', '.join(dropped)} omitted — proof residual clamped to "
+              "0, i.e. indistinguishable from startup)")
+
     fig, ax = plt.subplots(figsize=(6, 6))
     for cat in sorted({r["category"] for r in pts}):
-        xs = [r["rocq"] * 1000 for r in pts if r["category"] == cat]
-        ys = [r["mengine"] * 1000 for r in pts if r["category"] == cat]
+        sub = [r for r in pts if r["category"] == cat]
+        xs = [r["rocq_proof"] * 1000 for r in sub]
+        ys = [r["mengine_proof"] * 1000 for r in sub]
         ax.scatter(xs, ys, label=cat, color=colors.get(cat, "gray"),
-                   s=40, alpha=0.8, edgecolors="k", linewidths=0.3)
+                   s=45, alpha=0.85, edgecolors="k", linewidths=0.3, zorder=3)
+    for r in pts:  # label each point with its module name
+        ax.annotate(r["unit"], (r["rocq_proof"] * 1000, r["mengine_proof"] * 1000),
+                    textcoords="offset points", xytext=(5, 3), fontsize=7)
 
-    # Independent x/y limits, each padded around its own data and startup floor.
-    # The data now sits in one corner (Rocq is startup-bound, MEngine proofs are
-    # ~ms), so a shared square range would waste most of the canvas; the parity
-    # line is an explicit curve, not a 45° diagonal, so equal aspect isn't needed.
-    LO_PAD, HI_PAD = 0.85, 1.25
-    r_floor, m_floor = meta.get("rocq_floor"), meta.get("mengine_floor")
-    xvals = [r["rocq"] * 1000 for r in pts] + ([r_floor * 1000] if r_floor else [])
-    yvals = [r["mengine"] * 1000 for r in pts] + ([m_floor * 1000] if m_floor else [])
-    xlo, xhi = min(xvals) * LO_PAD, max(xvals) * HI_PAD
-    ylo, yhi = min(yvals) * LO_PAD, max(yvals) * HI_PAD
+    xs_all = [r["rocq_proof"] * 1000 for r in pts]
+    ys_all = [r["mengine_proof"] * 1000 for r in pts]
+    lo = min(xs_all + ys_all) * 0.6
+    hi = max(xs_all + ys_all) * 1.6
 
-    # Startup floors: the scatter is dominated by per-invocation cost, so drawing
-    # the floors makes explicit that the whole-file comparison is mostly startup.
-    if r_floor:
-        ax.axvline(r_floor * 1000, color="tab:gray", ls=":", lw=1,
-                   label="Rocq startup floor")
-    if m_floor:
-        ax.axhline(m_floor * 1000, color="tab:cyan", ls=":", lw=1,
-                   label="MEngine startup floor")
+    # Honest parity: equal proof time on both engines is y = x (startup already
+    # removed per module).  Shade the MEngine-faster half so the read is obvious.
+    ax.plot([lo, hi], [lo, hi], "k--", lw=1, label="parity (equal proof time)")
+    ax.fill_between([lo, hi], [lo, lo], [lo, hi], color="tab:green", alpha=0.05)
+    ax.text(hi * 0.85, lo * 2.4, "MEngine faster", fontsize=8, ha="right",
+            va="bottom", color="tab:green", style="italic")
+    ax.text(hi * 0.10, hi * 0.62, "MEngine slower", fontsize=8, ha="left",
+            va="top", color="tab:red", style="italic")
 
-    # Parity line.  A whole-file time is startup + proof, so *equal proof cost*
-    # is not y = x (that assumes zero startup and makes every point look far
-    # below parity — the dishonest, startup-dominated ratio).  It is
-    # y - m0 = x - r0: a slope-1 line in linear space anchored where the two
-    # startup floors meet, (r0, m0).  A point on it has equal proof time on both
-    # engines; below it MEngine's proof is faster, above it slower.  On log-log
-    # axes this is a curve that bends at the floor cross and asymptotes to y = x.
-    # Without baselines we cannot subtract startup, so fall back to naive y = x.
-    if r_floor and m_floor:
-        r0, m0 = r_floor * 1000, m_floor * 1000
-        npts = 200
-        xs_line = [r0 + (xhi - r0) * k / (npts - 1) for k in range(npts)]
-        ys_line = [m0 + (x - r0) for x in xs_line]
-        ax.plot(xs_line, ys_line, "k--", lw=1, label="parity (equal proof time)")
-        ax.plot([r0], [m0], "k.", ms=7, zorder=5)  # the floor cross = origin
-    else:
-        ax.plot([xlo, xhi], [ylo, yhi], "k--", lw=1, label="parity")
+    # Reliability floor: a residual at/below the baseline's own run-to-run jitter
+    # is not distinguishable from startup.  Shade that band so borderline points
+    # (e.g. Peano) are read with appropriate caution rather than as hard numbers.
+    if m_floor is not None and m_noise > 0:
+        ax.axhspan(lo, m_noise * 1000, color="tab:gray", alpha=0.12, zorder=0)
+        ax.text(hi * 0.96, m_noise * 1000, "MEngine noise floor", fontsize=6,
+                ha="right", va="bottom", color="dimgray")
 
     ax.set_xscale("log"); ax.set_yscale("log")
-    ax.set_xlim(xlo, xhi); ax.set_ylim(ylo, yhi)
-    ax.set_xlabel("Rocq time (ms, log)")
-    ax.set_ylabel("MEngine time (ms, log)")
-    ax.set_title("Rocq stdlib modules: MEngine vs Rocq")
-    ax.legend(fontsize=8, loc="best")
+    ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
+    ax.set_aspect("equal")
+    ax.set_xlabel("Rocq proof time (ms, log) — startup-subtracted")
+    ax.set_ylabel("MEngine proof time (ms, log) — startup-subtracted")
+    ax.set_title("Rocq stdlib modules: proof cost (per-module startup removed)")
+    ax.legend(fontsize=8, loc="upper left")
     ax.grid(True, which="both", ls=":", alpha=0.4)
     os.makedirs(cfg["plots_dir"], exist_ok=True)
     out = os.path.join(cfg["plots_dir"], "stdlib_scatter.png")

@@ -103,11 +103,29 @@ baseline loads `List` too (~138 ms vs the ~64 ms empty floor) — that library l
 is therefore subtracted from Lists' time, not mistaken for proof cost.
 `report` subtracts each module's floor from its whole-file time (clamped at 0) to
 get the marginal statement+proof cost, and reports a residual at or below the
-baseline's own run-to-run jitter as `~0` (indistinguishable from startup).  For
-the current Tier-A corpus every proof is trivial enough that its
-startup-subtracted cost lands below the noise floor on both engines — so the
-headline ~30× whole-file ratio is a *process-startup* ratio, and measuring proof
-speed above the floor needs heavier units.
+baseline's own run-to-run jitter as `~0` (indistinguishable from startup).  The
+trivial modules (`Bool`, `Logic`, `Peano`) sit just above their MEngine floor and
+the lighter side of Rocq's; the two computational modules clear it comfortably —
+`Nat` (~46 ms MEngine / ~68 ms Rocq) and `Lists` (~102 ms MEngine / ~48 ms Rocq) —
+so proof cost is now measurable, not pure startup noise.  The whole-file ratio
+remains a *process-startup* ratio and is reported only as the raw `total` columns.
+
+**The scatter plots proof time, not whole-file time — deliberately.**  A
+whole-file scatter is *dishonest* here, and `Lists` is exactly why.  Because
+`Lists` `Require`s `Coq.Lists.List`, its Rocq startup floor (~128 ms) is double
+every other module's (~62 ms).  Plotting whole-file time charges that one-time
+library load to Lists' x-coordinate, and any *single* parity line — necessarily
+anchored at the *global* Rocq floor — credits Rocq back only ~62 ms of it.  So
+Lists drops below the line and reads as an MEngine win, when on actual proof cost
+MEngine is ~2× **slower** there (`map`/`rev` induction is genuinely heavier in
+MEngine than in Rocq).  No single line over whole-file points can be honest when
+the per-module floors differ.  `plots/stdlib_scatter.png` therefore plots each
+module's **own-floor-subtracted proof time** (Rocq x vs MEngine y, log-log), where
+the honest parity is simply `y = x`: points in the shaded lower-right are MEngine
+proof-faster, points above the line (Lists) are MEngine proof-slower, and a band
+at the MEngine noise floor marks where a residual stops being trustworthy.  The
+whole-file numbers are not discarded — they stay in REPORT.md's `total` columns —
+they are just not the axis a proof-speed claim is read off of.
 
 ## Layout
 
@@ -129,7 +147,7 @@ benchmarks/stdlib/
     <Module>/mengine.me    auto-translated MEngine source
   results/stdlib.json      per-module timings + per-engine startup baselines
   results/REPORT.md        generated table + geometric-mean summary
-  plots/stdlib_scatter.png generated scatter (Rocq x vs MEngine y, log-log)
+  plots/stdlib_scatter.png generated scatter: per-module startup-subtracted proof time (Rocq x vs MEngine y, log-log, y=x parity)
 ```
 
 ## Usage
