@@ -37,6 +37,19 @@ struct Map {
 
 static MapEntry *map_entries_new(size_t capacity) { return calloc(capacity, sizeof(MapEntry)); }
 
+// All slot indexing masks with `capacity - 1`, so the capacity must be a power
+// of two (otherwise the probe sequence skips slots and a lookup of an absent key
+// in a full table loops forever).  map_new uses a power-of-two literal and resize
+// doubles, but map_new_with_capacity takes a caller-supplied size (e.g. a match's
+// pattern-variable count), so round it up to the next power of two, floor 1.
+static size_t map_round_capacity(size_t requested) {
+    size_t cap = 1;
+    while (cap < requested) {
+        cap <<= 1;
+    }
+    return cap;
+}
+
 // Size+tombstones together determine slot pressure.
 static bool map_should_grow(Map *m) {
     return (m->size + m->tombstones + 1) * MAP_LOAD_FACTOR_DEN > m->capacity * MAP_LOAD_FACTOR_NUM;
@@ -100,7 +113,7 @@ Map *map_new_with_capacity(size_t initial_capacity) {
     if (!m) {
         return NULL;
     }
-    m->capacity = initial_capacity;
+    m->capacity = map_round_capacity(initial_capacity);
     m->size = 0;
     m->tombstones = 0;
     m->entries = map_entries_new(m->capacity);

@@ -369,10 +369,24 @@ static Expression *_simple_topdown_psubst(Context *ctx, Expression *t, Map *subs
                     Expression *old_var_type = get_expression_type(old_var);
                     Expression *new_var_type =
                         _simple_topdown_psubst(branch_ctx, old_var_type, subst_map, NULL);
+                    // A parameter-slot pattern variable of a parametric inductive
+                    // carries a delta-reducible body (the type argument read off the
+                    // scrutinee, e.g. `_ := A`).  Preserve it: dropping the alias here
+                    // makes later pattern variables' types (`x : _`, `xs : list _`)
+                    // opaque, so rebuilding the branch body's applications fails to
+                    // type-check.
+                    Expression *old_var_body = get_var_body(old_var);
+                    Expression *new_var_body =
+                        old_var_body
+                            ? _simple_topdown_psubst(branch_ctx, old_var_body, subst_map, NULL)
+                            : NULL;
                     Expression *new_var;
-                    if (new_var_type == old_var_type &&
+                    if (new_var_type == old_var_type && new_var_body == old_var_body &&
                         branch_ctx == get_expression_context(old_var)) {
                         new_var = old_var;
+                    } else if (old_var_body) {
+                        new_var = init_var_expression_wc_with_body(get_var_name(old_var),
+                                                                   new_var_body, branch_ctx);
                     } else {
                         new_var =
                             init_var_expression_wc(get_var_name(old_var), new_var_type, branch_ctx);
@@ -630,8 +644,19 @@ static Expression *spine_rebuild(Context *apps_ctx, Expression *node, Map *subst
                     Expression *old_var = br->pattern_variables[j];
                     Expression *new_var_type = maybe_rebuild(apps_ctx, get_expression_type(old_var),
                                                              subst_map, memo, subtree_gen);
-                    Expression *new_var =
-                        init_var_expression_wc(get_var_name(old_var), new_var_type, apps_ctx);
+                    // Preserve a parameter-slot pattern variable's delta-reducible
+                    // body (see the matching note in _simple_topdown_psubst).
+                    Expression *old_var_body = get_var_body(old_var);
+                    Expression *new_var;
+                    if (old_var_body) {
+                        Expression *new_var_body =
+                            maybe_rebuild(apps_ctx, old_var_body, subst_map, memo, subtree_gen);
+                        new_var = init_var_expression_wc_with_body(get_var_name(old_var),
+                                                                   new_var_body, apps_ctx);
+                    } else {
+                        new_var =
+                            init_var_expression_wc(get_var_name(old_var), new_var_type, apps_ctx);
+                    }
                     br2->pattern_variables[j] = new_var;
                     if (new_var != old_var) {
                         map_set(subst_map, old_var, new_var);
