@@ -358,8 +358,13 @@ RewriteResult *rewrite_head(Expression *mid, Expression *lemma, Context *context
     }
 
     Expression *proof = unif_result->lemma_instantiation;
-    Expression *proof_type = kernel_expr_type(proof);
-    if (!kernel_expr_congruent(_get_lhs_eq(proof_type), mid)) {
+    // Normalize the proof's type before reading off its equality: an induction
+    // hypothesis arrives as a beta-redex `(motive) x` (the eliminator's `P x`), so
+    // whnf exposes the underlying eq. Without this _get_lhs_eq returns NULL and the
+    // congruence check below dereferences it.
+    Expression *proof_type = kernel_normalize_whnf(kernel_expr_type(proof));
+    Expression *lhs = _get_lhs_eq(proof_type);
+    if (!lhs || !kernel_expr_congruent(lhs, mid)) {
         free_unification_result(unif_result);
         return init_rewrite_result(mid, mid, NULL, NULL);
     }

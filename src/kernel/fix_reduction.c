@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 
+#include "src/kernel/delta_reduction.h"
 #include "src/kernel/inductive.h"
 
 bool is_fix_reducible(Expression *expression) { return expression->tag == FIX_EXPRESSION; }
@@ -39,12 +40,26 @@ Expression *fix_reduce_app(Expression *app, Expression *(*whnf)(Expression *)) {
     // argument is in constructor head normal form. This is the standard guard that
     // keeps reduction terminating on symbolic (variable) recursive arguments:
     // `add n O` with `n` a variable stays stuck instead of unfolding forever.
+    //
+    // The head may already be a fix node, or a constant (recursive variable) whose
+    // definition is this fix. cbv/whnf keep such constants folded so that a *stuck*
+    // residual stays constant-headed (`add n O`, not `(fix ...) n O`) and therefore
+    // matchable by rewrite/congruence; we unfold here only to govern firing.
     Expression *head = get_head(app);
-    if (head->tag != FIX_EXPRESSION) {
+    Expression *fix = NULL;
+    if (head->tag == FIX_EXPRESSION) {
+        fix = head;
+    } else if (head->tag == VAR_EXPRESSION && is_delta_reducible(head)) {
+        Expression *body = delta_reduce(head);
+        if (body && body->tag == FIX_EXPRESSION) {
+            fix = body;
+        }
+    }
+    if (!fix) {
         return NULL;
     }
 
-    int decreasing_index = get_fix_decreasing_arg_index(head);
+    int decreasing_index = get_fix_decreasing_arg_index(fix);
     if (decreasing_index < 0) {
         return NULL;
     }
@@ -75,7 +90,7 @@ Expression *fix_reduce_app(Expression *app, Expression *(*whnf)(Expression *)) {
         return NULL;
     }
 
-    Expression *unfolded = fix_reduce(head);
+    Expression *unfolded = fix_reduce(fix);
     if (!unfolded) {
         free(args);
         return NULL;

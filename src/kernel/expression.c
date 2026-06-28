@@ -533,11 +533,11 @@ Expression *init_app_expression_wc(Expression *func, Expression *arg, Context *c
         return NULL;
     }
 
-    Expression *func_type = get_expression_type(func);
-    if (func_type->tag != FORALL_EXPRESSION) {
-        fprintf(stderr, ERROR "Function is not a Forall expression.\n" CRESET);
-        return NULL;
-    }
+    // Whether `func`'s type is a Pi is validated by _construct_app_type below, which
+    // weak-head-normalizes first. That matters for functions whose type is a Pi only
+    // up to reduction (e.g. an induction hypothesis typed by the eliminator's
+    // beta-redex `(motive) x`); a premature syntactic FORALL check here would reject
+    // them. _construct_app_type returns NULL (and reports) for genuine non-functions.
 
     if (!valid_in_context(arg, context)) {
         fprintf(stderr, ERROR "Argument is not valid in context.\n" CRESET);

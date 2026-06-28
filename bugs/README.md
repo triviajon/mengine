@@ -22,6 +22,16 @@ Run them with:
 A complete worked proof of `forall n, add n O = n` by induction now lives in
 `examples/computational_eliminator.me` as permanent regression coverage.
 
+**Follow-on (stdlib-benchmark branch):** the reproducers here use `apply`/`exact`
+of the eliminator with `f_equal`-style step cases.  The standard stdlib idiom —
+`rewrite` on the induction hypothesis, including a *quantified* IH whose type is
+the eliminator's beta-redex `(motive) n` — also works now; see
+`examples/computational_induction_rewrite.me` (`add_succ_r`, `add_comm`) and the
+`Nat` module of `benchmarks/stdlib/`.  The extra fixes that idiom needed are
+listed in `benchmarks/stdlib/README.md` (symbolic-fixpoint reductions stay
+constant-headed; the rewrite path whnf-normalizes a redex-typed IH; the
+eliminator index hole is recorded during `fill_hole`).
+
 ## Root cause
 
 The shared root cause was non-termination when a fixpoint is unfolded on a

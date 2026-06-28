@@ -1,0 +1,58 @@
+(* computational_induction_rewrite.me
+
+   Regression coverage for computational induction proved with `rewrite` on a
+   *quantified* induction hypothesis — the idiom the Rocq standard library uses
+   for arithmetic.  Exercises four fixes that must all hold together:
+
+   1. fix_reduction.c / normalize.c: a fixpoint constant stays folded (and so
+      `rewrite`-matchable) when its decreasing argument is symbolic, and fires
+      via fix_reduce_app once it is constructor-headed.  So `simpl` turns
+      `add (S n) m` into `S (add n m)` while leaving the stuck `add n m` headed
+      by the `add` constant rather than a bare fix node.
+   2. unify.c / rewrite_internal.c: `rewrite` reads the equation off an IH whose
+      stored type is the eliminator's beta-redex `(motive) n` by weak-head
+      normalizing it first, and instantiates the IH's `forall`.
+   3. expression.c: such a redex-typed IH can be *applied* (the syntactic-Pi
+      precheck in init_app_expression_wc was removed; _construct_app_type whnfs).
+   4. type_compat.c: the eliminator's index hole (left by a quantified motive) is
+      recorded during fill, instead of lingering as a stray open goal. *)
+
+Inductive nat : Type := | O : nat | S : forall (n : nat), nat.
+
+Fixpoint add (n : nat) (m : nat) {struct n} : nat :=
+  match n with | O => m | S p => S (add p m) end.
+
+(* simpl/reflexivity/symmetry as the stdlib compat prelude defines them: simpl is
+   full cbv, and reflexivity closes by conversion (so `add O (S m)` and `S m` need
+   not be syntactically equal, only convertible). *)
+Tactic simpl := cbv.
+Tactic reflexivity := match Goal with
+| [ |- (((eq ?A) ?x) ?y) ] => exact ((eq_refl A) x)
+end.
+Tactic symmetry := apply eq_sym.
+
+(* add_succ_r: the IH `IHn : forall m, add n (S m) = S (add n m)` is quantified,
+   and its type is the eliminator's redex `(motive) n`.  `rewrite IHn with eq`
+   must whnf that type, instantiate `m`, and rewrite the stuck `add n (S m)`. *)
+Theorem add_succ_r : forall (n : nat), forall (m : nat),
+  eq nat (add n (S m)) (S (add n m)).
+intro n.
+apply (nat_ind (fun (n : nat) => forall (m : nat),
+  eq nat (add n (S m)) (S (add n m)))).
+simpl. intro m. reflexivity.
+intro n. intro IHn. simpl. intro m. simpl. rewrite IHn with eq. reflexivity.
+
+Theorem add_0_r : forall (n : nat), eq nat (add n O) n.
+intro n.
+apply (nat_ind (fun (n : nat) => eq nat (add n O) n)).
+simpl. reflexivity.
+intro n. intro IHn. simpl. rewrite IHn with eq. reflexivity.
+
+(* add_comm builds on add_succ_r and add_0_r, mixing rewrite/symmetry the way a
+   real stdlib proof does. *)
+Theorem add_comm : forall (n : nat), forall (m : nat), eq nat (add n m) (add m n).
+intro n.
+apply (nat_ind (fun (n : nat) => forall (m : nat), eq nat (add n m) (add m n))).
+simpl. intro m. simpl. symmetry. rewrite add_0_r with eq. reflexivity.
+intro n. intro IHn. simpl. intro m. simpl. rewrite IHn with eq. symmetry.
+rewrite add_succ_r with eq. reflexivity.

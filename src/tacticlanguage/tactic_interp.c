@@ -849,8 +849,13 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
                 return engine_tactic_result_new(false, NULL, "rewrite_unify: unresolved bindings");
             }
             Expression *inst = engine_unify_get_lemma(unif);
-            Expression *proof_type = kernel_expr_type(inst);
-            if (!kernel_expr_congruent(_get_lhs_eq(proof_type), target)) {
+            // Normalize the lemma type: an induction hypothesis arrives as a beta-redex
+            // `(motive) x` (the eliminator's `P x`), so reduce to expose the underlying
+            // eq before extracting its LHS. Without this _get_lhs_eq returns NULL and the
+            // congruence check dereferences it.
+            Expression *proof_type = kernel_normalize_whnf(kernel_expr_type(inst));
+            Expression *lhs = _get_lhs_eq(proof_type);
+            if (!lhs || !kernel_expr_congruent(lhs, target)) {
                 engine_unify_free(unif);
                 return engine_tactic_result_new(false, NULL,
                                                 "rewrite_unify: LHS does not match target");

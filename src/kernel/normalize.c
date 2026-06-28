@@ -75,6 +75,14 @@ static Expression *_normalize_cbv(Expression *expr, ReductionFlags flags) {
                 // Try delta reduction if enabled
                 if ((flags & REDUCE_DELTA) && is_delta_reducible(current)) {
                     next = delta_reduce(current);
+                    if (next && next->tag == FIX_EXPRESSION) {
+                        // A constant whose definition is a fixpoint is a value here; it
+                        // fires only when applied to a constructor-headed decreasing
+                        // argument (handled in the APP case via fix_reduce_app). Holding
+                        // it folded keeps a stuck residual constant-headed (`add n O`,
+                        // not `(fix ...) n O`) so rewrite/congruence can match it.
+                        return current;
+                    }
                     if (next) {
                         // Continue normalizing the unfolded definition
                         current = next;
@@ -168,6 +176,12 @@ Expression *normalize_whnf(Expression *expr) {
             case VAR_EXPRESSION: {
                 if (is_delta_reducible(current)) {
                     Expression *next = delta_reduce(current);
+                    if (next && next->tag == FIX_EXPRESSION) {
+                        // Fixpoint constant: a value here, fires in the APP case via
+                        // fix_reduce_app. Holding it folded keeps stuck residuals
+                        // constant-headed and matchable (see _normalize_cbv).
+                        return current;
+                    }
                     if (next) {
                         current = next;
                         continue;

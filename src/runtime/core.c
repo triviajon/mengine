@@ -468,8 +468,17 @@ static Context *init_bad_app_congruence(Context *c) {
 }
 
 Expression *_get_lhs_eq(Expression *eq_expression) {
-    // eq_expression is of the form eq A x y
-    return kernel_app_arg(kernel_app_func(eq_expression));
+    // eq_expression is of the form `eq A x y`; return NULL when it is not a fully
+    // applied equality (e.g. a partially-applied or non-eq type), so callers fail
+    // cleanly instead of dereferencing a missing application argument.
+    if (!eq_expression || !kernel_expr_is_app(eq_expression)) {
+        return NULL;
+    }
+    Expression *eq_app = kernel_app_func(eq_expression);
+    if (!eq_app || !kernel_expr_is_app(eq_app)) {
+        return NULL;
+    }
+    return kernel_app_arg(eq_app);
 }
 
 Expression *_get_rhs_eq(Expression *eq_expression) {

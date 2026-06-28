@@ -205,7 +205,11 @@ UnificationResult *eunify2(Expression *lemma, Expression *goal) {
 
 UnificationResult *bad_unify_for_eq(Context *goal_context, Expression *lemma, Expression *expr) {
     Expression *current_lemma_app = lemma;
-    Expression *current_lemma_app_ty = kernel_expr_type(current_lemma_app);
+    // Normalize the lemma type before inspecting it: an induction hypothesis arrives
+    // as a beta-redex `(motive) x` (the eliminator's `P x`) whose whnf is the actual
+    // `forall ... eq ...`. Without this the foralls stay hidden behind the redex and
+    // never get instantiated, so the rewrite finds nothing to do.
+    Expression *current_lemma_app_ty = kernel_normalize_whnf(kernel_expr_type(current_lemma_app));
     DoublyLinkedList *remaining_open = dll_create();
     while (kernel_expr_is_forall(current_lemma_app_ty)) {
         Expression *current_lemma_ty_lhs =
@@ -229,7 +233,7 @@ UnificationResult *bad_unify_for_eq(Context *goal_context, Expression *lemma, Ex
             dll_destroy(remaining_open);
             return NULL;
         }
-        current_lemma_app_ty = kernel_expr_type(current_lemma_app);
+        current_lemma_app_ty = kernel_normalize_whnf(kernel_expr_type(current_lemma_app));
     }
     return init_unification_result(current_lemma_app, remaining_open);
 }
