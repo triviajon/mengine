@@ -46,11 +46,13 @@ import translate  # noqa: E402  (local module: comment/sentence split)
 
 # Tactics / constructs that MEngine genuinely has *no* equivalent of (so a script
 # containing them cannot run verbatim), each with a human-readable gloss.  NOTE:
-# this is *not* about the tactic *combinators* — MEngine has `;`, `||`, `try`,
-# `repeat`, `first […]`, `match Goal`, and emulates `auto`/`trivial`/`now`/`simpl`/
-# `symmetry` in the prelude + compat prelude (the corpus proofs use `;` and
-# `split; assumption` themselves).  What is missing is specific *leaf* tactics,
-# Ltac macros, and automation.
+# this is *not* about the tactic *combinators* — MEngine's implemented combinators
+# are `;`, `||`, `try`, `repeat`, `first […]`, and `match Goal`, and it emulates
+# `auto`/`trivial`/`now`/`simpl`/`symmetry` in the prelude + compat prelude (the
+# corpus proofs use `;` and `repeat` themselves — `split; assumption`,
+# `repeat constructor`).  (The dispatch selector `… ; [ t1 | t2 | … ]` and
+# `shelve` are parsed but unimplemented stubs; neither is needed here.)  What is
+# missing is specific *leaf* tactics, Ltac macros, and automation.
 BLOCKING = [
     (r"\bdestr_bool\b", "the `destr_bool` Ltac macro "
                         "(`destruct_all bool; simpl in *; trivial; try discriminate`)"),
@@ -403,11 +405,16 @@ def build(cfg, modules=None):
         " `discriminate`, `apply … in H` — or tactics it only approximates"
         " (`f_equal`, now a single-layer compat-prelude tactic) / emulates more"
         " weakly (`auto`); `original` lemmas have no named stdlib counterpart."
-        "  **This is *not* about tactic sequencing:** MEngine has `;`, `||`,"
-        " `try`, `repeat`, `first […]`, and `match Goal`, and the corpus proofs"
-        " use `;` themselves (`split; assumption`).  This is why the corpus is"
-        " re-proved in MEngine's tactic subset rather than generated from stdlib"
-        " proof scripts (statements *are* generated/checked — see `fidelity.py`).")
+        "  **This is *not* about tactic sequencing:** MEngine's implemented"
+        " combinators are `;`, `||`, `try`, `repeat`, `first […]`, and"
+        " `match Goal`, and the corpus proofs use `;` and `repeat` themselves"
+        " (`split; assumption`, `repeat constructor`).  (The dispatch selector"
+        " `… ; [ t1 | t2 | … ]` and `shelve` are parsed but left as unimplemented"
+        " stubs in `tactic_interp.c`; neither is needed, since no corpus case"
+        " split closes its branches with *different* tactics.)  This is why the"
+        " corpus is re-proved in MEngine's tactic subset rather than generated"
+        " from stdlib proof scripts (statements *are* generated/checked — see"
+        " `fidelity.py`).")
     summary.append("")
 
     md = "\n".join(summary) + "\n" + "\n".join(sections) + "\n"

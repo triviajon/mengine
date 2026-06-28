@@ -221,10 +221,16 @@ classifying *why* the corpus proof differs:
   — `Lists` `length_app`).  Why `destr_bool`/`destruct_all` in particular cannot
   be written as MEngine tactics (missing goal-abstraction primitive, no
   higher-order motive inference, no hypothesis clearing) is documented in
-  [`DESTR_BOOL_OBSTACLES.md`](DESTR_BOOL_OBSTACLES.md).  This is **not** about sequencing: MEngine *does* have
-  `;`, `||`, `try`, `repeat`, `first […]`, `match Goal`, and emulated
-  `auto`/`trivial`/`simpl`/`symmetry`/`f_equal` — the corpus proofs use `;`
-  themselves (`split; assumption`).
+  [`DESTR_BOOL_OBSTACLES.md`](DESTR_BOOL_OBSTACLES.md).  This is **not** about sequencing: MEngine's
+  *implemented* tactic combinators are `;`, `||`, `try`, `repeat`,
+  `first […]`, and `match Goal` (plus emulated
+  `auto`/`trivial`/`simpl`/`symmetry`/`f_equal`), and the corpus proofs use `;`
+  and `repeat` themselves (`split; assumption`, `repeat constructor`).  The
+  grammar additionally *parses* the dispatch selector `… ; [ t1 | t2 | … ]` and
+  `shelve`, but the interpreter leaves both as unimplemented stubs (they raise
+  `Unknown tactic expression` — see `tactic_interp.c`); neither is needed by the
+  corpus, since no lemma's case split closes its branches with *different*
+  tactics.
 - `functor` — the lemma (most of the arithmetic: `add_0_r`, `add_comm`,
   `add_assoc`, `mul_*`, `eqb_refl`, `leb_refl`, `Nat.le_0_l`) is produced by
   module-functor `Include` over Rocq's abstract `Numbers`/`Structures`
