@@ -708,11 +708,14 @@ def is_framing(sentence):
 # tactics hard-stop (Untranslatable) so the unit leaves Tier A.
 
 # Inductive data for the induction/destruct scaffold (compat-prelude types).
-# Each case: (constructor, [recursive-arg flags]); a True flag means the arg is
-# recursive and carries an induction hypothesis in <T>_ind.
+# `params` is the number of leading type parameters the eliminator takes (1 for
+# `list A`, 0 for nat/bool); `cases` lists, per constructor in declaration order,
+# the recursive flag of each *argument* (True = recursive occurrence, carrying an
+# induction hypothesis in <T>_ind; the parameter slot is not an argument here).
 INDUCTIVES = {
-    "bool": {"ind": "bool_ind", "cases": [("true", []), ("false", [])]},
-    "nat":  {"ind": "nat_ind",  "cases": [("O", []), ("S", [True])]},
+    "bool": {"ind": "bool_ind", "params": 0, "cases": [("true", []), ("false", [])]},
+    "nat":  {"ind": "nat_ind",  "params": 0, "cases": [("O", []), ("S", [True])]},
+    "list": {"ind": "list_ind", "params": 1, "cases": [("nil", []), ("cons", [False, True])]},
 }
 
 DIRECT_TACTICS = {
@@ -852,9 +855,10 @@ def translate_proof(proof_sentences, stmt_type_out, report):
         raise Untranslatable("empty proof")
 
     first = body[0].strip()
-    m = re.match(r"^(induction|destruct)\s+([A-Za-z_][A-Za-z0-9_']*)\s*$", first)
+    m = re.match(r"^(induction|destruct)\s+([A-Za-z_][A-Za-z0-9_']*)"
+                 r"\s*(?:as\s+(\[.*\]))?\s*$", first, re.S)
     if m:
-        return _translate_induction(m.group(1), m.group(2), body[1:],
+        return _translate_induction(m.group(1), m.group(2), m.group(3), body[1:],
                                     stmt_type_out, report)
 
     # Shape (A): straight-line.  Forbid any later induction/destruct.
@@ -897,40 +901,115 @@ def _segment_cases(case_sentences, ncases):
     return [[s] for s in case_sentences]
 
 
-def _translate_induction(kind, var, remainder, stmt_type_out, report):
-    lb = parse_statement_leading_binder(stmt_type_out)
-    if lb is None:
-        raise Untranslatable("induction/destruct goal has no leading forall binder")
-    x, ty, body = lb
-    if x != var:
-        raise Untranslatable(
-            f"{kind} on '{var}' but leading binder is '{x}' (Tier B)")
-    if ty not in INDUCTIVES:
-        raise Untranslatable(f"{kind} on type '{ty}' not supported (nat/bool only)")
-    info = INDUCTIVES[ty]
-    motive = f"fun ({x} : {ty}) => {body}"
+def _inductive_head_and_params(ty):
+    """Split an emitted inductive type like '(list A)' or 'nat' into
+    (head, params_string): ('list', 'A') or ('nat', '')."""
+    t = ty.strip()
+    if t.startswith("(") and t.endswith(")"):
+        inner = t[1:-1].strip()
+        depth = 0
+        balanced = True
+        for ch in inner:
+            if ch == "(":
+                depth += 1
+            elif ch == ")":
+                depth -= 1
+                if depth < 0:
+                    balanced = False
+                    break
+        if balanced and depth == 0:
+            t = inner
+    parts = t.split(None, 1)
+    head = parts[0]
+    params = parts[1].strip() if len(parts) > 1 else ""
+    return head, params
 
-    lines = [f"intro {x}.", f"apply ({info['ind']} ({motive}))."]
+
+def _parse_as_clause(as_clause, ncases):
+    """Parse `as [ | x l IHl ]` into a list of per-constructor name lists.
+    Returns e.g. [[], ['x', 'l', 'IHl']]; or None if no clause."""
+    if as_clause is None:
+        return None
+    inner = as_clause.strip()
+    if not (inner.startswith("[") and inner.endswith("]")):
+        raise Untranslatable("malformed `as` intro-pattern")
+    inner = inner[1:-1]
+    groups = [g.split() for g in inner.split("|")]
+    if len(groups) != ncases:
+        raise Untranslatable(
+            f"`as` pattern has {len(groups)} cases, expected {ncases}")
+    return groups
+
+
+def _case_intro_lines(kind, var, rec_flags, names):
+    """intro lines for one constructor case: every constructor argument in order,
+    then one induction hypothesis per recursive argument (induction only).  With
+    an explicit `as` group the names come verbatim; otherwise default to Rocq's
+    auto-naming (reuse the induction variable for the recursive argument), which
+    is only well-defined when the constructor has no non-recursive arguments."""
+    n_ih = sum(1 for f in rec_flags if f) if kind == "induction" else 0
+    if names is not None:
+        if len(names) != len(rec_flags) + n_ih:
+            raise Untranslatable(
+                f"`as` case lists {len(names)} names, expected "
+                f"{len(rec_flags) + n_ih}")
+        return [f"intro {nm}." for nm in names]
+    if any(not f for f in rec_flags):
+        raise Untranslatable(
+            "induction/destruct without `as` on a constructor with "
+            "non-recursive arguments (name them with `as [...]`)")
+    lines = [f"intro {var}." for _ in rec_flags]
+    if kind == "induction":
+        lines += [f"intro IH{var}." for f in rec_flags if f]
+    return lines
+
+
+def _translate_induction(kind, var, as_clause, remainder, stmt_type_out, report):
+    # Peel leading binders, introducing each, until we reach the induction
+    # variable.  Binders before it (e.g. the type parameter A of `list A`) are
+    # introduced and then supplied to the eliminator via the variable's own type.
+    rest = stmt_type_out
+    intros = []
+    var_ty = None
+    body = None
+    while True:
+        lb = parse_statement_leading_binder(rest)
+        if lb is None:
+            raise Untranslatable(
+                f"{kind} variable '{var}' is not a leading forall binder (Tier B)")
+        name, ty, inner = lb
+        intros.append(name)
+        if name == var:
+            var_ty, body = ty, inner
+            break
+        rest = inner
+
+    head, params = _inductive_head_and_params(var_ty)
+    if head not in INDUCTIVES:
+        raise Untranslatable(f"{kind} on type '{head}' not supported")
+    info = INDUCTIVES[head]
+    if info["params"] and not params:
+        raise Untranslatable(f"{kind} on '{head}' is missing its type parameter")
+
+    motive = f"fun ({var} : {var_ty}) => {body}"
+    param_prefix = f"{params} " if params else ""
+    lines = [f"intro {b}." for b in intros]
+    lines.append(f"apply ({info['ind']} {param_prefix}({motive})).")
+
+    names_per_case = _parse_as_clause(as_clause, len(info["cases"]))
     cases = _segment_cases(remainder, len(info["cases"]))
     if len(cases) != len(info["cases"]):
         raise Untranslatable(
             f"{kind}: {len(cases)} cases provided, expected {len(info['cases'])}")
 
     report.add_handled(f"tac:{kind}")
-    for (ctor, rec_flags), case_body in zip(info["cases"], cases):
-        # Leading `simpl` reduces the eliminator's `motive O` / `motive (S x)` redex
-        # (MEngine does not beta-reduce it automatically as Rocq does). For the step
-        # case the constructor arguments and IH are bound *first*, so the `simpl` that
-        # exposes the `forall`s of `motive (S x)` must come *after* those intros.
-        if kind == "induction" and rec_flags:
-            case_lines = []
-            # Introduce recursive args and their IHs (named like Rocq: IH<var>).
-            for _ in rec_flags:
-                case_lines.append(f"intro {x}.")
-                case_lines.append(f"intro IH{x}.")
-            case_lines.append("simpl.")
-        else:
-            case_lines = ["simpl."]
+    for idx, ((ctor, rec_flags), case_body) in enumerate(zip(info["cases"], cases)):
+        names = names_per_case[idx] if names_per_case is not None else None
+        # The constructor args and IHs are introduced *first*; the `simpl` that
+        # reduces the eliminator's `motive (ctor ...)` redex (MEngine does not
+        # beta-reduce it automatically as Rocq does) must come after those intros.
+        case_lines = _case_intro_lines(kind, var, rec_flags, names)
+        case_lines.append("simpl.")
         for s in case_body:
             t = translate_tactic_sentence(s, report)
             if t:

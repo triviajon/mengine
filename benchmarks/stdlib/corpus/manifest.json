@@ -84,6 +84,31 @@
       "deps": "Coq.Init (auto-loaded)"
     },
     {
+      "name": "Lists",
+      "tier": "A",
+      "category": "Lists",
+      "rocq_sha256": "a3b828d517095188",
+      "statements": [
+        {
+          "name": "app_nil_l",
+          "digest": "forall (A : Type), forall (l : (list A)), (((eq (list A)) (((app A) (nil A)) l)) l)"
+        },
+        {
+          "name": "app_nil_r",
+          "digest": "forall (A : Type), forall (l : (list A)), (((eq (list A)) (((app A) l) (nil A))) l)"
+        },
+        {
+          "name": "app_assoc",
+          "digest": "forall (A : Type), forall (l : (list A)), forall (m : (list A)), forall (n : (list A)), (((eq (list A)) (((app A) (((app A) l) m)) n)) (((app A) l) (((app A) m) n)))"
+        },
+        {
+          "name": "length_app",
+          "digest": "forall (A : Type), forall (l : (list A)), forall (m : (list A)), (((eq nat) ((length A) (((app A) l) m))) ((add ((length A) l)) ((length A) m)))"
+        }
+      ],
+      "deps": "Coq.Init (auto-loaded)"
+    },
+    {
       "name": "Logic",
       "tier": "A",
       "category": "Logic",
@@ -236,11 +261,6 @@
       "pattern": "multi-variable case analysis / nested induction (e.g. andb_comm, orb b1 b2 = orb b2 b1, de Morgan)",
       "boundary": "tier2-nested",
       "reason": "the translator emits one `apply (<T>_ind motive)` per proof and segments a single level of cases; a second destruct inside a case (needed to decide a goal in two booleans) is not yet generated."
-    },
-    {
-      "pattern": "polymorphic / parametric induction (e.g. app_nil_r, app_assoc over `list A`)",
-      "boundary": "tier2-parametric",
-      "reason": "applying the generated parametric `list_ind` (whose motive ranges over the type parameter) currently fails to type-check the eliminator application; non-parametric nat/bool induction works."
     },
     {
       "pattern": "induction over an inductive relation (e.g. le_trans, le_n_S via le_ind)",

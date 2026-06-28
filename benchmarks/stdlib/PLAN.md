@@ -191,10 +191,17 @@ Verified against the engine:
 > fixpoint on a constructor-headed *symbolic* argument while leaving a stuck
 > recursive call constant-headed (so `rewrite` matches it). See
 > `benchmarks/stdlib/README.md` → "engine fixes" for the full list and the
-> additional fixes that made `rewrite` on a quantified IH work. What remains out
-> of Tier A is now narrower (`corpus/manifest.json` → `excluded`): multi-variable
-> /nested case analysis, parametric `list` induction, and induction over an
-> inductive relation. The original caveat text is kept below for history.
+> additional fixes that made `rewrite` on a quantified IH work.
+>
+> **Parametric `list` induction is also resolved** (the `Lists` module): with
+> `list`/`option` declared parameter-style, MEngine generates the Rocq-shaped
+> `list_ind`, and two further kernel fixes — substitution preserving a match
+> parameter slot's delta alias, and a power-of-two-capacity fix to the
+> open-addressing map that a `cons` match's pattern-substitution otherwise hung on
+> — make `app`/`length` reduce and `induction l` go through. What remains out of
+> Tier A is now narrower (`corpus/manifest.json` → `excluded`): multi-variable
+> /nested case analysis, and induction over an inductive relation. The original
+> caveat text is kept below for history.
 
 **Tier-2 caveats (these gate the computational majority).** Two engine issues — each with a minimal
 reproducer in `bugs/` on the engine branch — block induction over goals stated with a `Fixpoint`:

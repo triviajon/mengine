@@ -25,13 +25,20 @@ Inductive nat : Type :=
 | O : nat
 | S : forall (n : nat), nat.
 
-Inductive list : forall (A : Type), Type :=
-| nil  : forall (A : Type), list A
-| cons : forall (A : Type), forall (x : A), forall (l : list A), list A.
+(* list/option take A as a *parameter* (not an index): MEngine then generates the
+   Rocq-shaped parametric eliminator
+     list_ind : forall (A : Type) (P : list A -> Prop),
+                  P (nil A) -> (forall x l, P l -> P (cons A x l)) -> forall l, P l
+   so `induction` on a list translates to `apply (list_ind A <motive>)`.  The
+   constructor types are identical to the index form (the parameter is just a
+   leading forall), so every statement and the app/length fixpoints are unchanged. *)
+Inductive list (A : Type) : Type :=
+| nil  : list A
+| cons : forall (x : A), forall (l : list A), list A.
 
-Inductive option : forall (A : Type), Type :=
-| None : forall (A : Type), option A
-| Some : forall (A : Type), forall (x : A), option A.
+Inductive option (A : Type) : Type :=
+| None : option A
+| Some : forall (x : A), option A.
 
 (* ── bool functions (Coq.Init.Datatypes) ───────────────────────────── *)
 

@@ -304,12 +304,6 @@ EXCLUDED_DOC = [
      "reason": "the translator emits one `apply (<T>_ind motive)` per proof and "
                "segments a single level of cases; a second destruct inside a case "
                "(needed to decide a goal in two booleans) is not yet generated."},
-    {"pattern": "polymorphic / parametric induction (e.g. app_nil_r, "
-                "app_assoc over `list A`)",
-     "boundary": "tier2-parametric",
-     "reason": "applying the generated parametric `list_ind` (whose motive ranges "
-               "over the type parameter) currently fails to type-check the "
-               "eliminator application; non-parametric nat/bool induction works."},
     {"pattern": "induction over an inductive relation "
                 "(e.g. le_trans, le_n_S via le_ind)",
      "boundary": "tier2-relational",

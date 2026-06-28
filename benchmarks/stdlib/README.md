@@ -14,6 +14,7 @@ its own file.  The corpus currently has four modules:
 | Module  | Source                                  | Lemmas |
 |---------|-----------------------------------------|--------|
 | `Bool`  | `Coq.Bool.Bool` (ops from `Init.Datatypes`) | 18 |
+| `Lists` | `Coq.Lists.List` (app/length over `list A`) | 4 |
 | `Logic` | `Coq.Init.Logic` (eq, and/or, ex)       | 13 |
 | `Nat`   | `Coq.Init.Nat` (ground + inductive arithmetic) | 13 |
 | `Peano` | `Coq.Init.Peano` (the `le` order)       | 4  |
@@ -25,8 +26,10 @@ S (add n m)`) while leaving a stuck recursive call constant-headed, and `rewrite
 on a quantified induction hypothesis works.  The translator emits these as an
 `apply (nat_ind <motive>)` with one focused subgoal per constructor.  Remaining
 out-of-scope cases are listed under `excluded` in `corpus/manifest.json`
-(multi-variable/nested case analysis, parametric `list` induction, and induction
-over an inductive relation).
+(multi-variable/nested case analysis and induction over an inductive relation).
+**Parametric `list` induction is now in Tier A** (the `Lists` module): the kernel
+reduces a fixpoint over a parametric constructor and `induction l` translates to
+`apply (list_ind A <motive>)`.
 
 Each module has two forms:
 
@@ -195,6 +198,29 @@ still pass):
    left as an evar inside the term's type; `_open_compat`'s actual-side hole branch
    now records the assignment (symmetric to the expected side) so `fill_hole`
    cascade-fills it instead of leaving a stray open goal.
+7. **Substitution preserves a match parameter slot's delta alias**
+   (`src/kernel/mixed_subst.c`).  When matching on a *parametric* inductive
+   (`match l with | cons _ x xs => …` on `l : list A`), the parameter-slot pattern
+   variable (`_`) is built as a delta-reducible alias `_ := A`, which is what makes
+   the branch body's applications (`cons A x …`, the recursive `app A xs …`)
+   type-check.  Both substitution rebuilders (`_simple_topdown_psubst` and the
+   spine-rebuild path) dropped that alias when reconstructing the branch under a
+   substitution, so reducing a fixpoint over a parametric constructor (`app A
+   (cons A x xs) k`) hit "Application does not type check" and then a NULL-deref
+   crash.  They now carry the (substituted) body forward via
+   `init_var_expression_wc_with_body`.  Without this, *no* list computation
+   reduces.
+8. **`map_new_with_capacity` rounds up to a power of two**
+   (`src/common/map.c`).  The open-addressing map indexes with `hash & (capacity -
+   1)`, which is only a valid modulo when the capacity is a power of two.
+   `map_new` and resize keep that invariant, but `map_new_with_capacity` took a
+   caller-supplied size verbatim.  `iota_reduce` sizes the pattern-substitution map
+   to the constructor's argument count — **3** for `cons` — so a `cons` match built
+   a capacity-3 map; a lookup of an absent key in the full table then probed the
+   same two reachable slots forever (an infinite hang, masked as nondeterministic
+   under a normal build).  nat's `S` (one argument → resizes to a power of two)
+   never hit it.  Rounding the requested capacity up to the next power of two fixes
+   it for every caller.
 
 Now **in Tier A** (previously excluded, unblocked by the kernel work below):
 
@@ -208,16 +234,21 @@ Now **in Tier A** (previously excluded, unblocked by the kernel work below):
   completion, and `examples/computational_induction_rewrite.me` is the regression.
 - **Single-variable `destruct`/`case` with a constant RHS** (`andb b false =
   false`): proved by `apply (bool_ind <motive>)` + per-case `simpl`/`reflexivity`.
+- **Parametric `list` induction** (`app_nil_r`, `app_assoc`, `length_app` over
+  `list A`): the compat prelude declares `list`/`option` with `A` as a *parameter*,
+  so MEngine generates the Rocq-shaped `list_ind : forall (A : Type) (P : list A ->
+  Prop), …`, and `induction l` translates to `intro A. intro l. apply (list_ind A
+  <motive>)` with one focused subgoal per constructor (the `cons` case introducing
+  the head, tail, and the IH).  Unblocked by engine fixes 7–8: list computations
+  reduce, and the pattern-substitution map no longer hangs on a multi-argument
+  constructor.  The translator names the case binders from the proof's `induction l
+  as [| x l IHl]` intro-pattern, so the ported case lines line up.
 
 What stays **out of Tier A** (documented in `corpus/manifest.json` → `excluded`):
 
 - **Multi-variable / nested case analysis** (`andb_comm`, `orb b1 b2 = orb b2 b1`,
   de Morgan): the translator emits one `apply (<T>_ind motive)` and segments a
   single level of cases; a second `destruct` *inside* a case is not yet generated.
-- **Polymorphic / parametric induction** (`app`/`length`/`rev` over `list A`): the
-  *statement* translates faithfully (`Set Printing All` supplies the element type),
-  but applying the generated parametric `list_ind` — whose motive ranges over the
-  type parameter — currently fails to type-check the eliminator application.
 - **Induction over an inductive relation** (`le_trans`, `le_n_S` via `le_ind`):
   the eliminator's motive is dependent on the derivation; the translator only
   builds non-dependent `fun (x:T) => <body>` motives.
