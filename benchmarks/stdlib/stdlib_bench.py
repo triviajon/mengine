@@ -162,7 +162,11 @@ def run_rocq(cfg, name, timeout, trials):
     cmd = [cfg["coq_path"], "-q", vpath]
     to = timeout * cfg["coq_timeout_multiplier"]
     res = time_command(cmd, d, to, trials)
-    # clean coqc artifacts
+    _clean_coqc_artifacts(vpath, d)
+    return res
+
+
+def _clean_coqc_artifacts(vpath, d):
     for ext in (".vo", ".vok", ".vos", ".glob"):
         p = vpath[:-2] + ext
         if os.path.exists(p):
@@ -173,7 +177,43 @@ def run_rocq(cfg, name, timeout, trials):
                 os.remove(os.path.join(d, fn))
             except OSError:
                 pass
+
+
+# ─────────────────────────── startup baselines ───────────────────────────────
+# Whole-file wall-clock is dominated by fixed per-invocation cost: a coqc process
+# plus its auto-loaded Prelude (~65 ms here), and an mengine process plus
+# prelude/tactics.me + the compat prelude (~3-6 ms).  None of that is the unit's
+# proof.  We time each engine's preamble *alone* — an empty .v for Rocq (same
+# Prelude every unit auto-loads; the corpus has no `Require`), and the compat
+# prelude with no unit appended for MEngine — and the report subtracts it to
+# isolate the marginal statement+proof cost.  Measured once and reused, so we
+# spend extra trials to pin the floor down.
+
+def run_mengine_baseline(cfg, timeout, trials):
+    """Time the compat prelude with no unit: MEngine's per-invocation floor."""
+    cmd = [cfg["mengine_path"], "-q", cfg["compat"]]
+    return time_command(cmd, cfg["mengine_root"] or None, timeout, trials)
+
+
+def run_rocq_baseline(cfg, timeout, trials):
+    """Time an empty .v: coqc startup + auto-loaded Prelude, no statement."""
+    import tempfile
+    fd, path = tempfile.mkstemp(suffix=".v", prefix="stdlib_baseline_")
+    os.close(fd)  # empty file
+    try:
+        cmd = [cfg["coq_path"], "-q", path]
+        to = timeout * cfg["coq_timeout_multiplier"]
+        res = time_command(cmd, os.path.dirname(path), to, trials)
+        _clean_coqc_artifacts(path, os.path.dirname(path))
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
     return res
+
+
+# Keys under which baselines are stored in results (alongside per-unit keys).
+MENGINE_BASELINE_KEY = "mengine__startup_baseline"
+ROCQ_BASELINE_KEY = "coq__startup_baseline"
 
 
 # ─────────────────────────── faithfulness gate ───────────────────────────────
@@ -316,17 +356,37 @@ def cmd_test(cfg, args):
 def cmd_run(cfg, args):
     units = args.units or discover_units(cfg)
     results = load_results(cfg["results"])
+
+    # Measure each engine's fixed startup/preamble floor once (extra trials to
+    # pin it down) so the report can subtract it from every unit's whole-file
+    # time.  See run_*_baseline above.
+    base_trials = max(cfg["trials"], 10)
+    mb = run_mengine_baseline(cfg, cfg["timeout"], base_trials)
+    rb = run_rocq_baseline(cfg, cfg["timeout"], base_trials)
+    results[MENGINE_BASELINE_KEY] = mb
+    results[ROCQ_BASELINE_KEY] = rb
+    save_results(cfg["results"], results)
+    mb_t, rb_t = mb["time_taken"], rb["time_taken"]
+    print(f"  {'startup baseline':24s} "
+          f"MEngine={mb_t*1000:8.1f}ms  Rocq={rb_t*1000:8.1f}ms\n")
+
     for u in units:
         mr = run_mengine(cfg, u, cfg["timeout"], cfg["trials"])
         rr = run_rocq(cfg, u, cfg["timeout"], cfg["trials"])
         results[f"mengine_{u}"] = mr
         results[f"coq_{u}"] = rr
         save_results(cfg["results"], results)
+        # Proof-only = whole-file minus the engine's startup floor (clamped at 0;
+        # a tiny proof can dip below baseline jitter).
+        mp = max(0.0, mr["time_taken"] - mb_t) if mr["success"] else None
+        rp = max(0.0, rr["time_taken"] - rb_t) if rr["success"] else None
         ms = f"{mr['time_taken']*1000:.1f}ms" if mr["success"] else "FAIL"
         rs = f"{rr['time_taken']*1000:.1f}ms" if rr["success"] else "FAIL"
-        ratio = (f"{rr['time_taken']/mr['time_taken']:.2f}x"
-                 if mr["success"] and rr["success"] and mr["time_taken"] > 0 else "-")
-        print(f"  {u:24s} MEngine={ms:>10s}  Rocq={rs:>10s}  speedup={ratio}")
+        mps = f"{mp*1000:.1f}ms" if mp is not None else "FAIL"
+        rps = f"{rp*1000:.1f}ms" if rp is not None else "FAIL"
+        ratio = (f"{rp/mp:.2f}x" if mp and rp and mp > 0 else "-")
+        print(f"  {u:24s} MEngine={ms:>9s}(proof {mps:>8s})  "
+              f"Rocq={rs:>9s}(proof {rps:>8s})  proof-speedup={ratio}")
     print(f"\nResults written to {os.path.relpath(cfg['results'])}")
 
 

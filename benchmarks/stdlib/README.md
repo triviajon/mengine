@@ -41,9 +41,21 @@ always elaborable), which is why the proof side keeps the surface rules below.
 
 `stdlib_bench.py run` times each unit end-to-end in both engines (whole process,
 best of N trials).  Both engines pay their own fixed startup: MEngine loads
-`prelude/tactics.me` plus the compat prelude; Rocq starts its process and loads
-`Coq.Init`.  At this problem size the comparison reflects per-invocation cost,
-not asymptotics.
+`prelude/tactics.me` plus the compat prelude (~4 ms); Rocq starts its process and
+loads its auto-loaded `Prelude` (~65 ms).  At this problem size the *whole-file*
+number is almost entirely this per-invocation cost, not the proof.
+
+**Startup-subtracted ("proof") times.**  To compare proof cost fairly, `run`
+first times each engine's preamble *alone* — an empty `.v` (the corpus has no
+`Require`, so this loads exactly the same `Prelude` every unit does) and the
+compat prelude with no unit appended — and records it as a startup baseline.
+`report` subtracts that floor from each unit's whole-file time (clamped at 0) to
+get the marginal statement+proof cost, and reports a residual at or below the
+baseline's own run-to-run jitter as `~0` (indistinguishable from startup).  For
+the current Tier-A corpus every proof is trivial enough that its
+startup-subtracted cost lands below the noise floor on both engines — so the
+headline ~30× whole-file ratio is a *process-startup* ratio, and measuring proof
+speed above the floor needs heavier units.
 
 ## Layout
 

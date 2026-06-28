@@ -19,22 +19,60 @@ def _category(name):
     return "other"
 
 
+MENGINE_BASELINE_KEY = "mengine__startup_baseline"
+ROCQ_BASELINE_KEY = "coq__startup_baseline"
+
+
+def _baseline(results, key):
+    """(floor_seconds, noise_seconds) for a stored startup baseline, or (None, 0)."""
+    b = results.get(key)
+    if not b or not b.get("success"):
+        return None, 0.0
+    floor = b["time_taken"]
+    times = [t["time_taken"] for t in b.get("trials", []) if t.get("success")]
+    if len(times) >= 2:
+        mean = sum(times) / len(times)
+        noise = (sum((t - mean) ** 2 for t in times) / (len(times) - 1)) ** 0.5
+    else:
+        noise = 0.0
+    return floor, noise
+
+
+def _proof_time(total, floor):
+    """Marginal statement+proof cost: whole-file minus startup floor, clamped."""
+    if total is None:
+        return None
+    if floor is None:
+        return total
+    return max(0.0, total - floor)
+
+
 def _load(cfg):
     with open(cfg["results"]) as f:
         results = json.load(f)
-    units = sorted({k.split("_", 1)[1] for k in results if "_" in k})
+    m_floor, m_noise = _baseline(results, MENGINE_BASELINE_KEY)
+    r_floor, r_noise = _baseline(results, ROCQ_BASELINE_KEY)
+    unit_keys = {k.split("_", 1)[1] for k in results
+                 if "_" in k and k not in (MENGINE_BASELINE_KEY, ROCQ_BASELINE_KEY)}
     rows = []
-    for u in units:
+    for u in sorted(unit_keys):
         m = results.get(f"mengine_{u}")
         r = results.get(f"coq_{u}")
         if not m or not r:
             continue
+        mt = m["time_taken"] if m["success"] else None
+        rt = r["time_taken"] if r["success"] else None
         rows.append({
             "unit": u, "category": _category(u),
-            "mengine": m["time_taken"] if m["success"] else None,
-            "rocq": r["time_taken"] if r["success"] else None,
+            "mengine": mt, "rocq": rt,
+            "mengine_proof": _proof_time(mt, m_floor),
+            "rocq_proof": _proof_time(rt, r_floor),
         })
-    return rows
+    meta = {
+        "mengine_floor": m_floor, "mengine_noise": m_noise,
+        "rocq_floor": r_floor, "rocq_noise": r_noise,
+    }
+    return rows, meta
 
 
 def _fmt_ms(t):
@@ -42,53 +80,110 @@ def _fmt_ms(t):
 
 
 def generate(cfg):
-    rows = _load(cfg)
+    rows, meta = _load(cfg)
     if not rows:
         print("No results yet — run `stdlib_bench.py run` first.")
         return
 
+    m_floor, m_noise = meta["mengine_floor"], meta["mengine_noise"]
+    r_floor, r_noise = meta["rocq_floor"], meta["rocq_noise"]
+    have_baselines = m_floor is not None and r_floor is not None
+
     lines = []
     lines.append("# Rocq stdlib benchmark — MEngine vs Rocq\n")
-    lines.append("Per-unit wall-clock (best of N trials), whole-process: each engine "
-                 "pays its own startup (MEngine loads `prelude/tactics.me` + the compat "
-                 "prelude; Rocq starts its process and loads `Coq.Init`).\n")
-    lines.append("| Unit | Category | Rocq (ms) | MEngine (ms) | Speedup (Rocq/MEngine) |")
-    lines.append("|------|----------|-----------|--------------|------------------------|")
+    if have_baselines:
+        lines.append(
+            "Whole-file wall-clock is dominated by fixed per-invocation cost — a "
+            "`coqc` process plus its auto-loaded `Prelude`, and an `mengine` "
+            "process plus `prelude/tactics.me` + the compat prelude — none of "
+            "which is the unit's proof. To compare *proof* cost fairly we time "
+            "each engine's preamble alone (an empty `.v`; the compat prelude with "
+            "no unit) and subtract it. **Proof** columns are this "
+            "startup-subtracted residual (best of N trials, clamped at 0).\n")
+        lines.append(
+            f"**Startup floor:** Rocq {_fmt_ms(r_floor)} ms "
+            f"(±{r_noise*1000:.1f}), MEngine {_fmt_ms(m_floor)} ms "
+            f"(±{m_noise*1000:.1f}). A proof residual at or below its engine's "
+            "jitter (±) is reported as `~0` — indistinguishable from startup.\n")
+        lines.append("| Unit | Category | Rocq total (ms) | Rocq proof (ms) | "
+                     "MEngine total (ms) | MEngine proof (ms) | Proof speedup |")
+        lines.append("|------|----------|-----------------|-----------------|"
+                     "--------------------|--------------------|---------------|")
+    else:
+        lines.append("Per-unit wall-clock (best of N trials), whole-process: each "
+                     "engine pays its own startup. **No startup baseline recorded** — "
+                     "re-run `stdlib_bench.py run` to get startup-subtracted proof "
+                     "times.\n")
+        lines.append("| Unit | Category | Rocq (ms) | MEngine (ms) | "
+                     "Speedup (Rocq/MEngine) |")
+        lines.append("|------|----------|-----------|--------------|"
+                     "------------------------|")
 
     speedups = []
+    below_noise = 0
     for row in sorted(rows, key=lambda r: (r["category"], r["unit"])):
-        m, r = row["mengine"], row["rocq"]
-        if m and r and m > 0:
-            sp = r / m
-            speedups.append(sp)
-            sp_s = f"{sp:.2f}×"
+        if have_baselines:
+            mp, rp = row["mengine_proof"], row["rocq_proof"]
+            m_below = mp is not None and mp <= m_noise
+            r_below = rp is not None and rp <= r_noise
+            mp_s = "~0" if m_below else _fmt_ms(mp)
+            rp_s = "~0" if r_below else _fmt_ms(rp)
+            if m_below or r_below:
+                below_noise += 1
+                sp_s = "—"
+            elif mp and rp and mp > 0:
+                sp = rp / mp
+                speedups.append(sp)
+                sp_s = f"{sp:.2f}×"
+            else:
+                sp_s = "-"
+            lines.append(f"| `{row['unit']}` | {row['category']} | "
+                         f"{_fmt_ms(row['rocq'])} | {rp_s} | "
+                         f"{_fmt_ms(row['mengine'])} | {mp_s} | {sp_s} |")
         else:
-            sp_s = "-"
-        lines.append(f"| `{row['unit']}` | {row['category']} | {_fmt_ms(r)} | "
-                     f"{_fmt_ms(m)} | {sp_s} |")
+            m, r = row["mengine"], row["rocq"]
+            if m and r and m > 0:
+                sp = r / m
+                speedups.append(sp)
+                sp_s = f"{sp:.2f}×"
+            else:
+                sp_s = "-"
+            lines.append(f"| `{row['unit']}` | {row['category']} | {_fmt_ms(r)} | "
+                         f"{_fmt_ms(m)} | {sp_s} |")
 
-    if speedups:
+    lines.append("")
+    lines.append(f"**Units:** {len(rows)} (all Tier A).")
+    if have_baselines:
+        lines.append(f"**Below startup-noise floor (proof time ~0 on either engine):** "
+                     f"{below_noise} of {len(rows)}.")
+        if speedups:
+            geo = math.exp(sum(math.log(s) for s in speedups) / len(speedups))
+            med = sorted(speedups)[len(speedups) // 2]
+            lines.append(f"**Proof-only speedup (Rocq/MEngine), over the "
+                         f"{len(speedups)} units above the noise floor:** "
+                         f"{geo:.2f}× geomean (median {med:.2f}×).")
+        lines.append("")
+        lines.append("> For this corpus the per-unit proofs are trivial: their "
+                     "startup-subtracted cost is at or below measurement jitter for "
+                     "both engines, so the headline whole-file ratio (~30×) is really "
+                     "a *process-startup* ratio, not a proof-speed ratio. Heavier "
+                     "units are needed to measure proof speed above the noise floor.")
+    elif speedups:
         geo = math.exp(sum(math.log(s) for s in speedups) / len(speedups))
         med = sorted(speedups)[len(speedups) // 2]
-        lines.append("")
-        lines.append(f"**Units:** {len(rows)} (all Tier A).  "
-                     f"**Both-succeed:** {len(speedups)}.")
-        lines.append(f"**Geometric-mean speedup (Rocq/MEngine):** {geo:.2f}×  "
-                     f"(median {med:.2f}×).")
-        lines.append("")
-        lines.append("> MEngine times are dominated by prelude+compat startup at this "
-                     "problem size; the comparison reflects fixed per-invocation cost, "
-                     "not asymptotics. See README for scope and caveats.")
+        lines.append(f"**Both-succeed:** {len(speedups)}.")
+        lines.append(f"**Geometric-mean whole-file ratio (Rocq/MEngine):** {geo:.2f}×  "
+                     f"(median {med:.2f}×) — dominated by startup, not proof cost.")
 
     out_md = os.path.join(os.path.dirname(cfg["results"]), "REPORT.md")
     with open(out_md, "w") as f:
         f.write("\n".join(lines) + "\n")
     print(f"Wrote {os.path.relpath(out_md)}")
 
-    _scatter(cfg, rows)
+    _scatter(cfg, rows, meta)
 
 
-def _scatter(cfg, rows):
+def _scatter(cfg, rows, meta=None):
     try:
         import matplotlib
         matplotlib.use("Agg")
@@ -97,6 +192,7 @@ def _scatter(cfg, rows):
         print(f"(skipping scatter plot: matplotlib unavailable: {e})")
         return
 
+    meta = meta or {}
     colors = {"bool": "tab:blue", "nat": "tab:green", "le": "tab:orange",
               "logic": "tab:red", "eq": "tab:purple", "ex": "tab:brown",
               "other": "gray"}
@@ -113,6 +209,21 @@ def _scatter(cfg, rows):
     allv = [r["rocq"] * 1000 for r in pts] + [r["mengine"] * 1000 for r in pts]
     lo, hi = min(allv) * 0.7, max(allv) * 1.4
     ax.plot([lo, hi], [lo, hi], "k--", lw=1, label="parity")
+
+    # Startup floors: every point sits essentially on this cross because the
+    # proofs are below the per-invocation cost. Drawing the floors makes that
+    # explicit — the whole-file scatter is comparing startup, not proof time.
+    r_floor, m_floor = meta.get("rocq_floor"), meta.get("mengine_floor")
+    if r_floor:
+        lo = min(lo, r_floor * 1000 * 0.7)
+        hi = max(hi, r_floor * 1000 * 1.4)
+        ax.axvline(r_floor * 1000, color="tab:gray", ls=":", lw=1,
+                   label="Rocq startup floor")
+    if m_floor:
+        lo = min(lo, m_floor * 1000 * 0.7)
+        ax.axhline(m_floor * 1000, color="tab:cyan", ls=":", lw=1,
+                   label="MEngine startup floor")
+
     ax.set_xscale("log"); ax.set_yscale("log")
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
     ax.set_xlabel("Rocq time (ms, log)")
