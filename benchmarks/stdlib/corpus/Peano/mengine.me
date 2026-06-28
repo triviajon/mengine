@@ -14,10 +14,10 @@ constructor; exact (IHn).
 
 Theorem le_succ_diag_r : forall (n : nat), ((le n) (S n)).
 intro n.
-constructor; constructor.
+repeat constructor.
 
 Theorem le_1_2 : ((le (S O)) (S (S O))).
-constructor; constructor.
+repeat constructor.
 
 Theorem le_2_4 : ((le (S (S O))) (S (S (S (S O))))).
-constructor; constructor; constructor.
+repeat constructor.

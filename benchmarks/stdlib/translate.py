@@ -747,6 +747,20 @@ def translate_tactic_atom(atom, report):
     if name in UNSUPPORTED:
         raise Untranslatable(f"unsupported tactic '{name}'")
 
+    if name == "repeat":
+        # `repeat t` — MEngine has the same combinator (prelude `intros := repeat
+        # intro`).  Rocq binds `repeat` tighter than `;`, so the body is a single
+        # atom (`repeat split; assumption` is `(repeat split); assumption`, split
+        # at the sentence level before this point).
+        inner = atom[len("repeat"):].strip()
+        if not inner:
+            raise Untranslatable("bare 'repeat'")
+        t = translate_tactic_atom(inner, report)
+        if t is None or "." in t or ";" in t:
+            raise Untranslatable("repeat of a non-atomic tactic")
+        report.add_handled("tac:repeat")
+        return f"repeat {t}"
+
     if name in DIRECT_TACTICS:
         rest = atom[len(name):].strip()
         if rest:

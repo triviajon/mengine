@@ -156,7 +156,7 @@
       "name": "Logic",
       "tier": "A",
       "category": "Logic",
-      "rocq_sha256": "18da5c45506334bf",
+      "rocq_sha256": "caca634f140f416a",
       "statements": [
         {
           "name": "eq_refl_x",
@@ -338,7 +338,7 @@
       "name": "Peano",
       "tier": "A",
       "category": "Peano",
-      "rocq_sha256": "d7b577b66a69a0aa",
+      "rocq_sha256": "a49f134dc7c8388f",
       "statements": [
         {
           "name": "le_refl_n",

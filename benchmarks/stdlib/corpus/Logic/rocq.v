@@ -28,7 +28,7 @@ Lemma and_intro : forall A B : Prop, A -> B -> A /\ B.
 Proof. intros A B HA HB. split; assumption. Qed.
 
 Lemma and_intro3 : forall A B C : Prop, A -> B -> C -> A /\ (B /\ C).
-Proof. intros A B C HA HB HC. split. exact HA. split. exact HB. exact HC. Qed.
+Proof. intros A B C HA HB HC. repeat split; assumption. Qed.
 
 Lemma or_introl_ex : forall A B : Prop, A -> A \/ B.
 Proof. intros A B HA. left; assumption. Qed.

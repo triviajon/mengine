@@ -504,7 +504,7 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
 
 ### `and_intro3`  *(proof: original)*
 
-- **corpus** (`Logic/rocq.v`): `intros A B C HA HB HC. split. exact HA. split. exact HB. exact HC.`
+- **corpus** (`Logic/rocq.v`): `intros A B C HA HB HC. repeat split; assumption.`
 - **why it diverges:** No named stdlib lemma (nested conjunction introduction; bespoke combination, no single stdlib lemma); there is no library proof to be faithful to.
 
 ### `or_introl_ex` → `@or_introl`  *(proof: constructor)*
@@ -900,16 +900,16 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
   intro; apply lt_le_incl; apply lt_succ_diag_r.
   Qed.
   ```
-- **corpus** (`Peano/rocq.v`): `intro n. constructor; constructor.`
-- **why it diverges:** `Nat.le_succ_diag_r` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZOrder.v:66`), written with abstract-functor Ltac.  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`intro n. constructor; constructor.`).
+- **corpus** (`Peano/rocq.v`): `intro n. repeat constructor.`
+- **why it diverges:** `Nat.le_succ_diag_r` is produced by module-functor `Include`; its only proof script lives in the abstract functor (`user-contrib/Stdlib/Numbers/NatInt/NZOrder.v:66`), written with abstract-functor Ltac.  No concrete-`nat` script exists to copy, and MEngine has no module system — the corpus reproves it in MEngine's tactic subset (`intro n. repeat constructor.`).
 
 ### `le_1_2`  *(proof: original)*
 
-- **corpus** (`Peano/rocq.v`): `constructor; constructor.`
+- **corpus** (`Peano/rocq.v`): `repeat constructor.`
 - **why it diverges:** No named stdlib lemma (ground fact 1 <= 2; no named stdlib lemma); there is no library proof to be faithful to.
 
 ### `le_2_4`  *(proof: original)*
 
-- **corpus** (`Peano/rocq.v`): `constructor; constructor; constructor.`
+- **corpus** (`Peano/rocq.v`): `repeat constructor.`
 - **why it diverges:** No named stdlib lemma (ground fact 2 <= 4; no named stdlib lemma); there is no library proof to be faithful to.
 

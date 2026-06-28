@@ -10,10 +10,10 @@ Proof. induction n.
 Qed.
 
 Lemma le_succ_diag_r : forall n : nat, n <= S n.
-Proof. intro n. constructor; constructor. Qed.
+Proof. intro n. repeat constructor. Qed.
 
 Lemma le_1_2 : 1 <= 2.
-Proof. constructor; constructor. Qed.
+Proof. repeat constructor. Qed.
 
 Lemma le_2_4 : 2 <= 4.
-Proof. constructor; constructor; constructor. Qed.
+Proof. repeat constructor. Qed.

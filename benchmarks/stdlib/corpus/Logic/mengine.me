@@ -37,11 +37,7 @@ split; assumption.
 
 Theorem and_intro3 : forall (A : Prop), forall (B : Prop), forall (C : Prop), forall (_ : A), forall (_ : B), forall (_ : C), ((and A) ((and B) C)).
 intro A. intro B. intro C. intro HA. intro HB. intro HC.
-split.
-exact (HA).
-split.
-exact (HB).
-exact (HC).
+repeat split; assumption.
 
 Theorem or_introl_ex : forall (A : Prop), forall (B : Prop), forall (_ : A), ((or A) B).
 intro A. intro B. intro HA.
