@@ -87,7 +87,7 @@
       "name": "Lists",
       "tier": "A",
       "category": "Lists",
-      "rocq_sha256": "a3b828d517095188",
+      "rocq_sha256": "d5006a44f78a0497",
       "statements": [
         {
           "name": "app_nil_l",
@@ -99,7 +99,7 @@
         },
         {
           "name": "app_assoc",
-          "digest": "forall (A : Type), forall (l : (list A)), forall (m : (list A)), forall (n : (list A)), (((eq (list A)) (((app A) (((app A) l) m)) n)) (((app A) l) (((app A) m) n)))"
+          "digest": "forall (A : Type), forall (l : (list A)), forall (m : (list A)), forall (n : (list A)), (((eq (list A)) (((app A) l) (((app A) m) n))) (((app A) (((app A) l) m)) n))"
         },
         {
           "name": "length_app",
@@ -173,7 +173,7 @@
       "name": "Nat",
       "tier": "A",
       "category": "Nat",
-      "rocq_sha256": "09ed4b709affa813",
+      "rocq_sha256": "ae5c0765215a26d9",
       "statements": [
         {
           "name": "add_2_2",
@@ -205,7 +205,7 @@
         },
         {
           "name": "add_assoc",
-          "digest": "forall (n : nat), forall (m : nat), forall (p : nat), (((eq nat) ((add ((add n) m)) p)) ((add n) ((add m) p)))"
+          "digest": "forall (n : nat), forall (m : nat), forall (p : nat), (((eq nat) ((add n) ((add m) p))) ((add ((add n) m)) p))"
         },
         {
           "name": "mul_0_r",

@@ -49,9 +49,9 @@ rewrite IHn with eq.
 symmetry.
 rewrite add_succ_r with eq.
 reflexivity.
-Theorem add_assoc : forall (n : nat), forall (m : nat), forall (p : nat), (((eq nat) ((add ((add n) m)) p)) ((add n) ((add m) p))).
+Theorem add_assoc : forall (n : nat), forall (m : nat), forall (p : nat), (((eq nat) ((add n) ((add m) p))) ((add ((add n) m)) p)).
 intro n.
-apply (nat_ind (fun (n : nat) => forall (m : nat), forall (p : nat), (((eq nat) ((add ((add n) m)) p)) ((add n) ((add m) p))))).
+apply (nat_ind (fun (n : nat) => forall (m : nat), forall (p : nat), (((eq nat) ((add n) ((add m) p))) ((add ((add n) m)) p)))).
 simpl.
 intro m.
 intro p.

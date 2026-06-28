@@ -20,7 +20,7 @@ Proof. induction l as [| x l IHl].
   - simpl. rewrite IHl. reflexivity.
 Qed.
 
-Lemma app_assoc : forall (A : Type) (l m n : list A), (l ++ m) ++ n = l ++ (m ++ n).
+Lemma app_assoc : forall (A : Type) (l m n : list A), l ++ (m ++ n) = (l ++ m) ++ n.
 Proof. induction l as [| x l IHl].
   - intro m. intro n. reflexivity.
   - intro m. intro n. simpl. rewrite IHl. reflexivity.

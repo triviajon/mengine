@@ -32,7 +32,7 @@ Proof. induction n.
   - intro m. simpl. rewrite IHn. symmetry. rewrite add_succ_r. reflexivity.
 Qed.
 
-Lemma add_assoc : forall n m p : nat, (n + m) + p = n + (m + p).
+Lemma add_assoc : forall n m p : nat, n + (m + p) = (n + m) + p.
 Proof. induction n.
   - intro m. intro p. reflexivity.
   - intro m. intro p. simpl. rewrite IHn. reflexivity.

@@ -32,8 +32,7 @@
     "Lists": {
       "app_nil_l": {"stdlib": "app_nil_l"},
       "app_nil_r": {"stdlib": "app_nil_r"},
-      "app_assoc": {"stdlib": "app_assoc", "relation": "symmetry",
-                    "note": "stdlib app_assoc is l ++ (m ++ n) = (l ++ m) ++ n; curated states the mirror"},
+      "app_assoc": {"stdlib": "app_assoc"},
       "length_app": {"stdlib": "length_app"}
     },
     "Logic": {
@@ -59,8 +58,7 @@
       "add_0_r": {"stdlib": "Nat.add_0_r"},
       "add_succ_r": {"stdlib": "Nat.add_succ_r"},
       "add_comm": {"stdlib": "Nat.add_comm"},
-      "add_assoc": {"stdlib": "Nat.add_assoc", "relation": "symmetry",
-                    "note": "stdlib add_assoc is n + (m + p) = (n + m) + p; curated states the mirror"},
+      "add_assoc": {"stdlib": "Nat.add_assoc"},
       "mul_0_r": {"stdlib": "Nat.mul_0_r"},
       "mul_1_l": {"stdlib": "Nat.mul_1_l"},
       "mul_1_r": {"stdlib": "Nat.mul_1_r"},

@@ -14,10 +14,10 @@ simpl.
 simpl.
 rewrite IHl with eq.
 reflexivity.
-Theorem app_assoc : forall (A : Type), forall (l : (list A)), forall (m : (list A)), forall (n : (list A)), (((eq (list A)) (((app A) (((app A) l) m)) n)) (((app A) l) (((app A) m) n))).
+Theorem app_assoc : forall (A : Type), forall (l : (list A)), forall (m : (list A)), forall (n : (list A)), (((eq (list A)) (((app A) l) (((app A) m) n))) (((app A) (((app A) l) m)) n)).
 intro A.
 intro l.
-apply (list_ind A (fun (l : (list A)) => forall (m : (list A)), forall (n : (list A)), (((eq (list A)) (((app A) (((app A) l) m)) n)) (((app A) l) (((app A) m) n))))).
+apply (list_ind A (fun (l : (list A)) => forall (m : (list A)), forall (n : (list A)), (((eq (list A)) (((app A) l) (((app A) m) n))) (((app A) (((app A) l) m)) n)))).
 simpl.
 intro m.
 intro n.

@@ -20,7 +20,7 @@ its own file.  The corpus currently has four modules:
 | `Peano` | `Coq.Init.Peano` (the `le` order)       | 4  |
 
 Computational induction over the `add`/`mul` fixpoints (`n + 0 = n`,
-`n + m = m + n`, `(n+m)+p = n+(m+p)`, …) is now in Tier A: the kernel reduces a
+`n + m = m + n`, `n+(m+p) = (n+m)+p`, …) is now in Tier A: the kernel reduces a
 fixpoint applied to a *symbolic* constructor-headed argument (`add (S n) m ↝
 S (add n m)`) while leaving a stuck recursive call constant-headed, and `rewrite`
 on a quantified induction hypothesis works.  The translator emits these as an
@@ -160,10 +160,11 @@ stdlib.  `corpus/stdlib_map.json` maps every curated lemma to one of:
 - a stdlib lemma whose statement is the **mirror** of the curated one
   (`"relation": "symmetry"`) — verified by `Goal <curated>. Proof. intros;
   symmetry; apply <stdlib_ref>. Qed.`, confirming they are equivalent up to
-  `eq_sym`.  Reported `symmetry`.  Two corpus lemmas are like this:
-  `Nat.add_assoc` and `List.app_assoc` are both stated in the opposite
-  orientation in stdlib, so the curated `add_assoc`/`app_assoc` are their
-  mirrors.
+  `eq_sym`.  Reported `symmetry`.  No corpus lemma currently uses this: the
+  whole corpus is stated to **exactly match** stdlib (the `assoc` lemmas, which
+  stdlib states in the opposite orientation, were flipped to match), so the
+  mechanism is kept for future curation but every current lemma is `match` or
+  `original`.
 - `"original"` — a ground computation (`2 + 2 = 4`, `1 <= 2`) or bespoke
   combination (`and_intro3`, `imp_trans`) with **no named stdlib lemma**.
   Reported `original` and not checked, with the reason recorded in the map.
@@ -267,7 +268,7 @@ still pass):
 Now **in Tier A** (previously excluded, unblocked by the kernel work below):
 
 - **Computational induction over a `Fixpoint`** (`add n 0 = n`, `n + m = m + n`,
-  `(n+m)+p = n+(m+p)`, `mul` lemmas): the kernel now reduces a fixpoint applied to
+  `n+(m+p) = (n+m)+p`, `mul` lemmas): the kernel now reduces a fixpoint applied to
   a *symbolic* constructor-headed argument (`add (S n) m ↝ S (add n m)`) while
   leaving a stuck recursive call headed by the `add`/`mul` *constant* (not a bare
   fix node), so `simpl` makes progress and `rewrite` matches it.  `rewrite` on a
