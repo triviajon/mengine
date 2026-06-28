@@ -201,7 +201,10 @@ classifying *why* the corpus proof differs:
   lacks (the `destr_bool` Ltac macro — all of `Bool`; `destruct N` on a premise —
   `Logic` `eq_sym`/`f_equal`) or only approximates/emulates more weakly
   (`f_equal`, now a single-layer compat-prelude tactic — `Lists` `app_*`; `auto`
-  — `Lists` `length_app`).  This is **not** about sequencing: MEngine *does* have
+  — `Lists` `length_app`).  Why `destr_bool`/`destruct_all` in particular cannot
+  be written as MEngine tactics (missing goal-abstraction primitive, no
+  higher-order motive inference, no hypothesis clearing) is documented in
+  [`DESTR_BOOL_OBSTACLES.md`](DESTR_BOOL_OBSTACLES.md).  This is **not** about sequencing: MEngine *does* have
   `;`, `||`, `try`, `repeat`, `first […]`, `match Goal`, and emulated
   `auto`/`trivial`/`simpl`/`symmetry`/`f_equal` — the corpus proofs use `;`
   themselves (`split; assumption`).
