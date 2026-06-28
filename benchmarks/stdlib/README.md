@@ -13,6 +13,32 @@ Each *unit* is one stdlib-style lemma in two forms:
 - `corpus/<unit>/mengine.me` — the MEngine source, produced **mechanically** by
   [`translate.py`](translate.py) with zero manual edits (Tier A).
 
+### How statements are translated (`Set Printing All`)
+
+MEngine has no notation system and no elaboration, so notation, implicit
+arguments, and numeric literals in a Rocq statement must all be made explicit.
+Rather than re-implement Rocq's elaborator (the old translator hand-desugared
+notation and *synthesised* the implicit type argument of `=`, which failed for
+any non-`nat`/`bool` equality and for polymorphic lists), `translate.py
+--elaborate` replays the unit through Rocq with `Set Printing All` and a `Check`
+per statement, and translates the **fully-explicit, notation-free** form it
+prints back:
+
+```
+(* surface *)   forall (A:Type) (l:list A), nil ++ l = l
+(* Printing All *)  forall (A : Type) (l : list A), @eq (list A) (@app A (@nil A) l) l
+(* MEngine *)   forall (A : Type), forall (l : (list A)),
+                  (((eq (list A)) (((app A) (nil A)) l)) l)
+```
+
+Because every implicit is already supplied, no type synthesis is needed: the
+element type of an equality or a list comes straight from Rocq.  The only
+qualified heads `Set Printing All` emits are the `Nat.*` arithmetic ops, mapped
+to the compat-prelude names; any *other* qualified head is flagged, never
+guessed.  This covers **definition and theorem statements**; terms appearing
+inside *tactics* are still translated from the surface source (they are not
+always elaborable), which is why the proof side keeps the surface rules below.
+
 `stdlib_bench.py run` times each unit end-to-end in both engines (whole process,
 best of N trials).  Both engines pay their own fixed startup: MEngine loads
 `prelude/tactics.me` plus the compat prelude; Rocq starts its process and loads
@@ -58,8 +84,10 @@ Before any timing, `test` verifies per unit (plan §7):
 
 1. `rocq.v` compiles under `coqc`.
 2. `mengine.me` runs clean under `mengine -q` (compat prelude prepended).
-3. `mengine.me` is exactly what `translate.py` re-emits from `rocq.v` (no drift),
-   and the **theorem names match** between the two sides.
+3. `mengine.me` is exactly what `translate.py --elaborate` re-emits from `rocq.v`
+   (no drift), and the **theorem names match** between the two sides.  Because
+   step 3 elaborates through Rocq (`Set Printing All`), the gate needs `coqc` on
+   `PATH` (or `coq_path` in `config.json`).
 
 The guiding principle of the translator is **flag, never guess**: any construct
 it cannot translate soundly is reported and the unit is excluded, rather than
@@ -103,8 +131,13 @@ What stays **out of Tier A** (documented in `corpus/manifest.json` → `excluded
   first-order `apply` cannot solve the eliminator's scrutinee evar when the
   scrutinee variable has no *bare* occurrence in the goal, because the unifier
   whnf-folds the function application into a stuck `match`.
-- **Polymorphic list reasoning** (`app`/`length` lemmas): needs element-type
-  inference in the translator (Tier B).
+- **Polymorphic list reasoning** (`app`/`length` lemmas): the *statement* now
+  translates faithfully — `Set Printing All` supplies the element type, so
+  `nil ++ l = l` becomes `eq (list A) (app A (nil A) l) l` with no inference (the
+  old element-type-inference blocker is gone).  What still keeps these out of
+  Tier A is the *proof/engine* side: reducing a parametric `Fixpoint` (`app`)
+  over `list A` hits the same symbolic-fixpoint conversion limits as
+  computational `nat` induction below.
 
 ## Why whole stdlib files don't translate
 

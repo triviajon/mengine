@@ -21,7 +21,9 @@ Usage:
 import argparse
 import os
 import re
+import subprocess
 import sys
+import tempfile
 
 
 # ───────────────────────── symbol table (type synthesis) ─────────────────────
@@ -309,6 +311,187 @@ def parse_term(s):
     return e
 
 
+# ─────────────────── elaborated-form parser (Set Printing All) ────────────────
+#
+# When a unit is elaborated through Rocq (`--elaborate`), each statement's type
+# is obtained from `Set Printing All` output instead of the surface source.  That
+# form is *notation-free and fully explicit*: every implicit argument is shown,
+# `@head` marks an application with all implicits supplied, numerals are expanded
+# to `O`/`S`, and the only qualified heads are the `Nat.*` arithmetic ops.
+# Translating this form needs neither the notation table nor eq-type synthesis —
+# the implicit type arguments (e.g. the `T` of `@eq T x y`, the element type of a
+# list) are already present — which is exactly why statements and definition
+# types are routed through Rocq first.  See PLAN/README.
+
+# Qualified heads that `Set Printing All` emits, mapped to compat-prelude names.
+# Any *other* dotted (qualified) head is flagged, never guessed.
+NAME_MAP = {
+    "Nat.add": "add", "Nat.mul": "mul", "Nat.sub": "sub",
+    "Nat.eqb": "eqb", "Nat.leb": "leb", "Nat.ltb": "ltb",
+}
+
+ELAB_TOKEN_RE = re.compile(r"""
+    (?P<ws>\s+)
+  | (?P<arrow>->)
+  | (?P<fatarrow>=>)
+  | (?P<at>@)
+  | (?P<sym>[(),:])
+  | (?P<qident>[A-Za-z_][A-Za-z0-9_']*(?:\.[A-Za-z_][A-Za-z0-9_']*)*)
+""", re.VERBOSE)
+
+ELAB_KEYWORDS = {"forall", "fun", "match", "with", "end", "return", "in",
+                 "let", "as", "Prop", "Type", "Set", "SProp"}
+
+
+def lex_elab(s):
+    toks = []
+    i, n = 0, len(s)
+    while i < n:
+        m = ELAB_TOKEN_RE.match(s, i)
+        if not m:
+            raise Untranslatable(f"unexpected character {s[i]!r} in elaborated term")
+        i = m.end()
+        kind = m.lastgroup
+        if kind == "ws":
+            continue
+        val = m.group()
+        if kind == "arrow":
+            toks.append(Tok("op", "->"))
+        elif kind == "fatarrow":
+            toks.append(Tok("=>", "=>"))
+        elif kind == "at":
+            toks.append(Tok("@", "@"))
+        elif kind == "sym":
+            toks.append(Tok(val, val))
+        elif kind == "qident":
+            toks.append(Tok(val if val in ELAB_KEYWORDS else "ident", val))
+    return toks
+
+
+def _map_name(name):
+    if name in NAME_MAP:
+        return NAME_MAP[name]
+    if "." in name:
+        raise Untranslatable(f"unmapped qualified name '{name}' in elaborated term")
+    return name
+
+
+class ElabParser:
+    """Recursive-descent parser for `Set Printing All` term syntax.  Emits the
+    same AST tuples (`var`/`app`/`forall`/`fun`/`arrow`) that ``emit`` renders."""
+
+    def __init__(self, toks):
+        self.toks = toks
+        self.pos = 0
+
+    def peek(self):
+        return self.toks[self.pos] if self.pos < len(self.toks) else Tok("eof", None)
+
+    def next(self):
+        t = self.peek()
+        self.pos += 1
+        return t
+
+    def expect(self, kind):
+        t = self.next()
+        if t.kind != kind:
+            raise Untranslatable(f"elaborated: expected {kind}, got {t.kind} {t.val!r}")
+        return t
+
+    def parse_binders(self):
+        """Parse `(x y : T) (z : U)` groups or a single bare `x : T`."""
+        binders = []
+        while True:
+            t = self.peek()
+            if t.kind == "(":
+                self.next()
+                names = []
+                while self.peek().kind == "ident":
+                    names.append(self.next().val)
+                if not names:
+                    raise Untranslatable("elaborated: empty binder group")
+                self.expect(":")
+                ty = self.parse_expr()
+                self.expect(")")
+                for nm in names:
+                    binders.append((nm, ty))
+            elif t.kind == "ident":
+                names = []
+                while self.peek().kind == "ident":
+                    names.append(self.next().val)
+                self.expect(":")
+                ty = self.parse_expr()
+                for nm in names:
+                    binders.append((nm, ty))
+                break
+            else:
+                break
+        return binders
+
+    def parse_atom(self):
+        t = self.peek()
+        if t.kind == "@":
+            self.next()
+            return ("var", _map_name(self.expect("ident").val))
+        if t.kind == "(":
+            self.next()
+            e = self.parse_expr()
+            self.expect(")")
+            return e
+        if t.kind == "ident":
+            self.next()
+            return ("var", _map_name(t.val))
+        if t.kind in ("Prop", "Type", "Set", "SProp"):
+            self.next()
+            return ("var", "Type" if t.kind == "Type" else "Prop")
+        if t.kind in ("match", "let", "fix"):
+            raise Untranslatable(f"'{t.kind}' in elaborated statement type (Tier B)")
+        raise Untranslatable(f"elaborated: unexpected token {t.kind} {t.val!r}")
+
+    def parse_app(self):
+        node = self.parse_atom()
+        while self.peek().kind in ("ident", "@", "(", "Prop", "Type", "Set", "SProp"):
+            node = ("app", node, self.parse_atom())
+        return node
+
+    def parse_expr(self):
+        t = self.peek()
+        if t.kind == "forall":
+            self.next()
+            binders = self.parse_binders()
+            self.expect(",")
+            node = self.parse_expr()
+            for nm, ty in reversed(binders):
+                node = ("forall", nm, ty, node)
+            return node
+        if t.kind == "fun":
+            self.next()
+            binders = self.parse_binders()
+            self.expect("=>")
+            node = self.parse_expr()
+            for nm, ty in reversed(binders):
+                node = ("fun", nm, ty, node)
+            return node
+        left = self.parse_app()
+        if self.peek().kind == "op" and self.peek().val == "->":
+            self.next()
+            return ("arrow", left, self.parse_expr())  # '->' is right-associative
+        return left
+
+
+def parse_elab(s):
+    p = ElabParser(lex_elab(s))
+    e = p.parse_expr()
+    if p.peek().kind != "eof":
+        raise Untranslatable(f"elaborated: trailing tokens {p.peek().val!r}")
+    return e
+
+
+def translate_elab_type(type_str):
+    """Render a `Set Printing All` type string as MEngine prefix syntax."""
+    return emit(parse_elab(type_str), {})
+
+
 # ───────────────────────────── type synthesis ────────────────────────────────
 # Minimal bottom-up synthesizer over {nat, bool, Prop, Type} used only to
 # recover the implicit type argument of eq.  Returns a type string or raises.
@@ -415,16 +598,21 @@ def translate_term(src):
 
 # ──────────────────────────── command translation ────────────────────────────
 
-DROP_PREFIXES = ("Require", "Import", "Export", "Open", "Close", "Set", "Unset",
-                 "Hint", "Arguments", "Local", "Global", "#[", "Scope",
+DROP_PREFIXES = ("Require", "From", "Import", "Export", "Open", "Close", "Set",
+                 "Unset", "Hint", "Arguments", "Local", "Global", "#[", "Scope",
                  "Declare", "Generalizable", "Print", "Check", "Search",
                  "Comments", "Section", "End", "Module", "Include")
 
 PROOF_FRAMING = ("Proof", "Qed", "Defined", "Admitted", "Abort")
 
 
-def translate_definition(sentence, report):
-    """Definition/Lemma/Theorem/Example name [binders] : type [:= body]."""
+def translate_definition(sentence, report, elab=None):
+    """Definition/Lemma/Theorem/Example name [binders] : type [:= body].
+
+    When ``elab`` carries an elaborated type for ``name`` (``--elaborate`` mode),
+    the statement type is taken from Rocq's `Set Printing All` output rather than
+    parsed from the surface source; a Definition *body* is still translated from
+    the surface (terms are not always elaborable)."""
     m = re.match(r"^(Definition|Lemma|Theorem|Example|Corollary|Fact|Remark|Proposition)\s+"
                  r"([A-Za-z_][A-Za-z0-9_']*)\s*(.*)$", sentence, re.S)
     if not m:
@@ -432,6 +620,7 @@ def translate_definition(sentence, report):
     kw, name, rest = m.group(1), m.group(2), m.group(3)
     is_thm = kw in ("Lemma", "Theorem", "Example", "Corollary", "Fact",
                     "Remark", "Proposition")
+    have_elab = elab is not None and name in elab
 
     # Separate optional binders + ': type' + optional ':= body'.
     body = None
@@ -439,18 +628,19 @@ def translate_definition(sentence, report):
         head, body = rest.split(":=", 1)
     else:
         head = rest
-    if ":" not in head:
-        raise Untranslatable("definition without ': type'")
-    binders_src, type_src = head.split(":", 1)
 
-    binders = _parse_binder_src(binders_src)
-    type_node = parse_term(type_src.strip())
-    # Wrap explicit binders as leading foralls (for type) / funs (for body).
-    env = {}
-    type_full = type_node
-    for nm, ty in reversed(binders):
-        type_full = ("forall", nm, ty, type_full)
-    type_out = emit(type_full, env)
+    binders = None
+    if have_elab:
+        type_out = translate_elab_type(elab[name])
+    else:
+        if ":" not in head:
+            raise Untranslatable("definition without ': type'")
+        binders_src, type_src = head.split(":", 1)
+        binders = _parse_binder_src(binders_src)
+        type_full = parse_term(type_src.strip())
+        for nm, ty in reversed(binders):  # explicit binders -> leading foralls
+            type_full = ("forall", nm, ty, type_full)
+        type_out = emit(type_full, {})
 
     if is_thm:
         report.add_handled(kw)
@@ -459,12 +649,14 @@ def translate_definition(sentence, report):
     if body is None:
         report.add_handled("Definition(no body)")
         return f"Axiom {name} : {type_out}."
-    body_node = parse_term(body.strip())
-    body_full = body_node
+    if binders is None:  # elaborate mode: still need surface binders to wrap body
+        binders_src = head.split(":", 1)[0] if ":" in head else head
+        binders = _parse_binder_src(binders_src) if binders_src.strip() else []
+    body_full = parse_term(body.strip())
     for nm, ty in reversed(binders):
         body_full = ("fun", nm, ty, body_full)
     report.add_handled("Definition")
-    return f"Definition {name} : {type_out} := {emit(body_full, env)}."
+    return f"Definition {name} : {type_out} := {emit(body_full, {})}."
 
 
 def _parse_binder_src(src):
@@ -481,13 +673,15 @@ def _parse_binder_src(src):
     return binders
 
 
-def translate_axiom(sentence, report):
+def translate_axiom(sentence, report, elab=None):
     m = re.match(r"^(Axiom|Parameter|Conjecture|Variable|Hypothesis)\s+"
                  r"([A-Za-z_][A-Za-z0-9_']*)\s*:\s*(.*)$", sentence, re.S)
     if not m:
         raise Untranslatable("unrecognized axiom form")
     name, type_src = m.group(2), m.group(3)
     report.add_handled("Axiom")
+    if elab is not None and name in elab:
+        return f"Axiom {name} : {translate_elab_type(elab[name])}."
     return f"Axiom {name} : {translate_term(type_src)}."
 
 
@@ -749,8 +943,12 @@ class Report:
 
 # ─────────────────────────── unit-level translation ──────────────────────────
 
-def translate_unit(text, report):
-    """Translate a whole .v unit to a MEngine source string, or raise."""
+def translate_unit(text, report, elab=None):
+    """Translate a whole .v unit to a MEngine source string, or raise.
+
+    ``elab`` (optional) maps statement names to their `Set Printing All` types
+    (see ``rocq_elaborate``); when present, statement types are taken from there
+    rather than parsed from the surface source."""
     text = strip_comments(text)
     sentences = split_sentences(text)
 
@@ -771,16 +969,16 @@ def translate_unit(text, report):
         if kw in ("Inductive", "Fixpoint", "CoFixpoint"):
             raise Untranslatable(f"'{kw}' in unit (define it in the compat prelude)")
         if kw in ("Axiom", "Parameter", "Conjecture", "Variable", "Hypothesis"):
-            out_lines.append(translate_axiom(s, report))
+            out_lines.append(translate_axiom(s, report, elab))
             i += 1
             continue
         if kw in ("Definition",):
-            out_lines.append(translate_definition(s, report))
+            out_lines.append(translate_definition(s, report, elab))
             i += 1
             continue
         if kw in ("Lemma", "Theorem", "Example", "Corollary", "Fact", "Remark",
                   "Proposition"):
-            stmt = translate_definition(s, report)
+            stmt = translate_definition(s, report, elab)
             out_lines.append(stmt)
             # Collect the proof: subsequent sentences until Qed/Defined/Admitted/Abort.
             type_out = stmt[len(f"Theorem "):].split(" : ", 1)[1].rstrip(".")
@@ -803,6 +1001,104 @@ def translate_unit(text, report):
         raise Untranslatable(f"unrecognized command '{kw}'")
 
     return "\n".join(out_lines) + "\n"
+
+
+# ─────────────────────── Rocq elaboration (Set Printing All) ──────────────────
+#
+# Obtain the fully-explicit, notation-free type of each top-level statement by
+# replaying the unit through Rocq with `Set Printing All` and a `Check` per name.
+# This is what lets eq/list statements translate without surface type synthesis
+# (the implicit type arguments are printed for us).  Failure (the unit does not
+# compile, or a name is missing) is reported as Untranslatable — never guessed.
+
+STMT_DECL_RE = re.compile(
+    r"^(Definition|Lemma|Theorem|Example|Corollary|Fact|Remark|Proposition"
+    r"|Axiom|Parameter|Conjecture)\s+([A-Za-z_][A-Za-z0-9_']*)")
+
+
+def statement_names(text):
+    """Ordered, de-duplicated names of every elaboratable top-level statement."""
+    names, seen = [], set()
+    for s in split_sentences(strip_comments(text)):
+        m = STMT_DECL_RE.match(s.strip())
+        if m and m.group(2) not in seen:
+            seen.add(m.group(2))
+            names.append(m.group(2))
+    return names
+
+
+def _parse_check_output(stdout, names):
+    """Parse `Check`/`Print` output into {name: type-string}.
+
+    Each `Check name.` prints the name flush-left on its own line, then the type
+    on the following line(s) prefixed `     : ` (continuations are indented).  We
+    set the print width effectively unbounded, so a forall/application/arrow type
+    lands on a single line; we still join any continuations defensively."""
+    name_set = set(names)
+    out = {}
+    lines = stdout.splitlines()
+    i = 0
+    while i < len(lines):
+        ln = lines[i]
+        if ln and not ln[0].isspace() and ln.strip() in name_set and ln.strip() not in out:
+            head = ln.strip()
+            buf, j = [], i + 1
+            while j < len(lines):
+                cont = lines[j]
+                if cont.strip() == "" or (cont and not cont[0].isspace()):
+                    break
+                buf.append(cont.strip())
+                j += 1
+            joined = " ".join(buf).strip()
+            if joined.startswith(":"):
+                joined = joined[1:].strip()
+            out[head] = joined
+            i = j
+        else:
+            i += 1
+    missing = [n for n in names if n not in out]
+    if missing:
+        raise Untranslatable(f"rocq elaboration produced no type for {missing}")
+    return out
+
+
+def rocq_elaborate(text, vpath, coq_path, names):
+    """Return {name: elaborated-type-string} via `coqc` + `Set Printing All`."""
+    if not names:
+        return {}
+    unit_dir = os.path.dirname(os.path.abspath(vpath))
+    appendix = ["", "Set Printing All.",
+                "Set Printing Width 2000000000.",
+                "Set Printing Depth 2000000000."]
+    appendix += [f"Check {nm}." for nm in names]
+    fd, tmp = tempfile.mkstemp(suffix=".v", prefix="elab_", dir=unit_dir)
+    base = os.path.splitext(tmp)[0]
+    try:
+        with os.fdopen(fd, "w") as f:
+            f.write(text.rstrip() + "\n" + "\n".join(appendix) + "\n")
+        try:
+            proc = subprocess.run([coq_path, "-q", os.path.basename(tmp)],
+                                  capture_output=True, text=True, cwd=unit_dir)
+        except OSError as e:
+            raise Untranslatable(f"could not run '{coq_path}': {e}")
+        if proc.returncode != 0:
+            msg = (proc.stderr or proc.stdout).strip().replace("\n", " ")
+            raise Untranslatable(f"rocq elaboration failed: {msg[:200]}")
+        return _parse_check_output(proc.stdout, names)
+    finally:
+        for ext in (".v", ".vo", ".vok", ".vos", ".glob"):
+            p = base + ext
+            if os.path.exists(p):
+                try:
+                    os.remove(p)
+                except OSError:
+                    pass
+        aux = os.path.join(unit_dir, "." + os.path.basename(base) + ".aux")
+        if os.path.exists(aux):
+            try:
+                os.remove(aux)
+            except OSError:
+                pass
 
 
 # ─────────────────────────────── statement digest ────────────────────────────
@@ -837,6 +1133,11 @@ def main():
     ap.add_argument("input", nargs="?", help="input .v file")
     ap.add_argument("--report", action="store_true", help="report handled/unhandled")
     ap.add_argument("--dir", help="report over every .v under this directory")
+    ap.add_argument("--elaborate", action="store_true",
+                    help="take statement types from Rocq `Set Printing All` "
+                         "(notation-free, fully explicit) instead of the surface source")
+    ap.add_argument("--coq", default="coqc",
+                    help="coqc/rocq binary used by --elaborate (default: coqc)")
     args = ap.parse_args()
 
     if args.dir:
@@ -860,7 +1161,9 @@ def main():
         text = f.read()
     report = Report()
     try:
-        src = translate_unit(text, report)
+        elab = (rocq_elaborate(text, args.input, args.coq, statement_names(text))
+                if args.elaborate else None)
+        src = translate_unit(text, report, elab=elab)
     except Untranslatable as e:
         if args.report:
             print(f"FLAG: {e.reason}")

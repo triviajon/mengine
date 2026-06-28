@@ -204,8 +204,10 @@ def test_unit(cfg, name):
         problems.append(f"mengine.me fails: {mr['error'][:120]}")
 
     # 3. mengine.me re-derivable from rocq.v by the translator (no drift), and
-    #    statement names correspond.
-    tr = subprocess.run(["python3", os.path.join(HERE, "translate.py"), vpath],
+    #    statement names correspond.  Statement types are elaborated through Rocq
+    #    (`Set Printing All`), so the gate runs the translator the same way.
+    tr = subprocess.run(["python3", os.path.join(HERE, "translate.py"),
+                         "--elaborate", "--coq", cfg["coq_path"], vpath],
                         capture_output=True, text=True)
     if tr.returncode != 0:
         problems.append(f"translator flags rocq.v: {tr.stderr.strip()[:120]}")

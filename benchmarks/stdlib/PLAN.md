@@ -5,7 +5,8 @@ the realized scope; the per-proof mode (phase 6) remains optional/future. The
 sections below are the original design; where the implementation refined a
 decision (e.g. corpus drawn from curated single-lemma units rather than whole
 stdlib files, two targeted kernel fixes landed, the symbolic-fixpoint induction
-crash deferred), `README.md` is authoritative.
+crash deferred, **statement types elaborated through Rocq's `Set Printing All`
+instead of hand-desugared** — see §5), `README.md` is authoritative.
 
 Scope decisions locked with the user:
 - **Granularity:** per-file first; per-proof is a later optional phase.
@@ -109,7 +110,20 @@ on `.` respecting `(* *)` comments and strings), not a full Coq parser. Ordered 
 - Remove `Proof.`/`Qed.`/`Defined.`/`Admitted.` framing (MEngine ends a proof when goals close).
 - `Parameter`/`Conjecture` -> `Axiom`.
 
-**Term desugaring (the bulk):**
+> **Refinement (implemented): statement types via `Set Printing All`.** The
+> term-desugaring rules below describe the original *surface* rewriter, which had
+> to synthesise the implicit type argument of `=` (failing for any non-`nat`/`bool`
+> equality and for polymorphic lists). `translate.py --elaborate` instead replays
+> the unit through Rocq (`Set Printing All` + one `Check` per statement) and
+> translates the **fully-explicit, notation-free** type Rocq prints — every
+> implicit argument, including the `T` of `@eq T x y` and a list's element type,
+> is already supplied, so no synthesis is needed and notation/literals are gone.
+> This applies to definition and theorem *statements*; the surface rules still
+> govern *tactic* terms (not always elaborable) and the `--report`/`--dir` triage
+> mode (over uncompilable stdlib files). See `README.md` → "How statements are
+> translated".
+
+**Term desugaring (the bulk) — surface rewriter, superseded for statements:**
 - Non-dependent `A -> B` -> `forall (_ : A), B`.
 - Multi-binder expansion: `forall x y z, P` / `forall (x y : T), P` -> nested single binders;
   same for `fun`.
