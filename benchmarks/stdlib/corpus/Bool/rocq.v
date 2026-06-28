@@ -71,7 +71,7 @@ Lemma xorb_true_l : forall b : bool, xorb true b = negb b.
 Proof. intro b. reflexivity. Qed.
 
 Lemma xorb_true_r : forall b : bool, xorb b true = negb b.
-Proof. destruct b; simpl; reflexivity. Qed.
+Proof. intro b. reflexivity. Qed.
 
 Lemma xorb_b_b : forall b : bool, xorb b b = false.
 Proof. destruct b; simpl; reflexivity. Qed.

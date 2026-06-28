@@ -6,7 +6,7 @@
       "name": "Bool",
       "tier": "A",
       "category": "Bool",
-      "rocq_sha256": "57717e8f4cd73683",
+      "rocq_sha256": "62f157fcd42feed9",
       "statements": [
         {
           "name": "andb_true_l",

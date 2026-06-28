@@ -110,9 +110,7 @@ reflexivity.
 
 Theorem xorb_true_r : forall (b : bool), (((eq bool) ((xorb b) true)) (negb b)).
 intro b.
-apply (bool_ind (fun (b : bool) => (((eq bool) ((xorb b) true)) (negb b)))).
-simpl; reflexivity.
-simpl; reflexivity.
+reflexivity.
 
 Theorem xorb_b_b : forall (b : bool), (((eq bool) ((xorb b) b)) false).
 intro b.

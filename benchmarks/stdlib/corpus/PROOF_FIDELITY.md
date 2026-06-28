@@ -276,8 +276,8 @@ Only `near-match` proofs could ever be verbatim.  `constructor` lemmas have no l
     reflexivity.
   Qed.
   ```
-- **corpus** (`Bool/rocq.v`): `destruct b; simpl; reflexivity.`
-- **why it diverges:** The library proof is `reflexivity.`; the corpus proof is the same modulo MEngine's surface syntax (`destruct b; simpl; reflexivity.`).
+- **corpus** (`Bool/rocq.v`): `intro b. reflexivity.`
+- **why it diverges:** The library proof is `reflexivity.`; the corpus proof is the same modulo MEngine's surface syntax (`intro b. reflexivity.`).
 
 ### `xorb_b_b` → `xorb_nilpotent`  *(proof: untranslatable)*
 
