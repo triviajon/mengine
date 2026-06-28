@@ -1,6 +1,7 @@
 #include "src/kernel/expression.h"
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -193,8 +194,78 @@ void free_expression_graph(Expression *root) { (void)root; }
 
 void free_filled_hole(Expression *hole) { (void)hole; }
 
-// Flat free of a single expression's non-expression heap allocations.
-static void gc_free_node(Expression *expr) {
+/* Pointer set used at shutdown to free each shared sub-allocation exactly once.
+   MATCH branch arrays (and their MatchBranch structs / pattern-variable arrays)
+   and FIX argument arrays are shared by pointer across distinct arena nodes —
+   e.g. normalize/conversion rebuild a match with a new scrutinee but reuse the
+   original branches array.  A naive per-node free would double-free them. */
+typedef struct {
+    uintptr_t *slots;
+    size_t capacity;
+    size_t count;
+} PtrSet;
+
+static void ptrset_init(PtrSet *set) {
+    set->capacity = 1024;
+    set->count = 0;
+    set->slots = calloc(set->capacity, sizeof(uintptr_t));
+}
+
+static void ptrset_free(PtrSet *set) {
+    free(set->slots);
+    set->slots = NULL;
+    set->capacity = 0;
+    set->count = 0;
+}
+
+static size_t ptrset_slot(uintptr_t key, size_t mask) {
+    return (size_t)((key >> 4) ^ (key >> 12)) & mask;
+}
+
+static void ptrset_grow(PtrSet *set) {
+    uintptr_t *old_slots = set->slots;
+    size_t old_capacity = set->capacity;
+    set->capacity *= 2;
+    set->slots = calloc(set->capacity, sizeof(uintptr_t));
+    size_t mask = set->capacity - 1;
+    for (size_t i = 0; i < old_capacity; i++) {
+        if (!old_slots[i]) {
+            continue;
+        }
+        size_t idx = ptrset_slot(old_slots[i], mask);
+        while (set->slots[idx]) {
+            idx = (idx + 1) & mask;
+        }
+        set->slots[idx] = old_slots[i];
+    }
+    free(old_slots);
+}
+
+// Returns true if ptr was newly inserted, false if it was already present.
+static bool ptrset_insert(PtrSet *set, const void *ptr) {
+    if (!ptr) {
+        return false;
+    }
+    if ((set->count + 1) * 10 >= set->capacity * 7) {
+        ptrset_grow(set);
+    }
+    uintptr_t key = (uintptr_t)ptr;
+    size_t mask = set->capacity - 1;
+    size_t idx = ptrset_slot(key, mask);
+    while (set->slots[idx]) {
+        if (set->slots[idx] == key) {
+            return false;
+        }
+        idx = (idx + 1) & mask;
+    }
+    set->slots[idx] = key;
+    set->count++;
+    return true;
+}
+
+// Flat free of a single expression's non-expression heap allocations.  Shared
+// sub-allocations are guarded by `freed` so each is released exactly once.
+static void gc_free_node(Expression *expr, PtrSet *freed) {
     /* Uplink nodes are arena-managed; no per-node free needed. */
     expr->uplinks = NULL;
 
@@ -205,15 +276,21 @@ static void gc_free_node(Expression *expr) {
             free(expr->as.var.name);
             break;
         case MATCH_EXPRESSION:
-            for (int i = 0; i < expr->as.match.branch_count; i++) {
-                MatchBranch *branch = expr->as.match.branches[i];
-                free(branch->pattern_variables);
-                free(branch);
+            if (ptrset_insert(freed, expr->as.match.branches)) {
+                for (int i = 0; i < expr->as.match.branch_count; i++) {
+                    MatchBranch *branch = expr->as.match.branches[i];
+                    if (ptrset_insert(freed, branch)) {
+                        free(branch->pattern_variables);
+                        free(branch);
+                    }
+                }
+                free(expr->as.match.branches);
             }
-            free(expr->as.match.branches);
             break;
         case FIX_EXPRESSION:
-            free(expr->as.fix.args);
+            if (ptrset_insert(freed, expr->as.fix.args)) {
+                free(expr->as.fix.args);
+            }
             break;
         case HOLE_EXPRESSION:
             free(expr->as.hole.name);
@@ -228,15 +305,18 @@ void expression_gc_shutdown(void) {
     inductive_registry_shutdown();
     conversion_cache_clear();
 
+    PtrSet freed;
+    ptrset_init(&freed);
     ExprArenaPage *page = g_arena_pages;
     while (page) {
         ExprArenaPage *next = page->next;
         for (int i = 0; i < page->used; i++) {
-            gc_free_node(&page->nodes[i]);
+            gc_free_node(&page->nodes[i], &freed);
         }
         free(page);
         page = next;
     }
+    ptrset_free(&freed);
     g_arena_pages = NULL;
     g_arena_current = NULL;
 

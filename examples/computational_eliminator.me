@@ -1,0 +1,36 @@
+(* computational_eliminator.me
+
+   Regression coverage for two kernel fixes made for the Rocq-stdlib benchmark
+   (benchmarks/stdlib/).  Both must hold for this file to run to completion:
+
+   1. `cbv` reduces an *applied* fixpoint/definition.  Before the fix
+      `_normalize_cbv` only tried beta on an application spine, so `cbv` left
+      `negb (negb true)` and `add (S O) O` stuck.  Here each case below is closed
+      by `cbv` followed by the (syntactic) prelude `reflexivity`, which only
+      matches once `cbv` has reduced both sides to the same normal form.
+
+   2. Type-checking a *ground* computational eliminator no longer crashes.
+      `apply (bool_ind motive)` on a goal whose motive applies `negb` used to
+      build a correct proof term but then double-free / SIGSEGV at GC shutdown
+      (shared MatchBranch arrays).  If that regressed, this file would exit 139. *)
+
+Inductive bool : Type := | true : bool | false : bool.
+
+Definition negb : forall (_ : bool), bool :=
+  fun (b : bool) => match b with | true => false | false => true end.
+
+(* Ground computational case analysis via the generated eliminator. *)
+Theorem negb_involutive : forall (b : bool), eq bool (negb (negb b)) b.
+intro b.
+apply (bool_ind (fun (b : bool) => eq bool (negb (negb b)) b)).
+cbv. reflexivity.
+cbv. reflexivity.
+
+Inductive nat : Type := | O : nat | S : forall (n : nat), nat.
+
+Fixpoint add (n : nat) (m : nat) {struct n} : nat :=
+  match n with | O => m | S p => S (add p m) end.
+
+(* cbv must reduce the applied fixpoint for these to print their normal forms. *)
+Eval cbv in (add (S O) O).
+Eval cbv in (add (S (S O)) (S (S O))).

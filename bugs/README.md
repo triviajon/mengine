@@ -35,8 +35,32 @@ while type-checking the step case, where `add (S n) O` must be converted to
 handling of the eliminator application itself: the bare conversion alone does not
 crash (it fails cleanly), but wrapping it in the eliminator application does.
 
-## Not fixed here
+## Still not fixed here (the two reproducers above)
 
-Per the branch's scope, these crashes are documented, not fixed. Fixing them is
-the "Tier 2" work: make iota/fix reduction fire on symbolic constructor-headed
-arguments, and harden the eliminator application / conversion path against it.
+Both reproducers above still crash. Fixing them is the remaining "Tier 2" work:
+make iota/fix reduction fire on symbolic constructor-headed arguments, and harden
+the eliminator application / conversion path against it. The shared root cause is
+non-termination in `conversion_whnf`/`conversion_derivable` when a fixpoint is
+unfolded on a symbolic (variable) recursive argument (`is_fix_reducible` is
+unconditional), so the standard guard — reduce a fix only when its decreasing
+argument is in constructor head normal form — is the proper repair.
+
+## Fixed on the stdlib-benchmark branch (related, but distinct)
+
+Two adjacent crashes/limitations *were* fixed to unblock the Rocq-stdlib
+benchmark (`benchmarks/stdlib/`); they are independent of the symbolic-fixpoint
+crash above and all 431 kernel tests still pass:
+
+1. **`cbv` did not reduce applied fixpoints.** `_normalize_cbv` only tried beta
+   on an application spine, so `cbv`/`Eval` left `add (S O) O` stuck even though
+   the conversion checker could reduce it. `src/kernel/normalize.c` now unfolds
+   `(fix …) arg` in the APP case, mirroring `normalize_whnf`.
+
+2. **GC double-free on *ground* computational eliminators.** Type-checking a
+   fully ground eliminator whose motive needs reduction (e.g. `destruct b` on
+   `negb (negb b) = b`) produced a correct proof term but crashed at shutdown:
+   `MatchBranch` arrays are shared by pointer across arena nodes (normalize/
+   conversion rebuild a match with a new scrutinee but reuse its branches), and
+   `expression_gc_shutdown` freed them per-node. It now frees each shared
+   allocation exactly once (`src/kernel/expression.c`). This is shutdown-only
+   memory hygiene and cannot affect proof soundness.

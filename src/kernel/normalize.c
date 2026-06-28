@@ -39,6 +39,22 @@ static Expression *_normalize_cbv(Expression *expr, ReductionFlags flags) {
                     }
                 }
 
+                // Try fix reduction on an applied fixpoint (mirrors normalize_whnf).
+                // Unfolds `(fix ...) arg` one step so the surrounding match can then
+                // iota-reduce; without this, cbv leaves applied fixpoints stuck.
+                if ((flags & REDUCE_FIX) && norm_func->tag == FIX_EXPRESSION &&
+                    is_fix_reducible(norm_func)) {
+                    Expression *unfolded = fix_reduce(norm_func);
+                    if (unfolded) {
+                        next = init_app_expression_wc(unfolded, norm_arg, ctx);
+                        if (next) {
+                            current = next;
+                            changed = true;
+                            continue;
+                        }
+                    }
+                }
+
                 // Rebuild application if subexpressions changed
                 if (norm_func != func || norm_arg != arg) {
                     next = init_app_expression_wc(norm_func, norm_arg, ctx);
