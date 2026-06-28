@@ -106,6 +106,20 @@ compat prelude:
 - **`le` / order** — structural induction with a fixpoint-free motive, and
   constructor chains.
 - **Logic** — propositional introduction (`split`/`left`/`right`/`apply`).
+- **Polymorphic equality** — `eq_refl`/`eq_sym`/`eq_trans`/`f_equal`/`f_equal2`
+  over an arbitrary type `A`, proved by `reflexivity`/`symmetry`/`rewrite`.
+  These are exactly what the `Set Printing All` elaboration unlocked: the old
+  surface translator had to *synthesise* the implicit type argument of `=` and
+  gave up on any non-`nat`/`bool` equality, so a generic `forall (A:Type) (x:A),
+  x = x` was untranslatable.  Now Rocq supplies the `T` of `@eq T x y` directly
+  (and the `B` of `@eq B (f x) (f y)`), so these statements translate with no
+  inference — and their proofs need no fixpoint reduction, so they prove today.
+- **Polymorphic existentials** — `ex_intro` (`P x -> exists y, P y`) and
+  `exists y, y = x`, proved by `exists`/`exact`/`reflexivity`.  Same unlock: the
+  implicit type argument of `@ex A P` is now supplied.  Emitting these surfaced a
+  translator bug — a binder-headed application argument (the predicate `fun y =>
+  …` of `ex A (fun y => …)`) was printed without parentheses, which MEngine's
+  parser rejects; `emit` now parenthesizes `fun`/`forall`/`arrow` arguments.
 
 Two engine fixes on this branch enable the computational part (both are pure,
 soundness-preserving kernel changes; all 431 kernel tests still pass):

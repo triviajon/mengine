@@ -13,7 +13,7 @@ import os
 
 def _category(name):
     for pre, cat in (("bool_", "bool"), ("nat_", "nat"), ("le_", "le"),
-                     ("logic_", "logic")):
+                     ("logic_", "logic"), ("eq_", "eq"), ("ex_", "ex")):
         if name.startswith(pre):
             return cat
     return "other"
@@ -98,7 +98,8 @@ def _scatter(cfg, rows):
         return
 
     colors = {"bool": "tab:blue", "nat": "tab:green", "le": "tab:orange",
-              "logic": "tab:red", "other": "gray"}
+              "logic": "tab:red", "eq": "tab:purple", "ex": "tab:brown",
+              "other": "gray"}
     pts = [r for r in rows if r["mengine"] and r["rocq"]]
     if not pts:
         return

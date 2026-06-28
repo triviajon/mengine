@@ -1,0 +1,4 @@
+Theorem ex_eq : forall (A : Type), forall (x : A), ((ex A) (fun (y : A) => (((eq A) y) x))).
+intro A. intro x.
+exists (x).
+reflexivity.

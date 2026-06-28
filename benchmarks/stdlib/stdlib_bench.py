@@ -67,6 +67,10 @@ def unit_tier(name):
         return "le"
     if name.startswith("logic_"):
         return "logic"
+    if name.startswith("eq_"):
+        return "eq"
+    if name.startswith("ex_"):
+        return "ex"
     return "other"
 
 

@@ -555,6 +555,11 @@ def emit(node, env):
     if kind == "app":
         f = emit(node[1], env)
         a = emit(node[2], env)
+        # A binder-headed argument (fun/forall/arrow) must be parenthesized:
+        # MEngine's parser will not accept a bare `fun …`/`forall …` as an
+        # application argument (e.g. the predicate of `ex A (fun y => …)`).
+        if node[2][0] in ("fun", "forall", "arrow"):
+            a = f"({a})"
         return f"({f} {a})"
     if kind == "arrow":
         a = emit(node[1], env)

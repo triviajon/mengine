@@ -146,6 +146,97 @@
       "deps": "Coq.Init (auto-loaded)"
     },
     {
+      "name": "eq_f_equal",
+      "tier": "A",
+      "category": "eq",
+      "rocq_sha256": "fd0d2a3478438ee8",
+      "statements": [
+        {
+          "name": "f_equal_ex",
+          "digest": "forall (A : Type), forall (B : Type), forall (f : forall (_ : A), B), forall (x : A), forall (y : A), forall (_ : (((eq A) x) y)), (((eq B) (f x)) (f y))"
+        }
+      ],
+      "deps": "Coq.Init (auto-loaded)"
+    },
+    {
+      "name": "eq_f_equal2",
+      "tier": "A",
+      "category": "eq",
+      "rocq_sha256": "269f4f06a8e69e7a",
+      "statements": [
+        {
+          "name": "f_equal2_ex",
+          "digest": "forall (A : Type), forall (B : Type), forall (C : Type), forall (f : forall (_ : A), forall (_ : B), C), forall (x1 : A), forall (y1 : A), forall (x2 : B), forall (y2 : B), forall (_ : (((eq A) x1) y1)), forall (_ : (((eq B) x2) y2)), (((eq C) ((f x1) x2)) ((f y1) y2))"
+        }
+      ],
+      "deps": "Coq.Init (auto-loaded)"
+    },
+    {
+      "name": "eq_refl_x",
+      "tier": "A",
+      "category": "eq",
+      "rocq_sha256": "6701e0b00941e4e4",
+      "statements": [
+        {
+          "name": "eq_refl_x",
+          "digest": "forall (A : Type), forall (x : A), (((eq A) x) x)"
+        }
+      ],
+      "deps": "Coq.Init (auto-loaded)"
+    },
+    {
+      "name": "eq_sym",
+      "tier": "A",
+      "category": "eq",
+      "rocq_sha256": "7bad55101a4d8c3b",
+      "statements": [
+        {
+          "name": "eq_sym_ex",
+          "digest": "forall (A : Type), forall (x : A), forall (y : A), forall (_ : (((eq A) x) y)), (((eq A) y) x)"
+        }
+      ],
+      "deps": "Coq.Init (auto-loaded)"
+    },
+    {
+      "name": "eq_trans",
+      "tier": "A",
+      "category": "eq",
+      "rocq_sha256": "76a3d8e1b93d6489",
+      "statements": [
+        {
+          "name": "eq_trans_ex",
+          "digest": "forall (A : Type), forall (x : A), forall (y : A), forall (z : A), forall (_ : (((eq A) x) y)), forall (_ : (((eq A) y) z)), (((eq A) x) z)"
+        }
+      ],
+      "deps": "Coq.Init (auto-loaded)"
+    },
+    {
+      "name": "ex_eq",
+      "tier": "A",
+      "category": "ex",
+      "rocq_sha256": "baf4f4142fabaf30",
+      "statements": [
+        {
+          "name": "ex_eq",
+          "digest": "forall (A : Type), forall (x : A), ((ex A) (fun (y : A) => (((eq A) y) x)))"
+        }
+      ],
+      "deps": "Coq.Init (auto-loaded)"
+    },
+    {
+      "name": "ex_intro",
+      "tier": "A",
+      "category": "ex",
+      "rocq_sha256": "e9ed5cda9c65d8ab",
+      "statements": [
+        {
+          "name": "ex_intro_ex",
+          "digest": "forall (A : Type), forall (P : forall (_ : A), Prop), forall (x : A), forall (_ : (P x)), ((ex A) (fun (y : A) => (P y)))"
+        }
+      ],
+      "deps": "Coq.Init (auto-loaded)"
+    },
+    {
       "name": "le_0_n",
       "tier": "A",
       "category": "le",

@@ -1,0 +1,4 @@
+Theorem f_equal_ex : forall (A : Type), forall (B : Type), forall (f : forall (_ : A), B), forall (x : A), forall (y : A), forall (_ : (((eq A) x) y)), (((eq B) (f x)) (f y)).
+intro A. intro B. intro f. intro x. intro y. intro H.
+rewrite_s (H).
+reflexivity.
