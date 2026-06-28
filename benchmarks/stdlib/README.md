@@ -127,6 +127,20 @@ at the MEngine noise floor marks where a residual stops being trustworthy.  The
 whole-file numbers are not discarded — they stay in REPORT.md's `total` columns —
 they are just not the axis a proof-speed claim is read off of.
 
+**The scatter carries error bars, because the residual is a difference of two
+noisy numbers.**  A proof residual is `whole-file time - startup floor`, and both
+inputs jitter run-to-run (the Rocq floor alone swings ±10–30 ms between
+invocations — often larger than the proof residual itself).  Reporting only the
+best-of-N residual would hide that.  Each point is therefore drawn as a cross:
+the dot is the *median* residual, and the whiskers span the 10th–90th percentile
+of the resampled residual — every `total_trial − startup_trial` difference,
+treating the two as independent, so the bar folds in *both* the whole-file jitter
+and the startup-floor jitter at once.  Read it directly: a whisker that does not
+cross `y = x` is a result robust to the noise (Nat is clearly faster, Lists
+clearly slower); a cross straddling the line (Logic) or running off toward the
+noise floor (Peano) is a module where the per-invocation jitter swamps the proof
+cost and no speed claim should be made.
+
 ## Layout
 
 ```
@@ -147,7 +161,7 @@ benchmarks/stdlib/
     <Module>/mengine.me    auto-translated MEngine source
   results/stdlib.json      per-module timings + per-engine startup baselines
   results/REPORT.md        generated table + geometric-mean summary
-  plots/stdlib_scatter.png generated scatter: per-module startup-subtracted proof time (Rocq x vs MEngine y, log-log, y=x parity)
+  plots/stdlib_scatter.png generated scatter: per-module startup-subtracted proof time (Rocq x vs MEngine y, log-log, y=x parity, 10-90% jitter whiskers)
 ```
 
 ## Usage

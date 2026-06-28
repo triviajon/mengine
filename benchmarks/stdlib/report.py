@@ -44,6 +44,45 @@ def _proof_time(total, floor):
     return max(0.0, total - floor)
 
 
+def _succ_times(entry):
+    """Successful per-trial wall-clock times (s) for a result, newest schema first.
+
+    Falls back to the single stored `time_taken` for older results that predate
+    the per-trial array, so the scatter still draws (with zero-width bars)."""
+    if not entry or not entry.get("success"):
+        return []
+    times = [t["time_taken"] for t in entry.get("trials", []) if t.get("success")]
+    return times or ([entry["time_taken"]] if entry.get("time_taken") else [])
+
+
+def _pct(sorted_xs, p):
+    """p-th percentile (0..100) of an already-sorted list, linear interpolation."""
+    if not sorted_xs:
+        return None
+    if len(sorted_xs) == 1:
+        return sorted_xs[0]
+    k = (len(sorted_xs) - 1) * (p / 100.0)
+    lo = int(math.floor(k))
+    hi = int(math.ceil(k))
+    if lo == hi:
+        return sorted_xs[lo]
+    return sorted_xs[lo] + (sorted_xs[hi] - sorted_xs[lo]) * (k - lo)
+
+
+def _residual_dist(totals, floors):
+    """Empirical distribution of the proof residual (total - startup floor).
+
+    The residual we plot is `whole-file time - startup floor`, and *both* inputs
+    are measured with run-to-run jitter.  Treating the two as independent, every
+    `t - f` pair (t a whole-file trial, f a startup-baseline trial) is one draw of
+    the residual under independent resampling; the spread of that set is the
+    combined jitter of the startup time and the total time.  Returns the sorted
+    differences (may include negatives when floor noise swamps a tiny proof)."""
+    if not totals or not floors:
+        return []
+    return sorted(t - f for t in totals for f in floors)
+
+
 def _lemma_counts(cfg):
     """Map module name -> number of statements, read from the corpus manifest."""
     path = os.path.join(cfg.get("corpus_dir", ""), "manifest.json")
@@ -59,6 +98,10 @@ def _load(cfg):
         results = json.load(f)
     m_floor, m_noise = _baseline(results, MENGINE_BASELINE_KEY)
     r_floor, r_noise = _baseline(results, ROCQ_BASELINE_KEY)
+    # MEngine records only one global startup baseline; Rocq records one per module
+    # (its own Require/Import preamble).  Keep the raw trial arrays so the scatter
+    # can show how noisy each floor is, not just its best value.
+    m_floor_trials = _succ_times(results.get(MENGINE_BASELINE_KEY))
     counts = _lemma_counts(cfg)
     # Per-unit keys are `mengine_<u>` / `coq_<u>` (single underscore); every
     # baseline key uses a double underscore, so exclude those.
@@ -75,14 +118,21 @@ def _load(cfg):
         # module that loads a library has that load subtracted, not charged to the
         # proof); fall back to the global empty-.v floor if not recorded.
         ru_floor, ru_noise = _baseline(results, f"coq__baseline__{u}")
+        ru_floor_trials = _succ_times(results.get(f"coq__baseline__{u}"))
         if ru_floor is None:
             ru_floor, ru_noise = r_floor, r_noise
+            ru_floor_trials = _succ_times(results.get(ROCQ_BASELINE_KEY))
         rows.append({
             "unit": u, "category": _category(u), "nlemmas": counts.get(u),
             "mengine": mt, "rocq": rt,
             "mengine_proof": _proof_time(mt, m_floor),
             "rocq_proof": _proof_time(rt, ru_floor),
             "rocq_floor": ru_floor, "rocq_noise": ru_noise,
+            # Per-trial arrays (seconds) for the error-bar scatter.
+            "mengine_total_trials": _succ_times(m),
+            "mengine_floor_trials": m_floor_trials,
+            "rocq_total_trials": _succ_times(r),
+            "rocq_floor_trials": ru_floor_trials,
         })
     meta = {
         "mengine_floor": m_floor, "mengine_noise": m_noise,
@@ -237,37 +287,54 @@ def _scatter(cfg, rows, meta=None):
     # `_load` via `coq__baseline__<unit>`), so the axes are directly comparable
     # and the parity line is the honest y = x: above it MEngine's proof is
     # slower, below it faster.  (Whole-file numbers remain in REPORT.md's table.)
+    # Whiskers span the 10th–90th percentile of the resampled residual; the dot is
+    # the median.  Anything inside this band is consistent with the measured noise.
+    PLO, PHI = 10, 90
+
+    def _axis_stat(totals, floors, fallback):
+        """(median, p10, p90) of the residual in ms; zero-width if no trial array."""
+        d = _residual_dist(totals, floors)
+        if not d:
+            v = (fallback or 0.0) * 1000.0
+            return v, v, v
+        return _pct(d, 50) * 1000.0, _pct(d, PLO) * 1000.0, _pct(d, PHI) * 1000.0
+
+    # Each module becomes a cross: median residual on each axis, with x/y whiskers
+    # carrying the *combined* run-to-run jitter of its whole-file time and its
+    # startup floor (see `_residual_dist`).  A module is plotted when its median
+    # residual clears zero on both axes; one whose median is buried in startup
+    # noise (median total <= median floor) is dropped, same as before.
     pts = []
     dropped = []
     for r in rows:
-        rp, mp = r.get("rocq_proof"), r.get("mengine_proof")
-        if rp is None or mp is None or rp <= 0 or mp <= 0:
+        cx, xlo, xhi = _axis_stat(r["rocq_total_trials"], r["rocq_floor_trials"],
+                                  r.get("rocq_proof"))
+        cy, ylo, yhi = _axis_stat(r["mengine_total_trials"], r["mengine_floor_trials"],
+                                  r.get("mengine_proof"))
+        if cx <= 0 or cy <= 0:
             dropped.append(r["unit"])
             continue
-        pts.append(r)
+        pts.append({"r": r, "cx": cx, "xlo": xlo, "xhi": xhi,
+                    "cy": cy, "ylo": ylo, "yhi": yhi})
     if not pts:
         print("(skipping scatter plot: no module has a measurable proof residual; "
               f"all at/below startup floor: {', '.join(dropped) or 'none'})")
         return
     if dropped:
-        print(f"(scatter: {', '.join(dropped)} omitted — proof residual clamped to "
-              "0, i.e. indistinguishable from startup)")
+        print(f"(scatter: {', '.join(dropped)} omitted — median proof residual <= 0, "
+              "i.e. indistinguishable from startup)")
 
-    fig, ax = plt.subplots(figsize=(6, 6))
-    for cat in sorted({r["category"] for r in pts}):
-        sub = [r for r in pts if r["category"] == cat]
-        xs = [r["rocq_proof"] * 1000 for r in sub]
-        ys = [r["mengine_proof"] * 1000 for r in sub]
-        ax.scatter(xs, ys, label=cat, color=colors.get(cat, "gray"),
-                   s=45, alpha=0.85, edgecolors="k", linewidths=0.3, zorder=3)
-    for r in pts:  # label each point with its module name
-        ax.annotate(r["unit"], (r["rocq_proof"] * 1000, r["mengine_proof"] * 1000),
-                    textcoords="offset points", xytext=(5, 3), fontsize=7)
+    fig, ax = plt.subplots(figsize=(6.4, 6.4))
 
-    xs_all = [r["rocq_proof"] * 1000 for r in pts]
-    ys_all = [r["mengine_proof"] * 1000 for r in pts]
-    lo = min(xs_all + ys_all) * 0.6
-    hi = max(xs_all + ys_all) * 1.6
+    # Axis bounds from the medians and the upper whiskers only — never the lower
+    # whiskers.  A residual whose 10th percentile dips toward (or below) zero would,
+    # on a log scale, drag `lo` to ~0 and crush every point into the top corner; we
+    # instead let such a whisker run off the bottom edge (clamped below) as an
+    # honest "could be startup noise" signal, and keep the frame where the data is.
+    centers = [p["cx"] for p in pts] + [p["cy"] for p in pts]
+    uppers = [p["xhi"] for p in pts] + [p["yhi"] for p in pts]
+    lo = min(centers) * 0.5
+    hi = max(centers + uppers) * 1.7
 
     # Honest parity: equal proof time on both engines is y = x (startup already
     # removed per module).  Shade the MEngine-faster half so the read is obvious.
@@ -275,8 +342,8 @@ def _scatter(cfg, rows, meta=None):
     ax.fill_between([lo, hi], [lo, lo], [lo, hi], color="tab:green", alpha=0.05)
     ax.text(hi * 0.85, lo * 2.4, "MEngine faster", fontsize=8, ha="right",
             va="bottom", color="tab:green", style="italic")
-    ax.text(hi * 0.10, hi * 0.62, "MEngine slower", fontsize=8, ha="left",
-            va="top", color="tab:red", style="italic")
+    ax.text(lo * 6, hi * 0.18, "MEngine slower", fontsize=8, ha="left",
+            va="center", color="tab:red", style="italic", rotation=45)
 
     # Reliability floor: a residual at/below the baseline's own run-to-run jitter
     # is not distinguishable from startup.  Shade that band so borderline points
@@ -286,12 +353,32 @@ def _scatter(cfg, rows, meta=None):
         ax.text(hi * 0.96, m_noise * 1000, "MEngine noise floor", fontsize=6,
                 ha="right", va="bottom", color="dimgray")
 
+    # One error-bar cross per module.  Whisker ends are clamped to the visible frame
+    # so a residual whose 10th-percentile dips into (or below) zero is drawn running
+    # off the bottom/left edge — an honest "this could be startup noise" signal.
+    seen = set()
+    for p in pts:
+        r = p["r"]
+        col = colors.get(r["category"], "gray")
+        xerr = [[p["cx"] - max(p["xlo"], lo)], [min(p["xhi"], hi) - p["cx"]]]
+        yerr = [[p["cy"] - max(p["ylo"], lo)], [min(p["yhi"], hi) - p["cy"]]]
+        label = r["category"] if r["category"] not in seen else None
+        seen.add(r["category"])
+        ax.errorbar(p["cx"], p["cy"], xerr=xerr, yerr=yerr, fmt="o", color=col,
+                    ecolor=col, elinewidth=1.1, capsize=3, capthick=1.1,
+                    markersize=6, markeredgecolor="k", markeredgewidth=0.4,
+                    alpha=0.9, zorder=3, label=label)
+        ax.annotate(r["unit"], (p["cx"], p["cy"]), textcoords="offset points",
+                    xytext=(6, 4), fontsize=7)
+
     ax.set_xscale("log"); ax.set_yscale("log")
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
     ax.set_aspect("equal")
     ax.set_xlabel("Rocq proof time (ms, log) — startup-subtracted")
     ax.set_ylabel("MEngine proof time (ms, log) — startup-subtracted")
-    ax.set_title("Rocq stdlib modules: proof cost (per-module startup removed)")
+    ax.set_title("Rocq stdlib modules: proof cost (per-module startup removed)\n"
+                 f"dot = median residual; whiskers = {PLO}–{PHI}% of "
+                 "(total ⊖ startup) jitter")
     ax.legend(fontsize=8, loc="upper left")
     ax.grid(True, which="both", ls=":", alpha=0.4)
     os.makedirs(cfg["plots_dir"], exist_ok=True)
