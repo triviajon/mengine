@@ -44,27 +44,40 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import translate  # noqa: E402  (local module: comment/sentence split)
 
-# Tactics / constructs MEngine has no equivalent of, with a human-readable gloss.
-# A script that contains any of these cannot be run verbatim by MEngine.
+# Tactics / constructs that MEngine genuinely has *no* equivalent of (so a script
+# containing them cannot run verbatim), each with a human-readable gloss.  NOTE:
+# this is *not* about the tactic *combinators* — MEngine has `;`, `||`, `try`,
+# `repeat`, `first […]`, `match Goal`, and emulates `auto`/`trivial`/`now`/`simpl`/
+# `symmetry` in the prelude + compat prelude (the corpus proofs use `;` and
+# `split; assumption` themselves).  What is missing is specific *leaf* tactics,
+# Ltac macros, and automation.
 BLOCKING = [
     (r"\bdestr_bool\b", "the `destr_bool` Ltac macro "
                         "(`destruct_all bool; simpl in *; trivial; try discriminate`)"),
     (r"\bdestruct_all\b", "`destruct_all`"),
     (r"\bnzinduct\b", "the abstract-functor Ltac `nzinduct`"),
     (r"\bnzsimpl'?\b", "the abstract-functor Ltac `nzsimpl` (`autorewrite with nz`)"),
-    (r";", "`;` tactic sequencing"),
-    (r"\bauto\b", "`auto` proof search"),
-    (r"\bf_equal\b", "`f_equal` as a closing tactic"),
-    (r"\bdestruct\s+\d", "`destruct N` (destruct the N-th premise)"),
-    (r"\bdestruct\b", "`destruct`"),
-    (r"\bnow\b", "the `now` tactical"),
-    (r"\btrivial\b", "`trivial`"),
+    (r"\bautorewrite\b", "`autorewrite` (hint-database rewriting)"),
+    (r"\bf_equal\b", "`f_equal`"),
+    (r"\bdestruct\s+\d", "`destruct N` (case-analyse the N-th premise — MEngine "
+                         "only eliminates a named/leading variable)"),
+    (r"\bdestruct\s+[A-Za-z_]", "`destruct` of a hypothesis"),
+    (r"\bapply\b[^.]*\bin\b", "`apply … in H` (forward reasoning into a hypothesis)"),
     (r"\bdiscriminate\b", "`discriminate`"),
-    (r"\binduction\b.*\busing\b", "`induction … using`"),
+    (r"\binduction\b[^.]*\busing\b", "`induction … using`"),
     (r"\blia\b", "`lia`"),
     (r"\bring\b", "`ring`"),
     (r"\binversion\b", "`inversion`"),
-    (r"\bsplit\b", "`split` chained inside another tactic"),
+    (r"\bfalse_hyp\b", "the `false_hyp` Ltac"),
+]
+
+# Tactics MEngine *emulates* but more weakly than Rocq — present, yet not strong
+# enough to replay the stdlib proof as written.  Surfaced in the note when no
+# strictly-absent construct is found, so the divergence is still explained.
+WEAKER = [
+    (r"\bauto\b", "`auto` (MEngine's emulated `auto` is `repeat intro; try "
+                  "assumption; try reflexivity` — far weaker than Rocq's hint "
+                  "search)"),
 ]
 
 
@@ -162,11 +175,11 @@ def _proof_body(block):
     return re.sub(r"\s+", " ", body).strip()
 
 
-def _blocking_in(proof_body):
-    """The MEngine-unsupported constructs that appear in a proof body, de-duped
-    in declaration order (so the note lists each reason once)."""
+def _scan(proof_body, table):
+    """Glosses from `table` whose pattern appears in `proof_body`, de-duped in
+    declaration order (so the note lists each reason once)."""
     found, seen = [], set()
-    for pat, gloss in BLOCKING:
+    for pat, gloss in table:
         if re.search(pat, proof_body) and gloss not in seen:
             found.append(gloss)
             seen.add(gloss)
@@ -217,12 +230,13 @@ def classify(coq, ref, preamble, roots, workdir):
         return "constructor", detail
     pbody = _proof_body(block)
     detail["proof"] = pbody
-    blocking = _blocking_in(pbody)
-    detail["blocking"] = blocking
+    detail["blocking"] = _scan(pbody, BLOCKING)
+    detail["weaker"] = _scan(pbody, WEAKER)
     abstract = vfile and ("/Numbers/" in vfile or "/Structures/" in vfile)
     if abstract:
         return "functor", detail
-    if not blocking and re.fullmatch(r"(reflexivity|trivial|easy)\.?", pbody):
+    if (not detail["blocking"] and not detail["weaker"] and
+            re.fullmatch(r"(reflexivity|trivial|easy)\.?", pbody)):
         return "near-match", detail
     return "untranslatable", detail
 
@@ -251,18 +265,29 @@ def _note(category, ref, detail, corpus_proof, original_reason):
                 f"builds the same proof term "
                 f"(`{corpus_proof or 'constructor/split/left/right/exists'}`).")
     if category == "functor":
-        bl = ", ".join(detail["blocking"]) or "abstract-functor Ltac"
+        bl = ", ".join(detail["blocking"] + detail.get("weaker", [])) \
+            or "abstract-functor Ltac"
         setoid = (" over setoid equality `==` (not Leibniz `=`)"
                   if "==" in detail["block"] else "")
         return (f"`{ref}` is produced by module-functor `Include`; its only proof "
                 f"script lives in the abstract functor (`{detail['loc']}`){setoid}, "
                 f"written with {bl}.  No concrete-`nat` script exists to copy, and "
-                f"MEngine has neither Ltac nor the module system — the corpus "
-                f"reproves it in MEngine's tactic subset (`{corpus_proof}`).")
+                f"MEngine has no module system — the corpus reproves it in "
+                f"MEngine's tactic subset (`{corpus_proof}`).")
     if category == "untranslatable":
-        bl = ", ".join(detail["blocking"]) or "tactics MEngine lacks"
-        return (f"A concrete script exists but uses {bl}, which MEngine has no "
-                f"equivalent of.  The corpus proves the same statement with "
+        absent, weaker = detail["blocking"], detail.get("weaker", [])
+        if absent:
+            why = (f"uses {', '.join(absent)}, which MEngine has no equivalent of")
+        elif weaker:
+            why = (f"leans on {', '.join(weaker)} to close goals MEngine's "
+                   f"emulation cannot")
+        else:
+            why = ("relies on automation/structure MEngine's translator does not "
+                   "reproduce mechanically")
+        return (f"A concrete script exists but {why}.  (MEngine *does* have `;`, "
+                f"`try`, `repeat`, `first`, `match Goal` and emulated "
+                f"`auto`/`trivial`/`simpl` — the gap is the leaf tactics above, "
+                f"not sequencing.)  The corpus proves the same statement with "
                 f"MEngine's primitive tactics (`{corpus_proof}`).")
     if category == "near-match":
         return (f"The library proof is `{detail['proof']}`; the corpus proof is "
@@ -370,11 +395,15 @@ def build(cfg, modules=None):
         " have no library script at all (they are inductive constructors);"
         " `functor` lemmas (the bulk of the arithmetic) are generated by module"
         " `Include` over an abstract setoid and have no concrete `nat` script;"
-        " `untranslatable` lemmas have a script that uses Ltac / `;` / `auto` /"
-        " `f_equal` / `destruct N` that MEngine cannot run; `original` lemmas have"
-        " no named stdlib counterpart.  This is why the corpus is re-proved in"
-        " MEngine's tactic subset rather than generated from stdlib proof scripts"
-        " (statements *are* generated/checked — see `fidelity.py`).")
+        " `untranslatable` lemmas have a script that uses leaf tactics MEngine"
+        " lacks — the `destr_bool` Ltac macro, `f_equal`, `destruct` on a premise,"
+        " `discriminate`, `apply … in H` — or automation (`auto`) stronger than"
+        " MEngine's emulation; `original` lemmas have no named stdlib counterpart."
+        "  **This is *not* about tactic sequencing:** MEngine has `;`, `||`,"
+        " `try`, `repeat`, `first […]`, and `match Goal`, and the corpus proofs"
+        " use `;` themselves (`split; assumption`).  This is why the corpus is"
+        " re-proved in MEngine's tactic subset rather than generated from stdlib"
+        " proof scripts (statements *are* generated/checked — see `fidelity.py`).")
     summary.append("")
 
     md = "\n".join(summary) + "\n" + "\n".join(sections) + "\n"
