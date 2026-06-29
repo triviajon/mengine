@@ -23,6 +23,10 @@
 #define MENGINE_EVAR_FREE_FILL 1
 #endif
 
+#ifndef PAGE_SIZE
+#define PAGE_SIZE 4096
+#endif
+
 // Arena allocator for Expression nodes.
 // Each page holds ~64 KiB of node payload (exact count falls out of
 // sizeof(Expression), so it stays calibrated if the struct changes).
