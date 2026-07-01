@@ -74,18 +74,6 @@ def split_sentences(text):
 
 # ───────────────────────────────── term lexer ────────────────────────────────
 
-TOKEN_RE = re.compile(r"""
-    (?P<ws>\s+)
-  | (?P<arrow>->)
-  | (?P<fatarrow>=>)
-  | (?P<sym>[(),:])
-  | (?P<num>\d+)
-  | (?P<ident>[A-Za-z_][A-Za-z0-9_']*)
-""", re.VERBOSE)
-
-KEYWORDS = {"forall", "fun", "match", "with", "end", "let", "in", "Prop",
-            "Type", "Set"}
-
 
 class Tok:
     def __init__(self, kind, val):
@@ -108,24 +96,6 @@ def _scan(regex, s, what):
             yield m.lastgroup, m.group()
 
 
-def lex_term(s):
-    toks = []
-    for kind, val in _scan(TOKEN_RE, s, "term"):
-        if kind == "ident" and val in KEYWORDS:
-            toks.append(Tok(val, val))
-        elif kind == "ident":
-            toks.append(Tok("ident", val))
-        elif kind == "num":
-            toks.append(Tok("num", val))
-        elif kind == "arrow":
-            toks.append(Tok("op", "->"))
-        elif kind == "fatarrow":
-            toks.append(Tok("=>", "=>"))
-        elif kind == "sym":
-            toks.append(Tok(val, val))
-    return toks
-
-
 # ───────────────────────────────── AST ───────────────────────────────────────
 # Node forms (tuples):
 #   ("var", name) | ("app", f, a) | ("forall", var, ty, body)
@@ -133,15 +103,15 @@ def lex_term(s):
 
 
 class _Cursor:
-    """Token-stream cursor shared by the surface and elaborated parsers.
+    """Token-stream cursor for the term parser.
 
-    Subclasses set ``err_prefix`` to tag their diagnostics."""
+    ``err_prefix`` tags diagnostics with their source (empty for surface terms,
+    ``"elaborated: "`` for `Set Printing All` types)."""
 
-    err_prefix = ""
-
-    def __init__(self, toks):
+    def __init__(self, toks, err_prefix=""):
         self.toks = toks
         self.pos = 0
+        self.err_prefix = err_prefix
 
     def peek(self):
         return self.toks[self.pos] if self.pos < len(self.toks) else Tok("eof", None)
@@ -158,121 +128,27 @@ class _Cursor:
         return t
 
 
-class Parser(_Cursor):
-    # binders: parse `(x y : T)` groups or bare `x y` (then ',' or ':') for
-    # forall/fun.  Returns list of (name, type_or_None).
-    def parse_binders(self):
-        binders = []
-        while True:
-            t = self.peek()
-            if t.kind == "(":
-                self.next()
-                names = []
-                while self.peek().kind == "ident":
-                    names.append(self.next().val)
-                if not names:
-                    raise Untranslatable("empty binder group")
-                ty = None
-                if self.peek().kind == ":":
-                    self.next()
-                    ty = self.parse_expr()
-                self.expect(")")
-                for nm in names:
-                    binders.append((nm, ty))
-            elif t.kind == "ident":
-                # bare names until ':' or ',' (untyped binders need a later ':')
-                names = []
-                while self.peek().kind == "ident":
-                    names.append(self.next().val)
-                ty = None
-                if self.peek().kind == ":":
-                    self.next()
-                    ty = self.parse_expr()
-                for nm in names:
-                    binders.append((nm, ty))
-                break
-            else:
-                break
-        return binders
-
-    def parse_atom(self):
-        t = self.peek()
-        if t.kind == "(":
-            self.next()
-            e = self.parse_expr()
-            self.expect(")")
-            return e
-        if t.kind == "forall":
-            self.next()
-            binders = self.parse_binders()
-            self.expect(",")
-            body = self.parse_expr()
-            node = body
-            for nm, ty in reversed(binders):
-                if ty is None:
-                    raise Untranslatable("forall binder without a type annotation")
-                node = ("forall", nm, ty, node)
-            return node
-        if t.kind == "fun":
-            self.next()
-            binders = self.parse_binders()
-            self.expect("=>")
-            body = self.parse_expr()
-            node = body
-            for nm, ty in reversed(binders):
-                if ty is None:
-                    raise Untranslatable("fun binder without a type annotation")
-                node = ("fun", nm, ty, node)
-            return node
-        if t.kind in ("match", "let"):
-            raise Untranslatable(f"'{t.kind}' in statement term (Tier B)")
-        if t.kind == "ident":
-            self.next()
-            return ("var", t.val)
-        if t.kind in ("Prop", "Type", "Set"):
-            self.next()
-            return ("var", "Prop" if t.kind == "Prop" else "Type")
-        if t.kind == "num":
-            self.next()
-            return ("num", int(t.val))
-        raise Untranslatable(f"unexpected token {t.kind} {t.val!r} in term")
-
-    def parse_app(self):
-        node = self.parse_atom()
-        while self.peek().kind in ("ident", "(", "num", "Prop", "Type", "Set"):
-            arg = self.parse_atom()
-            node = ("app", node, arg)
-        return node
-
-    def parse_expr(self):
-        left = self.parse_app()
-        if self.peek().kind == "op" and self.peek().val == "->":
-            self.next()
-            return ("arrow", left, self.parse_expr())  # '->' is right-associative
-        return left
-
-
-def parse_term(s):
-    toks = lex_term(s)
-    p = Parser(toks)
-    e = p.parse_expr()
-    if p.peek().kind != "eof":
-        raise Untranslatable(f"trailing tokens after term: {p.peek().val!r}")
-    return e
-
-
-# ─────────────────── elaborated-form parser (Set Printing All) ────────────────
+# ────────────────────────────── term lexer + parser ──────────────────────────
 #
-# Each statement's type is obtained from Rocq's `Set Printing All` output rather
-# than the surface source (see ``rocq_elaborate``).  That
-# form is *notation-free and fully explicit*: every implicit argument is shown,
-# `@head` marks an application with all implicits supplied, numerals are expanded
-# to `O`/`S`, and the only qualified heads are the `Nat.*` arithmetic ops.
-# Translating this form needs no infix-notation table and no eq-type synthesis:
-# every operator prints as a plain prefix application (`@eq T x y`, not `x = y`),
-# and the implicit type arguments (e.g. that `T`, or the element type of a list)
-# are already present — which is exactly why statements and definition types are
-# routed through Rocq first.  See README.
+# A single recursive-descent parser handles two closely related inputs:
+#
+#   * statement/definition *types*, taken from Rocq's `Set Printing All` output
+#     (see ``rocq_elaborate``) — *notation-free and fully explicit*: every
+#     implicit argument is shown, `@head` marks an application with all implicits
+#     supplied, numerals are expanded to `O`/`S`, and the only qualified heads are
+#     the `Nat.*` arithmetic ops.  This form needs no infix-notation table and no
+#     eq-type synthesis: every operator prints as a plain prefix application
+#     (`@eq T x y`, not `x = y`), and the implicit type arguments are already
+#     present — which is why statements and definition types are routed through
+#     Rocq first (see README).
+#   * surface *terms* from definition bodies and tactic arguments (e.g. `exists 2`,
+#     `apply (IHl m n)`), which are not elaborated because they may mention
+#     proof-local hypotheses.  These share the elaborated grammar; they add only
+#     bare numerals (`2`), which the lexer/`parse_atom` accept and ``emit``
+#     renders as `O`/`S`.
+#
+# The grammar is a superset of both: `@`/qualified heads appear only in elaborated
+# input, numerals only in surface input, and everything else is common.
 
 # Qualified heads that `Set Printing All` emits, mapped to compat-prelude names.
 # Any *other* dotted (qualified) head is flagged, never guessed.
@@ -282,32 +158,35 @@ NAME_MAP = {
     "Nat.pred": "pred", "Nat.max": "max", "Nat.min": "min",
 }
 
-ELAB_TOKEN_RE = re.compile(r"""
+TOKEN_RE = re.compile(r"""
     (?P<ws>\s+)
   | (?P<arrow>->)
   | (?P<fatarrow>=>)
   | (?P<at>@)
   | (?P<sym>[(),:])
+  | (?P<num>\d+)
   | (?P<qident>[A-Za-z_][A-Za-z0-9_']*(?:\.[A-Za-z_][A-Za-z0-9_']*)*)
 """, re.VERBOSE)
 
-ELAB_KEYWORDS = {"forall", "fun", "match", "with", "end", "return", "in",
-                 "let", "as", "Prop", "Type", "Set", "SProp"}
+KEYWORDS = {"forall", "fun", "match", "with", "end", "return", "in",
+            "let", "as", "Prop", "Type", "Set", "SProp"}
 
 
-def lex_elab(s):
+def lex(s, what):
     toks = []
-    for kind, val in _scan(ELAB_TOKEN_RE, s, "elaborated term"):
+    for kind, val in _scan(TOKEN_RE, s, what):
         if kind == "arrow":
             toks.append(Tok("op", "->"))
         elif kind == "fatarrow":
             toks.append(Tok("=>", "=>"))
         elif kind == "at":
             toks.append(Tok("@", "@"))
+        elif kind == "num":
+            toks.append(Tok("num", val))
         elif kind == "sym":
             toks.append(Tok(val, val))
         elif kind == "qident":
-            toks.append(Tok(val if val in ELAB_KEYWORDS else "ident", val))
+            toks.append(Tok(val if val in KEYWORDS else "ident", val))
     return toks
 
 
@@ -315,15 +194,14 @@ def _map_name(name):
     if name in NAME_MAP:
         return NAME_MAP[name]
     if "." in name:
-        raise Untranslatable(f"unmapped qualified name '{name}' in elaborated term")
+        raise Untranslatable(f"unmapped qualified name '{name}'")
     return name
 
 
-class ElabParser(_Cursor):
-    """Recursive-descent parser for `Set Printing All` term syntax.  Emits the
-    same AST tuples (`var`/`app`/`forall`/`fun`/`arrow`) that ``emit`` renders."""
-
-    err_prefix = "elaborated: "
+class TermParser(_Cursor):
+    """Recursive-descent parser for the (surface / `Set Printing All`) term
+    grammar.  Emits the AST tuples (`var`/`app`/`forall`/`fun`/`arrow`/`num`)
+    that ``emit`` renders."""
 
     def parse_binders(self):
         """Parse `(x y : T) (z : U)` groups or a single bare `x : T`."""
@@ -336,7 +214,7 @@ class ElabParser(_Cursor):
                 while self.peek().kind == "ident":
                     names.append(self.next().val)
                 if not names:
-                    raise Untranslatable("elaborated: empty binder group")
+                    raise Untranslatable(f"{self.err_prefix}empty binder group")
                 self.expect(":")
                 ty = self.parse_expr()
                 self.expect(")")
@@ -368,16 +246,19 @@ class ElabParser(_Cursor):
         if t.kind == "ident":
             self.next()
             return ("var", _map_name(t.val))
+        if t.kind == "num":
+            self.next()
+            return ("num", int(t.val))
         if t.kind in ("Prop", "Type", "Set", "SProp"):
             self.next()
             return ("var", "Type" if t.kind == "Type" else "Prop")
         if t.kind in ("match", "let", "fix"):
-            raise Untranslatable(f"'{t.kind}' in elaborated statement type (Tier B)")
-        raise Untranslatable(f"elaborated: unexpected token {t.kind} {t.val!r}")
+            raise Untranslatable(f"{self.err_prefix}'{t.kind}' in term (Tier B)")
+        raise Untranslatable(f"{self.err_prefix}unexpected token {t.kind} {t.val!r}")
 
     def parse_app(self):
         node = self.parse_atom()
-        while self.peek().kind in ("ident", "@", "(", "Prop", "Type", "Set", "SProp"):
+        while self.peek().kind in ("ident", "@", "(", "num", "Prop", "Type", "Set", "SProp"):
             node = ("app", node, self.parse_atom())
         return node
 
@@ -406,8 +287,18 @@ class ElabParser(_Cursor):
         return left
 
 
+def parse_term(s):
+    """Parse a surface term (definition body / tactic argument)."""
+    p = TermParser(lex(s, "term"))
+    e = p.parse_expr()
+    if p.peek().kind != "eof":
+        raise Untranslatable(f"trailing tokens after term: {p.peek().val!r}")
+    return e
+
+
 def parse_elab(s):
-    p = ElabParser(lex_elab(s))
+    """Parse a `Set Printing All` type string."""
+    p = TermParser(lex(s, "elaborated term"), err_prefix="elaborated: ")
     e = p.parse_expr()
     if p.peek().kind != "eof":
         raise Untranslatable(f"elaborated: trailing tokens {p.peek().val!r}")
@@ -514,13 +405,10 @@ def _parse_binder_src(src):
     src = src.strip()
     if not src:
         return []
-    p = Parser(lex_term(src))
+    p = TermParser(lex(src, "definition binders"))
     binders = p.parse_binders()
     if p.peek().kind != "eof":
         raise Untranslatable("could not parse definition binders")
-    for nm, ty in binders:
-        if ty is None:
-            raise Untranslatable(f"binder '{nm}' lacks a type annotation")
     return binders
 
 
