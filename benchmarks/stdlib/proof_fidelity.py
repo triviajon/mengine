@@ -33,7 +33,6 @@ The categories are not value judgements: only `near-match` could ever be verbati
 every other category is a structural reason the proof *cannot* be the stdlib's.
 """
 
-import json
 import os
 import re
 import subprocess
@@ -135,16 +134,7 @@ def _about(coq, ref, preamble, workdir):
             raise RuntimeError(f"About {bare}: no 'Declared in library' line")
         return kind, m.group(1), int(m.group(2))
     finally:
-        base = os.path.splitext(path)[0]
-        for ext in (".v", ".vo", ".vok", ".vos", ".glob"):
-            try:
-                os.remove(base + ext)
-            except OSError:
-                pass
-        try:
-            os.remove(os.path.join(workdir, "." + os.path.basename(base) + ".aux"))
-        except OSError:
-            pass
+        translate.clean_coqc_temp(path)
 
 
 def _extract_block(vfile, line, kind):
@@ -191,7 +181,7 @@ def _scan(proof_body, table):
 # ───────────────────────────── corpus parsing ────────────────────────────────
 
 CORPUS_STMT = re.compile(
-    r"\b(?:Lemma|Theorem|Example|Corollary|Fact|Remark|Proposition)\s+"
+    r"\b(?:" + "|".join(translate.THEOREM_KEYWORDS) + r")\s+"
     r"([A-Za-z_][A-Za-z0-9_']*)\b")
 CLOSER = re.compile(r"\b(?:Qed|Defined|Admitted)\.")
 
@@ -297,24 +287,16 @@ def _note(category, ref, detail, corpus_proof, original_reason):
 
 # ─────────────────────────────── rendering ───────────────────────────────────
 
-def _load_map(corpus_dir):
-    with open(os.path.join(corpus_dir, "stdlib_map.json")) as f:
-        return json.load(f)
-
-
 def build(cfg, modules=None):
     """Regenerate corpus/PROOF_FIDELITY.md.  Returns (exit_code, path)."""
     corpus_dir = cfg["corpus_dir"]
     coq = cfg["coq_path"]
-    spec = _load_map(corpus_dir)
+    spec = translate.load_stdlib_map(corpus_dir)
     preamble = spec["preamble"]
     mod_map = spec["modules"]
     roots = _coqlib_roots(coq)
 
-    all_mods = sorted(n for n in os.listdir(corpus_dir)
-                      if os.path.isdir(os.path.join(corpus_dir, n))
-                      and os.path.exists(os.path.join(corpus_dir, n, "rocq.v")))
-    sel = modules or all_mods
+    sel = modules or translate.corpus_modules(corpus_dir)
 
     tally = {c: 0 for c in CATEGORY_ORDER}
     errors = []

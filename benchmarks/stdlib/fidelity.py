@@ -34,9 +34,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import translate  # noqa: E402  (local module; reuse its comment/sentence split)
 
-STMT_KW = ("Lemma", "Theorem", "Example", "Corollary", "Fact", "Remark",
-           "Proposition")
-STMT_RE = re.compile(r"^(?:" + "|".join(STMT_KW) +
+STMT_RE = re.compile(r"^(?:" + "|".join(translate.THEOREM_KEYWORDS) +
                      r")\s+([A-Za-z_][A-Za-z0-9_']*)\s*(.*)$", re.S)
 
 
@@ -93,16 +91,7 @@ def _run_coqc(coq, preamble, body, workdir):
         msg = re.sub(r"\s+", " ", msg)
         return False, msg
     finally:
-        base = os.path.splitext(path)[0]
-        leftovers = [base + ext for ext in (".v", ".vo", ".vok", ".vos", ".glob")]
-        # coqc also drops a hidden `.<name>.aux` next to the source.
-        leftovers.append(os.path.join(workdir, "." + os.path.basename(base) + ".aux"))
-        for p in leftovers:
-            if os.path.exists(p):
-                try:
-                    os.remove(p)
-                except OSError:
-                    pass
+        translate.clean_coqc_temp(path)
 
 
 def check_lemma(coq, preamble, entry, rocq_type, workdir):
@@ -131,12 +120,6 @@ def check_lemma(coq, preamble, entry, rocq_type, workdir):
     return "ERROR", ref, f"unknown relation '{relation}'"
 
 
-def _load_map(corpus_dir):
-    import json
-    with open(os.path.join(corpus_dir, "stdlib_map.json")) as f:
-        return json.load(f)
-
-
 def run(cfg, modules=None):
     """Check every curated lemma's statement against its stdlib counterpart.
 
@@ -144,14 +127,11 @@ def run(cfg, modules=None):
     mapped; 1 if any mismatch / unmapped lemma / stale map entry / coqc error."""
     corpus_dir = cfg["corpus_dir"]
     coq = cfg["coq_path"]
-    spec = _load_map(corpus_dir)
+    spec = translate.load_stdlib_map(corpus_dir)
     preamble = spec["preamble"]
     mod_map = spec["modules"]
 
-    all_mods = sorted(n for n in os.listdir(corpus_dir)
-                      if os.path.isdir(os.path.join(corpus_dir, n))
-                      and os.path.exists(os.path.join(corpus_dir, n, "rocq.v")))
-    sel = modules or all_mods
+    sel = modules or translate.corpus_modules(corpus_dir)
 
     tally = {k: 0 for k in ("match", "symmetry", "original", "MISMATCH",
                             "ERROR", "UNMAPPED", "STALE")}

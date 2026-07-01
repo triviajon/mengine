@@ -68,12 +68,7 @@ def load_config():
 
 
 def discover_units(cfg):
-    units = []
-    for name in sorted(os.listdir(cfg["corpus_dir"])):
-        d = os.path.join(cfg["corpus_dir"], name)
-        if os.path.isdir(d) and os.path.exists(os.path.join(d, "rocq.v")):
-            units.append(name)
-    return units
+    return translate.corpus_modules(cfg["corpus_dir"])
 
 
 def unit_paths(cfg, name):
@@ -262,11 +257,9 @@ def rocq_module_baseline_key(name):
 def rocq_statement_names(vpath):
     with open(vpath) as f:
         text = translate.strip_comments(f.read())
-    names = []
-    for m in re.finditer(r"\b(?:Lemma|Theorem|Example|Corollary|Fact|Remark|Proposition)\s+"
-                         r"([A-Za-z_][A-Za-z0-9_']*)", text):
-        names.append(m.group(1))
-    return names
+    pat = r"\b(?:" + "|".join(translate.THEOREM_KEYWORDS) + \
+          r")\s+([A-Za-z_][A-Za-z0-9_']*)"
+    return [m.group(1) for m in re.finditer(pat, text)]
 
 
 def test_unit(cfg, name):

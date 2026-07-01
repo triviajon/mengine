@@ -23,6 +23,7 @@ Usage:
 """
 
 import argparse
+import json
 import os
 import re
 import subprocess
@@ -34,6 +35,14 @@ class Untranslatable(Exception):
     def __init__(self, reason):
         super().__init__(reason)
         self.reason = reason
+
+
+# The theorem-like statement keywords, shared by every benchmark script so the
+# set stays in one place (the translator, the faithfulness gate, and both
+# fidelity checks all recognize the same heads).
+THEOREM_KEYWORDS = ("Lemma", "Theorem", "Example", "Corollary", "Fact",
+                    "Remark", "Proposition")
+_THM_ALT = "|".join(THEOREM_KEYWORDS)
 
 
 # ───────────────────────────── comment / sentence split ──────────────────────
@@ -70,6 +79,40 @@ def split_sentences(text):
     ends = boundaries + [len(text)]
     pieces = (text[s:e].strip().rstrip(".") for s, e in zip(starts, ends))
     return [p for p in pieces if p]
+
+
+# ─────────────────────── shared benchmark helpers ────────────────────────────
+# Small utilities the sibling benchmark scripts (stdlib_bench / fidelity /
+# proof_fidelity) all need; kept here because translate is the module every one
+# of them already imports.
+
+COQC_BYPRODUCT_EXTS = (".vo", ".vok", ".vos", ".glob")
+
+
+def clean_coqc_temp(vpath):
+    """Delete a temporary `.v` and every file `coqc` derives from it: the
+    compiled `.vo/.vok/.vos/.glob` and the hidden `.<name>.aux` beside it.
+    Best-effort — missing files are ignored."""
+    base = os.path.splitext(vpath)[0]
+    aux = os.path.join(os.path.dirname(vpath),
+                       "." + os.path.basename(base) + ".aux")
+    for p in [vpath, *(base + ext for ext in COQC_BYPRODUCT_EXTS), aux]:
+        try:
+            os.remove(p)
+        except OSError:
+            pass
+
+
+def corpus_modules(corpus_dir):
+    """Sorted names of every corpus module directory (one holding a `rocq.v`)."""
+    return sorted(n for n in os.listdir(corpus_dir)
+                  if os.path.isfile(os.path.join(corpus_dir, n, "rocq.v")))
+
+
+def load_stdlib_map(corpus_dir):
+    """The curated lemma -> stdlib correspondence map (`corpus/stdlib_map.json`)."""
+    with open(os.path.join(corpus_dir, "stdlib_map.json")) as f:
+        return json.load(f)
 
 
 # ───────────────────────────────── term lexer ────────────────────────────────
@@ -364,13 +407,12 @@ def translate_definition(sentence, report, elab):
     The statement type is always taken from ``elab`` — Rocq's `Set Printing All`
     output — rather than parsed from the surface source; a Definition *body* is
     still translated from the surface (terms are not always elaborable)."""
-    m = re.match(r"^(Definition|Lemma|Theorem|Example|Corollary|Fact|Remark|Proposition)\s+"
+    m = re.match(r"^(Definition|" + _THM_ALT + r")\s+"
                  r"([A-Za-z_][A-Za-z0-9_']*)\s*(.*)$", sentence, re.S)
     if not m:
         raise Untranslatable("unrecognized definition form")
     kw, name, rest = m.group(1), m.group(2), m.group(3)
-    is_thm = kw in ("Lemma", "Theorem", "Example", "Corollary", "Fact",
-                    "Remark", "Proposition")
+    is_thm = kw in THEOREM_KEYWORDS
     if name not in elab:
         raise Untranslatable(f"no elaborated type for '{name}'")
 
@@ -921,8 +963,7 @@ def translate_unit(text, report, elab):
             out_lines.append(translate_definition(s, report, elab))
             i += 1
             continue
-        if kw in ("Lemma", "Theorem", "Example", "Corollary", "Fact", "Remark",
-                  "Proposition"):
+        if kw in THEOREM_KEYWORDS:
             stmt = translate_definition(s, report, elab)
             out_lines.append(stmt)
             # Collect the proof: subsequent sentences until Qed/Defined/Admitted/Abort.
@@ -957,8 +998,8 @@ def translate_unit(text, report, elab):
 # compile, or a name is missing) is reported as Untranslatable — never guessed.
 
 STMT_DECL_RE = re.compile(
-    r"^(Definition|Lemma|Theorem|Example|Corollary|Fact|Remark|Proposition"
-    r"|Axiom|Parameter|Conjecture)\s+([A-Za-z_][A-Za-z0-9_']*)")
+    r"^(Definition|" + _THM_ALT + r"|Axiom|Parameter|Conjecture)\s+"
+    r"([A-Za-z_][A-Za-z0-9_']*)")
 
 
 def statement_names(text):
@@ -1017,7 +1058,6 @@ def rocq_elaborate(text, vpath, coq_path, names):
                 "Set Printing Depth 2000000000."]
     appendix += [f"Check {nm}." for nm in names]
     fd, tmp = tempfile.mkstemp(suffix=".v", prefix="elab_", dir=unit_dir)
-    base = os.path.splitext(tmp)[0]
     try:
         with os.fdopen(fd, "w") as f:
             f.write(text.rstrip() + "\n" + "\n".join(appendix) + "\n")
@@ -1031,19 +1071,7 @@ def rocq_elaborate(text, vpath, coq_path, names):
             raise Untranslatable(f"rocq elaboration failed: {msg[:200]}")
         return _parse_check_output(proc.stdout, names)
     finally:
-        for ext in (".v", ".vo", ".vok", ".vos", ".glob"):
-            p = base + ext
-            if os.path.exists(p):
-                try:
-                    os.remove(p)
-                except OSError:
-                    pass
-        aux = os.path.join(unit_dir, "." + os.path.basename(base) + ".aux")
-        if os.path.exists(aux):
-            try:
-                os.remove(aux)
-            except OSError:
-                pass
+        clean_coqc_temp(tmp)
 
 
 # ─────────────────────────────── statement digest ────────────────────────────
