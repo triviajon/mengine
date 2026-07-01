@@ -42,46 +42,34 @@ def strip_comments(text):
     """Remove (* ... *) comments (nested), keeping newlines for line numbers."""
     out = []
     depth = 0
-    i = 0
-    n = len(text)
-    while i < n:
-        if text[i:i + 2] == "(*":
+    for token in re.split(r"(\(\*|\*\))", text):
+        if token == "(*":
             depth += 1
-            i += 2
-        elif text[i:i + 2] == "*)" and depth > 0:
-            depth -= 1
-            i += 2
+        elif token == "*)":
+            if depth > 0:
+                depth -= 1
+            else:
+                out.append(token)  # stray close outside any comment
         elif depth > 0:
-            out.append("\n" if text[i] == "\n" else " ")
-            i += 1
+            out.append(re.sub(r"[^\n]", " ", token))
         else:
-            out.append(text[i])
-            i += 1
+            out.append(token)
     return "".join(out)
+
+
+# A '.' ends a sentence when followed by whitespace/EOF, unless it is itself
+# preceded by another '.' (an ellipsis's trailing dot).  A '.' between digits
+# (e.g. '3.14') is never followed by whitespace, so it never qualifies either.
+SENTENCE_END_RE = re.compile(r"(?<!\.)\.(?=\s|$)")
 
 
 def split_sentences(text):
     """Split on '.' followed by whitespace/EOF, ignoring '..'/'...' and decimals."""
-    sentences = []
-    buf = []
-    i = 0
-    n = len(text)
-    while i < n:
-        c = text[i]
-        buf.append(c)
-        if c == ".":
-            nxt = text[i + 1] if i + 1 < n else " "
-            prev = text[i - 1] if i > 0 else " "
-            is_ellipsis = nxt == "." or prev == "."
-            is_decimal = prev.isdigit() and nxt.isdigit()
-            if not is_ellipsis and not is_decimal and (nxt.isspace() or i + 1 == n):
-                sentences.append("".join(buf).strip().rstrip("."))
-                buf = []
-        i += 1
-    tail = "".join(buf).strip().rstrip(".")
-    if tail:
-        sentences.append(tail)
-    return [s for s in sentences if s]
+    boundaries = [m.end() for m in SENTENCE_END_RE.finditer(text)]
+    starts = [0] + boundaries
+    ends = boundaries + [len(text)]
+    pieces = (text[s:e].strip().rstrip(".") for s, e in zip(starts, ends))
+    return [p for p in pieces if p]
 
 
 # ───────────────────────────────── term lexer ────────────────────────────────
