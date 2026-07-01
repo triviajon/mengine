@@ -81,6 +81,29 @@ def split_sentences(text):
     return [p for p in pieces if p]
 
 
+def split_top_level(s, delim, maxsplit=-1):
+    """Split `s` on each `delim` character sitting at bracket depth 0 (outside
+    ``()``/``[]``/``{}``) — like ``str.split`` but paren-aware, honoring
+    ``maxsplit``.  The delimiter is consumed; a bracketed delimiter is kept.
+    Used both for Rocq tactic `;` chains and for the binder/type `:` of a
+    statement head (see fidelity.extract_statements)."""
+    parts, buf = [], []
+    depth = splits = 0
+    for c in s:
+        if c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth -= 1
+        if c == delim and depth == 0 and (maxsplit < 0 or splits < maxsplit):
+            parts.append("".join(buf))
+            buf = []
+            splits += 1
+        else:
+            buf.append(c)
+    parts.append("".join(buf))
+    return parts
+
+
 # ─────────────────────── shared benchmark helpers ────────────────────────────
 # Small utilities the sibling benchmark scripts (stdlib_bench / fidelity /
 # proof_fidelity) all need; kept here because translate is the module every one
@@ -603,22 +626,8 @@ def translate_tactic_sentence(sentence, report):
 
 
 def _split_semicolons(s):
-    """Split on top-level ';' (not inside brackets/parens)."""
-    parts = []
-    depth = 0
-    buf = []
-    for c in s:
-        if c in "([{":
-            depth += 1
-        elif c in ")]}":
-            depth -= 1
-        if c == ";" and depth == 0:
-            parts.append("".join(buf))
-            buf = []
-        else:
-            buf.append(c)
-    parts.append("".join(buf))
-    return [p.strip() for p in parts if p.strip()]
+    """Top-level ';'-separated tactic atoms, trimmed and empties dropped."""
+    return [p.strip() for p in split_top_level(s, ";") if p.strip()]
 
 
 # ──────────────────────────── proof translation ──────────────────────────────

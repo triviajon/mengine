@@ -38,20 +38,6 @@ STMT_RE = re.compile(r"^(?:" + "|".join(translate.THEOREM_KEYWORDS) +
                      r")\s+([A-Za-z_][A-Za-z0-9_']*)\s*(.*)$", re.S)
 
 
-def _split_top_colon(s):
-    """Split `s` at its first top-level ':' (paren depth 0). Returns
-    (before, after) or (None, None) if there is none."""
-    depth = 0
-    for i, c in enumerate(s):
-        if c in "([{":
-            depth += 1
-        elif c in ")]}":
-            depth -= 1
-        elif c == ":" and depth == 0:
-            return s[:i], s[i + 1:]
-    return None, None
-
-
 def extract_statements(vpath):
     """Ordered [(name, rocq_type_text)] for every theorem-like statement in a
     curated `rocq.v`.  The type text is verbatim Rocq surface syntax (notation,
@@ -64,9 +50,10 @@ def extract_statements(vpath):
         if not m:
             continue
         name, rest = m.group(1), m.group(2)
-        binders, typ = _split_top_colon(rest)
-        if typ is None:
+        parts = translate.split_top_level(rest, ":", maxsplit=1)
+        if len(parts) != 2:
             raise ValueError(f"{name}: statement has no top-level ':'")
+        binders, typ = parts
         typ = re.sub(r"\s+", " ", typ).strip()
         binders = re.sub(r"\s+", " ", binders).strip()
         rocq_type = f"forall {binders}, {typ}" if binders else typ
