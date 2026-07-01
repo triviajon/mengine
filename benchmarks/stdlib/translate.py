@@ -112,18 +112,35 @@ def split_top_level(s, delim, maxsplit=-1):
 COQC_BYPRODUCT_EXTS = (".vo", ".vok", ".vos", ".glob")
 
 
-def clean_coqc_temp(vpath):
-    """Delete a temporary `.v` and every file `coqc` derives from it: the
-    compiled `.vo/.vok/.vos/.glob` and the hidden `.<name>.aux` beside it.
-    Best-effort — missing files are ignored."""
+def _coqc_byproducts(vpath):
+    """Every file `coqc` derives from `vpath` — the compiled `.vo/.vok/.vos/.glob`
+    and the hidden `.<name>.aux` beside it — but *not* the `.v` source itself."""
     base = os.path.splitext(vpath)[0]
     aux = os.path.join(os.path.dirname(vpath),
                        "." + os.path.basename(base) + ".aux")
-    for p in [vpath, *(base + ext for ext in COQC_BYPRODUCT_EXTS), aux]:
+    return [*(base + ext for ext in COQC_BYPRODUCT_EXTS), aux]
+
+
+def _remove_all(paths):
+    for p in paths:
         try:
             os.remove(p)
         except OSError:
             pass
+
+
+def clean_coqc_byproducts(vpath):
+    """Delete only the files `coqc` derives from `vpath`, keeping the `.v` source
+    itself — for cleaning up after compiling a *persistent* file (a corpus
+    `rocq.v`).  Best-effort; missing files are ignored."""
+    _remove_all(_coqc_byproducts(vpath))
+
+
+def clean_coqc_temp(vpath):
+    """Delete a temporary `.v` and every file `coqc` derives from it (the
+    compiled `.vo/.vok/.vos/.glob` and the hidden `.<name>.aux` beside it).
+    Best-effort — missing files are ignored."""
+    _remove_all([vpath, *_coqc_byproducts(vpath)])
 
 
 def corpus_modules(corpus_dir):
@@ -234,7 +251,7 @@ TOKEN_RE = re.compile(r"""
   | (?P<qident>[A-Za-z_][A-Za-z0-9_']*(?:\.[A-Za-z_][A-Za-z0-9_']*)*)
 """, re.VERBOSE)
 
-KEYWORDS = {"forall", "fun", "match", "with", "end", "return", "in",
+KEYWORDS = {"forall", "fun", "fix", "match", "with", "end", "return", "in",
             "let", "as", "Prop", "Type", "Set", "SProp"}
 
 
@@ -457,7 +474,9 @@ def translate_definition(sentence, report, elab):
         return f"Axiom {name} : {type_out}."
     # The elaborated type is fully explicit, but the body is not always elaborable,
     # so it is translated from the surface source, wrapped in the surface binders.
-    binders_src = head.split(":", 1)[0] if ":" in head else head
+    # Split off the binders at the *top-level* ':' (the return-type ascription), not
+    # the first ':' — a naive split lands inside a typed binder group like `(x : T)`.
+    binders_src = split_top_level(head, ":", maxsplit=1)[0]
     binders = _parse_binder_src(binders_src) if binders_src.strip() else []
     body_full = parse_term(body.strip())
     for nm, ty in reversed(binders):
@@ -622,6 +641,14 @@ def translate_tactic_sentence(sentence, report):
             out.append(t)
     if not out:
         return ""
+    # A multi-name `intros a b` expands to '.'-separated statements
+    # (`intro a. intro b`).  That is sound as its own sentence, but *not* mixed
+    # into a ';' chain: the '.' would close the chain early, so a later step runs
+    # on only the first subgoal instead of all of them.  Flag it rather than emit
+    # the mis-scoped proof (flag, never guess).
+    if len(out) > 1 and any("." in t for t in out):
+        raise Untranslatable("multi-name intro inside a ';' chain "
+                             "(put the intros in their own sentence)")
     return "; ".join(out) + "."
 
 

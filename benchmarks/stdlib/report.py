@@ -10,9 +10,12 @@ import json
 import math
 import os
 
-
-MENGINE_BASELINE_KEY = "mengine__startup_baseline"
-ROCQ_BASELINE_KEY = "coq__startup_baseline"
+# Single source of truth for the results-file key scheme, so the writer
+# (stdlib_bench) and this reader can never drift apart.  stdlib_bench imports
+# `report` only lazily (inside cmd_report), so this top-level import is not
+# circular.
+from stdlib_bench import (MENGINE_BASELINE_KEY, ROCQ_BASELINE_KEY,
+                          rocq_module_baseline_key)
 
 
 def _baseline(results, key):
@@ -98,9 +101,14 @@ def _load(cfg):
     # can show how noisy each floor is, not just its best value.
     m_floor_trials = _succ_times(results.get(MENGINE_BASELINE_KEY))
     counts = _lemma_counts(cfg)
-    # Per-unit keys are `mengine_<u>` / `coq_<u>` (single underscore); every
-    # baseline key uses a double underscore, so exclude those.
-    unit_keys = {k.split("_", 1)[1] for k in results if "_" in k and "__" not in k}
+    # Per-unit keys are `mengine_<u>` / `coq_<u>`; every baseline key doubles the
+    # underscore right after the engine prefix (`mengine__…`, `coq__…`).  Strip a
+    # single-underscore engine prefix to recover the unit name — which keeps module
+    # names that themselves contain '_' intact, unlike splitting on the first '_'.
+    unit_keys = set()
+    for prefix in ("mengine_", "coq_"):
+        unit_keys |= {k[len(prefix):] for k in results
+                      if k.startswith(prefix) and not k.startswith(prefix + "_")}
     rows = []
     for u in sorted(unit_keys):
         m = results.get(f"mengine_{u}")
@@ -112,8 +120,8 @@ def _load(cfg):
         # Rocq's startup floor is this module's own Require/Import preamble (so a
         # module that loads a library has that load subtracted, not charged to the
         # proof); fall back to the global empty-.v floor if not recorded.
-        ru_floor, ru_noise = _baseline(results, f"coq__baseline__{u}")
-        ru_floor_trials = _succ_times(results.get(f"coq__baseline__{u}"))
+        ru_floor, ru_noise = _baseline(results, rocq_module_baseline_key(u))
+        ru_floor_trials = _succ_times(results.get(rocq_module_baseline_key(u)))
         if ru_floor is None:
             ru_floor, ru_noise = r_floor, r_noise
             ru_floor_trials = _succ_times(results.get(ROCQ_BASELINE_KEY))
@@ -142,10 +150,18 @@ def _fmt_ms(t):
     return f"{t*1000:.1f}" if t is not None else "FAIL"
 
 
+def _median(xs):
+    """Median of a non-empty list (mean of the two central values when even)."""
+    s = sorted(xs)
+    n = len(s)
+    mid = n // 2
+    return s[mid] if n % 2 else (s[mid - 1] + s[mid]) / 2.0
+
+
 def _geo_med(speedups):
     """Geometric mean and median of a non-empty list of speedups."""
     geo = math.exp(sum(math.log(s) for s in speedups) / len(speedups))
-    return geo, sorted(speedups)[len(speedups) // 2]
+    return geo, _median(speedups)
 
 
 def generate(cfg):

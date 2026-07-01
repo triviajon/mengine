@@ -90,6 +90,13 @@ def time_command(cmd, cwd, timeout, trials):
         try:
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                     text=True, cwd=cwd, start_new_session=True)
+        except OSError as e:
+            # Missing/unexecutable binary: record a failed trial and stop, like the
+            # sibling scripts (translate/fidelity) — don't crash the whole run.
+            last_err = f"could not run {cmd[0]!r}: {e}"
+            all_trials.append({"time_taken": 0.0, "success": False})
+            break
+        try:
             out, err = proc.communicate(timeout=timeout)
             elapsed = time.perf_counter() - start
             ok = proc.returncode == 0
@@ -148,21 +155,8 @@ def run_rocq(cfg, name, timeout, trials):
     cmd = [cfg["coq_path"], "-q", vpath]
     to = timeout * cfg["coq_timeout_multiplier"]
     res = time_command(cmd, d, to, trials)
-    _clean_coqc_artifacts(vpath, d)
+    translate.clean_coqc_byproducts(vpath)  # keep the corpus rocq.v, drop .vo/.aux/…
     return res
-
-
-def _clean_coqc_artifacts(vpath, d):
-    for ext in (".vo", ".vok", ".vos", ".glob"):
-        p = vpath[:-2] + ext
-        if os.path.exists(p):
-            os.remove(p)
-    for fn in os.listdir(d):
-        if fn.endswith(".aux") or fn.startswith((".rocq", ".coq")):
-            try:
-                os.remove(os.path.join(d, fn))
-            except OSError:
-                pass
 
 
 # ─────────────────────────── startup baselines ───────────────────────────────
@@ -189,7 +183,7 @@ def run_rocq_baseline(cfg, timeout, trials):
         cmd = [cfg["coq_path"], "-q", path]
         to = timeout * cfg["coq_timeout_multiplier"]
         res = time_command(cmd, os.path.dirname(path), to, trials)
-        _clean_coqc_artifacts(path, os.path.dirname(path))
+        translate.clean_coqc_byproducts(path)
     finally:
         if os.path.exists(path):
             os.remove(path)
@@ -234,7 +228,7 @@ def run_rocq_module_baseline(cfg, name, timeout, trials):
         cmd = [cfg["coq_path"], "-q", os.path.basename(path)]
         to = timeout * cfg["coq_timeout_multiplier"]
         res = time_command(cmd, d, to, trials)
-        _clean_coqc_artifacts(path, d)
+        translate.clean_coqc_byproducts(path)
     finally:
         if os.path.exists(path):
             os.remove(path)
