@@ -137,10 +137,6 @@ def _load_map(corpus_dir):
         return json.load(f)
 
 
-_LABEL = {"match": "match", "symmetry": "symmetry", "original": "original",
-          "MISMATCH": "MISMATCH", "ERROR": "ERROR", "UNMAPPED": "UNMAPPED"}
-
-
 def run(cfg, modules=None):
     """Check every curated lemma's statement against its stdlib counterpart.
 
@@ -189,7 +185,7 @@ def run(cfg, modules=None):
                 elif status == "original":
                     print(f"  [original] {name:18s}    ({detail})")
                 else:  # MISMATCH / ERROR
-                    print(f"  [{_LABEL[status]:8s}] {name:18s} <- {ref}")
+                    print(f"  [{status:8s}] {name:18s} <- {ref}")
                     print(f"             {detail[:240]}")
                     failures.append(f"{mod}.{name} ({status}): {detail[:160]}")
             # Stale map entries: a name in the map with no curated lemma.
@@ -204,8 +200,7 @@ def run(cfg, modules=None):
         except OSError:
             pass
 
-    total = sum(tally[k] for k in ("match", "symmetry", "original", "MISMATCH",
-                                   "ERROR", "UNMAPPED"))
+    total = sum(tally.values()) - tally["STALE"]
     print(f"\n{total} curated lemmas: {tally['match']} convertible, "
           f"{tally['symmetry']} symmetry-variant, "
           f"{tally['original']} original (no stdlib counterpart), "

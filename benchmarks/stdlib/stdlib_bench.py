@@ -30,6 +30,7 @@ import re
 import signal
 import subprocess
 import sys
+import tempfile
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -101,13 +102,12 @@ def time_command(cmd, cwd, timeout, trials):
             elapsed = time.perf_counter() - start
             ok = proc.returncode == 0
             all_trials.append({"time_taken": elapsed, "success": ok})
-            if not ok:
-                last_err = (err or out)[:300]
             if ok:
                 success = True
                 if best is None or elapsed < best:
                     best = elapsed
             else:
+                last_err = (err or out)[:300]
                 break  # don't repeat a failing point
         except subprocess.TimeoutExpired:
             elapsed = time.perf_counter() - start
@@ -130,7 +130,6 @@ def time_command(cmd, cwd, timeout, trials):
 
 def mengine_combined_file(cfg, mepath):
     """Write compat-prelude + unit into a temp .me; return its path."""
-    import tempfile
     fd, path = tempfile.mkstemp(suffix=".me", prefix="stdlib_unit_")
     with os.fdopen(fd, "w") as f:
         with open(cfg["compat"]) as c:
@@ -167,7 +166,7 @@ def _clean_coqc_artifacts(vpath, d):
         if os.path.exists(p):
             os.remove(p)
     for fn in os.listdir(d):
-        if fn.endswith(".aux") or fn.startswith(".rocq") or fn.startswith(".coq"):
+        if fn.endswith(".aux") or fn.startswith((".rocq", ".coq")):
             try:
                 os.remove(os.path.join(d, fn))
             except OSError:
@@ -192,7 +191,6 @@ def run_mengine_baseline(cfg, timeout, trials):
 
 def run_rocq_baseline(cfg, timeout, trials):
     """Time an empty .v: coqc startup + auto-loaded Prelude, no statement."""
-    import tempfile
     fd, path = tempfile.mkstemp(suffix=".v", prefix="stdlib_baseline_")
     os.close(fd)  # empty file
     try:
@@ -235,7 +233,6 @@ def run_rocq_module_baseline(cfg, name, timeout, trials):
     library (Lists -> `Require Import List`) pays that load here, so the report
     subtracts it instead of charging it to the proof.  Run from the unit dir so
     load paths resolve exactly as the unit's own compile does."""
-    import tempfile
     vpath, _m, d = unit_paths(cfg, name)
     pre = module_rocq_preamble(vpath)
     fd, path = tempfile.mkstemp(suffix=".v", prefix="stdlib_pre_", dir=d)
@@ -264,11 +261,6 @@ def rocq_module_baseline_key(name):
 
 
 # ─────────────────────────── faithfulness gate ───────────────────────────────
-
-def mengine_statement_digests(cfg, mepath):
-    with open(mepath) as f:
-        return dict(translate.statement_digests(f.read()))
-
 
 def rocq_statement_names(vpath):
     with open(vpath) as f:
@@ -446,7 +438,7 @@ def cmd_run(cfg, args):
         rs = f"{rr['time_taken']*1000:.1f}ms" if rr["success"] else "FAIL"
         mps = f"{mp*1000:.1f}ms" if mp is not None else "FAIL"
         rps = f"{rp*1000:.1f}ms" if rp is not None else "FAIL"
-        ratio = (f"{rp/mp:.2f}x" if mp and rp and mp > 0 else "-")
+        ratio = f"{rp/mp:.2f}x" if mp and rp else "-"
         print(f"  {u:24s} MEngine={ms:>9s}(proof {mps:>8s})  "
               f"Rocq={rs:>9s}(proof {rps:>8s})  proof-speedup={ratio}")
     print(f"\nResults written to {os.path.relpath(cfg['results'])}")

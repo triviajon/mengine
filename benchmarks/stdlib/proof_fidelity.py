@@ -128,10 +128,8 @@ def _about(coq, ref, preamble, workdir):
         flat = re.sub(r"\s+", " ", proc.stdout + proc.stderr)
         if proc.returncode != 0 and "Expands to" not in flat:
             raise RuntimeError(f"About {bare} failed: {flat.strip()[:200]}")
-        kind = None
         m = re.search(r"Expands to:\s*(\w+)\b", flat)
-        if m:
-            kind = m.group(1)
+        kind = m.group(1) if m else None
         m = re.search(r"Declared in library\s+([\w.]+),\s*line\s+(\d+)", flat)
         if not m:
             raise RuntimeError(f"About {bare}: no 'Declared in library' line")
@@ -211,10 +209,7 @@ def _corpus_proofs(vpath):
         name = m.group(1)
         close = CLOSER.search(text, m.end())
         block = text[m.end():close.end()] if close else text[m.end():]
-        pm = re.search(r"\bProof\b\.?\s*(.*?)\s*\b(?:Qed|Defined|Admitted)\.",
-                       block, re.S)
-        proof = pm.group(1) if pm else block
-        body[name] = re.sub(r"\s+", " ", proof).strip()
+        body[name] = _proof_body(block)
     return body
 
 

@@ -11,11 +11,6 @@ import math
 import os
 
 
-def _category(name):
-    # Each unit is a stdlib module file (Bool/Logic/Nat/Peano); category == module.
-    return name
-
-
 MENGINE_BASELINE_KEY = "mengine__startup_baseline"
 ROCQ_BASELINE_KEY = "coq__startup_baseline"
 
@@ -123,7 +118,8 @@ def _load(cfg):
             ru_floor, ru_noise = r_floor, r_noise
             ru_floor_trials = _succ_times(results.get(ROCQ_BASELINE_KEY))
         rows.append({
-            "unit": u, "category": _category(u), "nlemmas": counts.get(u),
+            # Each unit is a stdlib module file (Bool/Logic/Nat/Peano); category == module.
+            "unit": u, "category": u, "nlemmas": counts.get(u),
             "mengine": mt, "rocq": rt,
             "mengine_proof": _proof_time(mt, m_floor),
             "rocq_proof": _proof_time(rt, ru_floor),
@@ -137,13 +133,19 @@ def _load(cfg):
     meta = {
         "mengine_floor": m_floor, "mengine_noise": m_noise,
         "rocq_floor": r_floor, "rocq_noise": r_noise,
-        "nlemmas": sum(c for c in counts.values()) if counts else None,
+        "nlemmas": sum(counts.values()) if counts else None,
     }
     return rows, meta
 
 
 def _fmt_ms(t):
     return f"{t*1000:.1f}" if t is not None else "FAIL"
+
+
+def _geo_med(speedups):
+    """Geometric mean and median of a non-empty list of speedups."""
+    geo = math.exp(sum(math.log(s) for s in speedups) / len(speedups))
+    return geo, sorted(speedups)[len(speedups) // 2]
 
 
 def generate(cfg):
@@ -228,8 +230,7 @@ def generate(cfg):
         lines.append(f"**Below startup-noise floor (proof time ~0 on either engine):** "
                      f"{below_noise} of {len(rows)}.")
         if speedups:
-            geo = math.exp(sum(math.log(s) for s in speedups) / len(speedups))
-            med = sorted(speedups)[len(speedups) // 2]
+            geo, med = _geo_med(speedups)
             lines.append(f"**Proof-only speedup (Rocq/MEngine), over the "
                          f"{len(speedups)} module(s) above the noise floor:** "
                          f"{geo:.2f}× geomean (median {med:.2f}×).")
@@ -247,8 +248,7 @@ def generate(cfg):
                          "whole-file columns still include each engine's fixed "
                          "per-invocation cost (which dominates the raw ratio).")
     elif speedups:
-        geo = math.exp(sum(math.log(s) for s in speedups) / len(speedups))
-        med = sorted(speedups)[len(speedups) // 2]
+        geo, med = _geo_med(speedups)
         lines.append(f"**Both-succeed:** {len(speedups)}.")
         lines.append(f"**Geometric-mean whole-file ratio (Rocq/MEngine):** {geo:.2f}×  "
                      f"(median {med:.2f}×) — dominated by startup, not proof cost.")
