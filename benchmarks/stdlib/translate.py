@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Mechanical Rocq (.v) -> MEngine (.me) translator for the stdlib benchmark.
 
-This is a *lightweight* sentence-aware rewriter with a small Pratt parser for
-the term sublanguage, NOT a full Coq elaborator.  Its guiding principle is
+This is a *lightweight* sentence-aware rewriter with a small recursive-descent
+parser for the term sublanguage, NOT a full Coq elaborator.  Its guiding principle is
 **flag, never guess**: any construct it cannot translate soundly is reported as
 an `unhandled` item and (in unit mode) raises `Untranslatable`, so the unit is
 excluded from Tier A rather than mistranslated.  A wrong translation that happened
@@ -28,33 +28,6 @@ import re
 import subprocess
 import sys
 import tempfile
-
-
-# ───────────────────────── symbol table (type synthesis) ─────────────────────
-#
-# Result type (as a MEngine type expression string) of each known head symbol,
-# used to recover the implicit type argument of `=`/eq.  Heads not listed here
-# make eq-type inference fail -> the unit is flagged (never guessed).
-
-NAT_FUNCS = {"O", "S", "add", "mul", "sub"}
-BOOL_FUNCS = {"true", "false", "negb", "andb", "orb", "implb", "xorb",
-              "eqb", "leb", "ltb"}
-# Heads whose application yields a Prop (used to spot non-eq relational goals).
-PROP_HEADS = {"le", "lt", "and", "or", "ex", "not", "iff", "True", "False"}
-
-# Infix/notation operators mapped to prefix heads.  Each entry:
-#   symbol -> (mengine_head_or_None, binding_power, right_assoc, needs_type_arg)
-# needs_type_arg: 'eq' for equality (type inferred from LHS), None otherwise.
-BINOPS = {
-    "->":  ("__arrow__", 5,  True,  None),
-    "/\\": ("and",       20, True,  None),
-    "\\/": ("or",        15, True,  None),
-    "=":   ("eq",        30, False, "eq"),
-    "<=":  ("le",        30, False, None),
-    "+":   ("add",       50, False, None),
-    "-":   ("sub",       50, False, None),
-    "*":   ("mul",       60, False, None),
-}
 
 
 class Untranslatable(Exception):
@@ -116,11 +89,8 @@ def split_sentences(text):
 TOKEN_RE = re.compile(r"""
     (?P<ws>\s+)
   | (?P<arrow>->)
-  | (?P<andop>/\\)
-  | (?P<orop>\\/)
-  | (?P<dle><=)
   | (?P<fatarrow>=>)
-  | (?P<sym>[-=+*(),:])
+  | (?P<sym>[(),:])
   | (?P<num>\d+)
   | (?P<ident>[A-Za-z_][A-Za-z0-9_']*)
 """, re.VERBOSE)
@@ -159,27 +129,17 @@ def lex_term(s):
             toks.append(Tok("num", val))
         elif kind == "arrow":
             toks.append(Tok("op", "->"))
-        elif kind == "andop":
-            toks.append(Tok("op", "/\\"))
-        elif kind == "orop":
-            toks.append(Tok("op", "\\/"))
-        elif kind == "dle":
-            toks.append(Tok("op", "<="))
         elif kind == "fatarrow":
             toks.append(Tok("=>", "=>"))
         elif kind == "sym":
-            if val in ("=", "+", "*", "-"):
-                toks.append(Tok("op", val))
-            else:
-                toks.append(Tok(val, val))
+            toks.append(Tok(val, val))
     return toks
 
 
 # ───────────────────────────────── AST ───────────────────────────────────────
 # Node forms (tuples):
 #   ("var", name) | ("app", f, a) | ("forall", var, ty, body)
-#   ("fun", var, ty, body) | ("op", sym, lhs, rhs) | ("arrow", a, b)
-#   ("num", int)
+#   ("fun", var, ty, body) | ("arrow", a, b) | ("num", int)
 
 
 class Parser:
@@ -217,7 +177,7 @@ class Parser:
                 ty = None
                 if self.peek().kind == ":":
                     self.next()
-                    ty = self.parse_expr(0)
+                    ty = self.parse_expr()
                 self.expect(")")
                 for nm in names:
                     binders.append((nm, ty))
@@ -229,7 +189,7 @@ class Parser:
                 ty = None
                 if self.peek().kind == ":":
                     self.next()
-                    ty = self.parse_expr(0)
+                    ty = self.parse_expr()
                 for nm in names:
                     binders.append((nm, ty))
                 break
@@ -241,14 +201,14 @@ class Parser:
         t = self.peek()
         if t.kind == "(":
             self.next()
-            e = self.parse_expr(0)
+            e = self.parse_expr()
             self.expect(")")
             return e
         if t.kind == "forall":
             self.next()
             binders = self.parse_binders()
             self.expect(",")
-            body = self.parse_expr(0)
+            body = self.parse_expr()
             node = body
             for nm, ty in reversed(binders):
                 if ty is None:
@@ -259,7 +219,7 @@ class Parser:
             self.next()
             binders = self.parse_binders()
             self.expect("=>")
-            body = self.parse_expr(0)
+            body = self.parse_expr()
             node = body
             for nm, ty in reversed(binders):
                 if ty is None:
@@ -286,30 +246,18 @@ class Parser:
             node = ("app", node, arg)
         return node
 
-    def parse_expr(self, min_bp):
+    def parse_expr(self):
         left = self.parse_app()
-        while True:
-            t = self.peek()
-            if t.kind != "op":
-                break
-            sym = t.val
-            head, bp, right_assoc, _ = BINOPS[sym]
-            if bp < min_bp:
-                break
+        if self.peek().kind == "op" and self.peek().val == "->":
             self.next()
-            next_min = bp if right_assoc else bp + 1
-            right = self.parse_expr(next_min)
-            if sym == "->":
-                left = ("arrow", left, right)
-            else:
-                left = ("op", sym, left, right)
+            return ("arrow", left, self.parse_expr())  # '->' is right-associative
         return left
 
 
 def parse_term(s):
     toks = lex_term(s)
     p = Parser(toks)
-    e = p.parse_expr(0)
+    e = p.parse_expr()
     if p.peek().kind != "eof":
         raise Untranslatable(f"trailing tokens after term: {p.peek().val!r}")
     return e
@@ -322,10 +270,11 @@ def parse_term(s):
 # form is *notation-free and fully explicit*: every implicit argument is shown,
 # `@head` marks an application with all implicits supplied, numerals are expanded
 # to `O`/`S`, and the only qualified heads are the `Nat.*` arithmetic ops.
-# Translating this form needs neither the notation table nor eq-type synthesis —
-# the implicit type arguments (e.g. the `T` of `@eq T x y`, the element type of a
-# list) are already present — which is exactly why statements and definition
-# types are routed through Rocq first.  See README.
+# Translating this form needs no infix-notation table and no eq-type synthesis:
+# every operator prints as a plain prefix application (`@eq T x y`, not `x = y`),
+# and the implicit type arguments (e.g. that `T`, or the element type of a list)
+# are already present — which is exactly why statements and definition types are
+# routed through Rocq first.  See README.
 
 # Qualified heads that `Set Printing All` emits, mapped to compat-prelude names.
 # Any *other* dotted (qualified) head is flagged, never guessed.
@@ -494,60 +443,12 @@ def parse_elab(s):
 
 def translate_elab_type(type_str):
     """Render a `Set Printing All` type string as MEngine prefix syntax."""
-    return emit(parse_elab(type_str), {})
-
-
-# ───────────────────────────── type synthesis ────────────────────────────────
-# Minimal bottom-up synthesizer over {nat, bool, Prop, Type} used only to
-# recover the implicit type argument of eq.  Returns a type string or raises.
-
-def head_symbol(node):
-    while node[0] == "app":
-        node = node[1]
-    return node
-
-
-def synth_type(node, env):
-    """Return 'nat' | 'bool' | 'Prop' for node, or raise Untranslatable."""
-    if node[0] == "num":
-        return "nat"
-    if node[0] == "var":
-        nm = node[1]
-        if nm in env:
-            return env[nm]
-        if nm in NAT_FUNCS:
-            return "nat"
-        if nm in BOOL_FUNCS:
-            return "bool"
-        if nm in PROP_HEADS:
-            return "Prop"
-        raise Untranslatable(f"cannot synthesize type of '{nm}' for eq")
-    if node[0] in ("op", "arrow"):
-        if node[0] == "arrow" or node[1] in ("/\\", "\\/", "="):
-            return "Prop"
-        if node[1] == "<=":
-            return "Prop"
-        if node[1] in ("+", "-", "*"):
-            return "nat"
-    if node[0] == "app":
-        h = head_symbol(node)
-        if h[0] == "var":
-            nm = h[1]
-            if nm in env:
-                return env[nm]
-            if nm in NAT_FUNCS:
-                return "nat"
-            if nm in BOOL_FUNCS:
-                return "bool"
-            if nm in PROP_HEADS:
-                return "Prop"
-        raise Untranslatable("cannot synthesize type of application for eq")
-    raise Untranslatable("cannot synthesize type for eq argument")
+    return emit(parse_elab(type_str))
 
 
 # ───────────────────────────── pretty printer ────────────────────────────────
 
-def emit(node, env):
+def emit(node):
     """Render an AST node as fully-parenthesized MEngine prefix syntax."""
     kind = node[0]
     if kind == "var":
@@ -558,8 +459,8 @@ def emit(node, env):
             out = f"(S {out})"
         return out
     if kind == "app":
-        f = emit(node[1], env)
-        a = emit(node[2], env)
+        f = emit(node[1])
+        a = emit(node[2])
         # A binder-headed argument (fun/forall/arrow) must be parenthesized:
         # MEngine's parser will not accept a bare `fun …`/`forall …` as an
         # application argument (e.g. the predicate of `ex A (fun y => …)`).
@@ -567,43 +468,20 @@ def emit(node, env):
             a = f"({a})"
         return f"({f} {a})"
     if kind == "arrow":
-        a = emit(node[1], env)
-        b = emit(node[2], env)
+        a = emit(node[1])
+        b = emit(node[2])
         return f"forall (_ : {a}), {b}"
     if kind == "forall":
         nm, ty, body = node[1], node[2], node[3]
-        ty_s = emit(ty, env)
-        env2 = dict(env)
-        env2[nm] = type_to_synth(ty)
-        return f"forall ({nm} : {ty_s}), {emit(body, env2)}"
+        return f"forall ({nm} : {emit(ty)}), {emit(body)}"
     if kind == "fun":
         nm, ty, body = node[1], node[2], node[3]
-        ty_s = emit(ty, env)
-        env2 = dict(env)
-        env2[nm] = type_to_synth(ty)
-        return f"fun ({nm} : {ty_s}) => {emit(body, env2)}"
-    if kind == "op":
-        sym, lhs, rhs = node[1], node[2], node[3]
-        head = BINOPS[sym][0]
-        if sym == "=":
-            ty = synth_type(lhs, env)
-            return f"(((eq {ty}) {emit(lhs, env)}) {emit(rhs, env)})"
-        return f"(({head} {emit(lhs, env)}) {emit(rhs, env)})"
+        return f"fun ({nm} : {emit(ty)}) => {emit(body)}"
     raise Untranslatable(f"cannot emit node {kind}")
 
 
-def type_to_synth(ty_node):
-    """Map a (already-parsed) type expression to a synth tag for env tracking."""
-    if ty_node[0] == "var":
-        if ty_node[1] in ("nat", "bool"):
-            return ty_node[1]
-        if ty_node[1] in ("Prop", "Type", "Set"):
-            return "Prop"
-    return "?"  # unknown; eq-synth will fail loudly if it matters
-
-
 def translate_term(src):
-    return emit(parse_term(src.strip()), {})
+    return emit(parse_term(src.strip()))
 
 
 # ──────────────────────────── command translation ────────────────────────────
@@ -656,7 +534,7 @@ def translate_definition(sentence, report, elab):
     for nm, ty in reversed(binders):
         body_full = ("fun", nm, ty, body_full)
     report.add_handled("Definition")
-    return f"Definition {name} : {type_out} := {emit(body_full, {})}."
+    return f"Definition {name} : {type_out} := {emit(body_full)}."
 
 
 def _parse_binder_src(src):
