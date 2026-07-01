@@ -421,6 +421,48 @@ static void test_parametric_induction_principle(void) {
            "exact step.\n");
 }
 
+/* Regression: induction over a goal whose motive applies a Fixpoint to a
+ * symbolic recursive argument. All three used to crash or fail before the
+ * guarded fix rule (a fix fires only on a constructor-headed decreasing
+ * argument; `add n O` with `n` a variable stays stuck instead of unfolding
+ * forever). */
+
+/* Used to SIGSEGV while `apply` unified nat_ind (motive mentions add) and built
+ * the subgoals. */
+static void test_fix_motive_apply(void) {
+    run_ok("apply induction principle whose motive applies a fixpoint",
+           "Inductive nat : Type := | O : nat | S : forall (_: nat), nat.\n"
+           "Fixpoint add (n : nat) (m : nat) {struct n} : nat :=\n"
+           "  match n with | O => m | S p => S (add p m) end.\n"
+           "Theorem add_O_r : forall (n : nat), eq nat (add n O) n.\n"
+           "intro n.\n"
+           "apply (nat_ind (fun (k : nat) => eq nat (add k O) k)).\n");
+}
+
+/* Used to SIGSEGV type-checking the step case, where `add (S n) O` must convert
+ * to `S (add n O)` under the `n` binder. */
+static void test_fix_eliminator_exact(void) {
+    run_ok("fully explicit eliminator term over a fixpoint type-checks",
+           "Inductive nat : Type := | O : nat | S : forall (_: nat), nat.\n"
+           "Fixpoint add (n : nat) (m : nat) {struct n} : nat :=\n"
+           "  match n with | O => m | S p => S (add p m) end.\n"
+           "Axiom f_equal_S : forall (a : nat), forall (b : nat), forall (_: eq nat a b),\n"
+           "  eq nat (S a) (S b).\n"
+           "Check (nat_ind (fun (k : nat) => eq nat (add k O) k) (eq_refl nat O)\n"
+           "        (fun (n : nat) => fun (ih : eq nat (add n O) n) => f_equal_S (add n O) n ih)).\n");
+}
+
+/* Used to fail cleanly with a type error: a Definition whose declared type is
+ * convertible (not structurally congruent) to the inferred one. */
+static void test_fix_symbolic_conversion(void) {
+    run_ok("definition with a fixpoint-computed convertible type",
+           "Inductive nat : Type := | O : nat | S : forall (_: nat), nat.\n"
+           "Fixpoint add (n : nat) (m : nat) {struct n} : nat :=\n"
+           "  match n with | O => m | S p => S (add p m) end.\n"
+           "Definition step_conv : forall (n : nat), eq nat (add (S n) O) (S (add n O)) :=\n"
+           "  fun (n : nat) => eq_refl nat (S (add n O)).\n");
+}
+
 void run_integration_tests(void) {
     test_suite_start("Integration Tests");
 
@@ -433,6 +475,9 @@ void run_integration_tests(void) {
     test_inductive_bool();
     test_fixpoint_add();
     test_fixpoint_eval();
+    test_fix_motive_apply();
+    test_fix_eliminator_exact();
+    test_fix_symbolic_conversion();
     test_tactic_exact();
     test_tactic_intro_exact();
     test_tactic_assumption();

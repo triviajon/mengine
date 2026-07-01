@@ -40,13 +40,7 @@ static bool _open_compat(Expression *expected, Expression *actual, Map *bv_map, 
     }
 
     if (actual->tag == HOLE_EXPRESSION) {
-        // Symmetric to the expected-side case: a hole on the actual (term-type) side is
-        // an unsolved evar that must be instantiated to `expected` for the term's type
-        // to match. This occurs when applying a function whose result type is a
-        // beta-redex that whnf-reduces to a binder (e.g. an eliminator's `motive y0`
-        // with a quantified motive): the index `y0` cannot be solved by spine
-        // unification and ends up embedded in the term type as a hole. Recording the
-        // assignment lets fill_hole cascade-fill it instead of leaving a stray goal.
+        // Symmetric to the expected-side case
         Expression *already_mapped = linear_map_get(holes, actual);
         if (already_mapped != NULL) {
             return _open_compat(expected, already_mapped, bv_map, holes);
