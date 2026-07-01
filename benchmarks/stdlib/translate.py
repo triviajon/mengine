@@ -96,19 +96,21 @@ class Tok:
         return f"Tok({self.kind},{self.val!r})"
 
 
+def _scan(regex, s, what):
+    """Yield (group_name, matched_text) for each non-whitespace token in ``s``."""
+    i, n = 0, len(s)
+    while i < n:
+        m = regex.match(s, i)
+        if not m:
+            raise Untranslatable(f"unexpected character {s[i]!r} in {what}")
+        i = m.end()
+        if m.lastgroup != "ws":
+            yield m.lastgroup, m.group()
+
+
 def lex_term(s):
     toks = []
-    i = 0
-    n = len(s)
-    while i < n:
-        m = TOKEN_RE.match(s, i)
-        if not m:
-            raise Untranslatable(f"unexpected character {s[i]!r} in term")
-        i = m.end()
-        kind = m.lastgroup
-        if kind == "ws":
-            continue
-        val = m.group()
+    for kind, val in _scan(TOKEN_RE, s, "term"):
         if kind == "ident" and val in KEYWORDS:
             toks.append(Tok(val, val))
         elif kind == "ident":
@@ -130,7 +132,13 @@ def lex_term(s):
 #   ("fun", var, ty, body) | ("arrow", a, b) | ("num", int)
 
 
-class Parser:
+class _Cursor:
+    """Token-stream cursor shared by the surface and elaborated parsers.
+
+    Subclasses set ``err_prefix`` to tag their diagnostics."""
+
+    err_prefix = ""
+
     def __init__(self, toks):
         self.toks = toks
         self.pos = 0
@@ -146,9 +154,11 @@ class Parser:
     def expect(self, kind):
         t = self.next()
         if t.kind != kind:
-            raise Untranslatable(f"expected {kind}, got {t.kind} {t.val!r}")
+            raise Untranslatable(f"{self.err_prefix}expected {kind}, got {t.kind} {t.val!r}")
         return t
 
+
+class Parser(_Cursor):
     # binders: parse `(x y : T)` groups or bare `x y` (then ',' or ':') for
     # forall/fun.  Returns list of (name, type_or_None).
     def parse_binders(self):
@@ -287,16 +297,7 @@ ELAB_KEYWORDS = {"forall", "fun", "match", "with", "end", "return", "in",
 
 def lex_elab(s):
     toks = []
-    i, n = 0, len(s)
-    while i < n:
-        m = ELAB_TOKEN_RE.match(s, i)
-        if not m:
-            raise Untranslatable(f"unexpected character {s[i]!r} in elaborated term")
-        i = m.end()
-        kind = m.lastgroup
-        if kind == "ws":
-            continue
-        val = m.group()
+    for kind, val in _scan(ELAB_TOKEN_RE, s, "elaborated term"):
         if kind == "arrow":
             toks.append(Tok("op", "->"))
         elif kind == "fatarrow":
@@ -318,27 +319,11 @@ def _map_name(name):
     return name
 
 
-class ElabParser:
+class ElabParser(_Cursor):
     """Recursive-descent parser for `Set Printing All` term syntax.  Emits the
     same AST tuples (`var`/`app`/`forall`/`fun`/`arrow`) that ``emit`` renders."""
 
-    def __init__(self, toks):
-        self.toks = toks
-        self.pos = 0
-
-    def peek(self):
-        return self.toks[self.pos] if self.pos < len(self.toks) else Tok("eof", None)
-
-    def next(self):
-        t = self.peek()
-        self.pos += 1
-        return t
-
-    def expect(self, kind):
-        t = self.next()
-        if t.kind != kind:
-            raise Untranslatable(f"elaborated: expected {kind}, got {t.kind} {t.val!r}")
-        return t
+    err_prefix = "elaborated: "
 
     def parse_binders(self):
         """Parse `(x y : T) (z : U)` groups or a single bare `x : T`."""
@@ -552,10 +537,7 @@ def translate_axiom(sentence, report, elab):
 
 
 def is_dropped(sentence):
-    for p in DROP_PREFIXES:
-        if sentence.startswith(p):
-            return True
-    return False
+    return sentence.startswith(DROP_PREFIXES)
 
 
 def is_framing(sentence):
@@ -1047,7 +1029,7 @@ def translate_unit(text, report, elab):
             out_lines.append(translate_axiom(s, report, elab))
             i += 1
             continue
-        if kw in ("Definition",):
+        if kw == "Definition":
             out_lines.append(translate_definition(s, report, elab))
             i += 1
             continue
@@ -1056,7 +1038,7 @@ def translate_unit(text, report, elab):
             stmt = translate_definition(s, report, elab)
             out_lines.append(stmt)
             # Collect the proof: subsequent sentences until Qed/Defined/Admitted/Abort.
-            type_out = stmt[len(f"Theorem "):].split(" : ", 1)[1].rstrip(".")
+            type_out = stmt[len("Theorem "):].split(" : ", 1)[1].rstrip(".")
             proof = []
             i += 1
             while i < n:
