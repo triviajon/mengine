@@ -65,9 +65,6 @@ def load_config():
 
 # Each unit is now a whole stdlib *module* file (Bool, Logic, Nat, Peano),
 # mirroring how the standard library is organized — not a one-lemma fragment.
-# The category is simply the module name.
-def unit_tier(name):
-    return name
 
 
 def discover_units(cfg):
@@ -326,7 +323,7 @@ def build_manifest(cfg):
         units.append({
             "name": name,
             "tier": "A",
-            "category": unit_tier(name),
+            "category": name,  # the category is simply the module name
             "rocq_sha256": sha256_file(vpath),
             "statements": [{"name": n, "digest": dg} for n, dg in digests],
             "deps": "Coq.Init (auto-loaded)",
