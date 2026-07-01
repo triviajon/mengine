@@ -102,7 +102,7 @@ one-line pointer added to `benchmarks/README.md`.
 ## 5. Translator (`translate.py`)
 
 Single readable module. `translate.py file.v > out.me`; plus `--report` mode listing handled vs
-unhandled constructs (drives triage). It is a **lightweight token/sentence-aware rewriter** (split
+unhandled constructs for one unit. It is a **lightweight token/sentence-aware rewriter** (split
 on `.` respecting `(* *)` comments and strings), not a full Coq parser. Ordered rules:
 
 **Structural (drop / unwrap):**
@@ -114,15 +114,15 @@ on `.` respecting `(* *)` comments and strings), not a full Coq parser. Ordered 
 > **Refinement (implemented): statement types via `Set Printing All`.** The
 > term-desugaring rules below describe the original *surface* rewriter, which had
 > to synthesise the implicit type argument of `=` (failing for any non-`nat`/`bool`
-> equality and for polymorphic lists). `translate.py --elaborate` instead replays
-> the unit through Rocq (`Set Printing All` + one `Check` per statement) and
+> equality and for polymorphic lists). `translate.py` now *always* replays the
+> unit through Rocq (`Set Printing All` + one `Check` per statement) and
 > translates the **fully-explicit, notation-free** type Rocq prints — every
 > implicit argument, including the `T` of `@eq T x y` and a list's element type,
 > is already supplied, so no synthesis is needed and notation/literals are gone.
-> This applies to definition and theorem *statements*; the surface rules still
-> govern *tactic* terms (not always elaborable) and the `--report`/`--dir` triage
-> mode (over uncompilable stdlib files). See `README.md` → "How statements are
-> translated".
+> A working `coqc`/`rocq` (`--coq`) is therefore required. This applies to
+> definition and theorem *statements*; the surface rules still govern *tactic*
+> terms and definition *bodies* (not always elaborable). See `README.md` → "How
+> statements are translated".
 
 **Term desugaring (the bulk) — surface rewriter, superseded for statements:**
 - Non-dependent `A -> B` -> `forall (_ : A), B`.

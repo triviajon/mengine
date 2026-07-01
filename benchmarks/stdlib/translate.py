@@ -12,10 +12,14 @@ Scope (Tier A): the computational/structural corners reachable by today's MEngin
 + compat prelude — Bool, ground Nat, the `le` order, and propositional logic.
 Polymorphic list reasoning needs element-type inference and is deferred (Tier B).
 
+Statement and definition *types* are always elaborated through Rocq (`Set Printing
+All`), so a working `coqc`/`rocq` binary (``--coq``) is required; see
+``rocq_elaborate``.  Terms inside definition bodies and proof tactics are still
+translated from the surface source (they are not always elaborable).
+
 Usage:
     translate.py unit.v              # emit MEngine source on stdout
     translate.py --report unit.v     # print handled/unhandled construct summary
-    translate.py --report --dir D    # report over every .v under D (triage)
 """
 
 import argparse
@@ -313,8 +317,8 @@ def parse_term(s):
 
 # ─────────────────── elaborated-form parser (Set Printing All) ────────────────
 #
-# When a unit is elaborated through Rocq (`--elaborate`), each statement's type
-# is obtained from `Set Printing All` output instead of the surface source.  That
+# Each statement's type is obtained from Rocq's `Set Printing All` output rather
+# than the surface source (see ``rocq_elaborate``).  That
 # form is *notation-free and fully explicit*: every implicit argument is shown,
 # `@head` marks an application with all implicits supplied, numerals are expanded
 # to `O`/`S`, and the only qualified heads are the `Nat.*` arithmetic ops.
@@ -612,13 +616,12 @@ DROP_PREFIXES = ("Require", "From", "Import", "Export", "Open", "Close", "Set",
 PROOF_FRAMING = ("Proof", "Qed", "Defined", "Admitted", "Abort")
 
 
-def translate_definition(sentence, report, elab=None):
+def translate_definition(sentence, report, elab):
     """Definition/Lemma/Theorem/Example name [binders] : type [:= body].
 
-    When ``elab`` carries an elaborated type for ``name`` (``--elaborate`` mode),
-    the statement type is taken from Rocq's `Set Printing All` output rather than
-    parsed from the surface source; a Definition *body* is still translated from
-    the surface (terms are not always elaborable)."""
+    The statement type is always taken from ``elab`` — Rocq's `Set Printing All`
+    output — rather than parsed from the surface source; a Definition *body* is
+    still translated from the surface (terms are not always elaborable)."""
     m = re.match(r"^(Definition|Lemma|Theorem|Example|Corollary|Fact|Remark|Proposition)\s+"
                  r"([A-Za-z_][A-Za-z0-9_']*)\s*(.*)$", sentence, re.S)
     if not m:
@@ -626,7 +629,8 @@ def translate_definition(sentence, report, elab=None):
     kw, name, rest = m.group(1), m.group(2), m.group(3)
     is_thm = kw in ("Lemma", "Theorem", "Example", "Corollary", "Fact",
                     "Remark", "Proposition")
-    have_elab = elab is not None and name in elab
+    if name not in elab:
+        raise Untranslatable(f"no elaborated type for '{name}'")
 
     # Separate optional binders + ': type' + optional ':= body'.
     body = None
@@ -635,18 +639,7 @@ def translate_definition(sentence, report, elab=None):
     else:
         head = rest
 
-    binders = None
-    if have_elab:
-        type_out = translate_elab_type(elab[name])
-    else:
-        if ":" not in head:
-            raise Untranslatable("definition without ': type'")
-        binders_src, type_src = head.split(":", 1)
-        binders = _parse_binder_src(binders_src)
-        type_full = parse_term(type_src.strip())
-        for nm, ty in reversed(binders):  # explicit binders -> leading foralls
-            type_full = ("forall", nm, ty, type_full)
-        type_out = emit(type_full, {})
+    type_out = translate_elab_type(elab[name])
 
     if is_thm:
         report.add_handled(kw)
@@ -655,9 +648,10 @@ def translate_definition(sentence, report, elab=None):
     if body is None:
         report.add_handled("Definition(no body)")
         return f"Axiom {name} : {type_out}."
-    if binders is None:  # elaborate mode: still need surface binders to wrap body
-        binders_src = head.split(":", 1)[0] if ":" in head else head
-        binders = _parse_binder_src(binders_src) if binders_src.strip() else []
+    # The elaborated type is fully explicit, but the body is not always elaborable,
+    # so it is translated from the surface source, wrapped in the surface binders.
+    binders_src = head.split(":", 1)[0] if ":" in head else head
+    binders = _parse_binder_src(binders_src) if binders_src.strip() else []
     body_full = parse_term(body.strip())
     for nm, ty in reversed(binders):
         body_full = ("fun", nm, ty, body_full)
@@ -679,16 +673,16 @@ def _parse_binder_src(src):
     return binders
 
 
-def translate_axiom(sentence, report, elab=None):
+def translate_axiom(sentence, report, elab):
     m = re.match(r"^(Axiom|Parameter|Conjecture|Variable|Hypothesis)\s+"
                  r"([A-Za-z_][A-Za-z0-9_']*)\s*:\s*(.*)$", sentence, re.S)
     if not m:
         raise Untranslatable("unrecognized axiom form")
-    name, type_src = m.group(2), m.group(3)
+    name = m.group(2)
+    if name not in elab:
+        raise Untranslatable(f"no elaborated type for '{name}'")
     report.add_handled("Axiom")
-    if elab is not None and name in elab:
-        return f"Axiom {name} : {translate_elab_type(elab[name])}."
-    return f"Axiom {name} : {translate_term(type_src)}."
+    return f"Axiom {name} : {translate_elab_type(elab[name])}."
 
 
 def is_dropped(sentence):
@@ -1155,12 +1149,12 @@ class Report:
 
 # ─────────────────────────── unit-level translation ──────────────────────────
 
-def translate_unit(text, report, elab=None):
+def translate_unit(text, report, elab):
     """Translate a whole .v unit to a MEngine source string, or raise.
 
-    ``elab`` (optional) maps statement names to their `Set Printing All` types
-    (see ``rocq_elaborate``); when present, statement types are taken from there
-    rather than parsed from the surface source."""
+    ``elab`` maps statement names to their `Set Printing All` types (see
+    ``rocq_elaborate``); statement types are taken from there rather than parsed
+    from the surface source."""
     text = strip_comments(text)
     sentences = split_sentences(text)
 
@@ -1331,54 +1325,21 @@ def statement_digests(mengine_src):
 
 # ─────────────────────────────────── main ────────────────────────────────────
 
-def report_over_file(path):
-    with open(path) as f:
-        text = f.read()
-    report = Report()
-    try:
-        translate_unit(text, report)
-        status = "OK"
-    except Untranslatable as e:
-        status = f"FLAG: {e.reason}"
-    return status, report
-
-
 def main():
     ap = argparse.ArgumentParser(description="Rocq .v -> MEngine .me translator")
-    ap.add_argument("input", nargs="?", help="input .v file")
+    ap.add_argument("input", help="input .v file")
     ap.add_argument("--report", action="store_true", help="report handled/unhandled")
-    ap.add_argument("--dir", help="report over every .v under this directory")
-    ap.add_argument("--elaborate", action="store_true",
-                    help="take statement types from Rocq `Set Printing All` "
-                         "(notation-free, fully explicit) instead of the surface source")
     ap.add_argument("--coq", default="coqc",
-                    help="coqc/rocq binary used by --elaborate (default: coqc)")
+                    help="coqc/rocq binary for `Set Printing All` elaboration "
+                         "(default: coqc)")
     args = ap.parse_args()
-
-    if args.dir:
-        rows = []
-        for root, _dirs, files in os.walk(args.dir):
-            for fn in sorted(files):
-                if fn.endswith(".v"):
-                    p = os.path.join(root, fn)
-                    status, _rep = report_over_file(p)
-                    rows.append((os.path.relpath(p, args.dir), status))
-        ok = sum(1 for _, s in rows if s == "OK")
-        for rel, status in rows:
-            print(f"  [{'OK ' if status == 'OK' else 'FLAG'}] {rel}: {status}")
-        print(f"\n{ok}/{len(rows)} files fully translatable (Tier A).")
-        return
-
-    if not args.input:
-        ap.error("input file required (or use --dir)")
 
     with open(args.input) as f:
         text = f.read()
     report = Report()
     try:
-        elab = (rocq_elaborate(text, args.input, args.coq, statement_names(text))
-                if args.elaborate else None)
-        src = translate_unit(text, report, elab=elab)
+        elab = rocq_elaborate(text, args.input, args.coq, statement_names(text))
+        src = translate_unit(text, report, elab)
     except Untranslatable as e:
         if args.report:
             print(f"FLAG: {e.reason}")

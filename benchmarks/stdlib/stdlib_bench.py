@@ -13,7 +13,6 @@ Subcommands:
     run  [unit ...]      time both engines per unit; write results/stdlib.json
     report               regenerate the markdown table + scatter plot
     manifest             regenerate corpus/manifest.json from the corpus dir
-    triage [--dir D]     run translate.py --report over a stdlib checkout
     fidelity [module ...] verify each curated statement matches its real stdlib
                          counterpart (corpus/stdlib_map.json), via Rocq's kernel
     proof-fidelity [module ...]  regenerate corpus/PROOF_FIDELITY.md: each
@@ -58,7 +57,6 @@ def load_config():
         "timeout": s.get("timeout", 20),
         "trials": s.get("trials", 5),
         "coq_timeout_multiplier": cfg.get("coq_timeout_multiplier", 1.5),
-        "rocq_stdlib_src": exp(s.get("rocq_stdlib_src", "")),
     }
 
 
@@ -300,7 +298,7 @@ def test_unit(cfg, name):
     #    statement names correspond.  Statement types are elaborated through Rocq
     #    (`Set Printing All`), so the gate runs the translator the same way.
     tr = subprocess.run(["python3", os.path.join(HERE, "translate.py"),
-                         "--elaborate", "--coq", cfg["coq_path"], vpath],
+                         "--coq", cfg["coq_path"], vpath],
                         capture_output=True, text=True)
     if tr.returncode != 0:
         problems.append(f"translator flags rocq.v: {tr.stderr.strip()[:120]}")
@@ -464,14 +462,6 @@ def cmd_manifest(cfg, args):
     print(f"Wrote {os.path.relpath(out)} ({n} units).")
 
 
-def cmd_triage(cfg, args):
-    d = args.dir or cfg["rocq_stdlib_src"]
-    if not d or not os.path.isdir(d):
-        print(f"stdlib source dir not found: {d}", file=sys.stderr)
-        return 1
-    subprocess.run(["python3", os.path.join(HERE, "translate.py"), "--report", "--dir", d])
-
-
 def cmd_fidelity(cfg, args):
     import fidelity
     return fidelity.run(cfg, args.modules or None)
@@ -508,14 +498,13 @@ def main():
     p_run = sub.add_parser("run"); p_run.add_argument("units", nargs="*")
     sub.add_parser("report")
     sub.add_parser("manifest")
-    p_tri = sub.add_parser("triage"); p_tri.add_argument("--dir")
     p_fid = sub.add_parser("fidelity"); p_fid.add_argument("modules", nargs="*")
     p_pf = sub.add_parser("proof-fidelity"); p_pf.add_argument("modules", nargs="*")
     args = ap.parse_args()
 
     dispatch = {
         "list": cmd_list, "test": cmd_test, "run": cmd_run,
-        "report": cmd_report, "manifest": cmd_manifest, "triage": cmd_triage,
+        "report": cmd_report, "manifest": cmd_manifest,
         "fidelity": cmd_fidelity, "proof-fidelity": cmd_proof_fidelity,
     }
     rc = dispatch[args.command](cfg, args)

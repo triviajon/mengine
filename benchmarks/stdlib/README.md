@@ -65,12 +65,12 @@ module's proofs are measurable.
 
 MEngine has no notation system and no elaboration, so notation, implicit
 arguments, and numeric literals in a Rocq statement must all be made explicit.
-Rather than re-implement Rocq's elaborator (the old translator hand-desugared
+Rather than re-implement Rocq's elaborator (an earlier translator hand-desugared
 notation and *synthesised* the implicit type argument of `=`, which failed for
-any non-`nat`/`bool` equality and for polymorphic lists), `translate.py
---elaborate` replays the unit through Rocq with `Set Printing All` and a `Check`
-per statement, and translates the **fully-explicit, notation-free** form it
-prints back:
+any non-`nat`/`bool` equality and for polymorphic lists), `translate.py` always
+replays the unit through Rocq with `Set Printing All` and a `Check` per
+statement, and translates the **fully-explicit, notation-free** form it prints
+back (so a working `coqc`/`rocq`, `--coq`, is required):
 
 ```
 (* surface *)   forall (A:Type) (l:list A), nil ++ l = l
@@ -147,8 +147,8 @@ cost and no speed claim should be made.
 benchmarks/stdlib/
   PLAN.md                  design document
   README.md                this file
-  translate.py             Rocq .v -> MEngine .me translator (+ --report triage)
-  stdlib_bench.py          corpus runner: list / test / run / report / manifest / triage / fidelity / proof-fidelity
+  translate.py             Rocq .v -> MEngine .me translator (statements via Rocq `Set Printing All`)
+  stdlib_bench.py          corpus runner: list / test / run / report / manifest / fidelity / proof-fidelity
   report.py                markdown table + log-log scatter plot
   fidelity.py              statement-vs-stdlib correspondence check (via Rocq's kernel)
   proof_fidelity.py        proof-script vs stdlib-proof gap (re-extracted from installed stdlib)
@@ -173,7 +173,6 @@ python3 stdlib/stdlib_bench.py test      # faithfulness gate (see below)
 python3 stdlib/stdlib_bench.py run       # time both engines, write results
 python3 stdlib/stdlib_bench.py report    # regenerate REPORT.md + scatter plot
 python3 stdlib/stdlib_bench.py manifest  # regenerate corpus/manifest.json
-python3 stdlib/stdlib_bench.py triage    # translate.py --report over the stdlib
 python3 stdlib/stdlib_bench.py fidelity  # check each statement vs the real stdlib
 python3 stdlib/stdlib_bench.py proof-fidelity  # regenerate corpus/PROOF_FIDELITY.md
 ```
@@ -186,10 +185,10 @@ Before any timing, `test` verifies per unit (plan §7):
 
 1. `rocq.v` compiles under `coqc`.
 2. `mengine.me` runs clean under `mengine -q` (compat prelude prepended).
-3. `mengine.me` is exactly what `translate.py --elaborate` re-emits from `rocq.v`
-   (no drift), and the **theorem names match** between the two sides.  Because
-   step 3 elaborates through Rocq (`Set Printing All`), the gate needs `coqc` on
-   `PATH` (or `coq_path` in `config.json`).
+3. `mengine.me` is exactly what `translate.py` re-emits from `rocq.v` (no drift),
+   and the **theorem names match** between the two sides.  Because the translator
+   elaborates statement types through Rocq (`Set Printing All`), the gate needs
+   `coqc` on `PATH` (or `coq_path` in `config.json`).
 
 The guiding principle of the translator is **flag, never guess**: any construct
 it cannot translate soundly is reported and the unit is excluded, rather than
@@ -438,8 +437,8 @@ What stays **out of Tier A** (documented in `corpus/manifest.json` → `excluded
 
 ## Why whole stdlib files don't translate
 
-`stdlib_bench.py triage` runs the translator over the installed stdlib and
-reports, per file, the first blocking construct.  Real files are saturated with
+Running the translator over the installed stdlib, per file, reports the first
+blocking construct.  Real files are saturated with
 `Notation`/`Ltac`/`Variant`/`Register`/multi-scrutinee `match`/qualified names,
 so essentially none translate as a whole file (≈1/16 even in `Coq.Init`).  This
 is exactly the feasibility verdict in `PLAN.md §1`, and the reason the corpus is
