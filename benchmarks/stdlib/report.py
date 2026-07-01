@@ -242,7 +242,7 @@ def generate(cfg):
     _scatter(cfg, rows, meta)
 
 
-def _scatter(cfg, rows, meta=None):
+def _scatter(cfg, rows, meta):
     try:
         import matplotlib
         matplotlib.use("Agg")
@@ -251,11 +251,12 @@ def _scatter(cfg, rows, meta=None):
         print(f"(skipping scatter plot: matplotlib unavailable: {e})")
         return
 
-    meta = meta or {}
     colors = {"Bool": "tab:blue", "Lists": "tab:purple", "Logic": "tab:red",
               "Nat": "tab:green", "Peano": "tab:orange"}
-    m_floor = meta.get("mengine_floor")
-    m_noise = meta.get("mengine_noise") or 0.0
+    # generate() only reaches here with both startup floors present, so the one
+    # remaining question is whether MEngine's floor has measurable jitter (>=2
+    # baseline trials) to shade as a reliability band.
+    m_noise = meta["mengine_noise"]
 
     # Plot *startup-subtracted proof times*, not whole-file times.  This is the
     # one honest axis choice when modules have different startup floors: `Lists`
@@ -329,7 +330,7 @@ def _scatter(cfg, rows, meta=None):
     # Reliability floor: a residual at/below the baseline's own run-to-run jitter
     # is not distinguishable from startup.  Shade that band so borderline points
     # (e.g. Peano) are read with appropriate caution rather than as hard numbers.
-    if m_floor is not None and m_noise > 0:
+    if m_noise > 0:
         ax.axhspan(lo, m_noise * 1000, color="tab:gray", alpha=0.12, zorder=0)
         ax.text(hi * 0.96, m_noise * 1000, "MEngine noise floor", fontsize=6,
                 ha="right", va="bottom", color="dimgray")
