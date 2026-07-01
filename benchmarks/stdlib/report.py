@@ -156,102 +156,83 @@ def generate(cfg):
 
     m_floor, m_noise = meta["mengine_floor"], meta["mengine_noise"]
     r_floor, r_noise = meta["rocq_floor"], meta["rocq_noise"]
-    have_baselines = m_floor is not None and r_floor is not None
+    # The report renders one table: startup-subtracted *proof* time per module.
+    # That needs both engines' startup floors, which `stdlib_bench.py run` always
+    # records (see cmd_run) — so a results file without them is stale, not a
+    # supported mode.  Bail with an actionable message rather than degrade to a
+    # whole-file table that buries the proof cost under process startup.
+    if m_floor is None or r_floor is None:
+        print("No startup baseline in results — re-run `stdlib_bench.py run` "
+              "(it records each engine's startup floor, which the proof columns "
+              "subtract).")
+        return
 
-    lines = []
-    lines.append("# Rocq stdlib benchmark — MEngine vs Rocq\n")
-    if have_baselines:
-        lines.append(
-            "Whole-file wall-clock is dominated by fixed per-invocation cost — a "
-            "`coqc` process plus its auto-loaded `Prelude`, and an `mengine` "
-            "process plus `prelude/tactics.me` + the compat prelude — none of "
-            "which is the unit's proof. To compare *proof* cost fairly we time "
-            "each engine's preamble alone (an empty `.v`; the compat prelude with "
-            "no unit) and subtract it. **Proof** columns are this "
-            "startup-subtracted residual (best of N trials, clamped at 0).\n")
-        lines.append(
-            f"**Startup floor:** Rocq {_fmt_ms(r_floor)} ms "
-            f"(±{r_noise*1000:.1f}), MEngine {_fmt_ms(m_floor)} ms "
-            f"(±{m_noise*1000:.1f}). A proof residual at or below its engine's "
-            "jitter (±) is reported as `~0` — indistinguishable from startup.\n")
-        lines.append("| Module | Lemmas | Rocq total (ms) | Rocq proof (ms) | "
-                     "MEngine total (ms) | MEngine proof (ms) | Proof speedup |")
-        lines.append("|--------|--------|-----------------|-----------------|"
-                     "--------------------|--------------------|---------------|")
-    else:
-        lines.append("Per-module wall-clock (best of N trials), whole-process: each "
-                     "engine pays its own startup. **No startup baseline recorded** — "
-                     "re-run `stdlib_bench.py run` to get startup-subtracted proof "
-                     "times.\n")
-        lines.append("| Module | Lemmas | Rocq (ms) | MEngine (ms) | "
-                     "Speedup (Rocq/MEngine) |")
-        lines.append("|--------|--------|-----------|--------------|"
-                     "------------------------|")
+    lines = [
+        "# Rocq stdlib benchmark — MEngine vs Rocq\n",
+        "Whole-file wall-clock is dominated by fixed per-invocation cost — a "
+        "`coqc` process plus its auto-loaded `Prelude`, and an `mengine` "
+        "process plus `prelude/tactics.me` + the compat prelude — none of "
+        "which is the unit's proof. To compare *proof* cost fairly we time "
+        "each engine's preamble alone (an empty `.v`; the compat prelude with "
+        "no unit) and subtract it. **Proof** columns are this "
+        "startup-subtracted residual (best of N trials, clamped at 0).\n",
+        f"**Startup floor:** Rocq {_fmt_ms(r_floor)} ms "
+        f"(±{r_noise*1000:.1f}), MEngine {_fmt_ms(m_floor)} ms "
+        f"(±{m_noise*1000:.1f}). A proof residual at or below its engine's "
+        "jitter (±) is reported as `~0` — indistinguishable from startup.\n",
+        "| Module | Lemmas | Rocq total (ms) | Rocq proof (ms) | "
+        "MEngine total (ms) | MEngine proof (ms) | Proof speedup |",
+        "|--------|--------|-----------------|-----------------|"
+        "--------------------|--------------------|---------------|",
+    ]
 
     speedups = []
     below_noise = 0
     for row in sorted(rows, key=lambda r: r["unit"]):
         nl = row["nlemmas"] if row["nlemmas"] is not None else "?"
-        if have_baselines:
-            mp, rp = row["mengine_proof"], row["rocq_proof"]
-            m_below = mp is not None and mp <= m_noise
-            r_below = rp is not None and rp <= row.get("rocq_noise", r_noise)
-            mp_s = "~0" if m_below else _fmt_ms(mp)
-            rp_s = "~0" if r_below else _fmt_ms(rp)
-            if m_below or r_below:
-                below_noise += 1
-                sp_s = "—"
-            elif mp and rp and mp > 0:
-                sp = rp / mp
-                speedups.append(sp)
-                sp_s = f"{sp:.2f}×"
-            else:
-                sp_s = "-"
-            lines.append(f"| `{row['unit']}` | {nl} | "
-                         f"{_fmt_ms(row['rocq'])} | {rp_s} | "
-                         f"{_fmt_ms(row['mengine'])} | {mp_s} | {sp_s} |")
+        mp, rp = row["mengine_proof"], row["rocq_proof"]
+        m_below = mp is not None and mp <= m_noise
+        r_below = rp is not None and rp <= row.get("rocq_noise", r_noise)
+        mp_s = "~0" if m_below else _fmt_ms(mp)
+        rp_s = "~0" if r_below else _fmt_ms(rp)
+        if m_below or r_below:
+            below_noise += 1
+            sp_s = "—"
+        elif mp and rp and mp > 0:
+            sp = rp / mp
+            speedups.append(sp)
+            sp_s = f"{sp:.2f}×"
         else:
-            m, r = row["mengine"], row["rocq"]
-            if m and r and m > 0:
-                sp = r / m
-                speedups.append(sp)
-                sp_s = f"{sp:.2f}×"
-            else:
-                sp_s = "-"
-            lines.append(f"| `{row['unit']}` | {nl} | {_fmt_ms(r)} | "
-                         f"{_fmt_ms(m)} | {sp_s} |")
+            sp_s = "-"
+        lines.append(f"| `{row['unit']}` | {nl} | "
+                     f"{_fmt_ms(row['rocq'])} | {rp_s} | "
+                     f"{_fmt_ms(row['mengine'])} | {mp_s} | {sp_s} |")
 
     nlem = meta.get("nlemmas")
     lem_s = f", {nlem} lemmas" if nlem else ""
     lines.append("")
     lines.append(f"**Modules:** {len(rows)}{lem_s} (all Tier A) — one benchmark file "
                  "per stdlib module, matching the library's own file structure.")
-    if have_baselines:
-        lines.append(f"**Below startup-noise floor (proof time ~0 on either engine):** "
-                     f"{below_noise} of {len(rows)}.")
-        if speedups:
-            geo, med = _geo_med(speedups)
-            lines.append(f"**Proof-only speedup (Rocq/MEngine), over the "
-                         f"{len(speedups)} module(s) above the noise floor:** "
-                         f"{geo:.2f}× geomean (median {med:.2f}×).")
-        lines.append("")
-        if below_noise == len(rows):
-            lines.append("> Even grouped per module, these Tier-A proofs are cheap "
-                         "enough that their startup-subtracted cost stays at or below "
-                         "measurement jitter on both engines — so the whole-file ratio "
-                         "is still mostly a *process-startup* ratio. Heavier modules "
-                         "(computational induction, list reasoning) are needed to "
-                         "measure proof speed clearly above the noise floor.")
-        else:
-            lines.append("> Proof columns are startup-subtracted; modules above the "
-                         "noise floor give a real proof-speed comparison, while the "
-                         "whole-file columns still include each engine's fixed "
-                         "per-invocation cost (which dominates the raw ratio).")
-    elif speedups:
+    lines.append(f"**Below startup-noise floor (proof time ~0 on either engine):** "
+                 f"{below_noise} of {len(rows)}.")
+    if speedups:
         geo, med = _geo_med(speedups)
-        lines.append(f"**Both-succeed:** {len(speedups)}.")
-        lines.append(f"**Geometric-mean whole-file ratio (Rocq/MEngine):** {geo:.2f}×  "
-                     f"(median {med:.2f}×) — dominated by startup, not proof cost.")
+        lines.append(f"**Proof-only speedup (Rocq/MEngine), over the "
+                     f"{len(speedups)} module(s) above the noise floor:** "
+                     f"{geo:.2f}× geomean (median {med:.2f}×).")
+    lines.append("")
+    if below_noise == len(rows):
+        lines.append("> Even grouped per module, these Tier-A proofs are cheap "
+                     "enough that their startup-subtracted cost stays at or below "
+                     "measurement jitter on both engines — so the whole-file ratio "
+                     "is still mostly a *process-startup* ratio. Heavier modules "
+                     "(computational induction, list reasoning) are needed to "
+                     "measure proof speed clearly above the noise floor.")
+    else:
+        lines.append("> Proof columns are startup-subtracted; modules above the "
+                     "noise floor give a real proof-speed comparison, while the "
+                     "whole-file columns still include each engine's fixed "
+                     "per-invocation cost (which dominates the raw ratio).")
 
     out_md = os.path.join(os.path.dirname(cfg["results"]), "REPORT.md")
     with open(out_md, "w") as f:
