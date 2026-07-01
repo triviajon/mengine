@@ -442,14 +442,15 @@ static void test_fix_motive_apply(void) {
 /* Used to SIGSEGV type-checking the step case, where `add (S n) O` must convert
  * to `S (add n O)` under the `n` binder. */
 static void test_fix_eliminator_exact(void) {
-    run_ok("fully explicit eliminator term over a fixpoint type-checks",
-           "Inductive nat : Type := | O : nat | S : forall (_: nat), nat.\n"
-           "Fixpoint add (n : nat) (m : nat) {struct n} : nat :=\n"
-           "  match n with | O => m | S p => S (add p m) end.\n"
-           "Axiom f_equal_S : forall (a : nat), forall (b : nat), forall (_: eq nat a b),\n"
-           "  eq nat (S a) (S b).\n"
-           "Check (nat_ind (fun (k : nat) => eq nat (add k O) k) (eq_refl nat O)\n"
-           "        (fun (n : nat) => fun (ih : eq nat (add n O) n) => f_equal_S (add n O) n ih)).\n");
+    run_ok(
+        "fully explicit eliminator term over a fixpoint type-checks",
+        "Inductive nat : Type := | O : nat | S : forall (_: nat), nat.\n"
+        "Fixpoint add (n : nat) (m : nat) {struct n} : nat :=\n"
+        "  match n with | O => m | S p => S (add p m) end.\n"
+        "Axiom f_equal_S : forall (a : nat), forall (b : nat), forall (_: eq nat a b),\n"
+        "  eq nat (S a) (S b).\n"
+        "Check (nat_ind (fun (k : nat) => eq nat (add k O) k) (eq_refl nat O)\n"
+        "        (fun (n : nat) => fun (ih : eq nat (add n O) n) => f_equal_S (add n O) n ih)).\n");
 }
 
 /* Used to fail cleanly with a type error: a Definition whose declared type is
