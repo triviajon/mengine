@@ -325,7 +325,7 @@ def parse_term(s):
 # Translating this form needs neither the notation table nor eq-type synthesis —
 # the implicit type arguments (e.g. the `T` of `@eq T x y`, the element type of a
 # list) are already present — which is exactly why statements and definition
-# types are routed through Rocq first.  See PLAN/README.
+# types are routed through Rocq first.  See README.
 
 # Qualified heads that `Set Printing All` emits, mapped to compat-prelude names.
 # Any *other* dotted (qualified) head is flagged, never guessed.

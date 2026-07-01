@@ -1,8 +1,8 @@
 # Rocq standard-library benchmark for MEngine
 
 A per-module benchmark comparing **MEngine** against **Rocq** on a curated,
-auto-translated subset of the Rocq standard library.  See [`PLAN.md`](PLAN.md)
-for the full design and rationale; this README is the operator's guide.
+auto-translated subset of the Rocq standard library.  This README is both the
+operator's guide and the design reference.
 
 ## What it measures
 
@@ -145,7 +145,6 @@ cost and no speed claim should be made.
 
 ```
 benchmarks/stdlib/
-  PLAN.md                  design document
   README.md                this file
   translate.py             Rocq .v -> MEngine .me translator (statements via Rocq `Set Printing All`)
   stdlib_bench.py          corpus runner: list / test / run / report / manifest / fidelity / proof-fidelity
@@ -441,7 +440,7 @@ Running the translator over the installed stdlib, per file, reports the first
 blocking construct.  Real files are saturated with
 `Notation`/`Ltac`/`Variant`/`Register`/multi-scrutinee `match`/qualified names,
 so essentially none translate as a whole file (≈1/16 even in `Coq.Init`).  This
-is exactly the feasibility verdict in `PLAN.md §1`, and the reason the corpus is
+feasibility verdict is the reason the corpus is
 built from curated lemmas drawn from stdlib content rather than from verbatim
 stdlib files.  Those curated lemmas are then grouped one file per stdlib module
 (`Bool`, `Lists`, `Logic`, `Nat`, `Peano`), so each benchmark file matches the library's
