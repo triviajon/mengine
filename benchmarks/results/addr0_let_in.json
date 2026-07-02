@@ -2262,5 +2262,210 @@
       }
     ],
     "best_trial": 1
+  },
+  "lean_repeat_rw_n3": {
+    "time_taken": 0.16761594102717936,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 3.838916978042107,
+        "success": true
+      },
+      {
+        "time_taken": 0.16761594102717936,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "lean_repeat_rw_n5": {
+    "time_taken": 0.1882240220438689,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.19393879000563174,
+        "success": true
+      },
+      {
+        "time_taken": 0.1882240220438689,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "lean_repeat_rw_n7": {
+    "time_taken": 0.1765923549537547,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.1961718020029366,
+        "success": true
+      },
+      {
+        "time_taken": 0.1765923549537547,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "lean_repeat_rw_n9": {
+    "time_taken": 0.2049179840250872,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.2169646320398897,
+        "success": true
+      },
+      {
+        "time_taken": 0.2049179840250872,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "lean_repeat_rw_n13": {
+    "time_taken": 0.8530964859528467,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.8530964859528467,
+        "success": true
+      },
+      {
+        "time_taken": 0.8695657519856468,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "lean_repeat_rw_n15": {
+    "time_taken": 2.573374302010052,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.7473412600229494,
+        "success": true
+      },
+      {
+        "time_taken": 2.573374302010052,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "lean_repeat_rw_n17": {
+    "time_taken": 10.054565204947721,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 10.054565204947721,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "repeat_stopped": "slow_first_trial"
+  },
+  "lean_repeat_rw_n19": {
+    "time_taken": 20.020246280007996,
+    "success": false,
+    "trials": [
+      {
+        "time_taken": 20.020246280007996,
+        "success": false,
+        "timeout": true
+      }
+    ],
+    "timeout": true,
+    "repeat_stopped": "failed"
+  },
+  "lean_simp_only_n3": {
+    "time_taken": 0.14829967101104558,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.19758618297055364,
+        "success": true
+      },
+      {
+        "time_taken": 0.14829967101104558,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "lean_simp_only_n5": {
+    "time_taken": 0.13454949902370572,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.1534457430243492,
+        "success": true
+      },
+      {
+        "time_taken": 0.13454949902370572,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "lean_simp_only_n7": {
+    "time_taken": 0.14739279897185043,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.15031191299203783,
+        "success": true
+      },
+      {
+        "time_taken": 0.14739279897185043,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "lean_simp_only_n9": {
+    "time_taken": 0.14216590399155393,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.1905890570487827,
+        "success": true
+      },
+      {
+        "time_taken": 0.14216590399155393,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "lean_simp_only_n13": {
+    "time_taken": 0.14178330899449065,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.1752230169950053,
+        "success": true
+      },
+      {
+        "time_taken": 0.14178330899449065,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "lean_simp_only_n15": {
+    "time_taken": 0.14661377301672474,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.16957338899374008,
+        "success": true
+      },
+      {
+        "time_taken": 0.14661377301672474,
+        "success": true
+      }
+    ],
+    "best_trial": 1
   }
 }
