@@ -76,6 +76,12 @@ def unit_paths(cfg, name):
     return os.path.join(d, "rocq.v"), os.path.join(d, "mengine.me"), d
 
 
+def unit_statement_digests(mepath):
+    """(name, digest) pairs for each Theorem in a unit's mengine.me."""
+    with open(mepath) as f:
+        return translate.statement_digests(f.read())
+
+
 # ───────────────────────────── timing core ───────────────────────────────────
 # Mirrors framework.runner.run_single: N trials, keep the min successful time,
 # kill the whole process group on timeout.
@@ -110,14 +116,16 @@ def time_command(cmd, cwd, timeout, trials):
                 break  # don't repeat a failing point
         except subprocess.TimeoutExpired:
             elapsed = time.perf_counter() - start
+            # Mirror what subprocess.run(timeout=…) does on expiry — kill, then
+            # communicate() to reap — but across the whole process group, since
+            # start_new_session=True made the child a group leader.  SIGKILL can't
+            # be caught, so a single killpg + communicate() reliably tears down the
+            # child and any grandchildren with no lingering pipe or zombie.
             try:
-                os.killpg(proc.pid, signal.SIGTERM)
-                proc.communicate(timeout=1)
-            except Exception:
-                try:
-                    os.killpg(proc.pid, signal.SIGKILL)
-                except Exception:
-                    pass
+                os.killpg(proc.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass  # already exited between timeout and kill
+            proc.communicate()
             all_trials.append({"time_taken": elapsed, "success": False, "timeout": True})
             last_err = f"timeout after {timeout}s"
             break
@@ -190,22 +198,21 @@ def run_rocq_baseline(cfg, timeout, trials):
     return res
 
 
-# Sentence heads that make up a module's Rocq preamble (Require/Import/Open/…).
-PREAMBLE_HEADS = ("Require", "From", "Import", "Export", "Open", "Close", "Set",
-                  "Unset", "Declare", "Global", "Local", "Hint", "Arguments")
-
-
 def module_rocq_preamble(vpath):
-    """The leading directive sentences of a corpus rocq.v (everything before its
-    first Lemma/Theorem): its Require/Import/Open lines.  Returns a .v source
-    string, possibly empty (a Require-free module)."""
+    """The leading directive sentences of a corpus rocq.v (everything the
+    translator drops before its first statement): its Require/Import/Open/Set
+    lines.  Returns a .v source string, possibly empty (a Require-free module).
+
+    Reuses ``translate.is_dropped`` — the translator's own drop-list — as the
+    single source of truth, so the *timed* preamble here and the preamble the
+    translator *discards* can never diverge (e.g. a leading ``#[...]`` attribute
+    or ``Declare Scope`` is recognized by both, or by neither)."""
     with open(vpath) as f:
         text = translate.strip_comments(f.read())
     out = []
     for s in translate.split_sentences(text):
         s = s.strip()
-        head = s.split(None, 1)[0] if s else ""
-        if head in PREAMBLE_HEADS:
+        if translate.is_dropped(s):
             out.append(s + ".")
         else:
             break
@@ -306,7 +313,7 @@ def build_manifest(cfg):
     units = []
     for name in discover_units(cfg):
         vpath, mepath, _d = unit_paths(cfg, name)
-        digests = list(translate.statement_digests(open(mepath).read()))
+        digests = unit_statement_digests(mepath)
         units.append({
             "name": name,
             "tier": "A",
@@ -355,7 +362,7 @@ def cmd_list(cfg, args):
           f"(one file per stdlib module)\n")
     for u in units:
         _v, mepath, _d = unit_paths(cfg, u)
-        names = [n for n, _dg in translate.statement_digests(open(mepath).read())]
+        names = [n for n, _dg in unit_statement_digests(mepath)]
         total += len(names)
         print(f"  {u} ({len(names)} lemmas):")
         for n in names:

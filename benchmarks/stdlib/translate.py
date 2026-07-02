@@ -3,8 +3,8 @@
 
 This is a *lightweight* sentence-aware rewriter with a small recursive-descent
 parser for the term sublanguage, NOT a full Coq elaborator.  Its guiding principle is
-**flag, never guess**: any construct it cannot translate soundly is reported as
-an `unhandled` item and (in unit mode) raises `Untranslatable`, so the unit is
+**flag, never guess**: any construct it cannot translate soundly raises
+`Untranslatable` (surfaced as a `FLAG` in ``--report`` mode), so the unit is
 excluded from Tier A rather than mistranslated.  A wrong translation that happened
 to compile would silently corrupt the benchmark, which is the worst outcome.
 
@@ -19,7 +19,8 @@ translated from the surface source (they are not always elaborable).
 
 Usage:
     translate.py unit.v              # emit MEngine source on stdout
-    translate.py --report unit.v     # print handled/unhandled construct summary
+    translate.py --report unit.v     # print the handled-construct summary, or
+                                     # FLAG the first untranslatable construct
 """
 
 import argparse
@@ -73,12 +74,24 @@ SENTENCE_END_RE = re.compile(r"(?<!\.)\.(?=\s|$)")
 
 
 def split_sentences(text):
-    """Split on '.' followed by whitespace/EOF, ignoring '..'/'...' and decimals."""
+    """Split on '.' followed by whitespace/EOF, ignoring '..'/'...' and decimals.
+
+    Each boundary sits just past a single sentence-terminating '.', so that one
+    dot is dropped; any '.' *inside* a sentence (an ellipsis, a decimal) is left
+    intact — unlike a blanket ``rstrip('.')``, which would eat a trailing
+    ellipsis too."""
     boundaries = [m.end() for m in SENTENCE_END_RE.finditer(text)]
     starts = [0] + boundaries
     ends = boundaries + [len(text)]
-    pieces = (text[s:e].strip().rstrip(".") for s, e in zip(starts, ends))
-    return [p for p in pieces if p]
+    out = []
+    for idx, (s, e) in enumerate(zip(starts, ends)):
+        piece = text[s:e]
+        if idx < len(boundaries):
+            piece = piece[:-1]  # drop just this sentence's terminating '.'
+        piece = piece.strip()
+        if piece:
+            out.append(piece)
+    return out
 
 
 def split_top_level(s, delim, maxsplit=-1):
@@ -444,6 +457,10 @@ PROOF_FRAMING = ("Proof", "Qed", "Defined", "Admitted", "Abort")
 def translate_definition(sentence, report, elab):
     """Definition/Lemma/Theorem/Example name [binders] : type [:= body].
 
+    Returns ``(rendered_line, type_out)`` — the emitted MEngine source line plus
+    the rendered statement type, so a caller (the proof translator) can use the
+    type directly rather than re-parsing it out of the emitted string.
+
     The statement type is always taken from ``elab`` — Rocq's `Set Printing All`
     output — rather than parsed from the surface source; a Definition *body* is
     still translated from the surface (terms are not always elaborable)."""
@@ -467,11 +484,11 @@ def translate_definition(sentence, report, elab):
 
     if is_thm:
         report.add_handled(kw)
-        return f"Theorem {name} : {type_out}."
+        return f"Theorem {name} : {type_out}.", type_out
     # Definition with a body.
     if body is None:
         report.add_handled("Definition(no body)")
-        return f"Axiom {name} : {type_out}."
+        return f"Axiom {name} : {type_out}.", type_out
     # The elaborated type is fully explicit, but the body is not always elaborable,
     # so it is translated from the surface source, wrapped in the surface binders.
     # Split off the binders at the *top-level* ':' (the return-type ascription), not
@@ -482,7 +499,7 @@ def translate_definition(sentence, report, elab):
     for nm, ty in reversed(binders):
         body_full = ("fun", nm, ty, body_full)
     report.add_handled("Definition")
-    return f"Definition {name} : {type_out} := {emit(body_full)}."
+    return f"Definition {name} : {type_out} := {emit(body_full)}.", type_out
 
 
 def _parse_binder_src(src):
@@ -551,6 +568,18 @@ UNSUPPORTED = {
 }
 
 
+def _has_in_clause(arg):
+    """True if `arg` carries an `in H` forward-reasoning clause, i.e. it contains
+    the `in` *keyword token* (already in ``KEYWORDS``).  Detected by lexing rather
+    than substring-matching so an identifier such as `interp` or `in_range` never
+    trips it.  A lex failure means the arg is malformed for other reasons, which
+    the subsequent `translate_term` reports — so treat it as no `in` clause."""
+    try:
+        return any(t.kind == "in" for t in lex(arg, "tactic argument"))
+    except Untranslatable:
+        return False
+
+
 def translate_tactic_atom(atom, report):
     atom = atom.strip()
     if not atom:
@@ -592,7 +621,7 @@ def translate_tactic_atom(atom, report):
 
     if name in ("apply", "eapply"):
         arg = atom[len(name):].strip()
-        if " in " in f" {arg} " or arg.endswith(" in"):
+        if _has_in_clause(arg):
             raise Untranslatable("apply ... in H (Tier B)")
         report.add_handled(f"tac:{name}")
         return f"{name} ({translate_term(arg)})"
@@ -611,7 +640,7 @@ def translate_tactic_atom(atom, report):
         rest = atom[len("rewrite"):].strip()
         if rest.startswith("<-"):
             raise Untranslatable("rewrite <- (Tier B: builtin rewrite is forward-only)")
-        if " in " in f" {rest} ":
+        if _has_in_clause(rest):
             raise Untranslatable("rewrite ... in H (Tier B)")
         report.add_handled("tac:rewrite")
         # Builtin C rewrite (Leibniz eq).  Routed through the kernel rewrite engine
@@ -626,6 +655,8 @@ def translate_tactic_atom(atom, report):
         if not rest:
             return "easy"
         inner = translate_tactic_atom(rest, report)
+        if inner is None or "." in inner:
+            raise Untranslatable("now of a non-atomic tactic")
         return f"{inner}; easy"
 
     raise Untranslatable(f"unknown tactic '{name or atom}'")
@@ -949,16 +980,9 @@ def _translate_induction(kind, var, as_clause, remainder, stmt_type_out, report,
 class Report:
     def __init__(self):
         self.handled = {}
-        self.unhandled = []
 
     def add_handled(self, key):
         self.handled[key] = self.handled.get(key, 0) + 1
-
-    def add_unhandled(self, reason):
-        self.unhandled.append(reason)
-
-    def ok(self):
-        return not self.unhandled
 
 
 # ─────────────────────────── unit-level translation ──────────────────────────
@@ -996,14 +1020,14 @@ def translate_unit(text, report, elab):
             i += 1
             continue
         if kw == "Definition":
-            out_lines.append(translate_definition(s, report, elab))
+            line, _type = translate_definition(s, report, elab)
+            out_lines.append(line)
             i += 1
             continue
         if kw in THEOREM_KEYWORDS:
-            stmt = translate_definition(s, report, elab)
+            stmt, type_out = translate_definition(s, report, elab)
             out_lines.append(stmt)
             # Collect the proof: subsequent sentences until Qed/Defined/Admitted/Abort.
-            type_out = stmt[len("Theorem "):].split(" : ", 1)[1].rstrip(".")
             proof = []
             i += 1
             while i < n:
@@ -1128,7 +1152,9 @@ def statement_digests(mengine_src):
 def main():
     ap = argparse.ArgumentParser(description="Rocq .v -> MEngine .me translator")
     ap.add_argument("input", help="input .v file")
-    ap.add_argument("--report", action="store_true", help="report handled/unhandled")
+    ap.add_argument("--report", action="store_true",
+                    help="print handled-construct counts, or FLAG the first "
+                         "untranslatable construct")
     ap.add_argument("--coq", default="coqc",
                     help="coqc/rocq binary for `Set Printing All` elaboration "
                          "(default: coqc)")
