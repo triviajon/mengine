@@ -34,11 +34,14 @@ def _baseline(results, key):
 
 
 def _proof_time(total, floor):
-    """Marginal statement+proof cost: whole-file minus startup floor, clamped."""
-    if total is None:
+    """Marginal statement+proof cost: whole-file minus startup floor, clamped.
+
+    Both inputs are required.  With no startup floor there is nothing to
+    subtract, so the proof residual is undefined (None) — never the raw total,
+    which would silently report the whole-file time (startup included) as the
+    proof cost, defeating the point of the subtraction."""
+    if total is None or floor is None:
         return None
-    if floor is None:
-        return total
     return max(0.0, total - floor)
 
 
