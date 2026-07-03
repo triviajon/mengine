@@ -5,7 +5,6 @@
     {
       "name": "Bool",
       "tier": "A",
-      "category": "Bool",
       "rocq_sha256": "e877d7ae98cfade8",
       "statements": [
         {
@@ -102,7 +101,6 @@
     {
       "name": "Lists",
       "tier": "A",
-      "category": "Lists",
       "rocq_sha256": "bf27ff9a508134f4",
       "statements": [
         {
@@ -155,7 +153,6 @@
     {
       "name": "Logic",
       "tier": "A",
-      "category": "Logic",
       "rocq_sha256": "12d4dc897cb563e6",
       "statements": [
         {
@@ -204,7 +201,6 @@
     {
       "name": "Nat",
       "tier": "A",
-      "category": "Nat",
       "rocq_sha256": "ec44b29f02532d33",
       "statements": [
         {
@@ -337,7 +333,6 @@
     {
       "name": "Peano",
       "tier": "A",
-      "category": "Peano",
       "rocq_sha256": "a73cc6210bdade3c",
       "statements": [
         {

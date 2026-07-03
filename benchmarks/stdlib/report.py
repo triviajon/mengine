@@ -28,36 +28,15 @@ import os
 # `report` only lazily (inside cmd_report), so this top-level import is not
 # circular.
 from stdlib_bench import (MENGINE_BASELINE_KEY, ROCQ_BASELINE_KEY,
-                          rocq_module_baseline_key)
+                          proof_time, rocq_module_baseline_key,
+                          sample_stddev, successful_times)
 
 
 # ─────────────────────────────── basic stats ─────────────────────────────────
-
-def _times(entry):
-    """Successful per-trial wall-clock times (seconds); [] if missing/failed."""
-    if not entry or not entry.get("success"):
-        return []
-    return [t["time_taken"] for t in entry.get("trials", []) if t.get("success")]
-
-
-def _stddev(xs):
-    """Sample standard deviation of a list (0.0 for fewer than two points)."""
-    if len(xs) < 2:
-        return 0.0
-    mean = sum(xs) / len(xs)
-    return (sum((x - mean) ** 2 for x in xs) / (len(xs) - 1)) ** 0.5
-
-
-def _proof(total_times, floor_times):
-    """Best-of-N proof-only cost: min(whole-file) - min(startup floor), clamped.
-
-    None when either measurement is missing — with no floor to subtract the
-    residual is undefined, and reporting the raw total (startup included) as the
-    proof cost would defeat the whole subtraction."""
-    if not total_times or not floor_times:
-        return None
-    return max(0.0, min(total_times) - min(floor_times))
-
+# The proof-cost definitions (successful_times / sample_stddev / proof_time) live
+# in stdlib_bench and are imported above, so this report and the `run` console
+# summary compute proof time and the noise floor identically.  Only the
+# presentation-only helpers (median, geomean, formatting) are local.
 
 def _median(xs):
     """Median of a non-empty list (mean of the two central values when even)."""
@@ -98,14 +77,15 @@ def _load(cfg):
     e.g. Lists `Require`s List, so its floor is ~2× the others), falling back to
     the global empty-.v floor when a module's own baseline wasn't recorded.
 
-    Every value here is recomputed from the raw per-trial times (via `_times`),
-    never read from the runner's stored `time_taken` — so the report is a
-    self-contained derivation an auditor can recheck against the trial arrays."""
+    Every value here is recomputed from the raw per-trial times (via
+    `successful_times`), never read from the runner's stored `time_taken` — so
+    the report is a self-contained derivation an auditor can recheck against the
+    trial arrays."""
     with open(cfg["results"]) as f:
         results = json.load(f)
 
-    m_floor_times = _times(results.get(MENGINE_BASELINE_KEY))
-    r_floor_times = _times(results.get(ROCQ_BASELINE_KEY))
+    m_floor_times = successful_times(results.get(MENGINE_BASELINE_KEY))
+    r_floor_times = successful_times(results.get(ROCQ_BASELINE_KEY))
     counts = _lemma_counts(cfg)
 
     # Per-module keys are `mengine_<u>` / `coq_<u>`; baseline keys double the
@@ -119,26 +99,26 @@ def _load(cfg):
 
     rows = []
     for u in sorted(unit_keys):
-        m_total = _times(results.get(f"mengine_{u}"))
-        r_total = _times(results.get(f"coq_{u}"))
+        m_total = successful_times(results.get(f"mengine_{u}"))
+        r_total = successful_times(results.get(f"coq_{u}"))
         if not m_total or not r_total:
             continue
-        r_mod_floor = _times(results.get(rocq_module_baseline_key(u))) or r_floor_times
+        r_mod_floor = successful_times(results.get(rocq_module_baseline_key(u))) or r_floor_times
         rows.append({
             "unit": u,
             "nlemmas": counts.get(u),
             "mengine_total": min(m_total),
             "rocq_total": min(r_total),
-            "mengine_proof": _proof(m_total, m_floor_times),
-            "rocq_proof": _proof(r_total, r_mod_floor),
-            "mengine_noise": _stddev(m_floor_times),
-            "rocq_noise": _stddev(r_mod_floor),
+            "mengine_proof": proof_time(m_total, m_floor_times),
+            "rocq_proof": proof_time(r_total, r_mod_floor),
+            "mengine_noise": sample_stddev(m_floor_times),
+            "rocq_noise": sample_stddev(r_mod_floor),
         })
     meta = {
         "mengine_floor": min(m_floor_times) if m_floor_times else None,
         "rocq_floor": min(r_floor_times) if r_floor_times else None,
-        "mengine_noise": _stddev(m_floor_times),
-        "rocq_noise": _stddev(r_floor_times),
+        "mengine_noise": sample_stddev(m_floor_times),
+        "rocq_noise": sample_stddev(r_floor_times),
         "nlemmas": sum(counts.values()) if counts else None,
     }
     return rows, meta
@@ -175,10 +155,12 @@ def generate(cfg):
         "no unit) and subtract it. Every number below is the **best (minimum) "
         "of N trials**; **proof** columns are that whole-file minimum minus the "
         "startup-floor minimum, clamped at 0.\n",
-        f"**Startup floor:** Rocq {_fmt_ms(r_floor)} ms "
-        f"(±{r_noise*1000:.1f}), MEngine {_fmt_ms(m_floor)} ms "
-        f"(±{m_noise*1000:.1f}). The ± is the standard deviation of the floor's "
-        "trials; a proof at or below its engine's ± is reported as `~0` — "
+        f"**Startup floor** (subtracted from each whole-file time): MEngine "
+        f"{_fmt_ms(m_floor)} ms (±{m_noise*1000:.1f}), one global floor; Rocq "
+        f"{_fmt_ms(r_floor)} ms (±{r_noise*1000:.1f}) for the `Require`-free "
+        "modules, but **each module subtracts its own Require/Import floor** "
+        "(Lists' is ~2× larger). The ± is that floor's trial standard deviation; "
+        "a proof at or below its own floor's ± is reported as `~0` — "
         "indistinguishable from startup.\n",
         "| Module | Lemmas | Rocq total (ms) | Rocq proof (ms) | "
         "MEngine total (ms) | MEngine proof (ms) | Proof speedup |",

@@ -56,7 +56,7 @@ def load_config():
         "results": os.path.join(BENCH_ROOT, s.get("results", "stdlib/results/stdlib.json")),
         "plots_dir": os.path.join(BENCH_ROOT, s.get("plots_dir", "stdlib/plots")),
         "timeout": s.get("timeout", 20),
-        "trials": s.get("trials", 5),
+        "trials": s.get("trials", 10),
         "coq_timeout_multiplier": cfg.get("coq_timeout_multiplier", 1.5),
     }
 
@@ -252,6 +252,36 @@ def rocq_module_baseline_key(name):
     return f"coq__baseline__{name}"
 
 
+# ─────────────────────── results interpretation ──────────────────────────────
+# How a stored timing result becomes a proof-cost number.  Imported by `report`
+# and used by `cmd_run`'s progress line, so the console summary and REPORT.md
+# apply the exact same definitions (best-of-N proof residual, stddev noise
+# floor) and can never disagree.
+
+def successful_times(entry):
+    """Successful per-trial wall-clock times (seconds); [] if missing/failed."""
+    if not entry or not entry.get("success"):
+        return []
+    return [t["time_taken"] for t in entry.get("trials", []) if t.get("success")]
+
+
+def sample_stddev(xs):
+    """Sample standard deviation of a list (0.0 for fewer than two points)."""
+    if len(xs) < 2:
+        return 0.0
+    mean = sum(xs) / len(xs)
+    return (sum((x - mean) ** 2 for x in xs) / (len(xs) - 1)) ** 0.5
+
+
+def proof_time(total_times, floor_times):
+    """Best-of-N proof-only cost: min(whole-file) − min(startup floor), clamped.
+    None when either measurement is missing (nothing to subtract → undefined,
+    never the raw total, which would count startup as proof cost)."""
+    if not total_times or not floor_times:
+        return None
+    return max(0.0, min(total_times) - min(floor_times))
+
+
 # ─────────────────────────── faithfulness gate ───────────────────────────────
 
 def rocq_statement_names(vpath):
@@ -313,7 +343,10 @@ def sha256_file(path):
         return hashlib.sha256(f.read()).hexdigest()[:16]
 
 
-def build_manifest(cfg):
+def compute_manifest(cfg):
+    """The manifest dict for the current corpus (pure — no I/O), so callers can
+    either write it (`build_manifest`) or diff the on-disk copy against it to
+    detect drift (`manifest_staleness`)."""
     units = []
     for name in discover_units(cfg):
         vpath, mepath, _d = unit_paths(cfg, name)
@@ -321,12 +354,11 @@ def build_manifest(cfg):
         units.append({
             "name": name,
             "tier": "A",
-            "category": name,  # the category is simply the module name
             "rocq_sha256": sha256_file(vpath),
             "statements": [{"name": n, "digest": dg} for n, dg in digests],
             "deps": "Coq.Init (auto-loaded)",
         })
-    manifest = {
+    return {
         "description": "Tier-A: Rocq stdlib units auto-translated with zero manual "
                        "edits and proved by MEngine + the compat prelude.",
         "engine_note": "Requires the cbv applied-fix and GC-dedup kernel fixes "
@@ -334,10 +366,30 @@ def build_manifest(cfg):
         "units": units,
         "excluded": EXCLUDED_DOC,
     }
+
+
+def build_manifest(cfg):
+    manifest = compute_manifest(cfg)
     out = os.path.join(cfg["corpus_dir"], "manifest.json")
     with open(out, "w") as f:
         json.dump(manifest, f, indent=2)
-    return out, len(units)
+    return out, len(manifest["units"])
+
+
+def manifest_staleness(cfg):
+    """Reason corpus/manifest.json differs from a freshly computed manifest, or
+    None if current.  Guards against a corpus edit (a re-generated rocq.v /
+    mengine.me) that was not followed by `stdlib_bench.py manifest`, which would
+    otherwise leave stale statement digests and rocq.v hashes with no failing
+    check to catch it."""
+    path = os.path.join(cfg["corpus_dir"], "manifest.json")
+    if not os.path.exists(path):
+        return "is missing (run: stdlib_bench.py manifest)"
+    with open(path) as f:
+        on_disk = json.load(f)
+    if on_disk != compute_manifest(cfg):
+        return "is out of date vs the corpus (rocq.v / mengine.me changed?)"
+    return None
 
 
 # Documented Tier-2 boundary (kept out of Tier A); see README.
@@ -389,7 +441,13 @@ def cmd_test(cfg, args):
     print(f"\n{npass}/{len(units)} units pass the faithfulness gate.")
     print("(statement-vs-stdlib correspondence is a separate check: "
           "stdlib_bench.py fidelity)")
-    return 0 if npass == len(units) else 1
+    # The manifest is a single global artifact (not per-unit), so verify it once:
+    # a re-generated rocq.v / mengine.me must not leave its digests stale.
+    stale = manifest_staleness(cfg)
+    if stale:
+        print(f"\n  [STALE] corpus/manifest.json {stale}")
+        print("          re-run: stdlib_bench.py manifest")
+    return 0 if npass == len(units) and not stale else 1
 
 
 def cmd_run(cfg, args):
@@ -410,6 +468,10 @@ def cmd_run(cfg, args):
     print(f"  {'startup baseline':24s} "
           f"MEngine={mb_t*1000:8.1f}ms  Rocq={rb_t*1000:8.1f}ms\n")
 
+    m_floor = successful_times(mb)          # MEngine's one global startup floor
+    m_noise = sample_stddev(m_floor)
+    r_floor = successful_times(rb)          # global fallback for a Require-free module
+
     for u in units:
         # Each module's own Rocq startup floor: its Require/Import preamble timed
         # alone.  Require-free modules match the global empty-.v floor; Lists
@@ -417,24 +479,33 @@ def cmd_run(cfg, args):
         # not charge it to the proof.
         rmb = run_rocq_module_baseline(cfg, u, cfg["timeout"], base_trials)
         results[rocq_module_baseline_key(u)] = rmb
-        rb_u = rmb["time_taken"] if rmb["success"] else rb_t
 
         mr = run_mengine(cfg, u, cfg["timeout"], cfg["trials"])
         rr = run_rocq(cfg, u, cfg["timeout"], cfg["trials"])
         results[f"mengine_{u}"] = mr
         results[f"coq_{u}"] = rr
         save_results(cfg["results"], results)
-        # Proof-only = whole-file minus the engine's startup floor (clamped at 0;
-        # a tiny proof can dip below baseline jitter).  Rocq uses the module's own
-        # preamble floor (rb_u); MEngine's preamble (the compat prelude) is the
-        # same for every module.
-        mp = max(0.0, mr["time_taken"] - mb_t) if mr["success"] else None
-        rp = max(0.0, rr["time_taken"] - rb_u) if rr["success"] else None
+
+        # Interpret this module's timings with the *same* functions the report
+        # uses (proof_time / sample_stddev), so this progress line and REPORT.md
+        # can never disagree: proof = min(whole-file) − min(startup floor); a
+        # residual at/below the startup floor's own stddev prints as `~0`
+        # (indistinguishable from startup) with speedup `—`, exactly as reported.
+        ru_floor = successful_times(rmb) or r_floor
+        mp = proof_time(successful_times(mr), m_floor)
+        rp = proof_time(successful_times(rr), ru_floor)
+        m_below = mp is not None and mp <= m_noise
+        r_below = rp is not None and rp <= sample_stddev(ru_floor)
         ms = f"{mr['time_taken']*1000:.1f}ms" if mr["success"] else "FAIL"
         rs = f"{rr['time_taken']*1000:.1f}ms" if rr["success"] else "FAIL"
-        mps = f"{mp*1000:.1f}ms" if mp is not None else "FAIL"
-        rps = f"{rp*1000:.1f}ms" if rp is not None else "FAIL"
-        ratio = f"{rp/mp:.2f}x" if mp and rp else "-"
+        mps = "~0" if m_below else (f"{mp*1000:.1f}ms" if mp is not None else "FAIL")
+        rps = "~0" if r_below else (f"{rp*1000:.1f}ms" if rp is not None else "FAIL")
+        if m_below or r_below:
+            ratio = "—"
+        elif mp and rp:
+            ratio = f"{rp/mp:.2f}x"
+        else:
+            ratio = "-"
         print(f"  {u:24s} MEngine={ms:>9s}(proof {mps:>8s})  "
               f"Rocq={rs:>9s}(proof {rps:>8s})  proof-speedup={ratio}")
     print(f"\nResults written to {os.path.relpath(cfg['results'])}")
