@@ -27,6 +27,7 @@ import json
 import os
 import re
 import signal
+import statistics
 import subprocess
 import sys
 import tempfile
@@ -265,11 +266,9 @@ def successful_times(entry):
 
 
 def sample_stddev(xs):
-    """Sample standard deviation of a list (0.0 for fewer than two points)."""
-    if len(xs) < 2:
-        return 0.0
-    mean = sum(xs) / len(xs)
-    return (sum((x - mean) ** 2 for x in xs) / (len(xs) - 1)) ** 0.5
+    """Sample standard deviation of a list (0.0 for fewer than two points,
+    where statistics.stdev would raise)."""
+    return statistics.stdev(xs) if len(xs) >= 2 else 0.0
 
 
 def proof_time(total_times, floor_times):
