@@ -273,15 +273,11 @@ def _map_name(name):
 class TermParser:
     """Recursive-descent parser for the (surface / `Set Printing All`) term
     grammar.  Emits the AST tuples (`var`/`app`/`forall`/`fun`/`arrow`/`num`)
-    that ``emit`` renders.
+    that ``emit`` renders."""
 
-    ``err_prefix`` tags diagnostics with their source (empty for surface terms,
-    ``"elaborated: "`` for `Set Printing All` types)."""
-
-    def __init__(self, toks, err_prefix=""):
+    def __init__(self, toks):
         self.toks = toks
         self.pos = 0
-        self.err_prefix = err_prefix
 
     def peek(self):
         return self.toks[self.pos] if self.pos < len(self.toks) else Tok("eof", None)
@@ -294,7 +290,7 @@ class TermParser:
     def expect(self, kind):
         t = self.next()
         if t.kind != kind:
-            raise Untranslatable(f"{self.err_prefix}expected {kind}, got {t.kind} {t.val!r}")
+            raise Untranslatable(f"expected {kind}, got {t.kind} {t.val!r}")
         return t
 
     def parse_binders(self):
@@ -308,7 +304,7 @@ class TermParser:
                 while self.peek().kind == "ident":
                     names.append(self.next().val)
                 if not names:
-                    raise Untranslatable(f"{self.err_prefix}empty binder group")
+                    raise Untranslatable("empty binder group")
                 self.expect(":")
                 ty = self.parse_expr()
                 self.expect(")")
@@ -347,8 +343,8 @@ class TermParser:
             self.next()
             return ("var", "Type" if t.kind == "Type" else "Prop")
         if t.kind in ("match", "let", "fix"):
-            raise Untranslatable(f"{self.err_prefix}'{t.kind}' in term (Tier B)")
-        raise Untranslatable(f"{self.err_prefix}unexpected token {t.kind} {t.val!r}")
+            raise Untranslatable(f"'{t.kind}' in term (Tier B)")
+        raise Untranslatable(f"unexpected token {t.kind} {t.val!r}")
 
     def parse_app(self):
         node = self.parse_atom()
@@ -382,7 +378,8 @@ class TermParser:
 
 
 def parse_term(s):
-    """Parse a surface term (definition body / tactic argument)."""
+    """Parse a term: a surface definition body / tactic argument, or a
+    `Set Printing All` type string (the two share one grammar)."""
     p = TermParser(lex(s, "term"))
     e = p.parse_expr()
     if p.peek().kind != "eof":
@@ -390,18 +387,9 @@ def parse_term(s):
     return e
 
 
-def parse_elab(s):
-    """Parse a `Set Printing All` type string."""
-    p = TermParser(lex(s, "elaborated term"), err_prefix="elaborated: ")
-    e = p.parse_expr()
-    if p.peek().kind != "eof":
-        raise Untranslatable(f"elaborated: trailing tokens {p.peek().val!r}")
-    return e
-
-
 def translate_elab_type(type_str):
     """Render a `Set Printing All` type string as MEngine prefix syntax."""
-    return emit(parse_elab(type_str))
+    return emit(parse_term(type_str))
 
 
 # ───────────────────────────── pretty printer ────────────────────────────────
@@ -615,7 +603,7 @@ def translate_tactic_atom(atom, report):
         if not args:
             return "intros" if name == "intros" else "intro"
         names = args.split()
-        return " ".join(f"intro {nm}." for nm in names).rstrip(".")
+        return "; ".join(f"intro {nm}" for nm in names)
 
     if name in ("apply", "eapply"):
         arg = atom[len(name):].strip()
@@ -670,14 +658,6 @@ def translate_tactic_sentence(sentence, report):
             out.append(t)
     if not out:
         return ""
-    # A multi-name `intros a b` expands to '.'-separated statements
-    # (`intro a. intro b`).  That is sound as its own sentence, but *not* mixed
-    # into a ';' chain: the '.' would close the chain early, so a later step runs
-    # on only the first subgoal instead of all of them.  Flag it rather than emit
-    # the mis-scoped proof (flag, never guess).
-    if len(out) > 1 and any("." in t for t in out):
-        raise Untranslatable("multi-name intro inside a ';' chain "
-                             "(put the intros in their own sentence)")
     return "; ".join(out) + "."
 
 
