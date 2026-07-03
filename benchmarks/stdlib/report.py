@@ -46,10 +46,9 @@ def _median(xs):
     return s[mid] if n % 2 else (s[mid - 1] + s[mid]) / 2.0
 
 
-def _geo_med(speedups):
-    """Geometric mean and median of a non-empty list of speedups."""
-    geo = math.exp(sum(math.log(s) for s in speedups) / len(speedups))
-    return geo, _median(speedups)
+def _geomean(xs):
+    """Geometric mean of a non-empty list of positive numbers."""
+    return math.exp(sum(math.log(x) for x in xs) / len(xs))
 
 
 def _fmt_ms(t):
@@ -198,7 +197,7 @@ def generate(cfg):
     lines.append(f"**Below startup-noise floor (proof time ~0 on either engine):** "
                  f"{below_noise} of {len(rows)}.")
     if speedups:
-        geo, med = _geo_med(speedups)
+        geo, med = _geomean(speedups), _median(speedups)
         lines.append(f"**Proof-only speedup (Rocq/MEngine), over the "
                      f"{len(speedups)} module(s) above the noise floor:** "
                      f"{geo:.2f}× geomean (median {med:.2f}×).")
