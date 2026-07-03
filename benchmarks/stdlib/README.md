@@ -134,20 +134,23 @@ whole-file numbers are not discarded — they stay in REPORT.md's `total` column
 they are just not the axis a proof-speed claim is read off of.
 
 **The scatter plots exactly the table's proof numbers — nothing resampled.**
-Each module is one dot at `(Rocq proof, MEngine proof)`, the same two
+Each module's dot sits at `(Rocq proof, MEngine proof)`, the same two
 startup-subtracted values as its REPORT.md row, so the plot and the table can
 never disagree.  Both coordinates are best-of-N: `min(whole-file) −
-min(startup floor)`, clamped at 0.  Because a proof residual is a difference of
-two separately-measured, jittery numbers (the Rocq floor alone swings ±10–30 ms
-between invocations — often larger than a small residual), two shaded bands mark
-where it stops being trustworthy: a horizontal band at MEngine's startup-noise
-floor and a vertical band at Rocq's, each floor's noise being simply the
-**standard deviation of its startup-baseline trials**.  Read it directly: dots in
-the shaded lower-right are MEngine proof-faster (Nat, Bool, Logic), a dot above
-`y = x` is MEngine proof-slower (Lists, ~2× on `map`/`rev` induction), and a dot
-inside a noise band (Peano) is a module whose proof cost is swamped by
-per-invocation jitter — no speed claim should be made for it, which is exactly
-why the table shows it as `~0`.
+min(startup floor)`, clamped at 0.  Each dot carries a one-sided **whisker** on
+each axis running up to the *slowest* of the N trials — its length is just that
+module's whole-file `max − min` (the floor held at its min), two numbers, no
+resampling or percentiles.  Because a proof residual is a difference of two
+separately-measured, jittery numbers (the Rocq floor alone swings ±10–30 ms
+between invocations — often larger than a small residual), two shaded bands also
+mark where the residual stops being trustworthy: a horizontal band at MEngine's
+startup-noise floor and a vertical band at Rocq's, each floor's noise being
+simply the **standard deviation of its startup-baseline trials**.  Read it
+directly: dots in the shaded lower-right are MEngine proof-faster (Nat, Bool,
+Logic), a dot above `y = x` is MEngine proof-slower (Lists, ~2× on `map`/`rev`
+induction), and a dot whose whisker runs deep into a noise band (Peano) is a
+module whose proof cost is swamped by per-invocation jitter — no speed claim
+should be made for it, which is exactly why the table shows it as `~0`.
 
 ## Layout
 
@@ -168,7 +171,7 @@ benchmarks/stdlib/
     <Module>/mengine.me    auto-translated MEngine source
   results/stdlib.json      per-module timings + per-engine startup baselines
   results/REPORT.md        generated table + geometric-mean summary
-  plots/stdlib_scatter.png generated scatter: per-module startup-subtracted proof time (Rocq x vs MEngine y, log-log, y=x parity, startup-noise-floor bands)
+  plots/stdlib_scatter.png generated scatter: per-module startup-subtracted proof time (Rocq x vs MEngine y, log-log, y=x parity, min→max whiskers, startup-noise-floor bands)
 ```
 
 ## Usage

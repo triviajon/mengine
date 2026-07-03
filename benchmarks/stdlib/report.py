@@ -108,6 +108,8 @@ def _load(cfg):
             "nlemmas": counts.get(u),
             "mengine_total": min(m_total),
             "rocq_total": min(r_total),
+            "mengine_total_max": max(m_total),   # slowest run, for the scatter whisker
+            "rocq_total_max": max(r_total),
             "mengine_proof": proof_time(m_total, m_floor_times),
             "rocq_proof": proof_time(r_total, r_mod_floor),
             "mengine_noise": sample_stddev(m_floor_times),
@@ -260,8 +262,13 @@ def _scatter(cfg, rows, meta):
 
     xs = [r["rocq_proof"] * 1000 for r in pts]
     ys = [r["mengine_proof"] * 1000 for r in pts]
+    # Upper whisker per axis = this module's whole-file trial spread (max − min);
+    # since the dot is the min-based residual, the slowest of N runs sits that far
+    # above it (the floor is held at its min, so it cancels out).
+    xtop = [x + (r["rocq_total_max"] - r["rocq_total"]) * 1000 for x, r in zip(xs, pts)]
+    ytop = [y + (r["mengine_total_max"] - r["mengine_total"]) * 1000 for y, r in zip(ys, pts)]
     lo = min(xs + ys) * 0.5
-    hi = max(xs + ys) * 1.7
+    hi = max(xs + ys + xtop + ytop) * 1.4
 
     fig, ax = plt.subplots(figsize=(6.4, 6.4))
 
@@ -288,10 +295,16 @@ def _scatter(cfg, rows, meta):
                 ha="right", va="top", color="dimgray", rotation=90)
 
     for r in pts:
+        col = colors.get(r["unit"], "gray")
         x, y = r["rocq_proof"] * 1000, r["mengine_proof"] * 1000
-        ax.plot(x, y, "o", color=colors.get(r["unit"], "gray"), markersize=7,
-                markeredgecolor="k", markeredgewidth=0.5, zorder=3,
-                label=r["unit"])
+        # One-sided whisker toward the slowest of N runs: the dot is the best-of-N
+        # residual (bottom end), the whisker length is just the whole-file min→max
+        # spread on that axis.  No resampling — two numbers per whisker.
+        xerr = [[0.0], [(r["rocq_total_max"] - r["rocq_total"]) * 1000]]
+        yerr = [[0.0], [(r["mengine_total_max"] - r["mengine_total"]) * 1000]]
+        ax.errorbar(x, y, xerr=xerr, yerr=yerr, fmt="o", color=col, ecolor=col,
+                    elinewidth=1.0, capsize=3, markersize=7, markeredgecolor="k",
+                    markeredgewidth=0.5, zorder=3, label=r["unit"])
         ax.annotate(r["unit"], (x, y), textcoords="offset points",
                     xytext=(6, 4), fontsize=8)
 
@@ -303,7 +316,7 @@ def _scatter(cfg, rows, meta):
     ax.set_xlabel("Rocq proof time (ms, log) — startup-subtracted")
     ax.set_ylabel("MEngine proof time (ms, log) — startup-subtracted")
     ax.set_title("Rocq stdlib modules: proof cost (per-module startup removed)\n"
-                 "point = best-of-N whole-file time − startup floor")
+                 "dot = best-of-N proof; whisker = up to the slowest of N trials")
     ax.legend(fontsize=8, loc="upper left")
     ax.grid(True, which="both", ls=":", alpha=0.4)
     os.makedirs(cfg["plots_dir"], exist_ok=True)
