@@ -129,7 +129,7 @@ def time_command(cmd, cwd, timeout, trials):
             all_trials.append({"time_taken": elapsed, "success": False, "timeout": True})
             last_err = f"timeout after {timeout}s"
             break
-    return {"time_taken": best if best is not None else 0.0,
+    return {"time_taken": best,
             "success": success, "trials": all_trials, "error": last_err}
 
 
@@ -258,7 +258,7 @@ def rocq_module_baseline_key(name):
 def rocq_statement_names(vpath):
     with open(vpath) as f:
         text = translate.strip_comments(f.read())
-    pat = r"\b(?:" + "|".join(translate.THEOREM_KEYWORDS) + \
+    pat = r"\b(?:" + translate.THEOREM_ALT + \
           r")\s+([A-Za-z_][A-Za-z0-9_']*)"
     return [m.group(1) for m in re.finditer(pat, text)]
 

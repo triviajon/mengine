@@ -43,7 +43,9 @@ class Untranslatable(Exception):
 # fidelity checks all recognize the same heads).
 THEOREM_KEYWORDS = ("Lemma", "Theorem", "Example", "Corollary", "Fact",
                     "Remark", "Proposition")
-_THM_ALT = "|".join(THEOREM_KEYWORDS)
+# Regex alternation of the theorem heads, shared alongside THEOREM_KEYWORDS so
+# the pattern is written once (used here and in the faithfulness gate).
+THEOREM_ALT = "|".join(THEOREM_KEYWORDS)
 
 
 # ───────────────────────────── comment / sentence split ──────────────────────
@@ -198,32 +200,6 @@ def _scan(regex, s, what):
 #   ("fun", var, ty, body) | ("arrow", a, b) | ("num", int)
 
 
-class _Cursor:
-    """Token-stream cursor for the term parser.
-
-    ``err_prefix`` tags diagnostics with their source (empty for surface terms,
-    ``"elaborated: "`` for `Set Printing All` types)."""
-
-    def __init__(self, toks, err_prefix=""):
-        self.toks = toks
-        self.pos = 0
-        self.err_prefix = err_prefix
-
-    def peek(self):
-        return self.toks[self.pos] if self.pos < len(self.toks) else Tok("eof", None)
-
-    def next(self):
-        t = self.peek()
-        self.pos += 1
-        return t
-
-    def expect(self, kind):
-        t = self.next()
-        if t.kind != kind:
-            raise Untranslatable(f"{self.err_prefix}expected {kind}, got {t.kind} {t.val!r}")
-        return t
-
-
 # ────────────────────────────── term lexer + parser ──────────────────────────
 #
 # A single recursive-descent parser handles two closely related inputs:
@@ -294,10 +270,32 @@ def _map_name(name):
     return name
 
 
-class TermParser(_Cursor):
+class TermParser:
     """Recursive-descent parser for the (surface / `Set Printing All`) term
     grammar.  Emits the AST tuples (`var`/`app`/`forall`/`fun`/`arrow`/`num`)
-    that ``emit`` renders."""
+    that ``emit`` renders.
+
+    ``err_prefix`` tags diagnostics with their source (empty for surface terms,
+    ``"elaborated: "`` for `Set Printing All` types)."""
+
+    def __init__(self, toks, err_prefix=""):
+        self.toks = toks
+        self.pos = 0
+        self.err_prefix = err_prefix
+
+    def peek(self):
+        return self.toks[self.pos] if self.pos < len(self.toks) else Tok("eof", None)
+
+    def next(self):
+        t = self.peek()
+        self.pos += 1
+        return t
+
+    def expect(self, kind):
+        t = self.next()
+        if t.kind != kind:
+            raise Untranslatable(f"{self.err_prefix}expected {kind}, got {t.kind} {t.val!r}")
+        return t
 
     def parse_binders(self):
         """Parse `(x y : T) (z : U)` groups or a single bare `x : T`."""
@@ -464,7 +462,7 @@ def translate_definition(sentence, report, elab):
     The statement type is always taken from ``elab`` — Rocq's `Set Printing All`
     output — rather than parsed from the surface source; a Definition *body* is
     still translated from the surface (terms are not always elaborable)."""
-    m = re.match(r"^(Definition|" + _THM_ALT + r")\s+"
+    m = re.match(r"^(Definition|" + THEOREM_ALT + r")\s+"
                  r"([A-Za-z_][A-Za-z0-9_']*)\s*(.*)$", sentence, re.S)
     if not m:
         raise Untranslatable("unrecognized definition form")
@@ -1058,7 +1056,7 @@ def translate_unit(text, report, elab):
 # compile, or a name is missing) is reported as Untranslatable — never guessed.
 
 STMT_DECL_RE = re.compile(
-    r"^(Definition|" + _THM_ALT + r"|Axiom|Parameter|Conjecture)\s+"
+    r"^(Definition|" + THEOREM_ALT + r"|Axiom|Parameter|Conjecture)\s+"
     r"([A-Za-z_][A-Za-z0-9_']*)")
 
 
