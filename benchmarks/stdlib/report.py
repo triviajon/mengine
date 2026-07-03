@@ -20,7 +20,6 @@ the table's proof numbers.
 """
 
 import json
-import math
 import os
 import statistics
 
@@ -39,19 +38,6 @@ from stdlib_bench import (MENGINE_BASELINE_KEY, ROCQ_BASELINE_KEY,
 # trials.  So this report and the `run` console summary compute proof time and the
 # noise floor identically.  Only the presentation-only helpers (median, geomean,
 # formatting) are local.
-
-def _median(xs):
-    """Median of a non-empty list (mean of the two central values when even)."""
-    s = sorted(xs)
-    n = len(s)
-    mid = n // 2
-    return s[mid] if n % 2 else (s[mid - 1] + s[mid]) / 2.0
-
-
-def _geomean(xs):
-    """Geometric mean of a non-empty list of positive numbers."""
-    return math.exp(sum(math.log(x) for x in xs) / len(xs))
-
 
 def _fmt_ms(t):
     return f"{t*1000:.1f}" if t is not None else "FAIL"
@@ -201,7 +187,7 @@ def generate(cfg):
     lines.append(f"**Below startup-noise floor (proof time ~0 on either engine):** "
                  f"{below_noise} of {len(rows)}.")
     if speedups:
-        geo, med = _geomean(speedups), _median(speedups)
+        geo, med = statistics.geometric_mean(speedups), statistics.median(speedups)
         lines.append(f"**Proof-only speedup (Rocq/MEngine), over the "
                      f"{len(speedups)} module(s) above the noise floor:** "
                      f"{geo:.2f}× geomean (median {med:.2f}×).")
