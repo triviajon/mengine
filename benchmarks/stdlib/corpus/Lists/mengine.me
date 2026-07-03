@@ -1,5 +1,5 @@
 Theorem app_nil_l : forall (A : Type), forall (l : (list A)), (((eq (list A)) (((app A) (nil A)) l)) l).
-intro A. intro l.
+intro A; intro l.
 reflexivity.
 
 Theorem app_nil_r : forall (A : Type), forall (l : (list A)), (((eq (list A)) (((app A) l) (nil A))) l).
@@ -15,7 +15,7 @@ simpl.
 simpl; f_equal; exact (IHl).
 
 Theorem app_comm_cons : forall (A : Type), forall (l : (list A)), forall (m : (list A)), forall (a : A), (((eq (list A)) (((cons A) a) (((app A) l) m))) (((app A) (((cons A) a) l)) m)).
-intro A. intro l. intro m. intro a.
+intro A; intro l; intro m; intro a.
 reflexivity.
 
 Theorem app_assoc : forall (A : Type), forall (l : (list A)), forall (m : (list A)), forall (n : (list A)), (((eq (list A)) (((app A) l) (((app A) m) n))) (((app A) (((app A) l) m)) n)).
@@ -121,5 +121,5 @@ simpl.
 simpl; f_equal; exact (IHl).
 
 Theorem rev_unit : forall (A : Type), forall (l : (list A)), forall (a : A), (((eq (list A)) ((rev A) (((app A) l) (((cons A) a) (nil A))))) (((cons A) a) ((rev A) l))).
-intro A. intro l. intro a.
+intro A; intro l; intro a.
 rewrite rev_app_distr with eq; simpl; reflexivity.
