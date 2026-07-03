@@ -158,15 +158,13 @@ should be made for it, which is exactly why the table shows it as `~0`.
 benchmarks/stdlib/
   README.md                this file
   translate.py             Rocq .v -> MEngine .me translator (statements via Rocq `Set Printing All`)
-  stdlib_bench.py          corpus runner: list / test / run / report / manifest / fidelity / proof-fidelity / clean / regen
+  stdlib_bench.py          corpus runner: list / test / run / report / manifest / fidelity / clean / regen
   report.py                markdown table + log-log scatter plot
   fidelity.py              statement-vs-stdlib correspondence check (via Rocq's kernel)
-  proof_fidelity.py        proof-script vs stdlib-proof gap (re-extracted from installed stdlib)
   compat/stdlib_compat.me  compat prelude: nat/bool/list/option + pred/max/min/le + emulated tactics
   corpus/
     manifest.json          locked Tier-A set + per-statement digests + excluded boundary
     stdlib_map.json        each curated lemma -> its real stdlib counterpart + per-module stdlib file(s)
-    PROOF_FIDELITY.md      generated: each corpus proof vs the real stdlib proof + why they diverge
     <Module>/rocq.v        benchmarked Rocq source (one stdlib module per file)
     <Module>/mengine.me    auto-translated MEngine source
   results/stdlib.json      per-module timings + per-engine startup baselines
@@ -184,16 +182,15 @@ python3 stdlib/stdlib_bench.py run       # time both engines, write results
 python3 stdlib/stdlib_bench.py report    # regenerate REPORT.md + scatter plot
 python3 stdlib/stdlib_bench.py manifest  # regenerate corpus/manifest.json
 python3 stdlib/stdlib_bench.py fidelity  # check each statement vs the real stdlib
-python3 stdlib/stdlib_bench.py proof-fidelity  # regenerate corpus/PROOF_FIDELITY.md
 python3 stdlib/stdlib_bench.py clean     # remove every generated file (keep sources)
 python3 stdlib/stdlib_bench.py regen     # rebuild them all, in dependency order
 ```
 
 `clean` deletes the generated files (the auto-translated `mengine.me`,
-`manifest.json`, `PROOF_FIDELITY.md`, `results/`, the plot); `regen` rebuilds
-them from source in order (mengine.me -> manifest -> proof-fidelity -> run ->
-report).  The hand-authored sources (`rocq.v`, `stdlib_map.json`, the compat
-prelude, the docs) are never touched by either.
+`manifest.json`, `results/`, the plot); `regen` rebuilds them from source in
+order (mengine.me -> manifest -> run -> report).  The hand-authored sources
+(`rocq.v`, `stdlib_map.json`, the compat prelude, the docs) are never touched by
+either.
 
 Run a single unit: `… run le_0_n`, `… test bool_negb_involutive`.
 
@@ -258,56 +255,6 @@ the frequently-run `test` gate; run it after editing any `rocq.v` statement or
 `stdlib_map.json`.  It needs `coqc` on `PATH` (or `coq_path` in `config.json`)
 and the modules named in the map's `preamble` (`Bool.Bool`, `Arith.PeanoNat`,
 `Lists.List`) installed.
-
-## Proof-script fidelity vs the real stdlib (`proof-fidelity`)
-
-`fidelity` settles the *statements*: every curated `.v` statement is convertible
-to its stdlib counterpart, so the two engines are benchmarked on the **same
-theorem**.  The *proof scripts*, however, are deliberately **not** the stdlib's
-verbatim proofs — and for almost every lemma they structurally **cannot** be.
-`stdlib_bench.py proof-fidelity` documents that gap: it regenerates
-`corpus/PROOF_FIDELITY.md`, re-extracting each lemma's real proof straight from
-the **installed** stdlib (it asks `coqc` `About <ref>` for the exact source
-location, then reads back the verbatim `Proof … Qed` block — never guessed) and
-classifying *why* the corpus proof differs:
-
-- `near-match` — the library proof is `reflexivity`/`trivial` and the corpus
-  proof has the same shape (the only category that *could* be verbatim).
-- `untranslatable` — a concrete script exists but uses *leaf* tactics MEngine
-  lacks (the `destr_bool` Ltac macro — all of `Bool`; `destruct N` on a premise —
-  `Logic` `eq_sym`/`f_equal`) or only approximates/emulates more weakly
-  (`f_equal`, now a single-layer compat-prelude tactic — `Lists` `app_*`; `auto`
-  — `Lists` `length_app`).  Why `destr_bool`/`destruct_all` in particular cannot
-  be written as MEngine tactics (missing goal-abstraction primitive, no
-  higher-order motive inference, no hypothesis clearing) is documented in
-  [`DESTR_BOOL_OBSTACLES.md`](DESTR_BOOL_OBSTACLES.md).  This is **not** about sequencing: MEngine's
-  *implemented* tactic combinators are `;`, `||`, `try`, `repeat`,
-  `first […]`, and `match Goal` (plus emulated
-  `auto`/`trivial`/`simpl`/`symmetry`/`f_equal`), and the corpus proofs use `;`
-  and `repeat` themselves (`split; assumption`, `repeat constructor`).  The
-  grammar additionally *parses* the dispatch selector `… ; [ t1 | t2 | … ]` and
-  `shelve`, but the interpreter leaves both as unimplemented stubs (they raise
-  `Unknown tactic expression` — see `tactic_interp.c`); neither is needed by the
-  corpus, since no lemma's case split closes its branches with *different*
-  tactics.
-- `functor` — the lemma (most of the arithmetic: `add_0_r`, `add_comm`,
-  `add_assoc`, `mul_*`, `eqb_refl`, `leb_refl`, `Nat.le_0_l`) is produced by
-  module-functor `Include` over Rocq's abstract `Numbers`/`Structures`
-  framework.  Its only script lives in the abstract functor, over setoid
-  equality `==` with custom Ltac (`nzinduct`/`nzsimpl`); **no concrete-`nat`
-  proof script exists to copy at all**.
-- `constructor` — the lemma maps to an inductive **constructor** (`conj`,
-  `or_introl`, `ex_intro`, `eq_refl`, `le_n`): the library has no proof script
-  for it; the corpus builds the same term with `split`/`left`/`right`/`exists`/
-  `reflexivity`/`constructor`.
-
-This is the concrete answer to "why not generate the corpus `.v` from the stdlib
-verbatim": the *statements* are (and are kernel-checked to be) the library's, but
-the *proofs* must be re-derived in MEngine's tactic subset, because the
-library's own proofs are Ltac macros, functor-generated abstract proofs with no
-concrete script, or constructors with no script.  Like `fidelity`, it shells out
-to `coqc` (one `About` per mapped lemma) and so is a separate command from the
-fast `test` gate; re-run it after editing any `rocq.v` proof or `stdlib_map.json`.
 
 ## Scope (Tier A) and the engine boundary
 

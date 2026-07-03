@@ -15,16 +15,10 @@ Subcommands:
     manifest             regenerate corpus/manifest.json from the corpus dir
     fidelity [module ...] verify each curated statement matches its real stdlib
                          counterpart (corpus/stdlib_map.json), via Rocq's kernel
-    proof-fidelity [module ...]  regenerate corpus/PROOF_FIDELITY.md: each
-                         corpus proof vs the real stdlib proof, with the
-                         structural reason the two diverge (re-extracted from
-                         the installed stdlib; statements are still checked by
-                         `fidelity`)
     clean                remove every generated file (mengine.me, manifest,
-                         PROOF_FIDELITY.md, results, plot); keep sources
+                         results, plot); keep sources
     regen                rebuild every generated file from source, in dependency
-                         order (mengine.me -> manifest -> proof-fidelity -> run
-                         -> report)
+                         order (mengine.me -> manifest -> run -> report)
 """
 
 import argparse
@@ -531,11 +525,6 @@ def cmd_fidelity(cfg, args):
     return fidelity.run(cfg, args.modules or None)
 
 
-def cmd_proof_fidelity(cfg, args):
-    import proof_fidelity
-    return proof_fidelity.run(cfg, args.modules or None)
-
-
 # ───────────────────────── generated artifacts ───────────────────────────────
 # The complete list of files the benchmark generates — the single source of
 # truth for `clean` (remove them) and `regen` (rebuild them).  Everything else
@@ -551,7 +540,6 @@ def generated_files(cfg):
     results_dir = os.path.dirname(cfg["results"])
     paths += [
         os.path.join(cfg["corpus_dir"], "manifest.json"),
-        os.path.join(cfg["corpus_dir"], "PROOF_FIDELITY.md"),
         cfg["results"],                                        # results/stdlib.json
         os.path.join(results_dir, "REPORT.md"),
         os.path.join(cfg["plots_dir"], "stdlib_scatter.png"),
@@ -598,16 +586,14 @@ def cmd_regen(cfg, args):
     except translate.Untranslatable as e:
         print(f"  [FAIL ] translator flagged a unit: {e.reason}")
         return 1
-    print("\n== 2/5  corpus/manifest.json ==")
+    print("\n== 2/4  corpus/manifest.json ==")
     cmd_manifest(cfg, sub)
-    print("\n== 3/5  corpus/PROOF_FIDELITY.md ==")
-    pf_rc = cmd_proof_fidelity(cfg, sub)
-    print("\n== 4/5  results/stdlib.json (timing both engines) ==")
+    print("\n== 3/4  results/stdlib.json (timing both engines) ==")
     cmd_run(cfg, sub)
-    print("\n== 5/5  results/REPORT.md + plots/stdlib_scatter.png ==")
+    print("\n== 4/4  results/REPORT.md + plots/stdlib_scatter.png ==")
     cmd_report(cfg, sub)
     print("\nAll generated files rebuilt.")
-    return pf_rc or 0
+    return 0
 
 
 # ───────────────────────────── results io ────────────────────────────────────
@@ -637,7 +623,6 @@ def main():
     sub.add_parser("report")
     sub.add_parser("manifest")
     p_fid = sub.add_parser("fidelity"); p_fid.add_argument("modules", nargs="*")
-    p_pf = sub.add_parser("proof-fidelity"); p_pf.add_argument("modules", nargs="*")
     sub.add_parser("clean")
     sub.add_parser("regen")
     args = ap.parse_args()
@@ -645,7 +630,7 @@ def main():
     dispatch = {
         "list": cmd_list, "test": cmd_test, "run": cmd_run,
         "report": cmd_report, "manifest": cmd_manifest,
-        "fidelity": cmd_fidelity, "proof-fidelity": cmd_proof_fidelity,
+        "fidelity": cmd_fidelity,
         "clean": cmd_clean, "regen": cmd_regen,
     }
     rc = dispatch[args.command](cfg, args)

@@ -120,9 +120,9 @@ def split_top_level(s, delim, maxsplit=-1):
 
 
 # ─────────────────────── shared benchmark helpers ────────────────────────────
-# Small utilities the sibling benchmark scripts (stdlib_bench / fidelity /
-# proof_fidelity) all need; kept here because translate is the module every one
-# of them already imports.
+# Small utilities the sibling benchmark scripts (stdlib_bench / fidelity) all
+# need; kept here because translate is the module every one of them already
+# imports.
 
 COQC_BYPRODUCT_EXTS = (".vo", ".vok", ".vos", ".glob")
 
@@ -443,8 +443,7 @@ DROP_PREFIXES = ("Require", "From", "Import", "Export", "Open", "Close", "Set",
                  "Comments", "Section", "End", "Module", "Include")
 
 # Proof-closing keywords — everything that can terminate a `Proof … <closer>.`
-# block.  Shared so the translator and proof_fidelity detect a block's end the
-# same way; `PROOF_CLOSER_ALT` is the regex alternation of the same set.
+# block.  `PROOF_CLOSER_ALT` is the regex alternation of the same set.
 PROOF_CLOSERS = ("Qed", "Defined", "Admitted", "Abort")
 PROOF_CLOSER_ALT = "|".join(PROOF_CLOSERS)
 PROOF_FRAMING = ("Proof",) + PROOF_CLOSERS

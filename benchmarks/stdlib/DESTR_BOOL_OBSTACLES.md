@@ -1,10 +1,9 @@
 # Why `destr_bool` / `destruct_all` are not implementable as MEngine tactics
 
-The `Bool` corpus proofs are flagged `untranslatable` in
-[`corpus/PROOF_FIDELITY.md`](corpus/PROOF_FIDELITY.md) because the stdlib proves
-them with the `destr_bool` Ltac macro. This note records *why* that macro — and
-the `destruct_all` it is built on — cannot be written as a faithful MEngine
-tactic in the current tactic language, so the gap is auditable in one place.
+The stdlib proves the `Bool` lemmas with the `destr_bool` Ltac macro, which the
+corpus cannot reuse verbatim. This note records *why* that macro — and the
+`destruct_all` it is built on — cannot be written as a faithful MEngine tactic in
+the current tactic language, so the gap is auditable in one place.
 
 ## What the macro is
 
