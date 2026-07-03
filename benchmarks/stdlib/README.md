@@ -4,15 +4,15 @@ Per-module benchmark comparing **MEngine** against **Rocq** on a curated,
 mechanically-translated subset of the Rocq standard library. Each unit is one
 stdlib **module** — a `.v` file grouping that module's lemmas, mirroring the
 library's own file structure — so the proof work rises above each engine's
-fixed process-startup cost. Current corpus: 5 modules, 77 lemmas.
+fixed process-startup cost.
 
-| Module  | Source                                              | Lemmas |
-|---------|-----------------------------------------------------|--------|
-| `Bool`  | `Coq.Bool.Bool`                                     | 22 |
-| `Lists` | `Coq.Lists.List` (app/length/map/rev over `list A`) | 11 |
-| `Logic` | `Coq.Init.Logic` (eq, and/or, ex)                   | 10 |
-| `Nat`   | `Coq.Init.Nat` (inductive arithmetic, max/min)      | 31 |
-| `Peano` | `Coq.Init.Peano` (the `le` order)                   | 3  |
+| Module  | Source                                              |
+|---------|-----------------------------------------------------|
+| `Bool`  | `Coq.Bool.Bool`                                     |
+| `Lists` | `Coq.Lists.List` (app/length/map/rev over `list A`) |
+| `Logic` | `Coq.Init.Logic` (eq, and/or, ex)                   |
+| `Nat`   | `Coq.Init.Nat` (inductive arithmetic, max/min)      |
+| `Peano` | `Coq.Init.Peano` (the `le` order)                   |
 
 Every lemma is a **named** stdlib lemma that lives in its module's file — the
 corpus carries no bespoke facts. `fidelity` (below) enforces this.
@@ -74,30 +74,30 @@ compile would silently benchmark two *different* theorems).
 ## Timing
 
 `run` times each unit end-to-end in both engines (whole process, best of N).
-Both pay a fixed startup — MEngine ~4 ms (loading `prelude/tactics.me` + compat),
-Rocq ~65 ms — which at this problem size dominates the whole-file number. To
-isolate proof cost, `run` also times each engine's preamble *alone* as a startup
-floor: for Rocq, **each module's own Require/Import preamble** (`Lists` requires
-`Coq.Lists.List`, ~138 ms, so that one-time library load is subtracted, not
-charged as proof). `report` subtracts each module's floor (clamped at 0); a
+Both pay a fixed startup — MEngine loads `prelude/tactics.me` + compat, Rocq
+loads its prelude — which at this problem size dominates the whole-file number.
+To isolate proof cost, `run` also times each engine's preamble *alone* as a
+startup floor: for Rocq, **each module's own Require/Import preamble** (`Lists`
+requires `Coq.Lists.List`, so that one-time library load is subtracted, not
+charged as proof). `report` subtracts each module's floor (clamped at zero); a
 residual at or below the floor's run-to-run jitter is reported `~0`.
 
 `plots/stdlib_scatter.png` plots each module's **own-floor-subtracted proof
-time** (Rocq x vs MEngine y, log-log, parity `y = x`) — the same two numbers as
-its REPORT.md row. Whole-file time would be dishonest: `Lists`' one-time `List`
-load would drop it below any single parity line and read as an MEngine win, when
-on proof cost MEngine is actually ~2× *slower* on `map`/`rev` induction. Whiskers
-run to the slowest trial; shaded bands at each engine's startup-noise floor (the
-std-dev of its baseline trials) mark where a residual stops being trustworthy.
+time** (Rocq x vs MEngine y, log-log, parity `y = x`) — the same pair as its
+REPORT.md row. Whole-file time would be dishonest: `Lists`' one-time `List` load
+would drop it below any single parity line and read as an MEngine win, when on
+proof cost MEngine is actually *slower* on `map`/`rev` induction. Whiskers run to
+the slowest trial; shaded bands at each engine's startup-noise floor (the std-dev
+of its baseline trials) mark where a residual stops being trustworthy.
 
 ## `test` — faithfulness gate
 
 Per unit, before any timing:
 
-1. `rocq.v` compiles under `coqc`.
-2. `mengine.me` runs clean under `mengine -q` (compat prelude prepended).
-3. `mengine.me` is exactly what `translate.py` re-emits from `rocq.v` (no drift),
-   with matching theorem names.
+- `rocq.v` compiles under `coqc`.
+- `mengine.me` runs clean under `mengine -q` (compat prelude prepended).
+- `mengine.me` is exactly what `translate.py` re-emits from `rocq.v` (no drift),
+  with matching theorem names.
 
 Needs `coqc` on `PATH` (or `coq_path` in `config.json`).
 
@@ -111,9 +111,9 @@ maps every lemma to a stdlib ref. The ref is qualified with the file (`andb_diag
 → `Stdlib.Bool.Bool.andb_diag`) and checked by `Check (<file>.<ref> :
 <curated statement>).`, which passes iff the lemma both belongs to that file and
 is convertible to the curated one. An unmapped lemma, a stale map entry, a
-missing/absent ref, or a non-convertible match all fail (exit 1). Because it
-shells out to `coqc` (~6 s for the corpus) it is separate from `test`; run it
-after editing any statement or the map.
+missing/absent ref, or a non-convertible match all fail (non-zero exit). Because
+it shells out to `coqc` once per lemma it is slower than `test` and kept separate;
+run it after editing any statement or the map.
 
 ## Scope
 
@@ -137,7 +137,7 @@ case analysis (`andb_comm`, de Morgan) and induction over an inductive relation
 ## Why not verbatim stdlib files
 
 Running the translator over the installed stdlib per file, essentially none
-translate whole (≈1/16 even in `Coq.Init`): real files are saturated with
+translate whole, even in `Coq.Init`: real files are saturated with
 `Notation`/`Ltac`/`Variant`/`Register`/multi-scrutinee `match`/qualified names.
 Hence the corpus is curated lemmas drawn from stdlib content, grouped one file
 per module to mirror the library's structure.
