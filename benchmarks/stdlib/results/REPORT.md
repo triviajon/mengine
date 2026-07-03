@@ -12,7 +12,7 @@ Whole-file wall-clock is dominated by fixed per-invocation cost — a `coqc` pro
 | `Nat` | 31 | 126.7 | 63.3 | 44.2 | 42.3 | 1.50× |
 | `Peano` | 3 | 66.5 | ~0 | 2.3 | ~0 | — |
 
-**Modules:** 5, 77 lemmas (all Tier A) — one benchmark file per stdlib module, matching the library's own file structure.
+**Modules:** 5, 77 lemmas — one benchmark file per stdlib module, matching the library's own file structure.
 **Below startup-noise floor (proof time ~0 on either engine):** 1 of 5.
 **Proof-only speedup (Rocq/MEngine), over the 4 module(s) above the noise floor:** 1.81× geomean (median 2.24×).
 

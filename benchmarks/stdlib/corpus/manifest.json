@@ -1,10 +1,9 @@
 {
-  "description": "Tier-A: Rocq stdlib units auto-translated with zero manual edits and proved by MEngine + the compat prelude.",
+  "description": "Rocq stdlib units auto-translated with zero manual edits and proved by MEngine + the compat prelude.",
   "engine_note": "Requires the cbv applied-fix and GC-dedup kernel fixes (see benchmarks/stdlib/README.md).",
   "units": [
     {
       "name": "Bool",
-      "tier": "A",
       "rocq_sha256": "e877d7ae98cfade8",
       "statements": [
         {
@@ -100,7 +99,6 @@
     },
     {
       "name": "Lists",
-      "tier": "A",
       "rocq_sha256": "bf27ff9a508134f4",
       "statements": [
         {
@@ -152,7 +150,6 @@
     },
     {
       "name": "Logic",
-      "tier": "A",
       "rocq_sha256": "12d4dc897cb563e6",
       "statements": [
         {
@@ -200,7 +197,6 @@
     },
     {
       "name": "Nat",
-      "tier": "A",
       "rocq_sha256": "ec44b29f02532d33",
       "statements": [
         {
@@ -332,7 +328,6 @@
     },
     {
       "name": "Peano",
-      "tier": "A",
       "rocq_sha256": "a73cc6210bdade3c",
       "statements": [
         {
@@ -354,12 +349,12 @@
   "excluded": [
     {
       "pattern": "multi-variable case analysis / nested induction (e.g. andb_comm, orb b1 b2 = orb b2 b1, de Morgan)",
-      "boundary": "tier2-nested",
+      "boundary": "nested",
       "reason": "the translator emits one `apply (<T>_ind motive)` per proof and segments a single level of cases; a second destruct inside a case (needed to decide a goal in two booleans) is not yet generated."
     },
     {
       "pattern": "induction over an inductive relation (e.g. le_trans, le_n_S via le_ind)",
-      "boundary": "tier2-relational",
+      "boundary": "relational",
       "reason": "the eliminator has a dependent motive over the derivation; the translator only builds non-dependent `fun (x:T) => <body>` motives."
     }
   ]

@@ -2,8 +2,8 @@
 
 Per-module benchmark comparing **MEngine** against **Rocq** on a curated,
 mechanically-translated subset of the Rocq standard library. Each unit is one
-stdlib **module** — a `.v` file grouping that module's Tier-A lemmas, mirroring
-the library's own file structure — so the proof work rises above each engine's
+stdlib **module** — a `.v` file grouping that module's lemmas, mirroring the
+library's own file structure — so the proof work rises above each engine's
 fixed process-startup cost. Current corpus: 5 modules, 77 lemmas.
 
 | Module  | Source                                              | Lemmas |
@@ -27,7 +27,7 @@ benchmarks/stdlib/
   fidelity.py              statement-vs-stdlib correspondence check (via Rocq's kernel)
   compat/stdlib_compat.me  compat prelude: nat/bool/list/option + pred/max/min/le + emulated tactics
   corpus/
-    manifest.json          locked Tier-A set + per-statement digests + excluded boundary
+    manifest.json          locked corpus + per-statement digests + excluded boundary
     stdlib_map.json         each curated lemma -> its real stdlib counterpart + per-module file(s)
     <Module>/rocq.v         benchmarked Rocq source (hand-curated)
     <Module>/mengine.me     auto-translated MEngine source
@@ -118,10 +118,9 @@ missing/absent ref, or a non-convertible match all fail (exit 1). Because it
 shells out to `coqc` (~6 s for the corpus) it is separate from `test`; run it
 after editing any statement or the map.
 
-## Scope (Tier A)
+## Scope
 
-The computational/structural corner reachable today by MEngine + the compat
-prelude:
+The computational/structural corner reachable by MEngine + the compat prelude:
 
 - **Bool** — identities by ground reduction and single-variable `destruct`.
 - **Nat** — `add`/`mul`/`sub` reductions *and* computational induction over the

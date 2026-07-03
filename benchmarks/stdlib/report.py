@@ -182,7 +182,7 @@ def generate(cfg):
     nlem = meta.get("nlemmas")
     lem_s = f", {nlem} lemmas" if nlem else ""
     lines.append("")
-    lines.append(f"**Modules:** {len(rows)}{lem_s} (all Tier A) — one benchmark file "
+    lines.append(f"**Modules:** {len(rows)}{lem_s} — one benchmark file "
                  "per stdlib module, matching the library's own file structure.")
     lines.append(f"**Below startup-noise floor (proof time ~0 on either engine):** "
                  f"{below_noise} of {len(rows)}.")
@@ -193,7 +193,7 @@ def generate(cfg):
                      f"{geo:.2f}× geomean (median {med:.2f}×).")
     lines.append("")
     if below_noise == len(rows):
-        lines.append("> Even grouped per module, these Tier-A proofs are cheap "
+        lines.append("> Even grouped per module, these proofs are cheap "
                      "enough that their startup-subtracted cost stays at or below "
                      "measurement jitter on both engines — so the whole-file ratio "
                      "is still mostly a *process-startup* ratio. Heavier modules "

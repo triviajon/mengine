@@ -5,12 +5,12 @@ This is a *lightweight* sentence-aware rewriter with a small recursive-descent
 parser for the term sublanguage, NOT a full Coq elaborator.  Its guiding principle is
 **flag, never guess**: any construct it cannot translate soundly raises
 `Untranslatable` (surfaced as a `FLAG` in ``--report`` mode), so the unit is
-excluded from Tier A rather than mistranslated.  A wrong translation that happened
-to compile would silently corrupt the benchmark, which is the worst outcome.
+excluded rather than mistranslated.  A wrong translation that happened to compile
+would silently corrupt the benchmark, which is the worst outcome.
 
-Scope (Tier A): the computational/structural corners reachable by today's MEngine
-+ compat prelude — Bool, ground Nat, the `le` order, and propositional logic.
-Polymorphic list reasoning needs element-type inference and is deferred (Tier B).
+It covers the computational/structural corners reachable by MEngine + the compat
+prelude — Bool, Nat arithmetic, parametric list reasoning, the `le` order, and
+propositional logic.
 
 Statement and definition *types* are always elaborated through Rocq (`Set Printing
 All`), so a working `coqc`/`rocq` binary (``--coq``) is required; see
@@ -347,7 +347,7 @@ class TermParser:
             # than silently collapse them (flag, never guess).
             raise Untranslatable(f"universe '{t.kind}' has no MEngine equivalent")
         if t.kind in ("match", "let", "fix"):
-            raise Untranslatable(f"'{t.kind}' in term (Tier B)")
+            raise Untranslatable(f"'{t.kind}' in term")
         raise Untranslatable(f"unexpected token {t.kind} {t.val!r}")
 
     def parse_app(self):
@@ -532,7 +532,7 @@ def is_framing(sentence):
 # ──────────────────────────── tactic translation ─────────────────────────────
 #
 # Token-level mapping of a single Rocq tactic atom (no ';') to MEngine.  Unknown
-# tactics hard-stop (Untranslatable) so the unit leaves Tier A.
+# tactics hard-stop (Untranslatable) so the unit is excluded.
 
 # Inductive data for the induction/destruct scaffold (compat-prelude types).
 # `params` is the number of leading type parameters the eliminator takes (1 for
@@ -617,7 +617,7 @@ def translate_tactic_atom(atom, report):
     if name in ("apply", "eapply"):
         arg = atom[len(name):].strip()
         if _has_in_clause(arg):
-            raise Untranslatable("apply ... in H (Tier B)")
+            raise Untranslatable("apply ... in H")
         report.add_handled(f"tac:{name}")
         return f"{name} ({render_term(arg)})"
 
@@ -634,9 +634,9 @@ def translate_tactic_atom(atom, report):
     if name == "rewrite":
         rest = atom[len("rewrite"):].strip()
         if rest.startswith("<-"):
-            raise Untranslatable("rewrite <- (Tier B: builtin rewrite is forward-only)")
+            raise Untranslatable("rewrite <- (builtin rewrite is forward-only)")
         if _has_in_clause(rest):
-            raise Untranslatable("rewrite ... in H (Tier B)")
+            raise Untranslatable("rewrite ... in H")
         report.add_handled("tac:rewrite")
         # Builtin C rewrite (Leibniz eq).  Routed through the kernel rewrite engine
         # rather than the scripted `rewrite_s`, which cannot read the equality off an
@@ -746,7 +746,7 @@ def translate_proof(proof_sentences, stmt_type_out, report):
     # Shape (A): straight-line.  Forbid any later induction/destruct.
     for s in body:
         if re.match(r"^(induction|destruct)\b", s.strip()):
-            raise Untranslatable("induction/destruct not as first tactic (Tier B)")
+            raise Untranslatable("induction/destruct not as first tactic")
     lines = []
     for s in body:
         t = translate_tactic_sentence(s, report)
@@ -884,7 +884,7 @@ def _translate_induction(kind, var, as_clause, remainder, stmt_type_out, report,
         lb = parse_statement_leading_binder(rest)
         if lb is None:
             raise Untranslatable(
-                f"{kind} variable '{var}' is not a leading forall binder (Tier B)")
+                f"{kind} variable '{var}' is not a leading forall binder")
         name, ty, inner = lb
         intros.append(name)
         if name == var:

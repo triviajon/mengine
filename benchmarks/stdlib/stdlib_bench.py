@@ -7,7 +7,7 @@ the timing discipline of ``framework/runner.run_single`` (process-group kill on
 timeout, N trials keeping the minimum) without subclassing ``Benchmark``.
 
 Subcommands:
-    list                 show the corpus and tiers
+    list                 show the corpus by module
     test [unit ...]      faithfulness gate: coqc compiles rocq.v, MEngine runs
                          mengine.me clean, and the statement digests correspond
     run  [unit ...]      time both engines per unit; write results/stdlib.json
@@ -345,13 +345,12 @@ def compute_manifest(cfg):
         digests = unit_statement_digests(mepath)
         units.append({
             "name": name,
-            "tier": "A",
             "rocq_sha256": sha256_file(vpath),
             "statements": [{"name": n, "digest": dg} for n, dg in digests],
             "deps": "Coq.Init (auto-loaded)",
         })
     return {
-        "description": "Tier-A: Rocq stdlib units auto-translated with zero manual "
+        "description": "Rocq stdlib units auto-translated with zero manual "
                        "edits and proved by MEngine + the compat prelude.",
         "engine_note": "Requires the cbv applied-fix and GC-dedup kernel fixes "
                        "(see benchmarks/stdlib/README.md).",
@@ -384,17 +383,17 @@ def manifest_staleness(cfg):
     return None
 
 
-# Documented Tier-2 boundary (kept out of Tier A); see README.
+# Constructs the translator deliberately does not handle; see README.
 EXCLUDED_DOC = [
     {"pattern": "multi-variable case analysis / nested induction "
                 "(e.g. andb_comm, orb b1 b2 = orb b2 b1, de Morgan)",
-     "boundary": "tier2-nested",
+     "boundary": "nested",
      "reason": "the translator emits one `apply (<T>_ind motive)` per proof and "
                "segments a single level of cases; a second destruct inside a case "
                "(needed to decide a goal in two booleans) is not yet generated."},
     {"pattern": "induction over an inductive relation "
                 "(e.g. le_trans, le_n_S via le_ind)",
-     "boundary": "tier2-relational",
+     "boundary": "relational",
      "reason": "the eliminator has a dependent motive over the derivation; the "
                "translator only builds non-dependent `fun (x:T) => <body>` motives."},
 ]
@@ -405,7 +404,7 @@ EXCLUDED_DOC = [
 def cmd_list(cfg, args):
     units = discover_units(cfg)
     total = 0
-    print(f"Corpus: {len(units)} Tier-A module files under "
+    print(f"Corpus: {len(units)} module files under "
           f"{os.path.relpath(cfg['corpus_dir'])} "
           f"(one file per stdlib module)\n")
     for u in units:
