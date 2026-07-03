@@ -394,9 +394,10 @@ def cmd_run(cfg, args):
     results = load_results(cfg["results"])
 
     # Measure each engine's fixed startup/preamble floor once (extra trials to
-    # pin it down) so the report can subtract it from every unit's whole-file
-    # time.  See run_*_baseline above.
-    base_trials = max(cfg["trials"], 10)
+    # pin its min and stddev down — the report subtracts the min from every
+    # unit's whole-file time and uses the stddev as the noise floor).  Measured
+    # once and reused, so the extra trials are cheap.  See run_*_baseline above.
+    base_trials = max(cfg["trials"], 25)
     mb = run_mengine_baseline(cfg, cfg["timeout"], base_trials)
     rb = run_rocq_baseline(cfg, cfg["timeout"], base_trials)
     results[MENGINE_BASELINE_KEY] = mb

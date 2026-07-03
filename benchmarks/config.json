@@ -17,7 +17,7 @@
     "results": "stdlib/results/stdlib.json",
     "plots_dir": "stdlib/plots",
     "timeout": 20,
-    "trials": 5
+    "trials": 10
   },
   "mengine_variants": {
     "baseline": {

@@ -108,7 +108,8 @@ baseline loads `List` too (~138 ms vs the ~64 ms empty floor) — that library l
 is therefore subtracted from Lists' time, not mistaken for proof cost.
 `report` subtracts each module's floor from its whole-file time (clamped at 0) to
 get the marginal statement+proof cost, and reports a residual at or below the
-baseline's own run-to-run jitter as `~0` (indistinguishable from startup).  The
+baseline's own run-to-run jitter (its trials' standard deviation) as `~0`
+(indistinguishable from startup).  The
 trivial modules (`Bool`, `Logic`, `Peano`) sit just above their MEngine floor and
 the lighter side of Rocq's; the two computational modules clear it comfortably —
 `Nat` (~46 ms MEngine / ~68 ms Rocq) and `Lists` (~102 ms MEngine / ~48 ms Rocq) —
@@ -132,19 +133,21 @@ at the MEngine noise floor marks where a residual stops being trustworthy.  The
 whole-file numbers are not discarded — they stay in REPORT.md's `total` columns —
 they are just not the axis a proof-speed claim is read off of.
 
-**The scatter carries error bars, because the residual is a difference of two
-noisy numbers.**  A proof residual is `whole-file time - startup floor`, and both
-inputs jitter run-to-run (the Rocq floor alone swings ±10–30 ms between
-invocations — often larger than the proof residual itself).  Reporting only the
-best-of-N residual would hide that.  Each point is therefore drawn as a cross:
-the dot is the *median* residual, and the whiskers span the 10th–90th percentile
-of the resampled residual — every `total_trial − startup_trial` difference,
-treating the two as independent, so the bar folds in *both* the whole-file jitter
-and the startup-floor jitter at once.  Read it directly: a whisker that does not
-cross `y = x` is a result robust to the noise (Nat is clearly faster, Lists
-clearly slower); a cross straddling the line (Logic) or running off toward the
-noise floor (Peano) is a module where the per-invocation jitter swamps the proof
-cost and no speed claim should be made.
+**The scatter plots exactly the table's proof numbers — nothing resampled.**
+Each module is one dot at `(Rocq proof, MEngine proof)`, the same two
+startup-subtracted values as its REPORT.md row, so the plot and the table can
+never disagree.  Both coordinates are best-of-N: `min(whole-file) −
+min(startup floor)`, clamped at 0.  Because a proof residual is a difference of
+two separately-measured, jittery numbers (the Rocq floor alone swings ±10–30 ms
+between invocations — often larger than a small residual), two shaded bands mark
+where it stops being trustworthy: a horizontal band at MEngine's startup-noise
+floor and a vertical band at Rocq's, each floor's noise being simply the
+**standard deviation of its startup-baseline trials**.  Read it directly: dots in
+the shaded lower-right are MEngine proof-faster (Nat, Bool, Logic), a dot above
+`y = x` is MEngine proof-slower (Lists, ~2× on `map`/`rev` induction), and a dot
+inside a noise band (Peano) is a module whose proof cost is swamped by
+per-invocation jitter — no speed claim should be made for it, which is exactly
+why the table shows it as `~0`.
 
 ## Layout
 
@@ -165,7 +168,7 @@ benchmarks/stdlib/
     <Module>/mengine.me    auto-translated MEngine source
   results/stdlib.json      per-module timings + per-engine startup baselines
   results/REPORT.md        generated table + geometric-mean summary
-  plots/stdlib_scatter.png generated scatter: per-module startup-subtracted proof time (Rocq x vs MEngine y, log-log, y=x parity, 10-90% jitter whiskers)
+  plots/stdlib_scatter.png generated scatter: per-module startup-subtracted proof time (Rocq x vs MEngine y, log-log, y=x parity, startup-noise-floor bands)
 ```
 
 ## Usage
