@@ -278,8 +278,8 @@ def _scatter(cfg, rows, meta):
     ax.fill_between([lo, hi], [lo, lo], [lo, hi], color="tab:green", alpha=0.05)
     ax.text(hi * 0.85, lo * 2.4, "MEngine faster", fontsize=8, ha="right",
             va="bottom", color="tab:green", style="italic")
-    ax.text(lo * 6, hi * 0.18, "MEngine slower", fontsize=8, ha="left",
-            va="center", color="tab:red", style="italic", rotation=45)
+    ax.text(lo * 1.6, hi * 0.13, "MEngine slower", fontsize=8, ha="left",
+            va="center", color="tab:red", style="italic")
 
     # Noise floors: a proof at/below the startup measurement's own jitter (its
     # trials' stddev) is not distinguishable from startup.  Shade each engine's
