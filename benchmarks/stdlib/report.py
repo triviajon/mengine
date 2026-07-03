@@ -96,7 +96,11 @@ def _load(cfg):
     `*_noise` is the jitter of the floor that was subtracted.  MEngine has one
     global floor; Rocq has one *per module* (its own Require/Import preamble —
     e.g. Lists `Require`s List, so its floor is ~2× the others), falling back to
-    the global empty-.v floor when a module's own baseline wasn't recorded."""
+    the global empty-.v floor when a module's own baseline wasn't recorded.
+
+    Every value here is recomputed from the raw per-trial times (via `_times`),
+    never read from the runner's stored `time_taken` — so the report is a
+    self-contained derivation an auditor can recheck against the trial arrays."""
     with open(cfg["results"]) as f:
         results = json.load(f)
 

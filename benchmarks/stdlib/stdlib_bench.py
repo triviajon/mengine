@@ -63,8 +63,9 @@ def load_config():
 
 # ─────────────────────────── corpus discovery ────────────────────────────────
 
-# Each unit is now a whole stdlib *module* file (Bool, Logic, Nat, Peano),
-# mirroring how the standard library is organized — not a one-lemma fragment.
+# Each unit is a whole stdlib *module* file — one per corpus/<Module>/ directory
+# (Bool, Lists, Logic, Nat, Peano) — mirroring how the standard library is
+# organized, not a one-lemma fragment.
 
 
 def discover_units(cfg):
@@ -239,8 +240,10 @@ def run_rocq_module_baseline(cfg, name, timeout, trials):
 
 
 # Keys under which baselines are stored in results (alongside per-unit keys).
-# Baseline keys use a double underscore so report's per-unit key discovery (which
-# splits on the first '_') can exclude them by testing for "__".
+# Baseline keys double the underscore right after the engine prefix
+# (`mengine__…`, `coq__…`) so report's per-unit key discovery — which strips a
+# single-underscore engine prefix (`mengine_` / `coq_`) — skips them, keeping
+# module names that themselves contain '_' intact.
 MENGINE_BASELINE_KEY = "mengine__startup_baseline"
 ROCQ_BASELINE_KEY = "coq__startup_baseline"
 
