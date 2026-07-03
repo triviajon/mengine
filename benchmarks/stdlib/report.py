@@ -22,6 +22,7 @@ the table's proof numbers.
 import json
 import math
 import os
+import statistics
 
 # Single source of truth for the results-file key scheme, so the writer
 # (stdlib_bench) and this reader can never drift apart.  stdlib_bench imports
@@ -29,14 +30,15 @@ import os
 # circular.
 from stdlib_bench import (MENGINE_BASELINE_KEY, ROCQ_BASELINE_KEY,
                           proof_time, rocq_module_baseline_key,
-                          sample_stddev, successful_times)
+                          successful_times)
 
 
 # ─────────────────────────────── basic stats ─────────────────────────────────
-# The proof-cost definitions (successful_times / sample_stddev / proof_time) live
-# in stdlib_bench and are imported above, so this report and the `run` console
-# summary compute proof time and the noise floor identically.  Only the
-# presentation-only helpers (median, geomean, formatting) are local.
+# The proof-cost definitions (successful_times / proof_time) live in stdlib_bench
+# and are imported above; the noise floor is statistics.stdev of the startup-floor
+# trials.  So this report and the `run` console summary compute proof time and the
+# noise floor identically.  Only the presentation-only helpers (median, geomean,
+# formatting) are local.
 
 def _median(xs):
     """Median of a non-empty list (mean of the two central values when even)."""
@@ -112,14 +114,14 @@ def _load(cfg):
             "rocq_total_max": max(r_total),
             "mengine_proof": proof_time(m_total, m_floor_times),
             "rocq_proof": proof_time(r_total, r_mod_floor),
-            "mengine_noise": sample_stddev(m_floor_times),
-            "rocq_noise": sample_stddev(r_mod_floor),
+            "mengine_noise": statistics.stdev(m_floor_times),
+            "rocq_noise": statistics.stdev(r_mod_floor),
         })
     meta = {
         "mengine_floor": min(m_floor_times) if m_floor_times else None,
         "rocq_floor": min(r_floor_times) if r_floor_times else None,
-        "mengine_noise": sample_stddev(m_floor_times),
-        "rocq_noise": sample_stddev(r_floor_times),
+        "mengine_noise": statistics.stdev(m_floor_times),
+        "rocq_noise": statistics.stdev(r_floor_times),
         "nlemmas": sum(counts.values()) if counts else None,
     }
     return rows, meta

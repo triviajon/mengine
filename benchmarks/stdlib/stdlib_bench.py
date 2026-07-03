@@ -265,13 +265,6 @@ def successful_times(entry):
     return [t["time_taken"] for t in entry.get("trials", []) if t.get("success")]
 
 
-def sample_stddev(xs):
-    """Sample standard deviation of a list.  Raises StatisticsError on fewer than
-    two points — with base_trials >= 25 that means the measurement is broken, not
-    a zero noise floor to silently paper over."""
-    return statistics.stdev(xs)
-
-
 def proof_time(total_times, floor_times):
     """Best-of-N proof-only cost: min(whole-file) − min(startup floor), clamped.
     None when either measurement is missing (nothing to subtract → undefined,
@@ -468,7 +461,7 @@ def cmd_run(cfg, args):
           f"MEngine={mb_t*1000:8.1f}ms  Rocq={rb_t*1000:8.1f}ms\n")
 
     m_floor = successful_times(mb)          # MEngine's one global startup floor
-    m_noise = sample_stddev(m_floor)
+    m_noise = statistics.stdev(m_floor)
     r_floor = successful_times(rb)          # global fallback for a Require-free module
 
     for u in units:
@@ -486,7 +479,7 @@ def cmd_run(cfg, args):
         save_results(cfg["results"], results)
 
         # Interpret this module's timings with the *same* functions the report
-        # uses (proof_time / sample_stddev), so this progress line and REPORT.md
+        # uses (proof_time / statistics.stdev), so this progress line and REPORT.md
         # can never disagree: proof = min(whole-file) − min(startup floor); a
         # residual at/below the startup floor's own stddev prints as `~0`
         # (indistinguishable from startup) with speedup `—`, exactly as reported.
@@ -494,7 +487,7 @@ def cmd_run(cfg, args):
         mp = proof_time(successful_times(mr), m_floor)
         rp = proof_time(successful_times(rr), ru_floor)
         m_below = mp is not None and mp <= m_noise
-        r_below = rp is not None and rp <= sample_stddev(ru_floor)
+        r_below = rp is not None and rp <= statistics.stdev(ru_floor)
         ms = f"{mr['time_taken']*1000:.1f}ms" if mr["success"] else "FAIL"
         rs = f"{rr['time_taken']*1000:.1f}ms" if rr["success"] else "FAIL"
         mps = "~0" if m_below else (f"{mp*1000:.1f}ms" if mp is not None else "FAIL")
