@@ -155,7 +155,7 @@ why the table shows it as `~0`.
 benchmarks/stdlib/
   README.md                this file
   translate.py             Rocq .v -> MEngine .me translator (statements via Rocq `Set Printing All`)
-  stdlib_bench.py          corpus runner: list / test / run / report / manifest / fidelity / proof-fidelity
+  stdlib_bench.py          corpus runner: list / test / run / report / manifest / fidelity / proof-fidelity / clean / regen
   report.py                markdown table + log-log scatter plot
   fidelity.py              statement-vs-stdlib correspondence check (via Rocq's kernel)
   proof_fidelity.py        proof-script vs stdlib-proof gap (re-extracted from installed stdlib)
@@ -182,7 +182,15 @@ python3 stdlib/stdlib_bench.py report    # regenerate REPORT.md + scatter plot
 python3 stdlib/stdlib_bench.py manifest  # regenerate corpus/manifest.json
 python3 stdlib/stdlib_bench.py fidelity  # check each statement vs the real stdlib
 python3 stdlib/stdlib_bench.py proof-fidelity  # regenerate corpus/PROOF_FIDELITY.md
+python3 stdlib/stdlib_bench.py clean     # remove every generated file (keep sources)
+python3 stdlib/stdlib_bench.py regen     # rebuild them all, in dependency order
 ```
+
+`clean` deletes the generated files (the auto-translated `mengine.me`,
+`manifest.json`, `PROOF_FIDELITY.md`, `results/`, the plot); `regen` rebuilds
+them from source in order (mengine.me -> manifest -> proof-fidelity -> run ->
+report).  The hand-authored sources (`rocq.v`, `stdlib_map.json`, the compat
+prelude, the docs) are never touched by either.
 
 Run a single unit: `… run le_0_n`, `… test bool_negb_involutive`.
 

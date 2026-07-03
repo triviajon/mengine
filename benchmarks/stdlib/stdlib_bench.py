@@ -20,6 +20,11 @@ Subcommands:
                          structural reason the two diverge (re-extracted from
                          the installed stdlib; statements are still checked by
                          `fidelity`)
+    clean                remove every generated file (mengine.me, manifest,
+                         PROOF_FIDELITY.md, results, plot); keep sources
+    regen                rebuild every generated file from source, in dependency
+                         order (mengine.me -> manifest -> proof-fidelity -> run
+                         -> report)
 """
 
 import argparse
@@ -531,6 +536,80 @@ def cmd_proof_fidelity(cfg, args):
     return proof_fidelity.run(cfg, args.modules or None)
 
 
+# ───────────────────────── generated artifacts ───────────────────────────────
+# The complete list of files the benchmark generates — the single source of
+# truth for `clean` (remove them) and `regen` (rebuild them).  Everything else
+# in the tree is hand-authored source: rocq.v, stdlib_map.json, the compat
+# prelude, the .py scripts, and the docs.
+
+def generated_files(cfg):
+    """Absolute paths of every file the benchmark generates."""
+    paths = []
+    for name in discover_units(cfg):
+        _v, mepath, _d = unit_paths(cfg, name)
+        paths.append(mepath)                                   # corpus/<M>/mengine.me
+    results_dir = os.path.dirname(cfg["results"])
+    paths += [
+        os.path.join(cfg["corpus_dir"], "manifest.json"),
+        os.path.join(cfg["corpus_dir"], "PROOF_FIDELITY.md"),
+        cfg["results"],                                        # results/stdlib.json
+        os.path.join(results_dir, "REPORT.md"),
+        os.path.join(cfg["plots_dir"], "stdlib_scatter.png"),
+    ]
+    return paths
+
+
+def regen_mengine_sources(cfg):
+    """Re-translate every corpus rocq.v to its mengine.me, in-process via the
+    translator's own pipeline (rocq_elaborate -> translate_unit) — byte-identical
+    to translate.py's CLI.  Yields each module name as its file is written;
+    propagates translate.Untranslatable if a unit stops being translatable (a
+    real regression, surfaced rather than hidden)."""
+    for name in discover_units(cfg):
+        vpath, mepath, _d = unit_paths(cfg, name)
+        with open(vpath) as f:
+            vtext = f.read()
+        elab = translate.rocq_elaborate(vtext, vpath, cfg["coq_path"],
+                                        translate.statement_names(vtext))
+        me_src = translate.translate_unit(vtext, translate.Report(), elab)
+        with open(mepath, "w") as f:
+            f.write(me_src)
+        yield name
+
+
+def cmd_clean(cfg, args):
+    removed = 0
+    for p in generated_files(cfg):
+        if os.path.exists(p):
+            os.remove(p)
+            print(f"  removed {os.path.relpath(p)}")
+            removed += 1
+    print(f"\n{removed} generated file(s) removed "
+          "(sources — rocq.v, stdlib_map.json, compat, docs — kept).")
+
+
+def cmd_regen(cfg, args):
+    # Sub-steps discover all units/modules when given empty selectors.
+    sub = argparse.Namespace(units=[], modules=[])
+    print("== 1/5  corpus mengine.me (re-translate each rocq.v) ==")
+    try:
+        for n in regen_mengine_sources(cfg):
+            print(f"  [regen] {n}")
+    except translate.Untranslatable as e:
+        print(f"  [FAIL ] translator flagged a unit: {e.reason}")
+        return 1
+    print("\n== 2/5  corpus/manifest.json ==")
+    cmd_manifest(cfg, sub)
+    print("\n== 3/5  corpus/PROOF_FIDELITY.md ==")
+    pf_rc = cmd_proof_fidelity(cfg, sub)
+    print("\n== 4/5  results/stdlib.json (timing both engines) ==")
+    cmd_run(cfg, sub)
+    print("\n== 5/5  results/REPORT.md + plots/stdlib_scatter.png ==")
+    cmd_report(cfg, sub)
+    print("\nAll generated files rebuilt.")
+    return pf_rc or 0
+
+
 # ───────────────────────────── results io ────────────────────────────────────
 
 def load_results(path):
@@ -559,12 +638,15 @@ def main():
     sub.add_parser("manifest")
     p_fid = sub.add_parser("fidelity"); p_fid.add_argument("modules", nargs="*")
     p_pf = sub.add_parser("proof-fidelity"); p_pf.add_argument("modules", nargs="*")
+    sub.add_parser("clean")
+    sub.add_parser("regen")
     args = ap.parse_args()
 
     dispatch = {
         "list": cmd_list, "test": cmd_test, "run": cmd_run,
         "report": cmd_report, "manifest": cmd_manifest,
         "fidelity": cmd_fidelity, "proof-fidelity": cmd_proof_fidelity,
+        "clean": cmd_clean, "regen": cmd_regen,
     }
     rc = dispatch[args.command](cfg, args)
     sys.exit(rc or 0)
