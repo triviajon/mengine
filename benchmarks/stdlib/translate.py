@@ -339,9 +339,13 @@ class TermParser:
         if t.kind == "num":
             self.next()
             return ("num", int(t.val))
-        if t.kind in ("Prop", "Type", "Set", "SProp"):
+        if t.kind in ("Prop", "Type"):
             self.next()
-            return ("var", "Type" if t.kind == "Type" else "Prop")
+            return ("var", t.kind)
+        if t.kind in ("Set", "SProp"):
+            # `Set`/`SProp` are distinct universes, not `Prop`/`Type`; flag rather
+            # than silently collapse them (flag, never guess).
+            raise Untranslatable(f"universe '{t.kind}' has no MEngine equivalent")
         if t.kind in ("match", "let", "fix"):
             raise Untranslatable(f"'{t.kind}' in term (Tier B)")
         raise Untranslatable(f"unexpected token {t.kind} {t.val!r}")
@@ -387,11 +391,6 @@ def parse_term(s):
     return e
 
 
-def translate_elab_type(type_str):
-    """Render a `Set Printing All` type string as MEngine prefix syntax."""
-    return emit(parse_term(type_str))
-
-
 # ───────────────────────────── pretty printer ────────────────────────────────
 
 def emit(node):
@@ -426,8 +425,14 @@ def emit(node):
     raise Untranslatable(f"cannot emit node {kind}")
 
 
-def translate_term(src):
-    return emit(parse_term(src.strip()))
+def render_term(src):
+    """Render a term as fully-parenthesized MEngine prefix syntax.
+
+    One renderer for both inputs the parser accepts (see ``parse_term``): a
+    `Set Printing All` statement/definition *type*, and a surface definition
+    body / tactic argument.  They share the grammar, so they share the emitter;
+    ``lex`` already skips surrounding whitespace, so no pre-strip is needed."""
+    return emit(parse_term(src))
 
 
 # ──────────────────────────── command translation ────────────────────────────
@@ -437,7 +442,12 @@ DROP_PREFIXES = ("Require", "From", "Import", "Export", "Open", "Close", "Set",
                  "Declare", "Generalizable", "Print", "Check", "Search",
                  "Comments", "Section", "End", "Module", "Include")
 
-PROOF_FRAMING = ("Proof", "Qed", "Defined", "Admitted", "Abort")
+# Proof-closing keywords — everything that can terminate a `Proof … <closer>.`
+# block.  Shared so the translator and proof_fidelity detect a block's end the
+# same way; `PROOF_CLOSER_ALT` is the regex alternation of the same set.
+PROOF_CLOSERS = ("Qed", "Defined", "Admitted", "Abort")
+PROOF_CLOSER_ALT = "|".join(PROOF_CLOSERS)
+PROOF_FRAMING = ("Proof",) + PROOF_CLOSERS
 
 
 def translate_definition(sentence, report, elab):
@@ -466,7 +476,7 @@ def translate_definition(sentence, report, elab):
     else:
         head = rest
 
-    type_out = translate_elab_type(elab[name])
+    type_out = render_term(elab[name])
 
     if is_thm:
         report.add_handled(kw)
@@ -508,7 +518,7 @@ def translate_axiom(sentence, report, elab):
     if name not in elab:
         raise Untranslatable(f"no elaborated type for '{name}'")
     report.add_handled("Axiom")
-    return f"Axiom {name} : {translate_elab_type(elab[name])}."
+    return f"Axiom {name} : {render_term(elab[name])}."
 
 
 def is_dropped(sentence):
@@ -559,7 +569,7 @@ def _has_in_clause(arg):
     the `in` *keyword token* (already in ``KEYWORDS``).  Detected by lexing rather
     than substring-matching so an identifier such as `interp` or `in_range` never
     trips it.  A lex failure means the arg is malformed for other reasons, which
-    the subsequent `translate_term` reports — so treat it as no `in` clause."""
+    the subsequent `render_term` reports — so treat it as no `in` clause."""
     try:
         return any(t.kind == "in" for t in lex(arg, "tactic argument"))
     except Untranslatable:
@@ -610,17 +620,17 @@ def translate_tactic_atom(atom, report):
         if _has_in_clause(arg):
             raise Untranslatable("apply ... in H (Tier B)")
         report.add_handled(f"tac:{name}")
-        return f"{name} ({translate_term(arg)})"
+        return f"{name} ({render_term(arg)})"
 
     if name == "exact":
         arg = atom[len("exact"):].strip()
         report.add_handled("tac:exact")
-        return f"exact ({translate_term(arg)})"
+        return f"exact ({render_term(arg)})"
 
     if name in ("exists",):
         arg = atom[len("exists"):].strip()
         report.add_handled("tac:exists")
-        return f"exists ({translate_term(arg)})"
+        return f"exists ({render_term(arg)})"
 
     if name == "rewrite":
         rest = atom[len("rewrite"):].strip()
@@ -632,7 +642,7 @@ def translate_tactic_atom(atom, report):
         # Builtin C rewrite (Leibniz eq).  Routed through the kernel rewrite engine
         # rather than the scripted `rewrite_s`, which cannot read the equality off an
         # induction hypothesis whose type is the eliminator's beta-redex `(motive) x`.
-        return f"rewrite {translate_term(rest)} with eq"
+        return f"rewrite {render_term(rest)} with eq"
 
     if name in ("now",):
         # now tac  ≈  tac; easy.  Bare 'now' is unusual; treat 'now' alone as easy.
@@ -1012,7 +1022,7 @@ def translate_unit(text, report, elab):
                 ps = sentences[i].strip()
                 proof.append(ps)
                 w = re.match(r"^([A-Za-z]+)", ps)
-                if w and w.group(1) in ("Qed", "Defined", "Admitted", "Abort"):
+                if w and w.group(1) in PROOF_CLOSERS:
                     break
                 i += 1
             if any(re.match(r"^Admitted", p) or re.match(r"^Abort", p) for p in proof):

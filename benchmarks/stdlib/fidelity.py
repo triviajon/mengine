@@ -45,7 +45,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import translate  # noqa: E402  (local module; reuse its comment/sentence split)
 
-STMT_RE = re.compile(r"^(?:" + "|".join(translate.THEOREM_KEYWORDS) +
+STMT_RE = re.compile(r"^(?:" + translate.THEOREM_ALT +
                      r")\s+([A-Za-z_][A-Za-z0-9_']*)\s*(.*)$", re.S)
 
 

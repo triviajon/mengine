@@ -155,7 +155,7 @@ def _extract_block(vfile, line, kind):
     out = []
     for j in range(i, len(lines)):
         out.append(lines[j].rstrip())
-        if re.search(r"\b(Qed|Defined|Admitted)\.", lines[j]):
+        if re.search(r"\b(?:" + translate.PROOF_CLOSER_ALT + r")\.", lines[j]):
             break
     return "\n".join(out)
 
@@ -163,8 +163,8 @@ def _extract_block(vfile, line, kind):
 def _proof_body(block):
     """Just the tactic text of a `Proof. … Qed.` block (drop statement + framing),
     collapsed to one line for the blocking-tactic scan and the note."""
-    m = re.search(r"\bProof\b\.?\s*(.*?)\s*\b(Qed|Defined|Admitted)\b\.",
-                  block, re.S)
+    m = re.search(r"\bProof\b\.?\s*(.*?)\s*\b(?:" + translate.PROOF_CLOSER_ALT +
+                  r")\b\.", block, re.S)
     body = m.group(1) if m else block
     return re.sub(r"\s+", " ", body).strip()
 
@@ -183,9 +183,9 @@ def _scan(proof_body, table):
 # ───────────────────────────── corpus parsing ────────────────────────────────
 
 CORPUS_STMT = re.compile(
-    r"\b(?:" + "|".join(translate.THEOREM_KEYWORDS) + r")\s+"
+    r"\b(?:" + translate.THEOREM_ALT + r")\s+"
     r"([A-Za-z_][A-Za-z0-9_']*)\b")
-CLOSER = re.compile(r"\b(?:Qed|Defined|Admitted)\.")
+CLOSER = re.compile(r"\b(?:" + translate.PROOF_CLOSER_ALT + r")\.")
 
 
 def _corpus_proofs(vpath):

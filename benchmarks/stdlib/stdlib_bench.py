@@ -100,7 +100,7 @@ def time_command(cmd, cwd, timeout, trials):
             # Missing/unexecutable binary: record a failed trial and stop, like the
             # sibling scripts (translate/fidelity) — don't crash the whole run.
             last_err = f"could not run {cmd[0]!r}: {e}"
-            all_trials.append({"time_taken": 0.0, "success": False})
+            all_trials.append({"time_taken": None, "success": False})
             break
         try:
             out, err = proc.communicate(timeout=timeout)
@@ -191,10 +191,8 @@ def run_rocq_baseline(cfg, timeout, trials):
         cmd = [cfg["coq_path"], "-q", path]
         to = timeout * cfg["coq_timeout_multiplier"]
         res = time_command(cmd, os.path.dirname(path), to, trials)
-        translate.clean_coqc_byproducts(path)
     finally:
-        if os.path.exists(path):
-            os.remove(path)
+        translate.clean_coqc_temp(path)  # temp .v + its coqc byproducts
     return res
 
 
@@ -235,10 +233,8 @@ def run_rocq_module_baseline(cfg, name, timeout, trials):
         cmd = [cfg["coq_path"], "-q", os.path.basename(path)]
         to = timeout * cfg["coq_timeout_multiplier"]
         res = time_command(cmd, d, to, trials)
-        translate.clean_coqc_byproducts(path)
     finally:
-        if os.path.exists(path):
-            os.remove(path)
+        translate.clean_coqc_temp(path)  # temp .v + its coqc byproducts
     return res
 
 
@@ -279,18 +275,23 @@ def test_unit(cfg, name):
 
     # 3. mengine.me re-derivable from rocq.v by the translator (no drift), and
     #    statement names correspond.  Statement types are elaborated through Rocq
-    #    (`Set Printing All`), so the gate runs the translator the same way.
-    tr = subprocess.run(["python3", os.path.join(HERE, "translate.py"),
-                         "--coq", cfg["coq_path"], vpath],
-                        capture_output=True, text=True)
-    if tr.returncode != 0:
-        problems.append(f"translator flags rocq.v: {tr.stderr.strip()[:120]}")
+    #    (`Set Printing All`), so the gate runs the translator's own pipeline
+    #    (rocq_elaborate -> translate_unit) directly, exactly as translate.py's
+    #    CLI does.
+    try:
+        with open(vpath) as f:
+            vtext = f.read()
+        elab = translate.rocq_elaborate(vtext, vpath, cfg["coq_path"],
+                                        translate.statement_names(vtext))
+        me_src = translate.translate_unit(vtext, translate.Report(), elab)
+    except translate.Untranslatable as e:
+        problems.append(f"translator flags rocq.v: {e.reason[:120]}")
     else:
         with open(mepath) as f:
             on_disk = f.read()
-        if _norm(on_disk) != _norm(tr.stdout):
+        if _norm(on_disk) != _norm(me_src):
             problems.append("mengine.me is stale vs translate.py output (re-run manifest)")
-        me_names = set(dict(translate.statement_digests(tr.stdout)).keys())
+        me_names = set(dict(translate.statement_digests(me_src)).keys())
         rq_names = set(rocq_statement_names(vpath))
         if me_names != rq_names:
             problems.append(f"statement names differ: rocq={rq_names} mengine={me_names}")

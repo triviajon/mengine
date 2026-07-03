@@ -43,14 +43,10 @@ def _proof_time(total, floor):
 
 
 def _succ_times(entry):
-    """Successful per-trial wall-clock times (s) for a result, newest schema first.
-
-    Falls back to the single stored `time_taken` for older results that predate
-    the per-trial array, so the scatter still draws (with zero-width bars)."""
+    """Successful per-trial wall-clock times (s) for a result."""
     if not entry or not entry.get("success"):
         return []
-    times = [t["time_taken"] for t in entry.get("trials", []) if t.get("success")]
-    return times or ([entry["time_taken"]] if entry.get("time_taken") else [])
+    return [t["time_taken"] for t in entry.get("trials", []) if t.get("success")]
 
 
 def _pct(sorted_xs, p):
