@@ -276,13 +276,16 @@ def _scatter(cfg, rows, meta):
 
     # Noise floors: a proof at/below the startup measurement's own jitter (its
     # trials' stddev) is not distinguishable from startup.  Shade each engine's
-    # band so borderline points (e.g. Peano) are read with caution.
+    # band so borderline points (e.g. Peano) are read with caution.  Same concept
+    # on each axis, so identical weight (color/alpha) and a matching label.
     if m_noise > 0:
-        ax.axhspan(lo, m_noise * 1000, color="tab:gray", alpha=0.12, zorder=0)
+        ax.axhspan(lo, m_noise * 1000, color="tab:gray", alpha=0.10, zorder=0)
         ax.text(hi * 0.96, m_noise * 1000, "MEngine noise floor", fontsize=6,
                 ha="right", va="bottom", color="dimgray")
     if r_noise > 0:
         ax.axvspan(lo, r_noise * 1000, color="tab:gray", alpha=0.10, zorder=0)
+        ax.text(r_noise * 1000, hi * 0.96, "Rocq noise floor", fontsize=6,
+                ha="right", va="top", color="dimgray", rotation=90)
 
     for r in pts:
         x, y = r["rocq_proof"] * 1000, r["mengine_proof"] * 1000
