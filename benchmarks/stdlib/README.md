@@ -9,15 +9,20 @@ operator's guide and the design reference.
 Each *unit* is one stdlib **module** — a single file grouping the Tier-A lemmas
 drawn from that module, mirroring the standard library's own file structure
 (`coqc` compiles a `.v` file, not a lemma) rather than splitting each lemma into
-its own file.  The corpus currently has five modules (88 lemmas):
+its own file.  The corpus currently has five modules (77 lemmas):
 
 | Module  | Source                                  | Lemmas |
 |---------|-----------------------------------------|--------|
-| `Bool`  | `Coq.Bool.Bool` (ops from `Init.Datatypes`) | 24 |
+| `Bool`  | `Coq.Bool.Bool` (ops from `Init.Datatypes`) | 22 |
 | `Lists` | `Coq.Lists.List` (app/length/map/rev over `list A`) | 11 |
-| `Logic` | `Coq.Init.Logic` (eq, and/or, ex)       | 14 |
-| `Nat`   | `Coq.Init.Nat` (ground + inductive arithmetic, max/min) | 34 |
-| `Peano` | `Coq.Init.Peano` (the `le` order)       | 5  |
+| `Logic` | `Coq.Init.Logic` (eq, and/or, ex)       | 10 |
+| `Nat`   | `Coq.Init.Nat` (inductive arithmetic, max/min) | 31 |
+| `Peano` | `Coq.Init.Peano` (the `le` order)       | 3  |
+
+Every lemma is a **named** standard-library lemma that lives in its module's
+stdlib file — the corpus carries no bespoke facts (ground computations,
+nested-conjunction intros, …) with no library counterpart; `fidelity` enforces
+this (see "Statement fidelity" below).
 
 Computational induction over the `add`/`mul` fixpoints is now in Tier A, and the
 `Nat` module carries the full additive and multiplicative theory up to
@@ -154,7 +159,7 @@ benchmarks/stdlib/
   compat/stdlib_compat.me  compat prelude: nat/bool/list/option + pred/max/min/le + emulated tactics
   corpus/
     manifest.json          locked Tier-A set + per-statement digests + excluded boundary
-    stdlib_map.json        each curated lemma -> its real stdlib counterpart (or "original")
+    stdlib_map.json        each curated lemma -> its real stdlib counterpart + per-module stdlib file(s)
     PROOF_FIDELITY.md      generated: each corpus proof vs the real stdlib proof + why they diverge
     <Module>/rocq.v        benchmarked Rocq source (one stdlib module per file)
     <Module>/mengine.me    auto-translated MEngine source
@@ -206,34 +211,39 @@ library, because the corpus is re-stated by hand rather than extracted verbatim
 
 `stdlib_bench.py fidelity` closes that gap by letting **Rocq's own kernel**
 compare each curated statement to its real counterpart in the *installed*
-stdlib.  `corpus/stdlib_map.json` maps every curated lemma to one of:
+stdlib.  Every curated lemma **must** name a real stdlib lemma that lives in its
+module's standard-library file — the corpus deliberately holds no bespoke
+theorems (ground computations like `2 + 2 = 4`, nested-conjunction intros, …)
+that do not exist in the library.  `corpus/stdlib_map.json` records, per module,
+the stdlib file(s) its lemmas are drawn from (`module_files`) and maps every
+curated lemma to one of:
 
-- a stdlib lemma — checked by `Check (<stdlib_ref> : <curated statement>).`;
-  Rocq accepts it iff the library lemma's type is **convertible** to the curated
-  one (notation, implicit arguments, and numerals are handled by Rocq, so there
-  is nothing to guess).  Reported `match`.
+- a stdlib lemma — the ref is **qualified** with the module's associated file
+  (`andb_diag` → `Stdlib.Bool.Bool.andb_diag`) and checked by
+  `Check (<file>.<stdlib_ref> : <curated statement>).`; Rocq accepts it iff the
+  lemma both **belongs to that file** and has a type **convertible** to the
+  curated one (notation, implicit arguments, and numerals are handled by Rocq, so
+  there is nothing to guess).  Reported `match`.
 - a stdlib lemma whose statement is the **mirror** of the curated one
   (`"relation": "symmetry"`) — verified by `Goal <curated>. Proof. intros;
-  symmetry; apply <stdlib_ref>. Qed.`, confirming they are equivalent up to
-  `eq_sym`.  Reported `symmetry`.  No corpus lemma currently uses this: the
+  symmetry; apply <file>.<stdlib_ref>. Qed.`, confirming they are equivalent up
+  to `eq_sym`.  Reported `symmetry`.  No corpus lemma currently uses this: the
   whole corpus is stated to **exactly match** stdlib (the `assoc` lemmas, which
   stdlib states in the opposite orientation, were flipped to match), so the
-  mechanism is kept for future curation but every current lemma is `match` or
-  `original`.
-- `"original"` — a ground computation (`2 + 2 = 4`, `1 <= 2`) or bespoke
-  combination (`and_intro3`, `imp_trans`) with **no named stdlib lemma**.
-  Reported `original` and not checked, with the reason recorded in the map.
+  mechanism is kept for future curation but every current lemma is `match`.
 
 The map is the single source of truth and must cover **every** curated lemma: an
-unmapped lemma, a map entry with no curated lemma, a non-convertible `match`
-claim, or a stdlib ref that does not resolve all fail the check (exit 1).  Like
-the translator, the map is **flag, never guess** — every ref and relation was
-confirmed against the installed Rocq before being recorded.  Because the check
-shells out to `coqc` (one invocation per mapped lemma, ~6 s for the whole
-corpus), it is a separate command rather than part of the frequently-run `test`
-gate; run it after editing any `rocq.v` statement or `stdlib_map.json`.  It
-needs `coqc` on `PATH` (or `coq_path` in `config.json`) and the modules named in
-the map's `preamble` (`Bool.Bool`, `Arith.PeanoNat`, `Lists.List`) installed.
+unmapped lemma, a map entry with no curated lemma, an entry with no `stdlib` ref
+(`NO_STDLIB`), a ref that resolves in none of the module's associated files
+(`ABSENT`), or a non-convertible `match` claim (`MISMATCH`) all fail the check
+(exit 1).  Like the translator, the map is **flag, never guess** — every ref,
+relation, and file was confirmed against the installed Rocq before being
+recorded.  Because the check shells out to `coqc` (one invocation per mapped
+lemma, ~6 s for the whole corpus), it is a separate command rather than part of
+the frequently-run `test` gate; run it after editing any `rocq.v` statement or
+`stdlib_map.json`.  It needs `coqc` on `PATH` (or `coq_path` in `config.json`)
+and the modules named in the map's `preamble` (`Bool.Bool`, `Arith.PeanoNat`,
+`Lists.List`) installed.
 
 ## Proof-script fidelity vs the real stdlib (`proof-fidelity`)
 
@@ -276,8 +286,6 @@ classifying *why* the corpus proof differs:
   `or_introl`, `ex_intro`, `eq_refl`, `le_n`): the library has no proof script
   for it; the corpus builds the same term with `split`/`left`/`right`/`exists`/
   `reflexivity`/`constructor`.
-- `original` — no named stdlib counterpart (ground computation / bespoke), so
-  there is no library proof to be faithful to.
 
 This is the concrete answer to "why not generate the corpus `.v` from the stdlib
 verbatim": the *statements* are (and are kernel-checked to be) the library's, but
@@ -293,8 +301,8 @@ Tier A is the computational/structural corner reachable today by MEngine + the
 compat prelude:
 
 - **Bool** — identities by ground reduction and by case analysis (`destruct`).
-- **Nat (ground)** — closed `add`/`mul`/`sub` computations and reductions like
-  `0 + n = n`.
+- **Nat (reductions)** — definitional `add`/`mul`/`sub` reductions like
+  `0 + n = n`, `S n + m = S (n + m)`, `S n - S m = n - m`.
 - **`le` / order** — structural induction with a fixpoint-free motive, and
   constructor chains.
 - **Logic** — propositional introduction (`split`/`left`/`right`/`apply`).

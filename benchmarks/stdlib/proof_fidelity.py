@@ -26,8 +26,10 @@ It classifies *why* each corpus proof must diverge from the library's:
                   `auto`, `f_equal`, `destruct N`, `trivial`, `discriminate`, …).
   near-match      the library proof is `reflexivity`/`trivial`-only and the
                   corpus proof has the same shape (modulo MEngine surface syntax).
-  original        no named stdlib counterpart (ground computation / bespoke
-                  combination, per `stdlib_map.json`); nothing to be faithful to.
+
+Every curated lemma has a named stdlib counterpart (the corpus holds no bespoke
+theorems — `fidelity.py` enforces it), so every proof falls into one of the four
+categories above.
 
 The categories are not value judgements: only `near-match` could ever be verbatim;
 every other category is a structural reason the proof *cannot* be the stdlib's.
@@ -230,8 +232,7 @@ def classify(coq, ref, preamble, roots, workdir):
     return "untranslatable", detail
 
 
-CATEGORY_ORDER = ["near-match", "untranslatable", "functor", "constructor",
-                  "original"]
+CATEGORY_ORDER = ["near-match", "untranslatable", "functor", "constructor"]
 
 CATEGORY_BLURB = {
     "near-match": "library proof is `reflexivity`/`trivial`; corpus proof matches",
@@ -240,14 +241,10 @@ CATEGORY_BLURB = {
                "concrete script exists",
     "constructor": "maps to an inductive constructor; the library has no proof "
                    "script",
-    "original": "no named stdlib counterpart",
 }
 
 
-def _note(category, ref, detail, corpus_proof, original_reason):
-    if category == "original":
-        return (f"No named stdlib lemma ({original_reason}); there is no library "
-                f"proof to be faithful to.")
+def _note(category, ref, detail, corpus_proof):
     if category == "constructor":
         return (f"`{ref}` is an inductive **constructor** — the library has no "
                 f"proof script for it.  The corpus introduces the hypotheses and "
@@ -315,31 +312,28 @@ def build(cfg, modules=None):
                     lines.append(f"### `{name}` — **UNMAPPED** "
                                  f"(add to stdlib_map.json)\n")
                     continue
-                if "original" in entry:
-                    cat, detail, ref = "original", {"blocking": []}, None
-                    note = _note(cat, None, detail, corpus_proof, entry["original"])
-                else:
-                    ref = entry["stdlib"]
-                    try:
-                        cat, detail = classify(coq, ref, preamble, roots, workdir)
-                    except Exception as e:  # noqa: BLE001 — surface, never guess
-                        errors.append(f"{mod}.{name} ({ref}): {e}")
-                        lines.append(f"### `{name}` → `{ref}` — **ERROR**: {e}\n")
-                        continue
-                    note = _note(cat, ref, detail, corpus_proof, None)
+                ref = entry.get("stdlib")
+                if not ref:  # the corpus no longer permits bespoke, un-named lemmas
+                    errors.append(f"{mod}.{name}: map entry has no 'stdlib' ref")
+                    lines.append(f"### `{name}` — **NO STDLIB REF** "
+                                 f"(every corpus lemma must name a stdlib lemma)\n")
+                    continue
+                try:
+                    cat, detail = classify(coq, ref, preamble, roots, workdir)
+                except Exception as e:  # noqa: BLE001 — surface, never guess
+                    errors.append(f"{mod}.{name} ({ref}): {e}")
+                    lines.append(f"### `{name}` → `{ref}` — **ERROR**: {e}\n")
+                    continue
+                note = _note(cat, ref, detail, corpus_proof)
                 tally[cat] += 1
-                head = f"### `{name}`"
-                if ref:
-                    head += f" → `{ref}`"
-                head += f"  *(proof: {cat})*\n"
+                head = f"### `{name}` → `{ref}`  *(proof: {cat})*\n"
                 lines.append(head)
-                if cat != "original":
-                    lines.append(f"- **stdlib** — `{detail['loc']}` "
-                                 f"(`{detail['dirpath']}`):")
-                    lines.append("  ```coq")
-                    for bl in detail["block"].splitlines():
-                        lines.append("  " + bl)
-                    lines.append("  ```")
+                lines.append(f"- **stdlib** — `{detail['loc']}` "
+                             f"(`{detail['dirpath']}`):")
+                lines.append("  ```coq")
+                for bl in detail["block"].splitlines():
+                    lines.append("  " + bl)
+                lines.append("  ```")
                 lines.append(f"- **corpus** (`{mod}/rocq.v`): "
                              f"`{corpus_proof or '(none)'}`")
                 lines.append(f"- **why it diverges:** {note}\n")
@@ -381,7 +375,7 @@ def build(cfg, modules=None):
         " lacks — the `destr_bool` Ltac macro, `destruct` on a premise,"
         " `discriminate`, `apply … in H` — or tactics it only approximates"
         " (`f_equal`, now a single-layer compat-prelude tactic) / emulates more"
-        " weakly (`auto`); `original` lemmas have no named stdlib counterpart."
+        " weakly (`auto`)."
         "  **This is *not* about tactic sequencing:** MEngine's implemented"
         " combinators are `;`, `||`, `try`, `repeat`, `first […]`, and"
         " `match Goal`, and the corpus proofs use `;` and `repeat` themselves"

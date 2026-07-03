@@ -6,7 +6,7 @@
       "name": "Bool",
       "tier": "A",
       "category": "Bool",
-      "rocq_sha256": "62f157fcd42feed9",
+      "rocq_sha256": "e877d7ae98cfade8",
       "statements": [
         {
           "name": "andb_true_l",
@@ -47,14 +47,6 @@
         {
           "name": "orb_b_b",
           "digest": "forall (b : bool), (((eq bool) ((orb b) b)) b)"
-        },
-        {
-          "name": "negb_true",
-          "digest": "(((eq bool) (negb true)) false)"
-        },
-        {
-          "name": "negb_false",
-          "digest": "(((eq bool) (negb false)) true)"
         },
         {
           "name": "negb_involutive",
@@ -164,7 +156,7 @@
       "name": "Logic",
       "tier": "A",
       "category": "Logic",
-      "rocq_sha256": "caca634f140f416a",
+      "rocq_sha256": "12d4dc897cb563e6",
       "statements": [
         {
           "name": "eq_refl_x",
@@ -191,20 +183,8 @@
           "digest": "forall (A1 : Type), forall (A2 : Type), forall (A3 : Type), forall (B : Type), forall (f : forall (_ : A1), forall (_ : A2), forall (_ : A3), B), forall (x1 : A1), forall (y1 : A1), forall (x2 : A2), forall (y2 : A2), forall (x3 : A3), forall (y3 : A3), forall (_ : (((eq A1) x1) y1)), forall (_ : (((eq A2) x2) y2)), forall (_ : (((eq A3) x3) y3)), (((eq B) (((f x1) x2) x3)) (((f y1) y2) y3))"
         },
         {
-          "name": "imp_refl",
-          "digest": "forall (A : Prop), forall (_ : A), A"
-        },
-        {
-          "name": "imp_trans",
-          "digest": "forall (A : Prop), forall (B : Prop), forall (C : Prop), forall (_ : forall (_ : A), B), forall (_ : forall (_ : B), C), forall (_ : A), C"
-        },
-        {
           "name": "and_intro",
           "digest": "forall (A : Prop), forall (B : Prop), forall (_ : A), forall (_ : B), ((and A) B)"
-        },
-        {
-          "name": "and_intro3",
-          "digest": "forall (A : Prop), forall (B : Prop), forall (C : Prop), forall (_ : A), forall (_ : B), forall (_ : C), ((and A) ((and B) C))"
         },
         {
           "name": "or_introl_ex",
@@ -217,10 +197,6 @@
         {
           "name": "ex_intro_ex",
           "digest": "forall (A : Type), forall (P : forall (_ : A), Prop), forall (x : A), forall (_ : (P x)), ((ex A) (fun (y : A) => (P y)))"
-        },
-        {
-          "name": "ex_eq",
-          "digest": "forall (A : Type), forall (x : A), ((ex A) (fun (y : A) => (((eq A) y) x)))"
         }
       ],
       "deps": "Coq.Init (auto-loaded)"
@@ -229,20 +205,8 @@
       "name": "Nat",
       "tier": "A",
       "category": "Nat",
-      "rocq_sha256": "bc54196e853bdf4f",
+      "rocq_sha256": "ec44b29f02532d33",
       "statements": [
-        {
-          "name": "add_2_2",
-          "digest": "(((eq nat) ((add (S (S O))) (S (S O)))) (S (S (S (S O)))))"
-        },
-        {
-          "name": "mul_2_3",
-          "digest": "(((eq nat) ((mul (S (S O))) (S (S (S O))))) (S (S (S (S (S (S O)))))))"
-        },
-        {
-          "name": "sub_5_2",
-          "digest": "(((eq nat) ((sub (S (S (S (S (S O)))))) (S (S O)))) (S (S (S O))))"
-        },
         {
           "name": "add_0_l",
           "digest": "forall (n : nat), (((eq nat) ((add O) n)) n)"
@@ -374,7 +338,7 @@
       "name": "Peano",
       "tier": "A",
       "category": "Peano",
-      "rocq_sha256": "a49f134dc7c8388f",
+      "rocq_sha256": "a73cc6210bdade3c",
       "statements": [
         {
           "name": "le_refl_n",
@@ -387,14 +351,6 @@
         {
           "name": "le_succ_diag_r",
           "digest": "forall (n : nat), ((le n) (S n))"
-        },
-        {
-          "name": "le_1_2",
-          "digest": "((le (S O)) (S (S O)))"
-        },
-        {
-          "name": "le_2_4",
-          "digest": "((le (S (S O))) (S (S (S (S O)))))"
         }
       ],
       "deps": "Coq.Init (auto-loaded)"

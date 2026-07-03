@@ -50,12 +50,6 @@ apply (bool_ind (fun (b : bool) => (((eq bool) ((orb b) b)) b))).
 simpl; reflexivity.
 simpl; reflexivity.
 
-Theorem negb_true : (((eq bool) (negb true)) false).
-reflexivity.
-
-Theorem negb_false : (((eq bool) (negb false)) true).
-reflexivity.
-
 Theorem negb_involutive : forall (b : bool), (((eq bool) (negb (negb b))) b).
 intro b.
 apply (bool_ind (fun (b : bool) => (((eq bool) (negb (negb b))) b))).

@@ -5,23 +5,34 @@ The corpus `rocq.v` files are *hand-curated* re-statements of standard-library
 lemmas (the real stdlib files don't translate to MEngine — see README §"Why
 whole stdlib files don't translate").  That hand step is the one place a curated
 statement could silently drift from the library lemma it claims to be.  This
-module closes that gap by letting **Rocq's own kernel** compare the two:
+module closes that gap by letting **Rocq's own kernel** compare the two, and it
+additionally enforces that every curated lemma *belongs to* the standard-library
+file its module claims — the ref is qualified with that file before the check, so
+a name that only exists elsewhere (or nowhere) fails:
 
+  - Each module maps (via the map's ``module_files``) to the stdlib file(s) its
+    lemmas are drawn from — e.g. ``Bool`` -> ``Stdlib.Bool.Bool``, ``Nat`` ->
+    ``Stdlib.Arith.PeanoNat``.  The ``<stdlib_ref>`` is qualified with a file
+    (``andb_diag`` -> ``Stdlib.Bool.Bool.andb_diag``) so the check proves *both*
+    that the lemma exists in the associated file and that its type matches.
   - For a lemma mapped to a stdlib counterpart, it emits
-    ``Check (<stdlib_ref> : <curated statement>).`` — Rocq accepts it iff the
-    stdlib lemma's type is convertible to the curated statement's type.
+    ``Check (<file>.<stdlib_ref> : <curated statement>).`` — Rocq accepts it iff
+    the qualified stdlib lemma's type is convertible to the curated statement's.
   - For a counterpart whose statement is the *mirror* of the curated one
     (``relation: symmetry`` — e.g. stdlib ``add_assoc`` is the other
     orientation), it emits ``Goal <curated>. Proof. intros; symmetry; apply
-    <stdlib_ref>. Qed.``, verifying the two are equivalent up to ``eq_sym``.
-  - A curated lemma with no library counterpart (ground computation, bespoke
-    combination) is declared ``original`` in the map and reported, not checked.
+    <file>.<stdlib_ref>. Qed.``, verifying equivalence up to ``eq_sym``.
+
+Every curated lemma MUST have a named stdlib counterpart in its module's file: the
+corpus deliberately holds no bespoke theorems (ground computations, nested-
+conjunction intros, …) that do not exist in the standard library, and a map entry
+without a ``stdlib`` ref is a failure (``NO_STDLIB``), not a tolerated category.
 
 The map (`corpus/stdlib_map.json`) is the single source of truth and must cover
 every curated lemma; an unmapped lemma is a failure, so the check stays honest
-as the corpus grows.  Nothing here is guessed — every ref/relation was confirmed
-against the installed Rocq before being recorded (the translator's "flag, never
-guess" principle, applied to the curation step).
+as the corpus grows.  Nothing here is guessed — every ref/relation/file was
+confirmed against the installed Rocq before being recorded (the translator's
+"flag, never guess" principle, applied to the curation step).
 """
 
 import os
@@ -81,30 +92,67 @@ def _run_coqc(coq, preamble, body, workdir):
         translate.clean_coqc_temp(path)
 
 
-def check_lemma(coq, preamble, entry, rocq_type, workdir):
-    """Run the Rocq-side check for one curated lemma.
+def qualify_ref(ref, file):
+    """Fully-qualify a bare/`@`-prefixed stdlib ref with a library file path:
+    ('andb_diag', 'Stdlib.Bool.Bool')     -> 'Stdlib.Bool.Bool.andb_diag',
+    ('@conj', 'Corelib.Init.Logic')        -> '@Corelib.Init.Logic.conj',
+    ('Nat.add_0_l', 'Stdlib.Arith.PeanoNat') -> 'Stdlib.Arith.PeanoNat.Nat.add_0_l'.
+    Qualifying pins the ref to one file, so the Check both proves membership in
+    that file and disambiguates names the library re-exports under several paths
+    (e.g. a bare `eq_sym` also resolves as `Nat.eq_sym`)."""
+    at = ref.startswith("@")
+    bare = ref[1:] if at else ref
+    return ("@" if at else "") + f"{file}.{bare}"
+
+
+def check_lemma(coq, preamble, entry, rocq_type, files, workdir):
+    """Run the Rocq-side check for one curated lemma against its stdlib
+    counterpart, requiring the ref to live in one of the module's associated
+    library `files`.  The ref is qualified with each file in turn, so a single
+    `Check` proves *both* file-membership and convertibility.
 
     Returns (status, ref, detail) where status is one of:
-      'match'    convertible to the stdlib lemma (Check ascription succeeded),
-      'symmetry' verified the mirror equivalence (symmetry; apply succeeded),
-      'original' no stdlib counterpart (declared in the map; not checked),
-      'MISMATCH' the claimed correspondence does NOT hold (a real finding),
-      'ERROR'    the check could not run (e.g. stdlib ref not found)."""
-    if "original" in entry:
-        return "original", None, entry["original"]
+      'match'     convertible to <file>.<ref> for some associated file,
+      'symmetry'  verified the mirror equivalence against <file>.<ref>,
+      'MISMATCH'  <ref> exists in an associated file but is NOT convertible,
+      'ABSENT'    <ref> is defined in no associated file (the theorem does not
+                  belong to this module's standard-library file),
+      'NO_STDLIB' the map entry has no 'stdlib' ref (a bespoke theorem with no
+                  standard-library counterpart — no longer permitted),
+      'ERROR'     the check could not run (unknown relation, no files, …).
+    The returned ref is the qualified name on success, the bare ref otherwise."""
     ref = entry.get("stdlib")
     if not ref:
-        return "ERROR", None, "map entry has neither 'stdlib' nor 'original'"
+        return "NO_STDLIB", None, (
+            "map entry has no 'stdlib' ref; every corpus lemma must correspond to "
+            "a named standard-library lemma")
+    if not files:
+        return "ERROR", ref, "module has no 'module_files' association in the map"
     relation = entry.get("relation", "convertible")
-    if relation == "convertible":
-        ok, msg = _run_coqc(coq, preamble, f"Check ({ref} : {rocq_type}).", workdir)
-        return ("match" if ok else "MISMATCH"), ref, msg
-    if relation == "symmetry":
-        body = (f"Goal {rocq_type}.\n"
-                f"Proof. intros; symmetry; apply {ref}. Qed.")
-        ok, msg = _run_coqc(coq, preamble, body, workdir)
-        return ("symmetry" if ok else "MISMATCH"), ref, msg
-    return "ERROR", ref, f"unknown relation '{relation}'"
+    if relation not in ("convertible", "symmetry"):
+        return "ERROR", ref, f"unknown relation '{relation}'"
+    existed, last_msg = False, ""
+    for file in files:
+        qref = qualify_ref(ref, file)
+        if relation == "convertible":
+            ok, msg = _run_coqc(coq, preamble, f"Check ({qref} : {rocq_type}).", workdir)
+            if ok:
+                return "match", qref, file
+        else:  # symmetry
+            body = (f"Goal {rocq_type}.\n"
+                    f"Proof. intros; symmetry; apply {qref}. Qed.")
+            ok, msg = _run_coqc(coq, preamble, body, workdir)
+            if ok:
+                return "symmetry", qref, file
+        # Not convertible under this file — does the qualified name even exist
+        # there?  If so it's a genuine type MISMATCH; if not, keep looking.
+        found, _ = _run_coqc(coq, preamble, f"Check {qref}.", workdir)
+        if found:
+            existed, last_msg = True, msg
+    if existed:
+        return "MISMATCH", ref, last_msg
+    return "ABSENT", ref, (f"'{ref}' is defined in none of the module's "
+                           f"associated files ({', '.join(files)})")
 
 
 def run(cfg, modules=None):
@@ -117,11 +165,12 @@ def run(cfg, modules=None):
     spec = translate.load_stdlib_map(corpus_dir)
     preamble = spec["preamble"]
     mod_map = spec["modules"]
+    module_files = spec.get("module_files", {})
 
     sel = modules or translate.corpus_modules(corpus_dir)
 
-    tally = {k: 0 for k in ("match", "symmetry", "original", "MISMATCH",
-                            "ERROR", "UNMAPPED", "STALE")}
+    tally = {k: 0 for k in ("match", "symmetry", "MISMATCH", "ABSENT",
+                            "NO_STDLIB", "ERROR", "UNMAPPED", "STALE")}
     failures = []
     workdir = tempfile.mkdtemp(prefix="fidelity_")
     try:
@@ -132,7 +181,10 @@ def run(cfg, modules=None):
                 continue
             stmts = extract_statements(vpath)
             entries = mod_map.get(mod, {})
-            print(f"\n{mod} ({len(stmts)} lemmas):")
+            files = module_files.get(mod, [])
+            if not files:
+                failures.append(f"{mod}: no 'module_files' entry in stdlib_map.json")
+            print(f"\n{mod} ({len(stmts)} lemmas, files: {', '.join(files) or '—'}):")
             seen = set()
             for name, rocq_type in stmts:
                 seen.add(name)
@@ -142,17 +194,16 @@ def run(cfg, modules=None):
                     print(f"  [UNMAPPED] {name}  (add it to stdlib_map.json)")
                     continue
                 status, ref, detail = check_lemma(coq, preamble, entries[name],
-                                                  rocq_type, workdir)
+                                                  rocq_type, files, workdir)
                 tally[status] += 1
                 if status == "match":
                     print(f"  [match   ] {name:18s} <- {ref}")
                 elif status == "symmetry":
                     print(f"  [symmetry] {name:18s} <- {ref}  "
                           f"(mirror; verified equivalent up to eq_sym)")
-                elif status == "original":
-                    print(f"  [original] {name:18s}    ({detail})")
-                else:  # MISMATCH / ERROR
-                    print(f"  [{status:8s}] {name:18s} <- {ref}")
+                else:  # MISMATCH / ABSENT / NO_STDLIB / ERROR
+                    print(f"  [{status:8s}] {name:18s}" +
+                          (f" <- {ref}" if ref else ""))
                     print(f"             {detail[:240]}")
                     failures.append(f"{mod}.{name} ({status}): {detail[:160]}")
             # Stale map entries: a name in the map with no curated lemma.
@@ -170,13 +221,15 @@ def run(cfg, modules=None):
     total = sum(tally.values()) - tally["STALE"]
     print(f"\n{total} curated lemmas: {tally['match']} convertible, "
           f"{tally['symmetry']} symmetry-variant, "
-          f"{tally['original']} original (no stdlib counterpart), "
-          f"{tally['MISMATCH']} mismatch, {tally['ERROR']} error, "
+          f"{tally['MISMATCH']} mismatch, {tally['ABSENT']} absent-from-file, "
+          f"{tally['NO_STDLIB']} without-stdlib-counterpart, "
+          f"{tally['ERROR']} error, "
           f"{tally['UNMAPPED']} unmapped, {tally['STALE']} stale.")
     if failures:
         print("\nFIDELITY FAILURES:")
         for f in failures:
             print(f"  - {f}")
         return 1
-    print("\nAll curated statements correspond to their stdlib counterparts.")
+    print("\nAll curated statements correspond to their stdlib counterparts "
+          "and belong to their module's standard-library file.")
     return 0

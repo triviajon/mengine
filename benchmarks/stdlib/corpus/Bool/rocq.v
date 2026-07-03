@@ -34,12 +34,6 @@ Proof. destruct b; simpl; reflexivity. Qed.
 Lemma orb_b_b : forall b : bool, orb b b = b.
 Proof. destruct b; simpl; reflexivity. Qed.
 
-Lemma negb_true : negb true = false.
-Proof. reflexivity. Qed.
-
-Lemma negb_false : negb false = true.
-Proof. reflexivity. Qed.
-
 Lemma negb_involutive : forall b : bool, negb (negb b) = b.
 Proof. destruct b; simpl; reflexivity. Qed.
 

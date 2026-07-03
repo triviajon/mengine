@@ -1,15 +1,6 @@
-(* Nat: Tier-A units from Coq.Init.Nat / Coq.Arith.  Ground evaluation plus
-   computational induction over the add/mul fixpoints, now reachable thanks to
-   the symbolic-fixpoint reduction fix and quantified-IH rewriting. *)
-
-Example add_2_2 : 2 + 2 = 4.
-Proof. reflexivity. Qed.
-
-Example mul_2_3 : 2 * 3 = 6.
-Proof. reflexivity. Qed.
-
-Example sub_5_2 : 5 - 2 = 3.
-Proof. reflexivity. Qed.
+(* Nat: Tier-A units from Coq.Init.Nat / Coq.Arith.  Computational induction over
+   the add/mul fixpoints, now reachable thanks to the symbolic-fixpoint reduction
+   fix and quantified-IH rewriting. *)
 
 Lemma add_0_l : forall n : nat, 0 + n = n.
 Proof. intro n. reflexivity. Qed.

@@ -1,5 +1,5 @@
 {
- "description": "Maps each curated corpus lemma to its real Rocq standard-library counterpart, so `stdlib_bench.py fidelity` can verify (via Rocq's kernel) that the curated *statement* matches the library's. Each entry is either {\"stdlib\": <ref>} (the curated type must be convertible to the stdlib lemma's type, checked by `Check (<ref> : <curated type>).`), {\"stdlib\": <ref>, \"relation\": \"symmetry\"} (the curated type is the mirror of the stdlib lemma, verified by `intros; symmetry; apply <ref>`), or {\"original\": <reason>} (a ground computation or bespoke combination with no named stdlib lemma; not checked). The mapping is hand-maintained: every curated lemma MUST appear here, and the stdlib refs / relations were each confirmed against the installed Rocq before being recorded (flag, never guess).",
+ "description": "Maps each curated corpus lemma to its real Rocq standard-library counterpart, so `stdlib_bench.py fidelity` can verify (via Rocq's kernel) that the curated *statement* matches the library's. Every curated lemma MUST have a named stdlib counterpart: the benchmark deliberately contains no bespoke lemmas (ground computations, nested-conjunction intros, etc.) that do not exist in the standard library. Each entry is either {\"stdlib\": <ref>} (the curated type must be convertible to the stdlib lemma's type) or {\"stdlib\": <ref>, \"relation\": \"symmetry\"} (the curated type is the mirror of the stdlib lemma, verified by `intros; symmetry; apply <ref>`). `module_files` names, per module, the standard-library file(s) its lemmas are drawn from; `fidelity` qualifies each <ref> with those file(s) and checks `Check (<file>.<ref> : <curated type>).`, so the ref must both live in the associated file AND be convertible. The mapping is hand-maintained: every curated lemma MUST appear here, and the stdlib refs / relations / files were each confirmed against the installed Rocq before being recorded (flag, never guess).",
  "rocq_version": "9.0.1",
  "preamble": [
   "From Stdlib Require Import Bool.Bool.",
@@ -8,6 +8,24 @@
   "Import ListNotations.",
   "Open Scope list_scope."
  ],
+ "module_files": {
+  "Bool": [
+   "Stdlib.Bool.Bool"
+  ],
+  "Lists": [
+   "Stdlib.Lists.List"
+  ],
+  "Logic": [
+   "Corelib.Init.Logic"
+  ],
+  "Nat": [
+   "Stdlib.Arith.PeanoNat"
+  ],
+  "Peano": [
+   "Corelib.Init.Peano",
+   "Stdlib.Arith.PeanoNat"
+  ]
+ },
  "modules": {
   "Bool": {
    "andb_true_l": {
@@ -39,12 +57,6 @@
    },
    "orb_b_b": {
     "stdlib": "orb_diag"
-   },
-   "negb_true": {
-    "original": "ground reflexivity fact (negb true = false); no named stdlib lemma"
-   },
-   "negb_false": {
-    "original": "ground reflexivity fact (negb false = true); no named stdlib lemma"
    },
    "negb_involutive": {
     "stdlib": "negb_involutive"
@@ -137,17 +149,8 @@
    "f_equal3_ex": {
     "stdlib": "f_equal3"
    },
-   "imp_refl": {
-    "original": "forall A:Prop, A -> A; not a named stdlib lemma"
-   },
-   "imp_trans": {
-    "original": "forall A B C:Prop, (A->B)->(B->C)->A->C; not a named stdlib lemma"
-   },
    "and_intro": {
     "stdlib": "@conj"
-   },
-   "and_intro3": {
-    "original": "nested conjunction introduction; bespoke combination, no single stdlib lemma"
    },
    "or_introl_ex": {
     "stdlib": "@or_introl"
@@ -157,21 +160,9 @@
    },
    "ex_intro_ex": {
     "stdlib": "@ex_intro"
-   },
-   "ex_eq": {
-    "original": "exists y, y = x; bespoke existential, no named stdlib lemma"
    }
   },
   "Nat": {
-   "add_2_2": {
-    "original": "ground computation 2 + 2 = 4; no stdlib lemma"
-   },
-   "mul_2_3": {
-    "original": "ground computation 2 * 3 = 6; no stdlib lemma"
-   },
-   "sub_5_2": {
-    "original": "ground computation 5 - 2 = 3; no stdlib lemma"
-   },
    "add_0_l": {
     "stdlib": "Nat.add_0_l"
    },
@@ -275,12 +266,6 @@
    },
    "le_succ_diag_r": {
     "stdlib": "Nat.le_succ_diag_r"
-   },
-   "le_1_2": {
-    "original": "ground fact 1 <= 2; no named stdlib lemma"
-   },
-   "le_2_4": {
-    "original": "ground fact 2 <= 4; no named stdlib lemma"
    }
   }
  }

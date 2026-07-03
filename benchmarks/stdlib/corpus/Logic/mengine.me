@@ -22,22 +22,9 @@ Theorem f_equal3_ex : forall (A1 : Type), forall (A2 : Type), forall (A3 : Type)
 intro A1. intro A2. intro A3. intro B. intro f. intro x1. intro y1. intro x2. intro y2. intro x3. intro y3. intro H1. intro H2. intro H3.
 rewrite H1 with eq; rewrite H2 with eq; rewrite H3 with eq; reflexivity.
 
-Theorem imp_refl : forall (A : Prop), forall (_ : A), A.
-intro A.
-intro H.
-exact (H).
-
-Theorem imp_trans : forall (A : Prop), forall (B : Prop), forall (C : Prop), forall (_ : forall (_ : A), B), forall (_ : forall (_ : B), C), forall (_ : A), C.
-intro A. intro B. intro C. intro HAB. intro HBC. intro HA.
-apply (HBC); apply (HAB); exact (HA).
-
 Theorem and_intro : forall (A : Prop), forall (B : Prop), forall (_ : A), forall (_ : B), ((and A) B).
 intro A. intro B. intro HA. intro HB.
 split; assumption.
-
-Theorem and_intro3 : forall (A : Prop), forall (B : Prop), forall (C : Prop), forall (_ : A), forall (_ : B), forall (_ : C), ((and A) ((and B) C)).
-intro A. intro B. intro C. intro HA. intro HB. intro HC.
-repeat split; assumption.
 
 Theorem or_introl_ex : forall (A : Prop), forall (B : Prop), forall (_ : A), ((or A) B).
 intro A. intro B. intro HA.
@@ -50,7 +37,3 @@ right; assumption.
 Theorem ex_intro_ex : forall (A : Type), forall (P : forall (_ : A), Prop), forall (x : A), forall (_ : (P x)), ((ex A) (fun (y : A) => (P y))).
 intro A. intro P. intro x. intro H.
 exists (x); exact (H).
-
-Theorem ex_eq : forall (A : Type), forall (x : A), ((ex A) (fun (y : A) => (((eq A) y) x))).
-intro A. intro x.
-exists (x); reflexivity.
