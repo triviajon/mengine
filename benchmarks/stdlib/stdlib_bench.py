@@ -266,9 +266,10 @@ def successful_times(entry):
 
 
 def sample_stddev(xs):
-    """Sample standard deviation of a list (0.0 for fewer than two points,
-    where statistics.stdev would raise)."""
-    return statistics.stdev(xs) if len(xs) >= 2 else 0.0
+    """Sample standard deviation of a list.  Raises StatisticsError on fewer than
+    two points — with base_trials >= 25 that means the measurement is broken, not
+    a zero noise floor to silently paper over."""
+    return statistics.stdev(xs)
 
 
 def proof_time(total_times, floor_times):
