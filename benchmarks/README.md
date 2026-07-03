@@ -61,8 +61,8 @@ stdlib lemmas lives under [`stdlib/`](stdlib/README.md). It is driven by its own
 runner (it iterates a manifest rather than sweeping a parameter range):
 
 ```bash
-python3 stdlib/stdlib_bench.py list      # show the corpus
+python3 stdlib/stdlib_bench.py regen     # rebuild every generated file (translate, time, report)
 python3 stdlib/stdlib_bench.py test      # faithfulness gate
-python3 stdlib/stdlib_bench.py run       # time both engines
-python3 stdlib/stdlib_bench.py report    # table + scatter plot
+python3 stdlib/stdlib_bench.py fidelity  # statement vs the real stdlib
+python3 stdlib/stdlib_bench.py clean     # remove generated files
 ```

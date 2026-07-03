@@ -22,7 +22,7 @@ corpus carries no bespoke facts. `fidelity` (below) enforces this.
 ```
 benchmarks/stdlib/
   translate.py             Rocq .v -> MEngine .me translator (via Rocq `Set Printing All`)
-  stdlib_bench.py          runner: list / test / run / report / manifest / fidelity / clean / regen
+  stdlib_bench.py          runner: test / fidelity / clean / regen
   report.py                markdown table + log-log scatter plot
   fidelity.py              statement-vs-stdlib correspondence check (via Rocq's kernel)
   compat/stdlib_compat.me  compat prelude: nat/bool/list/option + pred/max/min/le + emulated tactics
@@ -39,20 +39,17 @@ benchmarks/stdlib/
 
 ```bash
 cd benchmarks
-python3 stdlib/stdlib_bench.py list      # show the corpus by category
-python3 stdlib/stdlib_bench.py test      # faithfulness gate (see below)
-python3 stdlib/stdlib_bench.py run       # time both engines, write results
-python3 stdlib/stdlib_bench.py report    # regenerate REPORT.md + scatter plot
-python3 stdlib/stdlib_bench.py manifest  # regenerate corpus/manifest.json
-python3 stdlib/stdlib_bench.py fidelity  # check each statement vs the real stdlib
+python3 stdlib/stdlib_bench.py regen     # rebuild every generated file, in dependency order
 python3 stdlib/stdlib_bench.py clean     # remove every generated file (keep sources)
-python3 stdlib/stdlib_bench.py regen     # rebuild them all, in dependency order
+python3 stdlib/stdlib_bench.py test      # faithfulness gate (see below)
+python3 stdlib/stdlib_bench.py fidelity  # check each statement vs the real stdlib
 ```
 
 `regen` rebuilds every generated file from source in order (mengine.me ->
 manifest -> run -> report); `clean` removes them. Hand-authored sources
-(`rocq.v`, `stdlib_map.json`, the compat prelude) are never touched. Run a single
-unit with e.g. `… run le_0_n` or `… test bool_negb_involutive`.
+(`rocq.v`, `stdlib_map.json`, the compat prelude) are never touched. `test` and
+`fidelity` are the correctness gates, run by hand; the run/report/manifest steps
+have no standalone command (they run inside `regen`).
 
 ## Translation (`Set Printing All`)
 

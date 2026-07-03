@@ -7,18 +7,18 @@ the timing discipline of ``framework/runner.run_single`` (process-group kill on
 timeout, N trials keeping the minimum) without subclassing ``Benchmark``.
 
 Subcommands:
-    list                 show the corpus by module
-    test [unit ...]      faithfulness gate: coqc compiles rocq.v, MEngine runs
+    test                 faithfulness gate: coqc compiles rocq.v, MEngine runs
                          mengine.me clean, and the statement digests correspond
-    run  [unit ...]      time both engines per unit; write results/stdlib.json
-    report               regenerate the markdown table + scatter plot
-    manifest             regenerate corpus/manifest.json from the corpus dir
-    fidelity [module ...] verify each curated statement matches its real stdlib
+    fidelity             verify each curated statement matches its real stdlib
                          counterpart (corpus/stdlib_map.json), via Rocq's kernel
     clean                remove every generated file (mengine.me, manifest,
                          results, plot); keep sources
     regen                rebuild every generated file from source, in dependency
                          order (mengine.me -> manifest -> run -> report)
+
+`regen` and `clean` are the primary entry points; `test` and `fidelity` are the
+correctness gates, run by hand.  The run/report/manifest steps are internal to
+`regen` (no standalone subcommand).
 """
 
 import argparse
@@ -401,24 +401,8 @@ EXCLUDED_DOC = [
 
 # ─────────────────────────────── subcommands ─────────────────────────────────
 
-def cmd_list(cfg, args):
+def cmd_test(cfg):
     units = discover_units(cfg)
-    total = 0
-    print(f"Corpus: {len(units)} module files under "
-          f"{os.path.relpath(cfg['corpus_dir'])} "
-          f"(one file per stdlib module)\n")
-    for u in units:
-        _v, mepath, _d = unit_paths(cfg, u)
-        names = [n for n, _dg in unit_statement_digests(mepath)]
-        total += len(names)
-        print(f"  {u} ({len(names)} lemmas):")
-        for n in names:
-            print(f"    - {n}")
-    print(f"\n{total} lemmas across {len(units)} modules.")
-
-
-def cmd_test(cfg, args):
-    units = args.units or discover_units(cfg)
     npass = 0
     for u in units:
         problems = test_unit(cfg, u)
@@ -437,12 +421,12 @@ def cmd_test(cfg, args):
     stale = manifest_staleness(cfg)
     if stale:
         print(f"\n  [STALE] corpus/manifest.json {stale}")
-        print("          re-run: stdlib_bench.py manifest")
+        print("          re-run: stdlib_bench.py regen")
     return 0 if npass == len(units) and not stale else 1
 
 
-def cmd_run(cfg, args):
-    units = args.units or discover_units(cfg)
+def cmd_run(cfg):
+    units = discover_units(cfg)
     results = load_results(cfg["results"])
 
     # Measure each engine's fixed startup/preamble floor once (extra trials to
@@ -502,19 +486,19 @@ def cmd_run(cfg, args):
     print(f"\nResults written to {os.path.relpath(cfg['results'])}")
 
 
-def cmd_report(cfg, args):
+def cmd_report(cfg):
     import report
     report.generate(cfg)
 
 
-def cmd_manifest(cfg, args):
+def cmd_manifest(cfg):
     out, n = build_manifest(cfg)
     print(f"Wrote {os.path.relpath(out)} ({n} units).")
 
 
-def cmd_fidelity(cfg, args):
+def cmd_fidelity(cfg):
     import fidelity
-    return fidelity.run(cfg, args.modules or None)
+    return fidelity.run(cfg)
 
 
 # ───────────────────────── generated artifacts ───────────────────────────────
@@ -557,7 +541,7 @@ def regen_mengine_sources(cfg):
         yield name
 
 
-def cmd_clean(cfg, args):
+def cmd_clean(cfg):
     removed = 0
     for p in generated_files(cfg):
         if os.path.exists(p):
@@ -568,10 +552,8 @@ def cmd_clean(cfg, args):
           "(sources — rocq.v, stdlib_map.json, compat, docs — kept).")
 
 
-def cmd_regen(cfg, args):
-    # Sub-steps discover all units/modules when given empty selectors.
-    sub = argparse.Namespace(units=[], modules=[])
-    print("== 1/5  corpus mengine.me (re-translate each rocq.v) ==")
+def cmd_regen(cfg):
+    print("== 1/4  corpus mengine.me (re-translate each rocq.v) ==")
     try:
         for n in regen_mengine_sources(cfg):
             print(f"  [regen] {n}")
@@ -579,11 +561,11 @@ def cmd_regen(cfg, args):
         print(f"  [FAIL ] translator flagged a unit: {e.reason}")
         return 1
     print("\n== 2/4  corpus/manifest.json ==")
-    cmd_manifest(cfg, sub)
+    cmd_manifest(cfg)
     print("\n== 3/4  results/stdlib.json (timing both engines) ==")
-    cmd_run(cfg, sub)
+    cmd_run(cfg)
     print("\n== 4/4  results/REPORT.md + plots/stdlib_scatter.png ==")
-    cmd_report(cfg, sub)
+    cmd_report(cfg)
     print("\nAll generated files rebuilt.")
     return 0
 
@@ -609,23 +591,15 @@ def main():
     cfg = load_config()
     ap = argparse.ArgumentParser(description="Rocq-stdlib benchmark corpus runner")
     sub = ap.add_subparsers(dest="command", required=True)
-    sub.add_parser("list")
-    p_test = sub.add_parser("test"); p_test.add_argument("units", nargs="*")
-    p_run = sub.add_parser("run"); p_run.add_argument("units", nargs="*")
-    sub.add_parser("report")
-    sub.add_parser("manifest")
-    p_fid = sub.add_parser("fidelity"); p_fid.add_argument("modules", nargs="*")
-    sub.add_parser("clean")
-    sub.add_parser("regen")
+    for name in ("test", "fidelity", "clean", "regen"):
+        sub.add_parser(name)
     args = ap.parse_args()
 
     dispatch = {
-        "list": cmd_list, "test": cmd_test, "run": cmd_run,
-        "report": cmd_report, "manifest": cmd_manifest,
-        "fidelity": cmd_fidelity,
+        "test": cmd_test, "fidelity": cmd_fidelity,
         "clean": cmd_clean, "regen": cmd_regen,
     }
-    rc = dispatch[args.command](cfg, args)
+    rc = dispatch[args.command](cfg)
     sys.exit(rc or 0)
 
 

@@ -113,14 +113,14 @@ def check_lemma(coq, preamble, entry, rocq_type, files, workdir):
     return "ABSENT", ref, f"'{ref}' is in none of the module's files ({', '.join(files)})"
 
 
-def run(cfg, modules=None):
+def run(cfg):
     """Check every curated lemma against its stdlib counterpart.  Returns 0 if all
     correspondences hold and every lemma is mapped; 1 on any failure."""
     corpus_dir, coq = cfg["corpus_dir"], cfg["coq_path"]
     spec = translate.load_stdlib_map(corpus_dir)
     preamble, mod_map = spec["preamble"], spec["modules"]
     module_files = spec.get("module_files", {})
-    sel = modules or translate.corpus_modules(corpus_dir)
+    sel = translate.corpus_modules(corpus_dir)
 
     tally = {k: 0 for k in ("match", "symmetry", "MISMATCH", "ABSENT",
                             "NO_STDLIB", "ERROR", "UNMAPPED", "STALE")}
