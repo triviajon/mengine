@@ -3,8 +3,7 @@
 Per-module benchmark comparing **MEngine** against **Rocq** on a curated,
 mechanically-translated subset of the Rocq standard library. Each unit is one
 stdlib **module** — a `.v` file grouping that module's lemmas, mirroring the
-library's own file structure — so the proof work rises above each engine's
-fixed process-startup cost.
+library's own file structure.
 
 | Module  | Source                                              |
 |---------|-----------------------------------------------------|
@@ -13,9 +12,6 @@ fixed process-startup cost.
 | `Logic` | `Coq.Init.Logic` (eq, and/or, ex)                   |
 | `Nat`   | `Coq.Init.Nat` (inductive arithmetic, max/min)      |
 | `Peano` | `Coq.Init.Peano` (the `le` order)                   |
-
-Every lemma is a **named** stdlib lemma that lives in its module's file — the
-corpus carries no bespoke facts. `fidelity` (below) enforces this.
 
 ## Layout
 
@@ -48,8 +44,9 @@ python3 stdlib/stdlib_bench.py fidelity  # check each statement vs the real stdl
 `regen` rebuilds every generated file from source in order (mengine.me ->
 manifest -> run -> report); `clean` removes them. Hand-authored sources
 (`rocq.v`, `stdlib_map.json`, the compat prelude) are never touched. `test` and
-`fidelity` are the correctness gates, run by hand; the run/report/manifest steps
-have no standalone command (they run inside `regen`).
+`fidelity` check that the benchmarks are consistent between Rocq and MEngine
+and relate to the actual standard library, respectively.
+
 
 ## Translation (`Set Printing All`)
 
@@ -77,13 +74,13 @@ compile would silently benchmark two *different* theorems).
 Both pay a fixed startup — MEngine loads `prelude/tactics.me` + compat, Rocq
 loads its prelude — which at this problem size dominates the whole-file number.
 To isolate proof cost, `run` also times each engine's preamble *alone* as a
-startup floor: for Rocq, **each module's own Require/Import preamble** (`Lists`
-requires `Coq.Lists.List`, so that one-time library load is subtracted, not
-charged as proof). `report` subtracts each module's floor (clamped at zero); a
-residual at or below the floor's run-to-run jitter is reported `~0`.
+startup floor: for Rocq, each module's Require/Import commands,
+and for MEngine, the statements in the preamble.
+`report` subtracts each module's floor (clamped at zero).
+A residual at or below the floor's run-to-run jitter is reported `~0`.
 
-`plots/stdlib_scatter.png` plots each module's **own-floor-subtracted proof
-time** (Rocq x vs MEngine y, log-log, parity `y = x`) — the same pair as its
+`plots/stdlib_scatter.png` plots each module's own-floor-subtracted proof
+time (Rocq x vs MEngine y, log-log, parity `y = x`) — the same pair as its
 REPORT.md row. Whole-file time would be dishonest: `Lists`' one-time `List` load
 would drop it below any single parity line and read as an MEngine win, when on
 proof cost MEngine is actually *slower* on `map`/`rev` induction. Whiskers run to
@@ -104,9 +101,9 @@ Needs `coqc` on `PATH` (or `coq_path` in `config.json`).
 ## `fidelity` — statement vs the real stdlib
 
 `test` checks that `.me` faithfully follows `.v`; it does **not** check that the
-hand-curated `.v` statement matches the stdlib lemma it claims to be — the one
-place a statement could silently drift. `fidelity` closes that gap with **Rocq's
-own kernel**: `corpus/stdlib_map.json` records each module's source file(s) and
+hand-curated `.v` statement matches the stdlib lemma it claims to be.
+`fidelity` closes that gap with Rocq's own kernel:
+`corpus/stdlib_map.json` records each module's source file(s) and
 maps every lemma to a stdlib ref. The ref is qualified with the file (`andb_diag`
 → `Stdlib.Bool.Bool.andb_diag`) and checked by `Check (<file>.<ref> :
 <curated statement>).`, which passes iff the lemma both belongs to that file and
@@ -120,7 +117,7 @@ run it after editing any statement or the map.
 The computational/structural corner reachable by MEngine + the compat prelude:
 
 - **Bool** — identities by ground reduction and single-variable `destruct`.
-- **Nat** — `add`/`mul`/`sub` reductions *and* computational induction over the
+- **Nat** — `add`/`mul`/`sub` reductions and computational induction over the
   `add`/`mul` fixpoints (the full additive/multiplicative theory up to
   `mul_assoc` and both distributive laws), plus the `max`/`min` identities.
 - **Lists** — parametric `list` induction: `app`/`length` plus the `map`/`rev`
@@ -129,10 +126,6 @@ The computational/structural corner reachable by MEngine + the compat prelude:
 - **Logic** — propositional introduction (`split`/`left`/`right`/`apply`).
 - **Polymorphic `eq` / `ex`** — over an arbitrary type, unlocked by the
   `Set Printing All` elaboration supplying the implicit type argument.
-
-Out of scope (see `corpus/manifest.json` → `excluded`): multi-variable / nested
-case analysis (`andb_comm`, de Morgan) and induction over an inductive relation
-(`le_trans`/`le_n_S` via `le_ind`, whose motive is dependent on the derivation).
 
 ## Why not verbatim stdlib files
 
