@@ -1,1218 +1,1218 @@
 {
   "mengine__startup_baseline": {
-    "time_taken": 0.0019840728491544724,
+    "time_taken": 0.0020636506378650665,
     "success": true,
     "trials": [
       {
-        "time_taken": 0.005103159695863724,
+        "time_taken": 0.0024679210036993027,
         "success": true
       },
       {
-        "time_taken": 0.0028028376400470734,
+        "time_taken": 0.002185574732720852,
         "success": true
       },
       {
-        "time_taken": 0.002786211669445038,
+        "time_taken": 0.0022129472345113754,
         "success": true
       },
       {
-        "time_taken": 0.0025174077600240707,
+        "time_taken": 0.0051634348928928375,
         "success": true
       },
       {
-        "time_taken": 0.0026591308414936066,
+        "time_taken": 0.0050001488998532295,
         "success": true
       },
       {
-        "time_taken": 0.0026108594611287117,
+        "time_taken": 0.002161787822842598,
         "success": true
       },
       {
-        "time_taken": 0.0028992630541324615,
+        "time_taken": 0.0051955534145236015,
         "success": true
       },
       {
-        "time_taken": 0.005084129050374031,
+        "time_taken": 0.0022914549335837364,
         "success": true
       },
       {
-        "time_taken": 0.004200877621769905,
+        "time_taken": 0.0020945295691490173,
         "success": true
       },
       {
-        "time_taken": 0.002326328307390213,
+        "time_taken": 0.005062682554125786,
         "success": true
       },
       {
-        "time_taken": 0.0021248655393719673,
+        "time_taken": 0.0022870581597089767,
         "success": true
       },
       {
-        "time_taken": 0.00216633640229702,
+        "time_taken": 0.005120459944009781,
         "success": true
       },
       {
-        "time_taken": 0.0020207688212394714,
+        "time_taken": 0.0022054752334952354,
         "success": true
       },
       {
-        "time_taken": 0.002124243415892124,
+        "time_taken": 0.005120419897139072,
         "success": true
       },
       {
-        "time_taken": 0.0021104849874973297,
+        "time_taken": 0.0021961499005556107,
         "success": true
       },
       {
-        "time_taken": 0.002236373722553253,
+        "time_taken": 0.005244267173111439,
         "success": true
       },
       {
-        "time_taken": 0.0022616125643253326,
+        "time_taken": 0.00216714758425951,
         "success": true
       },
       {
-        "time_taken": 0.0021718470379710197,
+        "time_taken": 0.002220919355750084,
         "success": true
       },
       {
-        "time_taken": 0.0021997494623064995,
+        "time_taken": 0.005207140929996967,
         "success": true
       },
       {
-        "time_taken": 0.0021425914019346237,
+        "time_taken": 0.00220442283898592,
         "success": true
       },
       {
-        "time_taken": 0.002282983623445034,
+        "time_taken": 0.002152395434677601,
         "success": true
       },
       {
-        "time_taken": 0.00205380842089653,
+        "time_taken": 0.0052437568083405495,
         "success": true
       },
       {
-        "time_taken": 0.0019990643486380577,
+        "time_taken": 0.002208179794251919,
         "success": true
       },
       {
-        "time_taken": 0.002098626457154751,
+        "time_taken": 0.0020636506378650665,
         "success": true
       },
       {
-        "time_taken": 0.0019840728491544724,
+        "time_taken": 0.0021195467561483383,
         "success": true
       }
     ],
     "error": ""
   },
   "coq__startup_baseline": {
-    "time_taken": 0.06226291507482529,
+    "time_taken": 0.061008233577013016,
     "success": true,
     "trials": [
       {
-        "time_taken": 0.07065456360578537,
+        "time_taken": 0.08367697149515152,
         "success": true
       },
       {
-        "time_taken": 0.08148988895118237,
+        "time_taken": 0.08289461117237806,
         "success": true
       },
       {
-        "time_taken": 0.064649966545403,
+        "time_taken": 0.06379095744341612,
         "success": true
       },
       {
-        "time_taken": 0.06350331660360098,
+        "time_taken": 0.06561388727277517,
         "success": true
       },
       {
-        "time_taken": 0.06408149935305119,
+        "time_taken": 0.08907206449657679,
         "success": true
       },
       {
-        "time_taken": 0.07307457458227873,
+        "time_taken": 0.07897442113608122,
         "success": true
       },
       {
-        "time_taken": 0.0757630905136466,
+        "time_taken": 0.061008233577013016,
         "success": true
       },
       {
-        "time_taken": 0.0779576413333416,
+        "time_taken": 0.0627416567876935,
         "success": true
       },
       {
-        "time_taken": 0.06617890205234289,
+        "time_taken": 0.062065787613391876,
         "success": true
       },
       {
-        "time_taken": 0.08245947118848562,
+        "time_taken": 0.07237034291028976,
         "success": true
       },
       {
-        "time_taken": 0.0719790831208229,
+        "time_taken": 0.06586936209350824,
         "success": true
       },
       {
-        "time_taken": 0.06498448178172112,
+        "time_taken": 0.06246113404631615,
         "success": true
       },
       {
-        "time_taken": 0.06452445685863495,
+        "time_taken": 0.062149773351848125,
         "success": true
       },
       {
-        "time_taken": 0.06441712379455566,
+        "time_taken": 0.061743712052702904,
         "success": true
       },
       {
-        "time_taken": 0.06398818921297789,
+        "time_taken": 0.06310193054378033,
         "success": true
       },
       {
-        "time_taken": 0.06424182001501322,
+        "time_taken": 0.06287548877298832,
         "success": true
       },
       {
-        "time_taken": 0.06490869726985693,
+        "time_taken": 0.0642940578982234,
         "success": true
       },
       {
-        "time_taken": 0.07732791174203157,
+        "time_taken": 0.06667373608797789,
         "success": true
       },
       {
-        "time_taken": 0.06411512847989798,
+        "time_taken": 0.08185073733329773,
         "success": true
       },
       {
-        "time_taken": 0.08300629816949368,
+        "time_taken": 0.0905943512916565,
         "success": true
       },
       {
-        "time_taken": 0.08434638846665621,
+        "time_taken": 0.06512828543782234,
         "success": true
       },
       {
-        "time_taken": 0.07835832517594099,
+        "time_taken": 0.08747605048120022,
         "success": true
       },
       {
-        "time_taken": 0.06226291507482529,
+        "time_taken": 0.06571552995592356,
         "success": true
       },
       {
-        "time_taken": 0.08616280928254128,
+        "time_taken": 0.06524792592972517,
         "success": true
       },
       {
-        "time_taken": 0.07513249851763248,
-        "success": true
-      }
-    ],
-    "error": ""
-  },
-  "mengine_Bool": {
-    "time_taken": 0.006727028638124466,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.007066318765282631,
-        "success": true
-      },
-      {
-        "time_taken": 0.006727028638124466,
-        "success": true
-      },
-      {
-        "time_taken": 0.016672120429575443,
-        "success": true
-      },
-      {
-        "time_taken": 0.0069939009845256805,
-        "success": true
-      },
-      {
-        "time_taken": 0.016379989683628082,
-        "success": true
-      },
-      {
-        "time_taken": 0.007089595310389996,
-        "success": true
-      },
-      {
-        "time_taken": 0.007179560139775276,
-        "success": true
-      },
-      {
-        "time_taken": 0.007123075425624847,
-        "success": true
-      },
-      {
-        "time_taken": 0.006970095448195934,
-        "success": true
-      },
-      {
-        "time_taken": 0.017728804610669613,
-        "success": true
-      }
-    ],
-    "error": ""
-  },
-  "coq_Bool": {
-    "time_taken": 0.08834259677678347,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.09129387978464365,
-        "success": true
-      },
-      {
-        "time_taken": 0.11847620457410812,
-        "success": true
-      },
-      {
-        "time_taken": 0.09191604796797037,
-        "success": true
-      },
-      {
-        "time_taken": 0.11424391996115446,
-        "success": true
-      },
-      {
-        "time_taken": 0.08834259677678347,
-        "success": true
-      },
-      {
-        "time_taken": 0.09809847455471754,
-        "success": true
-      },
-      {
-        "time_taken": 0.11953689437359571,
-        "success": true
-      },
-      {
-        "time_taken": 0.09190524183213711,
-        "success": true
-      },
-      {
-        "time_taken": 0.10057358723133802,
-        "success": true
-      },
-      {
-        "time_taken": 0.119944728910923,
-        "success": true
-      }
-    ],
-    "error": ""
-  },
-  "mengine_Logic": {
-    "time_taken": 0.007348806597292423,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.007698093540966511,
-        "success": true
-      },
-      {
-        "time_taken": 0.0076876068487763405,
-        "success": true
-      },
-      {
-        "time_taken": 0.018496192060410976,
-        "success": true
-      },
-      {
-        "time_taken": 0.007978236302733421,
-        "success": true
-      },
-      {
-        "time_taken": 0.007719624787569046,
-        "success": true
-      },
-      {
-        "time_taken": 0.007819726131856441,
-        "success": true
-      },
-      {
-        "time_taken": 0.007660185918211937,
-        "success": true
-      },
-      {
-        "time_taken": 0.008332839235663414,
-        "success": true
-      },
-      {
-        "time_taken": 0.007348806597292423,
-        "success": true
-      },
-      {
-        "time_taken": 0.007460054010152817,
-        "success": true
-      }
-    ],
-    "error": ""
-  },
-  "coq_Logic": {
-    "time_taken": 0.07775705866515636,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.07775705866515636,
-        "success": true
-      },
-      {
-        "time_taken": 0.10259585920721292,
-        "success": true
-      },
-      {
-        "time_taken": 0.0814589336514473,
-        "success": true
-      },
-      {
-        "time_taken": 0.09417653735727072,
-        "success": true
-      },
-      {
-        "time_taken": 0.0815673153847456,
-        "success": true
-      },
-      {
-        "time_taken": 0.10085020679980516,
-        "success": true
-      },
-      {
-        "time_taken": 0.08617458678781986,
-        "success": true
-      },
-      {
-        "time_taken": 0.10279327630996704,
-        "success": true
-      },
-      {
-        "time_taken": 0.08176290150731802,
-        "success": true
-      },
-      {
-        "time_taken": 0.08198663033545017,
-        "success": true
-      }
-    ],
-    "error": ""
-  },
-  "mengine_Nat": {
-    "time_taken": 0.044239576905965805,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.044239576905965805,
-        "success": true
-      },
-      {
-        "time_taken": 0.0739929098635912,
-        "success": true
-      },
-      {
-        "time_taken": 0.05912447068840265,
-        "success": true
-      },
-      {
-        "time_taken": 0.05859105568379164,
-        "success": true
-      },
-      {
-        "time_taken": 0.04748639464378357,
-        "success": true
-      },
-      {
-        "time_taken": 0.06996866967529058,
-        "success": true
-      },
-      {
-        "time_taken": 0.06981126219034195,
-        "success": true
-      },
-      {
-        "time_taken": 0.0680721178650856,
-        "success": true
-      },
-      {
-        "time_taken": 0.07319122180342674,
-        "success": true
-      },
-      {
-        "time_taken": 0.0659597022458911,
-        "success": true
-      }
-    ],
-    "error": ""
-  },
-  "coq_Nat": {
-    "time_taken": 0.12670030072331429,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.12989734299480915,
-        "success": true
-      },
-      {
-        "time_taken": 0.1287736687809229,
-        "success": true
-      },
-      {
-        "time_taken": 0.13436000514775515,
-        "success": true
-      },
-      {
-        "time_taken": 0.15993053000420332,
-        "success": true
-      },
-      {
-        "time_taken": 0.15422986913472414,
-        "success": true
-      },
-      {
-        "time_taken": 0.1641493933275342,
-        "success": true
-      },
-      {
-        "time_taken": 0.13035722728818655,
-        "success": true
-      },
-      {
-        "time_taken": 0.12670030072331429,
-        "success": true
-      },
-      {
-        "time_taken": 0.1288076415657997,
-        "success": true
-      },
-      {
-        "time_taken": 0.12694136425852776,
-        "success": true
-      }
-    ],
-    "error": ""
-  },
-  "mengine_Peano": {
-    "time_taken": 0.002264326438307762,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.0057905446738004684,
-        "success": true
-      },
-      {
-        "time_taken": 0.005591645836830139,
-        "success": true
-      },
-      {
-        "time_taken": 0.002374863252043724,
-        "success": true
-      },
-      {
-        "time_taken": 0.0022997381165623665,
-        "success": true
-      },
-      {
-        "time_taken": 0.0053918855264782906,
-        "success": true
-      },
-      {
-        "time_taken": 0.002346418797969818,
-        "success": true
-      },
-      {
-        "time_taken": 0.005527597852051258,
-        "success": true
-      },
-      {
-        "time_taken": 0.002264326438307762,
-        "success": true
-      },
-      {
-        "time_taken": 0.005368809215724468,
-        "success": true
-      },
-      {
-        "time_taken": 0.005465003661811352,
-        "success": true
-      }
-    ],
-    "error": ""
-  },
-  "coq_Peano": {
-    "time_taken": 0.06650951132178307,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.06650951132178307,
-        "success": true
-      },
-      {
-        "time_taken": 0.06762920133769512,
-        "success": true
-      },
-      {
-        "time_taken": 0.0681230453774333,
-        "success": true
-      },
-      {
-        "time_taken": 0.06679604388773441,
-        "success": true
-      },
-      {
-        "time_taken": 0.0930172586813569,
-        "success": true
-      },
-      {
-        "time_taken": 0.06673896685242653,
-        "success": true
-      },
-      {
-        "time_taken": 0.09239199664443731,
-        "success": true
-      },
-      {
-        "time_taken": 0.06676491629332304,
-        "success": true
-      },
-      {
-        "time_taken": 0.09074414055794477,
-        "success": true
-      },
-      {
-        "time_taken": 0.07807220425456762,
-        "success": true
-      }
-    ],
-    "error": ""
-  },
-  "mengine_Lists": {
-    "time_taken": 0.10587348230183125,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.12561042699962854,
-        "success": true
-      },
-      {
-        "time_taken": 0.11950838193297386,
-        "success": true
-      },
-      {
-        "time_taken": 0.13267900049686432,
-        "success": true
-      },
-      {
-        "time_taken": 0.10587348230183125,
-        "success": true
-      },
-      {
-        "time_taken": 0.13075390551239252,
-        "success": true
-      },
-      {
-        "time_taken": 0.12324041221290827,
-        "success": true
-      },
-      {
-        "time_taken": 0.13003261666744947,
-        "success": true
-      },
-      {
-        "time_taken": 0.1217108340933919,
-        "success": true
-      },
-      {
-        "time_taken": 0.12904505897313356,
-        "success": true
-      },
-      {
-        "time_taken": 0.12452681269496679,
-        "success": true
-      }
-    ],
-    "error": ""
-  },
-  "coq_Lists": {
-    "time_taken": 0.17422376107424498,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.19257758744060993,
-        "success": true
-      },
-      {
-        "time_taken": 0.1880696890875697,
-        "success": true
-      },
-      {
-        "time_taken": 0.17845498584210873,
-        "success": true
-      },
-      {
-        "time_taken": 0.20900392811745405,
-        "success": true
-      },
-      {
-        "time_taken": 0.18195995222777128,
-        "success": true
-      },
-      {
-        "time_taken": 0.19467082526534796,
-        "success": true
-      },
-      {
-        "time_taken": 0.17830353695899248,
-        "success": true
-      },
-      {
-        "time_taken": 0.2084479285404086,
-        "success": true
-      },
-      {
-        "time_taken": 0.17422376107424498,
-        "success": true
-      },
-      {
-        "time_taken": 0.1968900440260768,
+        "time_taken": 0.06337571144104004,
         "success": true
       }
     ],
     "error": ""
   },
   "coq__baseline__Bool": {
-    "time_taken": 0.06266068574041128,
+    "time_taken": 0.0607640165835619,
     "success": true,
     "trials": [
       {
-        "time_taken": 0.08175058290362358,
+        "time_taken": 0.06824701838195324,
         "success": true
       },
       {
-        "time_taken": 0.06369363330304623,
+        "time_taken": 0.08944649063050747,
         "success": true
       },
       {
-        "time_taken": 0.08231892995536327,
+        "time_taken": 0.06930828746408224,
         "success": true
       },
       {
-        "time_taken": 0.06266068574041128,
+        "time_taken": 0.08403188548982143,
         "success": true
       },
       {
-        "time_taken": 0.09060400910675526,
+        "time_taken": 0.0607640165835619,
         "success": true
       },
       {
-        "time_taken": 0.06382144708186388,
+        "time_taken": 0.06257607694715261,
         "success": true
       },
       {
-        "time_taken": 0.06406684685498476,
+        "time_taken": 0.09176560584455729,
         "success": true
       },
       {
-        "time_taken": 0.06297308579087257,
+        "time_taken": 0.06506988778710365,
         "success": true
       },
       {
-        "time_taken": 0.06397106219083071,
+        "time_taken": 0.0639596525579691,
         "success": true
       },
       {
-        "time_taken": 0.08946622349321842,
+        "time_taken": 0.06176871992647648,
         "success": true
       },
       {
-        "time_taken": 0.06486114487051964,
+        "time_taken": 0.0617895508185029,
         "success": true
       },
       {
-        "time_taken": 0.06413810327649117,
+        "time_taken": 0.09048622660338879,
         "success": true
       },
       {
-        "time_taken": 0.08916436694562435,
+        "time_taken": 0.09099030774086714,
         "success": true
       },
       {
-        "time_taken": 0.07848116103559732,
+        "time_taken": 0.08996074460446835,
         "success": true
       },
       {
-        "time_taken": 0.06564802024513483,
+        "time_taken": 0.0628806371241808,
         "success": true
       },
       {
-        "time_taken": 0.091672632843256,
+        "time_taken": 0.06267455592751503,
         "success": true
       },
       {
-        "time_taken": 0.08596265781670809,
+        "time_taken": 0.07526143360882998,
         "success": true
       },
       {
-        "time_taken": 0.08749652095139027,
+        "time_taken": 0.0621521882712841,
         "success": true
       },
       {
-        "time_taken": 0.06472959741950035,
+        "time_taken": 0.062105217948555946,
         "success": true
       },
       {
-        "time_taken": 0.08766801003366709,
+        "time_taken": 0.08631636016070843,
         "success": true
       },
       {
-        "time_taken": 0.06320696976035833,
+        "time_taken": 0.08772744797170162,
         "success": true
       },
       {
-        "time_taken": 0.0900481790304184,
+        "time_taken": 0.06820548512041569,
         "success": true
       },
       {
-        "time_taken": 0.06443653535097837,
+        "time_taken": 0.08761277608573437,
         "success": true
       },
       {
-        "time_taken": 0.08265748154371977,
+        "time_taken": 0.06550810765475035,
         "success": true
       },
       {
-        "time_taken": 0.06473372131586075,
+        "time_taken": 0.09030592627823353,
+        "success": true
+      }
+    ],
+    "error": ""
+  },
+  "mengine_Bool": {
+    "time_taken": 0.006648464128375053,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.0071935877203941345,
+        "success": true
+      },
+      {
+        "time_taken": 0.0069395629689097404,
+        "success": true
+      },
+      {
+        "time_taken": 0.01698335539549589,
+        "success": true
+      },
+      {
+        "time_taken": 0.006648464128375053,
+        "success": true
+      },
+      {
+        "time_taken": 0.016685127280652523,
+        "success": true
+      },
+      {
+        "time_taken": 0.006814975291490555,
+        "success": true
+      },
+      {
+        "time_taken": 0.007026383653283119,
+        "success": true
+      },
+      {
+        "time_taken": 0.007093565538525581,
+        "success": true
+      },
+      {
+        "time_taken": 0.007035789079964161,
+        "success": true
+      },
+      {
+        "time_taken": 0.019109241664409637,
+        "success": true
+      }
+    ],
+    "error": ""
+  },
+  "coq_Bool": {
+    "time_taken": 0.08785024471580982,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.08785024471580982,
+        "success": true
+      },
+      {
+        "time_taken": 0.11576099507510662,
+        "success": true
+      },
+      {
+        "time_taken": 0.09071752708405256,
+        "success": true
+      },
+      {
+        "time_taken": 0.11294232401996851,
+        "success": true
+      },
+      {
+        "time_taken": 0.11080336943268776,
+        "success": true
+      },
+      {
+        "time_taken": 0.11695504561066628,
+        "success": true
+      },
+      {
+        "time_taken": 0.11606174893677235,
+        "success": true
+      },
+      {
+        "time_taken": 0.1221329215914011,
+        "success": true
+      },
+      {
+        "time_taken": 0.11758558731526136,
+        "success": true
+      },
+      {
+        "time_taken": 0.11464699544012547,
         "success": true
       }
     ],
     "error": ""
   },
   "coq__baseline__Lists": {
-    "time_taken": 0.1286982847377658,
+    "time_taken": 0.12655360903590918,
     "success": true,
     "trials": [
       {
-        "time_taken": 0.1438091304153204,
+        "time_taken": 0.1519144745543599,
         "success": true
       },
       {
-        "time_taken": 0.1451462870463729,
+        "time_taken": 0.13324865140020847,
         "success": true
       },
       {
-        "time_taken": 0.13941181544214487,
+        "time_taken": 0.15813947934657335,
         "success": true
       },
       {
-        "time_taken": 0.1556116444990039,
+        "time_taken": 0.1466888953000307,
         "success": true
       },
       {
-        "time_taken": 0.13538683485239744,
+        "time_taken": 0.1550881415605545,
         "success": true
       },
       {
-        "time_taken": 0.17301185335963964,
+        "time_taken": 0.1544969379901886,
         "success": true
       },
       {
-        "time_taken": 0.13400329649448395,
+        "time_taken": 0.12936652917414904,
         "success": true
       },
       {
-        "time_taken": 0.1607249490916729,
+        "time_taken": 0.1352119417861104,
         "success": true
       },
       {
-        "time_taken": 0.15961974021047354,
+        "time_taken": 0.1575844343751669,
         "success": true
       },
       {
-        "time_taken": 0.13004204165190458,
+        "time_taken": 0.12658885959535837,
         "success": true
       },
       {
-        "time_taken": 0.17152741272002459,
+        "time_taken": 0.15586155652999878,
         "success": true
       },
       {
-        "time_taken": 0.15965358167886734,
+        "time_taken": 0.15294427704066038,
         "success": true
       },
       {
-        "time_taken": 0.12889631278812885,
+        "time_taken": 0.159058035351336,
         "success": true
       },
       {
-        "time_taken": 0.15909175481647253,
+        "time_taken": 0.13901789113879204,
         "success": true
       },
       {
-        "time_taken": 0.1286982847377658,
+        "time_taken": 0.15919591300189495,
         "success": true
       },
       {
-        "time_taken": 0.13370750099420547,
+        "time_taken": 0.15849560871720314,
         "success": true
       },
       {
-        "time_taken": 0.163239280693233,
+        "time_taken": 0.15541995130479336,
         "success": true
       },
       {
-        "time_taken": 0.13176526222378016,
+        "time_taken": 0.1573015870526433,
         "success": true
       },
       {
-        "time_taken": 0.14534436631947756,
+        "time_taken": 0.12693273834884167,
         "success": true
       },
       {
-        "time_taken": 0.1409618454053998,
+        "time_taken": 0.12655360903590918,
         "success": true
       },
       {
-        "time_taken": 0.13002471532672644,
+        "time_taken": 0.1564568430185318,
         "success": true
       },
       {
-        "time_taken": 0.15437159407883883,
+        "time_taken": 0.13432946242392063,
         "success": true
       },
       {
-        "time_taken": 0.16405225824564695,
+        "time_taken": 0.12974059116095304,
         "success": true
       },
       {
-        "time_taken": 0.15048041380941868,
+        "time_taken": 0.16695494204759598,
         "success": true
       },
       {
-        "time_taken": 0.13356756884604692,
+        "time_taken": 0.1327393241226673,
+        "success": true
+      }
+    ],
+    "error": ""
+  },
+  "mengine_Lists": {
+    "time_taken": 0.10042033717036247,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.13687478937208652,
+        "success": true
+      },
+      {
+        "time_taken": 0.12535923719406128,
+        "success": true
+      },
+      {
+        "time_taken": 0.1341869169846177,
+        "success": true
+      },
+      {
+        "time_taken": 0.1288621686398983,
+        "success": true
+      },
+      {
+        "time_taken": 0.10159012954682112,
+        "success": true
+      },
+      {
+        "time_taken": 0.13029523007571697,
+        "success": true
+      },
+      {
+        "time_taken": 0.1203914973884821,
+        "success": true
+      },
+      {
+        "time_taken": 0.1086914874613285,
+        "success": true
+      },
+      {
+        "time_taken": 0.11112508550286293,
+        "success": true
+      },
+      {
+        "time_taken": 0.10042033717036247,
+        "success": true
+      }
+    ],
+    "error": ""
+  },
+  "coq_Lists": {
+    "time_taken": 0.17087356001138687,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.1789044886827469,
+        "success": true
+      },
+      {
+        "time_taken": 0.17561356723308563,
+        "success": true
+      },
+      {
+        "time_taken": 0.18584307096898556,
+        "success": true
+      },
+      {
+        "time_taken": 0.20499222166836262,
+        "success": true
+      },
+      {
+        "time_taken": 0.17087356001138687,
+        "success": true
+      },
+      {
+        "time_taken": 0.18039989285171032,
+        "success": true
+      },
+      {
+        "time_taken": 0.20035299845039845,
+        "success": true
+      },
+      {
+        "time_taken": 0.1792698698118329,
+        "success": true
+      },
+      {
+        "time_taken": 0.20837020501494408,
+        "success": true
+      },
+      {
+        "time_taken": 0.20267567038536072,
         "success": true
       }
     ],
     "error": ""
   },
   "coq__baseline__Logic": {
-    "time_taken": 0.061701107770204544,
+    "time_taken": 0.0625646598637104,
     "success": true,
     "trials": [
       {
-        "time_taken": 0.06328734196722507,
+        "time_taken": 0.06275561731308699,
         "success": true
       },
       {
-        "time_taken": 0.06438235193490982,
+        "time_taken": 0.06294884998351336,
         "success": true
       },
       {
-        "time_taken": 0.06791787594556808,
+        "time_taken": 0.0625646598637104,
         "success": true
       },
       {
-        "time_taken": 0.061701107770204544,
+        "time_taken": 0.08964517991989851,
         "success": true
       },
       {
-        "time_taken": 0.06543628312647343,
+        "time_taken": 0.0633245874196291,
         "success": true
       },
       {
-        "time_taken": 0.0890883719548583,
+        "time_taken": 0.06644233781844378,
         "success": true
       },
       {
-        "time_taken": 0.06306645646691322,
+        "time_taken": 0.06577371805906296,
         "success": true
       },
       {
-        "time_taken": 0.08152023516595364,
+        "time_taken": 0.07292455993592739,
         "success": true
       },
       {
-        "time_taken": 0.06322076171636581,
+        "time_taken": 0.07178221736103296,
         "success": true
       },
       {
-        "time_taken": 0.08075495064258575,
+        "time_taken": 0.07398183457553387,
         "success": true
       },
       {
-        "time_taken": 0.06476006284356117,
+        "time_taken": 0.0709060886874795,
         "success": true
       },
       {
-        "time_taken": 0.0686039412394166,
+        "time_taken": 0.06271498650312424,
         "success": true
       },
       {
-        "time_taken": 0.07834088895469904,
+        "time_taken": 0.06308821868151426,
         "success": true
       },
       {
-        "time_taken": 0.06804241333156824,
+        "time_taken": 0.06445624213665724,
         "success": true
       },
       {
-        "time_taken": 0.06443107686936855,
+        "time_taken": 0.07049292512238026,
         "success": true
       },
       {
-        "time_taken": 0.06339236907660961,
+        "time_taken": 0.06726467609405518,
         "success": true
       },
       {
-        "time_taken": 0.08383676968514919,
+        "time_taken": 0.07200379204005003,
         "success": true
       },
       {
-        "time_taken": 0.06450014002621174,
+        "time_taken": 0.07437705062329769,
         "success": true
       },
       {
-        "time_taken": 0.06847272347658873,
+        "time_taken": 0.088324761018157,
         "success": true
       },
       {
-        "time_taken": 0.08995113428682089,
+        "time_taken": 0.067588334903121,
         "success": true
       },
       {
-        "time_taken": 0.06392581388354301,
+        "time_taken": 0.06281172391027212,
         "success": true
       },
       {
-        "time_taken": 0.06429148465394974,
+        "time_taken": 0.06654542312026024,
         "success": true
       },
       {
-        "time_taken": 0.09128043986856937,
+        "time_taken": 0.0640478665009141,
         "success": true
       },
       {
-        "time_taken": 0.0646047880873084,
+        "time_taken": 0.06259696930646896,
         "success": true
       },
       {
-        "time_taken": 0.08609467465430498,
+        "time_taken": 0.09370904788374901,
+        "success": true
+      }
+    ],
+    "error": ""
+  },
+  "mengine_Logic": {
+    "time_taken": 0.007294178009033203,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.0077179959043860435,
+        "success": true
+      },
+      {
+        "time_taken": 0.0076314350590109825,
+        "success": true
+      },
+      {
+        "time_taken": 0.007294178009033203,
+        "success": true
+      },
+      {
+        "time_taken": 0.008480587042868137,
+        "success": true
+      },
+      {
+        "time_taken": 0.020337232388556004,
+        "success": true
+      },
+      {
+        "time_taken": 0.007664185017347336,
+        "success": true
+      },
+      {
+        "time_taken": 0.016981842927634716,
+        "success": true
+      },
+      {
+        "time_taken": 0.007925749756395817,
+        "success": true
+      },
+      {
+        "time_taken": 0.014667203649878502,
+        "success": true
+      },
+      {
+        "time_taken": 0.01212988793849945,
+        "success": true
+      }
+    ],
+    "error": ""
+  },
+  "coq_Logic": {
+    "time_taken": 0.07825526874512434,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.08237668219953775,
+        "success": true
+      },
+      {
+        "time_taken": 0.0940405884757638,
+        "success": true
+      },
+      {
+        "time_taken": 0.09487939160317183,
+        "success": true
+      },
+      {
+        "time_taken": 0.08116703853011131,
+        "success": true
+      },
+      {
+        "time_taken": 0.08042669203132391,
+        "success": true
+      },
+      {
+        "time_taken": 0.07898687105625868,
+        "success": true
+      },
+      {
+        "time_taken": 0.08306740317493677,
+        "success": true
+      },
+      {
+        "time_taken": 0.08127483073621988,
+        "success": true
+      },
+      {
+        "time_taken": 0.0786845050752163,
+        "success": true
+      },
+      {
+        "time_taken": 0.07825526874512434,
         "success": true
       }
     ],
     "error": ""
   },
   "coq__baseline__Nat": {
-    "time_taken": 0.06344081088900566,
+    "time_taken": 0.06268912833184004,
     "success": true,
     "trials": [
       {
-        "time_taken": 0.06767293624579906,
+        "time_taken": 0.06397353578358889,
         "success": true
       },
       {
-        "time_taken": 0.08572041150182486,
+        "time_taken": 0.06364801339805126,
         "success": true
       },
       {
-        "time_taken": 0.0794449346140027,
+        "time_taken": 0.06469013541936874,
         "success": true
       },
       {
-        "time_taken": 0.08743099123239517,
+        "time_taken": 0.06300181057304144,
         "success": true
       },
       {
-        "time_taken": 0.0665745697915554,
+        "time_taken": 0.06268912833184004,
         "success": true
       },
       {
-        "time_taken": 0.08959989435970783,
+        "time_taken": 0.06313891615718603,
         "success": true
       },
       {
-        "time_taken": 0.09452545363456011,
+        "time_taken": 0.06969328783452511,
         "success": true
       },
       {
-        "time_taken": 0.06448309496045113,
+        "time_taken": 0.06388096511363983,
         "success": true
       },
       {
-        "time_taken": 0.08321624528616667,
+        "time_taken": 0.06514392979443073,
         "success": true
       },
       {
-        "time_taken": 0.07700215000659227,
+        "time_taken": 0.07090077921748161,
         "success": true
       },
       {
-        "time_taken": 0.08408439438790083,
+        "time_taken": 0.06854472681879997,
         "success": true
       },
       {
-        "time_taken": 0.08743058238178492,
+        "time_taken": 0.08869062270969152,
         "success": true
       },
       {
-        "time_taken": 0.08714110497385263,
+        "time_taken": 0.06727894954383373,
         "success": true
       },
       {
-        "time_taken": 0.07477019354701042,
+        "time_taken": 0.06657400634139776,
         "success": true
       },
       {
-        "time_taken": 0.0654066177085042,
+        "time_taken": 0.0702693872153759,
         "success": true
       },
       {
-        "time_taken": 0.06512864865362644,
+        "time_taken": 0.09553026501089334,
         "success": true
       },
       {
-        "time_taken": 0.06432946305721998,
+        "time_taken": 0.06991490256041288,
         "success": true
       },
       {
-        "time_taken": 0.06447388045489788,
+        "time_taken": 0.06773137953132391,
         "success": true
       },
       {
-        "time_taken": 0.08787536155432463,
+        "time_taken": 0.0830736430361867,
         "success": true
       },
       {
-        "time_taken": 0.06360270641744137,
+        "time_taken": 0.06502963695675135,
         "success": true
       },
       {
-        "time_taken": 0.06429480016231537,
+        "time_taken": 0.06533340644091368,
         "success": true
       },
       {
-        "time_taken": 0.06396943051367998,
+        "time_taken": 0.06361600570380688,
         "success": true
       },
       {
-        "time_taken": 0.06344081088900566,
+        "time_taken": 0.06525762192904949,
         "success": true
       },
       {
-        "time_taken": 0.0834285942837596,
+        "time_taken": 0.06554251071065664,
         "success": true
       },
       {
-        "time_taken": 0.06516515277326107,
+        "time_taken": 0.08511576149612665,
+        "success": true
+      }
+    ],
+    "error": ""
+  },
+  "mengine_Nat": {
+    "time_taken": 0.04349034186452627,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.060421297326684,
+        "success": true
+      },
+      {
+        "time_taken": 0.046960342675447464,
+        "success": true
+      },
+      {
+        "time_taken": 0.059162271209061146,
+        "success": true
+      },
+      {
+        "time_taken": 0.04493577219545841,
+        "success": true
+      },
+      {
+        "time_taken": 0.04581351391971111,
+        "success": true
+      },
+      {
+        "time_taken": 0.05012355372309685,
+        "success": true
+      },
+      {
+        "time_taken": 0.044816700741648674,
+        "success": true
+      },
+      {
+        "time_taken": 0.04431252088397741,
+        "success": true
+      },
+      {
+        "time_taken": 0.04427569452673197,
+        "success": true
+      },
+      {
+        "time_taken": 0.04349034186452627,
+        "success": true
+      }
+    ],
+    "error": ""
+  },
+  "coq_Nat": {
+    "time_taken": 0.12892350181937218,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.1298451228067279,
+        "success": true
+      },
+      {
+        "time_taken": 0.12892350181937218,
+        "success": true
+      },
+      {
+        "time_taken": 0.16004880145192146,
+        "success": true
+      },
+      {
+        "time_taken": 0.16676206327974796,
+        "success": true
+      },
+      {
+        "time_taken": 0.17252451181411743,
+        "success": true
+      },
+      {
+        "time_taken": 0.13332939613610506,
+        "success": true
+      },
+      {
+        "time_taken": 0.15855500847101212,
+        "success": true
+      },
+      {
+        "time_taken": 0.13296729885041714,
+        "success": true
+      },
+      {
+        "time_taken": 0.1426210356876254,
+        "success": true
+      },
+      {
+        "time_taken": 0.16091108042746782,
         "success": true
       }
     ],
     "error": ""
   },
   "coq__baseline__Peano": {
-    "time_taken": 0.06157772149890661,
+    "time_taken": 0.06328690983355045,
     "success": true,
     "trials": [
       {
-        "time_taken": 0.061690221540629864,
+        "time_taken": 0.07129685580730438,
         "success": true
       },
       {
-        "time_taken": 0.08991282619535923,
+        "time_taken": 0.08647765591740608,
         "success": true
       },
       {
-        "time_taken": 0.06851903349161148,
+        "time_taken": 0.08342824690043926,
         "success": true
       },
       {
-        "time_taken": 0.06991060171276331,
+        "time_taken": 0.09383758064359426,
         "success": true
       },
       {
-        "time_taken": 0.06157772149890661,
+        "time_taken": 0.09011065401136875,
         "success": true
       },
       {
-        "time_taken": 0.08677115757018328,
+        "time_taken": 0.08220423199236393,
         "success": true
       },
       {
-        "time_taken": 0.09660557191818953,
+        "time_taken": 0.06747900974005461,
         "success": true
       },
       {
-        "time_taken": 0.07601265702396631,
+        "time_taken": 0.09064008109271526,
         "success": true
       },
       {
-        "time_taken": 0.07714918069541454,
+        "time_taken": 0.06440906226634979,
         "success": true
       },
       {
-        "time_taken": 0.07242028787732124,
+        "time_taken": 0.09550885204225779,
         "success": true
       },
       {
-        "time_taken": 0.09098237939178944,
+        "time_taken": 0.06984950508922338,
         "success": true
       },
       {
-        "time_taken": 0.06647328846156597,
+        "time_taken": 0.06328690983355045,
         "success": true
       },
       {
-        "time_taken": 0.0663735968992114,
+        "time_taken": 0.07161639910191298,
         "success": true
       },
       {
-        "time_taken": 0.08684007078409195,
+        "time_taken": 0.06470252480357885,
         "success": true
       },
       {
-        "time_taken": 0.06657161470502615,
+        "time_taken": 0.06433051265776157,
         "success": true
       },
       {
-        "time_taken": 0.06590546015650034,
+        "time_taken": 0.08608685620129108,
         "success": true
       },
       {
-        "time_taken": 0.08355743810534477,
+        "time_taken": 0.07678560353815556,
         "success": true
       },
       {
-        "time_taken": 0.08721302263438702,
+        "time_taken": 0.06389895360916853,
         "success": true
       },
       {
-        "time_taken": 0.09367472119629383,
+        "time_taken": 0.06640479154884815,
         "success": true
       },
       {
-        "time_taken": 0.06476524006575346,
+        "time_taken": 0.09816525690257549,
         "success": true
       },
       {
-        "time_taken": 0.06279736198484898,
+        "time_taken": 0.06537804286926985,
         "success": true
       },
       {
-        "time_taken": 0.08652656711637974,
+        "time_taken": 0.08680950570851564,
         "success": true
       },
       {
-        "time_taken": 0.06217748858034611,
+        "time_taken": 0.07233402039855719,
         "success": true
       },
       {
-        "time_taken": 0.08515944518148899,
+        "time_taken": 0.0787306958809495,
         "success": true
       },
       {
-        "time_taken": 0.06272133532911539,
+        "time_taken": 0.07880871277302504,
+        "success": true
+      }
+    ],
+    "error": ""
+  },
+  "mengine_Peano": {
+    "time_taken": 0.0022431109100580215,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.0024305135011672974,
+        "success": true
+      },
+      {
+        "time_taken": 0.007061737589538097,
+        "success": true
+      },
+      {
+        "time_taken": 0.002353559248149395,
+        "success": true
+      },
+      {
+        "time_taken": 0.0022431109100580215,
+        "success": true
+      },
+      {
+        "time_taken": 0.00491412915289402,
+        "success": true
+      },
+      {
+        "time_taken": 0.0025438861921429634,
+        "success": true
+      },
+      {
+        "time_taken": 0.00311314407736063,
+        "success": true
+      },
+      {
+        "time_taken": 0.0025501661002635956,
+        "success": true
+      },
+      {
+        "time_taken": 0.00285286083817482,
+        "success": true
+      },
+      {
+        "time_taken": 0.002516714856028557,
+        "success": true
+      }
+    ],
+    "error": ""
+  },
+  "coq_Peano": {
+    "time_taken": 0.06609362363815308,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.09270255174487829,
+        "success": true
+      },
+      {
+        "time_taken": 0.06793548911809921,
+        "success": true
+      },
+      {
+        "time_taken": 0.06769721023738384,
+        "success": true
+      },
+      {
+        "time_taken": 0.08643151540309191,
+        "success": true
+      },
+      {
+        "time_taken": 0.06609362363815308,
+        "success": true
+      },
+      {
+        "time_taken": 0.06755499541759491,
+        "success": true
+      },
+      {
+        "time_taken": 0.09435097593814135,
+        "success": true
+      },
+      {
+        "time_taken": 0.06992846354842186,
+        "success": true
+      },
+      {
+        "time_taken": 0.06915654055774212,
+        "success": true
+      },
+      {
+        "time_taken": 0.06695622205734253,
         "success": true
       }
     ],
