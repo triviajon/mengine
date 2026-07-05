@@ -11,6 +11,14 @@
   "max_consecutive_failures": 2,
   "trials": 2,
   "coq_timeout_multiplier": 1.5,
+  "stdlib": {
+    "corpus_dir": "stdlib/corpus",
+    "compat": "stdlib/compat/stdlib_compat.me",
+    "results": "stdlib/results/stdlib.json",
+    "plots_dir": "stdlib/plots",
+    "timeout": 20,
+    "trials": 10
+  },
   "mengine_variants": {
     "baseline": {
       "path": "~/mengine/build/ablations/mengine-baseline",

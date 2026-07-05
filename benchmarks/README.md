@@ -53,3 +53,16 @@ python3 bench.py plot rewrite_nm --fixed m=3
 ## Adding a Benchmark
 
 Create `benchmarks/my_benchmark.py` with a class extending `Benchmark`. The registry, CLI, and plotter pick it up automatically.
+
+## Rocq standard-library benchmark
+
+A separate, fixed-corpus suite comparing MEngine vs Rocq on auto-translated
+stdlib lemmas lives under [`stdlib/`](stdlib/README.md). It is driven by its own
+runner (it iterates a manifest rather than sweeping a parameter range):
+
+```bash
+python3 stdlib/stdlib_bench.py regen     # rebuild every generated file (translate, time, report)
+python3 stdlib/stdlib_bench.py test      # faithfulness gate
+python3 stdlib/stdlib_bench.py fidelity  # statement vs the real stdlib
+python3 stdlib/stdlib_bench.py clean     # remove generated files
+```

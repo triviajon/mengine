@@ -1,0 +1,361 @@
+{
+  "description": "Rocq stdlib units auto-translated with zero manual edits and proved by MEngine + the compat prelude.",
+  "engine_note": "Requires the cbv applied-fix and GC-dedup kernel fixes (see benchmarks/stdlib/README.md).",
+  "units": [
+    {
+      "name": "Bool",
+      "rocq_sha256": "e877d7ae98cfade8",
+      "statements": [
+        {
+          "name": "andb_true_l",
+          "digest": "forall (b : bool), (((eq bool) ((andb true) b)) b)"
+        },
+        {
+          "name": "andb_false_l",
+          "digest": "forall (b : bool), (((eq bool) ((andb false) b)) false)"
+        },
+        {
+          "name": "andb_true_r",
+          "digest": "forall (b : bool), (((eq bool) ((andb b) true)) b)"
+        },
+        {
+          "name": "andb_false_r",
+          "digest": "forall (b : bool), (((eq bool) ((andb b) false)) false)"
+        },
+        {
+          "name": "andb_b_b",
+          "digest": "forall (b : bool), (((eq bool) ((andb b) b)) b)"
+        },
+        {
+          "name": "orb_true_l",
+          "digest": "forall (b : bool), (((eq bool) ((orb true) b)) true)"
+        },
+        {
+          "name": "orb_false_l",
+          "digest": "forall (b : bool), (((eq bool) ((orb false) b)) b)"
+        },
+        {
+          "name": "orb_true_r",
+          "digest": "forall (b : bool), (((eq bool) ((orb b) true)) true)"
+        },
+        {
+          "name": "orb_false_r",
+          "digest": "forall (b : bool), (((eq bool) ((orb b) false)) b)"
+        },
+        {
+          "name": "orb_b_b",
+          "digest": "forall (b : bool), (((eq bool) ((orb b) b)) b)"
+        },
+        {
+          "name": "negb_involutive",
+          "digest": "forall (b : bool), (((eq bool) (negb (negb b))) b)"
+        },
+        {
+          "name": "negb_involutive_reverse",
+          "digest": "forall (b : bool), (((eq bool) b) (negb (negb b)))"
+        },
+        {
+          "name": "andb_negb_r",
+          "digest": "forall (b : bool), (((eq bool) ((andb b) (negb b))) false)"
+        },
+        {
+          "name": "orb_negb_r",
+          "digest": "forall (b : bool), (((eq bool) ((orb b) (negb b))) true)"
+        },
+        {
+          "name": "implb_true_l",
+          "digest": "forall (b : bool), (((eq bool) ((implb true) b)) b)"
+        },
+        {
+          "name": "implb_false_l",
+          "digest": "forall (b : bool), (((eq bool) ((implb false) b)) true)"
+        },
+        {
+          "name": "implb_b_b",
+          "digest": "forall (b : bool), (((eq bool) ((implb b) b)) true)"
+        },
+        {
+          "name": "xorb_false_l",
+          "digest": "forall (b : bool), (((eq bool) ((xorb false) b)) b)"
+        },
+        {
+          "name": "xorb_false_r",
+          "digest": "forall (b : bool), (((eq bool) ((xorb b) false)) b)"
+        },
+        {
+          "name": "xorb_true_l",
+          "digest": "forall (b : bool), (((eq bool) ((xorb true) b)) (negb b))"
+        },
+        {
+          "name": "xorb_true_r",
+          "digest": "forall (b : bool), (((eq bool) ((xorb b) true)) (negb b))"
+        },
+        {
+          "name": "xorb_b_b",
+          "digest": "forall (b : bool), (((eq bool) ((xorb b) b)) false)"
+        }
+      ],
+      "deps": "Coq.Init (auto-loaded)"
+    },
+    {
+      "name": "Lists",
+      "rocq_sha256": "bf27ff9a508134f4",
+      "statements": [
+        {
+          "name": "app_nil_l",
+          "digest": "forall (A : Type), forall (l : (list A)), (((eq (list A)) (((app A) (nil A)) l)) l)"
+        },
+        {
+          "name": "app_nil_r",
+          "digest": "forall (A : Type), forall (l : (list A)), (((eq (list A)) (((app A) l) (nil A))) l)"
+        },
+        {
+          "name": "app_comm_cons",
+          "digest": "forall (A : Type), forall (l : (list A)), forall (m : (list A)), forall (a : A), (((eq (list A)) (((cons A) a) (((app A) l) m))) (((app A) (((cons A) a) l)) m))"
+        },
+        {
+          "name": "app_assoc",
+          "digest": "forall (A : Type), forall (l : (list A)), forall (m : (list A)), forall (n : (list A)), (((eq (list A)) (((app A) l) (((app A) m) n))) (((app A) (((app A) l) m)) n))"
+        },
+        {
+          "name": "length_app",
+          "digest": "forall (A : Type), forall (l : (list A)), forall (m : (list A)), (((eq nat) ((length A) (((app A) l) m))) ((add ((length A) l)) ((length A) m)))"
+        },
+        {
+          "name": "map_app",
+          "digest": "forall (A : Type), forall (B : Type), forall (f : forall (_ : A), B), forall (l : (list A)), forall (m : (list A)), (((eq (list B)) ((((map A) B) f) (((app A) l) m))) (((app B) ((((map A) B) f) l)) ((((map A) B) f) m)))"
+        },
+        {
+          "name": "length_map",
+          "digest": "forall (A : Type), forall (B : Type), forall (f : forall (_ : A), B), forall (l : (list A)), (((eq nat) ((length B) ((((map A) B) f) l))) ((length A) l))"
+        },
+        {
+          "name": "rev_app_distr",
+          "digest": "forall (A : Type), forall (l : (list A)), forall (m : (list A)), (((eq (list A)) ((rev A) (((app A) l) m))) (((app A) ((rev A) m)) ((rev A) l)))"
+        },
+        {
+          "name": "rev_involutive",
+          "digest": "forall (A : Type), forall (l : (list A)), (((eq (list A)) ((rev A) ((rev A) l))) l)"
+        },
+        {
+          "name": "map_map",
+          "digest": "forall (A : Type), forall (B : Type), forall (C : Type), forall (f : forall (_ : A), B), forall (g : forall (_ : B), C), forall (l : (list A)), (((eq (list C)) ((((map B) C) g) ((((map A) B) f) l))) ((((map A) C) (fun (x : A) => (g (f x)))) l))"
+        },
+        {
+          "name": "rev_unit",
+          "digest": "forall (A : Type), forall (l : (list A)), forall (a : A), (((eq (list A)) ((rev A) (((app A) l) (((cons A) a) (nil A))))) (((cons A) a) ((rev A) l)))"
+        }
+      ],
+      "deps": "Coq.Init (auto-loaded)"
+    },
+    {
+      "name": "Logic",
+      "rocq_sha256": "12d4dc897cb563e6",
+      "statements": [
+        {
+          "name": "eq_refl_x",
+          "digest": "forall (A : Type), forall (x : A), (((eq A) x) x)"
+        },
+        {
+          "name": "eq_sym_ex",
+          "digest": "forall (A : Type), forall (x : A), forall (y : A), forall (_ : (((eq A) x) y)), (((eq A) y) x)"
+        },
+        {
+          "name": "eq_trans_ex",
+          "digest": "forall (A : Type), forall (x : A), forall (y : A), forall (z : A), forall (_ : (((eq A) x) y)), forall (_ : (((eq A) y) z)), (((eq A) x) z)"
+        },
+        {
+          "name": "f_equal_ex",
+          "digest": "forall (A : Type), forall (B : Type), forall (f : forall (_ : A), B), forall (x : A), forall (y : A), forall (_ : (((eq A) x) y)), (((eq B) (f x)) (f y))"
+        },
+        {
+          "name": "f_equal2_ex",
+          "digest": "forall (A : Type), forall (B : Type), forall (C : Type), forall (f : forall (_ : A), forall (_ : B), C), forall (x1 : A), forall (y1 : A), forall (x2 : B), forall (y2 : B), forall (_ : (((eq A) x1) y1)), forall (_ : (((eq B) x2) y2)), (((eq C) ((f x1) x2)) ((f y1) y2))"
+        },
+        {
+          "name": "f_equal3_ex",
+          "digest": "forall (A1 : Type), forall (A2 : Type), forall (A3 : Type), forall (B : Type), forall (f : forall (_ : A1), forall (_ : A2), forall (_ : A3), B), forall (x1 : A1), forall (y1 : A1), forall (x2 : A2), forall (y2 : A2), forall (x3 : A3), forall (y3 : A3), forall (_ : (((eq A1) x1) y1)), forall (_ : (((eq A2) x2) y2)), forall (_ : (((eq A3) x3) y3)), (((eq B) (((f x1) x2) x3)) (((f y1) y2) y3))"
+        },
+        {
+          "name": "and_intro",
+          "digest": "forall (A : Prop), forall (B : Prop), forall (_ : A), forall (_ : B), ((and A) B)"
+        },
+        {
+          "name": "or_introl_ex",
+          "digest": "forall (A : Prop), forall (B : Prop), forall (_ : A), ((or A) B)"
+        },
+        {
+          "name": "or_intror_ex",
+          "digest": "forall (A : Prop), forall (B : Prop), forall (_ : B), ((or A) B)"
+        },
+        {
+          "name": "ex_intro_ex",
+          "digest": "forall (A : Type), forall (P : forall (_ : A), Prop), forall (x : A), forall (_ : (P x)), ((ex A) (fun (y : A) => (P y)))"
+        }
+      ],
+      "deps": "Coq.Init (auto-loaded)"
+    },
+    {
+      "name": "Nat",
+      "rocq_sha256": "ec44b29f02532d33",
+      "statements": [
+        {
+          "name": "add_0_l",
+          "digest": "forall (n : nat), (((eq nat) ((add O) n)) n)"
+        },
+        {
+          "name": "add_succ_l",
+          "digest": "forall (n : nat), forall (m : nat), (((eq nat) ((add (S n)) m)) (S ((add n) m)))"
+        },
+        {
+          "name": "add_1_l",
+          "digest": "forall (n : nat), (((eq nat) ((add (S O)) n)) (S n))"
+        },
+        {
+          "name": "add_1_r",
+          "digest": "forall (n : nat), (((eq nat) ((add n) (S O))) (S n))"
+        },
+        {
+          "name": "add_0_r",
+          "digest": "forall (n : nat), (((eq nat) ((add n) O)) n)"
+        },
+        {
+          "name": "add_succ_r",
+          "digest": "forall (n : nat), forall (m : nat), (((eq nat) ((add n) (S m))) (S ((add n) m)))"
+        },
+        {
+          "name": "add_comm",
+          "digest": "forall (n : nat), forall (m : nat), (((eq nat) ((add n) m)) ((add m) n))"
+        },
+        {
+          "name": "add_assoc",
+          "digest": "forall (n : nat), forall (m : nat), forall (p : nat), (((eq nat) ((add n) ((add m) p))) ((add ((add n) m)) p))"
+        },
+        {
+          "name": "mul_0_l",
+          "digest": "forall (n : nat), (((eq nat) ((mul O) n)) O)"
+        },
+        {
+          "name": "mul_0_r",
+          "digest": "forall (n : nat), (((eq nat) ((mul n) O)) O)"
+        },
+        {
+          "name": "mul_succ_l",
+          "digest": "forall (n : nat), forall (m : nat), (((eq nat) ((mul (S n)) m)) ((add ((mul n) m)) m))"
+        },
+        {
+          "name": "mul_succ_r",
+          "digest": "forall (n : nat), forall (m : nat), (((eq nat) ((mul n) (S m))) ((add ((mul n) m)) n))"
+        },
+        {
+          "name": "mul_comm",
+          "digest": "forall (n : nat), forall (m : nat), (((eq nat) ((mul n) m)) ((mul m) n))"
+        },
+        {
+          "name": "mul_add_distr_r",
+          "digest": "forall (n : nat), forall (m : nat), forall (p : nat), (((eq nat) ((mul ((add n) m)) p)) ((add ((mul n) p)) ((mul m) p)))"
+        },
+        {
+          "name": "mul_add_distr_l",
+          "digest": "forall (n : nat), forall (m : nat), forall (p : nat), (((eq nat) ((mul n) ((add m) p))) ((add ((mul n) m)) ((mul n) p)))"
+        },
+        {
+          "name": "mul_assoc",
+          "digest": "forall (n : nat), forall (m : nat), forall (p : nat), (((eq nat) ((mul n) ((mul m) p))) ((mul ((mul n) m)) p))"
+        },
+        {
+          "name": "mul_1_l",
+          "digest": "forall (n : nat), (((eq nat) ((mul (S O)) n)) n)"
+        },
+        {
+          "name": "mul_1_r",
+          "digest": "forall (n : nat), (((eq nat) ((mul n) (S O))) n)"
+        },
+        {
+          "name": "sub_0_l",
+          "digest": "forall (n : nat), (((eq nat) ((sub O) n)) O)"
+        },
+        {
+          "name": "sub_0_r",
+          "digest": "forall (n : nat), (((eq nat) ((sub n) O)) n)"
+        },
+        {
+          "name": "sub_diag",
+          "digest": "forall (n : nat), (((eq nat) ((sub n) n)) O)"
+        },
+        {
+          "name": "sub_succ",
+          "digest": "forall (n : nat), forall (m : nat), (((eq nat) ((sub (S n)) (S m))) ((sub n) m))"
+        },
+        {
+          "name": "max_0_l",
+          "digest": "forall (n : nat), (((eq nat) ((max O) n)) n)"
+        },
+        {
+          "name": "max_0_r",
+          "digest": "forall (n : nat), (((eq nat) ((max n) O)) n)"
+        },
+        {
+          "name": "min_0_l",
+          "digest": "forall (n : nat), (((eq nat) ((min O) n)) O)"
+        },
+        {
+          "name": "min_0_r",
+          "digest": "forall (n : nat), (((eq nat) ((min n) O)) O)"
+        },
+        {
+          "name": "max_id",
+          "digest": "forall (n : nat), (((eq nat) ((max n) n)) n)"
+        },
+        {
+          "name": "min_id",
+          "digest": "forall (n : nat), (((eq nat) ((min n) n)) n)"
+        },
+        {
+          "name": "pred_succ",
+          "digest": "forall (n : nat), (((eq nat) (pred (S n))) n)"
+        },
+        {
+          "name": "eqb_refl",
+          "digest": "forall (n : nat), (((eq bool) ((eqb n) n)) true)"
+        },
+        {
+          "name": "leb_refl",
+          "digest": "forall (n : nat), (((eq bool) ((leb n) n)) true)"
+        }
+      ],
+      "deps": "Coq.Init (auto-loaded)"
+    },
+    {
+      "name": "Peano",
+      "rocq_sha256": "a73cc6210bdade3c",
+      "statements": [
+        {
+          "name": "le_refl_n",
+          "digest": "forall (n : nat), ((le n) n)"
+        },
+        {
+          "name": "le_0_n",
+          "digest": "forall (n : nat), ((le O) n)"
+        },
+        {
+          "name": "le_succ_diag_r",
+          "digest": "forall (n : nat), ((le n) (S n))"
+        }
+      ],
+      "deps": "Coq.Init (auto-loaded)"
+    }
+  ],
+  "excluded": [
+    {
+      "pattern": "multi-variable case analysis / nested induction (e.g. andb_comm, orb b1 b2 = orb b2 b1, de Morgan)",
+      "boundary": "nested",
+      "reason": "the translator emits one `apply (<T>_ind motive)` per proof and segments a single level of cases; a second destruct inside a case (needed to decide a goal in two booleans) is not yet generated."
+    },
+    {
+      "pattern": "induction over an inductive relation (e.g. le_trans, le_n_S via le_ind)",
+      "boundary": "relational",
+      "reason": "the eliminator has a dependent motive over the derivation; the translator only builds non-dependent `fun (x:T) => <body>` motives."
+    }
+  ]
+}

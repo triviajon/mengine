@@ -391,9 +391,8 @@ static Expression *_build_induction_principle_type(InductiveCmd *ind_cmd, Expres
             return NULL;
         }
 
-        Expression *case_type =
-            _build_constructor_case_type(ctor_expr, motive_var, ind_var, params, param_count,
-                                         index_count, case_contexts[i]);
+        Expression *case_type = _build_constructor_case_type(
+            ctor_expr, motive_var, ind_var, params, param_count, index_count, case_contexts[i]);
 
         if (!case_type) {
             fprintf(stderr, ERROR "Failed to build case type for %s\n" CRESET, ctor->name);
@@ -663,9 +662,9 @@ static Expression *_build_constructor_case_type(Expression *ctor_expr, Expressio
     // binders below because each hypothesis mentions its argument.
     for (size_t i = arg_count; i > 0; i--) {
         Expression *arg_var = (Expression *)dll_at(args, i - 1)->data;
-        Expression *hypothesis = _build_recursive_arg_hypothesis(
-            arg_var, kernel_expr_type(arg_var), ind_var, motive_var, param_count, index_count,
-            case_ctx);
+        Expression *hypothesis =
+            _build_recursive_arg_hypothesis(arg_var, kernel_expr_type(arg_var), ind_var, motive_var,
+                                            param_count, index_count, case_ctx);
         if (hypothesis) {
             case_type = kernel_arrow_create(hypothesis, case_type, case_ctx);
         }

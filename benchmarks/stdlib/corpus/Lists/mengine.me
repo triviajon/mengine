@@ -1,0 +1,125 @@
+Theorem app_nil_l : forall (A : Type), forall (l : (list A)), (((eq (list A)) (((app A) (nil A)) l)) l).
+intro A; intro l.
+reflexivity.
+
+Theorem app_nil_r : forall (A : Type), forall (l : (list A)), (((eq (list A)) (((app A) l) (nil A))) l).
+intro A.
+intro l.
+apply (list_ind A (fun (l : (list A)) => (((eq (list A)) (((app A) l) (nil A))) l))).
+simpl.
+reflexivity.
+intro x.
+intro l.
+intro IHl.
+simpl.
+simpl; f_equal; exact (IHl).
+
+Theorem app_comm_cons : forall (A : Type), forall (l : (list A)), forall (m : (list A)), forall (a : A), (((eq (list A)) (((cons A) a) (((app A) l) m))) (((app A) (((cons A) a) l)) m)).
+intro A; intro l; intro m; intro a.
+reflexivity.
+
+Theorem app_assoc : forall (A : Type), forall (l : (list A)), forall (m : (list A)), forall (n : (list A)), (((eq (list A)) (((app A) l) (((app A) m) n))) (((app A) (((app A) l) m)) n)).
+intro A.
+intro l.
+apply (list_ind A (fun (l : (list A)) => forall (m : (list A)), forall (n : (list A)), (((eq (list A)) (((app A) l) (((app A) m) n))) (((app A) (((app A) l) m)) n)))).
+simpl.
+intro m.
+intro n.
+reflexivity.
+intro x.
+intro l.
+intro IHl.
+simpl.
+intro m.
+intro n.
+simpl; f_equal; exact (((IHl m) n)).
+
+Theorem length_app : forall (A : Type), forall (l : (list A)), forall (m : (list A)), (((eq nat) ((length A) (((app A) l) m))) ((add ((length A) l)) ((length A) m))).
+intro A.
+intro l.
+apply (list_ind A (fun (l : (list A)) => forall (m : (list A)), (((eq nat) ((length A) (((app A) l) m))) ((add ((length A) l)) ((length A) m))))).
+simpl.
+intro m.
+reflexivity.
+intro x.
+intro l.
+intro IHl.
+simpl.
+intro m.
+simpl; f_equal; exact ((IHl m)).
+
+Theorem map_app : forall (A : Type), forall (B : Type), forall (f : forall (_ : A), B), forall (l : (list A)), forall (m : (list A)), (((eq (list B)) ((((map A) B) f) (((app A) l) m))) (((app B) ((((map A) B) f) l)) ((((map A) B) f) m))).
+intro A.
+intro B.
+intro f.
+intro l.
+apply (list_ind A (fun (l : (list A)) => forall (m : (list A)), (((eq (list B)) ((((map A) B) f) (((app A) l) m))) (((app B) ((((map A) B) f) l)) ((((map A) B) f) m))))).
+simpl.
+intro m.
+reflexivity.
+intro x.
+intro l.
+intro IHl.
+simpl.
+intro m.
+simpl; f_equal; exact ((IHl m)).
+
+Theorem length_map : forall (A : Type), forall (B : Type), forall (f : forall (_ : A), B), forall (l : (list A)), (((eq nat) ((length B) ((((map A) B) f) l))) ((length A) l)).
+intro A.
+intro B.
+intro f.
+intro l.
+apply (list_ind A (fun (l : (list A)) => (((eq nat) ((length B) ((((map A) B) f) l))) ((length A) l)))).
+simpl.
+reflexivity.
+intro x.
+intro l.
+intro IHl.
+simpl.
+simpl; f_equal; exact (IHl).
+
+Theorem rev_app_distr : forall (A : Type), forall (l : (list A)), forall (m : (list A)), (((eq (list A)) ((rev A) (((app A) l) m))) (((app A) ((rev A) m)) ((rev A) l))).
+intro A.
+intro l.
+apply (list_ind A (fun (l : (list A)) => forall (m : (list A)), (((eq (list A)) ((rev A) (((app A) l) m))) (((app A) ((rev A) m)) ((rev A) l))))).
+simpl.
+intro m.
+simpl; symmetry; rewrite app_nil_r with eq; reflexivity.
+intro x.
+intro l.
+intro IHl.
+simpl.
+intro m.
+simpl; rewrite IHl with eq; symmetry; rewrite app_assoc with eq; reflexivity.
+
+Theorem rev_involutive : forall (A : Type), forall (l : (list A)), (((eq (list A)) ((rev A) ((rev A) l))) l).
+intro A.
+intro l.
+apply (list_ind A (fun (l : (list A)) => (((eq (list A)) ((rev A) ((rev A) l))) l))).
+simpl.
+reflexivity.
+intro x.
+intro l.
+intro IHl.
+simpl.
+simpl; rewrite rev_app_distr with eq; simpl; rewrite IHl with eq; reflexivity.
+
+Theorem map_map : forall (A : Type), forall (B : Type), forall (C : Type), forall (f : forall (_ : A), B), forall (g : forall (_ : B), C), forall (l : (list A)), (((eq (list C)) ((((map B) C) g) ((((map A) B) f) l))) ((((map A) C) (fun (x : A) => (g (f x)))) l)).
+intro A.
+intro B.
+intro C.
+intro f.
+intro g.
+intro l.
+apply (list_ind A (fun (l : (list A)) => (((eq (list C)) ((((map B) C) g) ((((map A) B) f) l))) ((((map A) C) (fun (x : A) => (g (f x)))) l)))).
+simpl.
+reflexivity.
+intro x.
+intro l.
+intro IHl.
+simpl.
+simpl; f_equal; exact (IHl).
+
+Theorem rev_unit : forall (A : Type), forall (l : (list A)), forall (a : A), (((eq (list A)) ((rev A) (((app A) l) (((cons A) a) (nil A))))) (((cons A) a) ((rev A) l))).
+intro A; intro l; intro a.
+rewrite rev_app_distr with eq; simpl; reflexivity.

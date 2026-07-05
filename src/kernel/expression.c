@@ -690,7 +690,31 @@ Expression *init_match_expression_wc(Expression *scrutinee, MatchBranch **branch
         // All branches must have the same type up to definitional equality.
         Expression *branch_body_type = get_expression_type(branch->body);
         if (match_type == NULL) {
-            match_type = branch_body_type;
+            // Transport the seed type out to the outer match `context` by
+            // substituting away this branch's parameter-slot pattern variables
+            // (each a delta-alias to one of the scrutinee's type arguments).
+            // Otherwise match_type keeps *this* branch's pattern-var context,
+            // which is not an ancestor of a sibling branch's context, so the
+            // (sound) convertibility check below spuriously rejects a valid
+            // non-dependent match whose branch type mentions the inductive's
+            // parameter -- e.g. a `nil A` branch, of type `list A`.  (app/length
+            // escape only because their first branch is a variable/`O`, whose
+            // type already lives in the outer context.)  Substituting a
+            // delta-alias for its body is meaning-preserving, so this only
+            // relocates the type, never changes it.
+            Expression *seed = branch_body_type;
+            for (int j = branch->pattern_var_count - 1; j >= 0; j--) {
+                Expression *pv = branch->pattern_variables[j];
+                Expression *pv_body = get_var_body(pv);
+                if (pv_body != NULL) {
+                    Expression *lowered =
+                        new_subst(get_expression_context(seed), seed, pv, pv_body);
+                    if (lowered != NULL) {
+                        seed = lowered;
+                    }
+                }
+            }
+            match_type = seed;
         } else if (!conversion_holds_in_context(get_expression_context(branch->body),
                                                 branch_body_type, match_type)) {
             fprintf(stderr, ERROR "Branch body types do not match.\n" CRESET);
@@ -1556,6 +1580,71 @@ bool fill_hole(Expression *hole, Expression *term) {
                 case (EXPR_TYPE): {
                     Expression *ptr = (Expression *)ul->ptr;
                     SET_EXPR_TYPE(ptr, term);
+                    break;
+                }
+                case (MATCH_SCRUTINEE): {
+                    Expression *ptr = (Expression *)ul->ptr;
+                    SET_MATCH_SCRUTINEE(ptr, term);
+                    break;
+                }
+                // Branch/arg slots are array-indexed and the uplink carries no
+                // index, so locate the slot(s) still pointing at this hole and
+                // rebind them to term (the same hole may occupy more than one).
+                case (MATCH_BRANCH_BODY): {
+                    Expression *ptr = (Expression *)ul->ptr;
+                    for (int bi = 0; bi < ptr->as.match.branch_count; bi++) {
+                        MatchBranch *br = ptr->as.match.branches[bi];
+                        if (br->body == hole) {
+                            br->body = term;
+                            br->body_uplink_node = add_to_parents(term, ptr, MATCH_BRANCH_BODY);
+                        }
+                    }
+                    break;
+                }
+                case (MATCH_BRANCH_CONSTRUCTOR): {
+                    Expression *ptr = (Expression *)ul->ptr;
+                    for (int bi = 0; bi < ptr->as.match.branch_count; bi++) {
+                        MatchBranch *br = ptr->as.match.branches[bi];
+                        if (br->constructor == hole) {
+                            br->constructor = term;
+                            br->constructor_uplink_node =
+                                add_to_parents(term, ptr, MATCH_BRANCH_CONSTRUCTOR);
+                        }
+                    }
+                    break;
+                }
+                case (MATCH_BRANCH_PATTERN_VAR): {
+                    Expression *ptr = (Expression *)ul->ptr;
+                    for (int bi = 0; bi < ptr->as.match.branch_count; bi++) {
+                        MatchBranch *br = ptr->as.match.branches[bi];
+                        for (int pj = 0; pj < br->pattern_var_count; pj++) {
+                            if (br->pattern_variables[pj] == hole) {
+                                br->pattern_variables[pj] = term;
+                                br->pattern_variables_uplink_nodes[pj] =
+                                    add_to_parents(term, ptr, MATCH_BRANCH_PATTERN_VAR);
+                            }
+                        }
+                    }
+                    break;
+                }
+                case (FIX_RECURSIVE_VAR): {
+                    Expression *ptr = (Expression *)ul->ptr;
+                    SET_FIX_RECURSIVE_VAR(ptr, term);
+                    break;
+                }
+                case (FIX_ARG): {
+                    Expression *ptr = (Expression *)ul->ptr;
+                    for (int ai = 0; ai < ptr->as.fix.arg_count; ai++) {
+                        if (ptr->as.fix.args[ai] == hole) {
+                            ptr->as.fix.args[ai] = term;
+                            ptr->as.fix.args_uplink_nodes[ai] = add_to_parents(term, ptr, FIX_ARG);
+                        }
+                    }
+                    break;
+                }
+                case (FIX_BODY): {
+                    Expression *ptr = (Expression *)ul->ptr;
+                    SET_FIX_BODY(ptr, term);
                     break;
                 }
                 default:
