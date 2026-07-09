@@ -1,187 +1,4 @@
 {
-  "coq_letin_n13": {
-    "time_taken": 99.69157011399511,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 101.25085477800167,
-        "success": true,
-        "soft_timeout": true
-      },
-      {
-        "time_taken": 99.78584567700454,
-        "success": true,
-        "soft_timeout": true
-      },
-      {
-        "time_taken": 99.69157011399511,
-        "success": true,
-        "soft_timeout": true
-      }
-    ],
-    "best_trial": 2,
-    "soft_timeout": true
-  },
-  "coq_letin_const_n16": {
-    "time_taken": 5.429109158998472,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 5.481207263001124,
-        "success": true
-      },
-      {
-        "time_taken": 5.4621975379996,
-        "success": true
-      },
-      {
-        "time_taken": 5.429109158998472,
-        "success": true
-      }
-    ],
-    "best_trial": 2
-  },
-  "coq_letin_const_n18": {
-    "time_taken": 20.31929184499313,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 20.581996045992128,
-        "success": true
-      },
-      {
-        "time_taken": 20.330513408000115,
-        "success": true
-      },
-      {
-        "time_taken": 20.31929184499313,
-        "success": true
-      }
-    ],
-    "best_trial": 2
-  },
-  "coq_letin_const_n20": {
-    "time_taken": 80.69619336100004,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 81.25567809300264,
-        "success": true,
-        "soft_timeout": true
-      },
-      {
-        "time_taken": 81.16477708300226,
-        "success": true,
-        "soft_timeout": true
-      },
-      {
-        "time_taken": 80.69619336100004,
-        "success": true,
-        "soft_timeout": true
-      }
-    ],
-    "best_trial": 2,
-    "soft_timeout": true
-  },
-  "coq_letin_n1": {
-    "time_taken": 0.09024324700112629,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.11580866800068179,
-        "success": true
-      },
-      {
-        "time_taken": 0.09024324700112629,
-        "success": true
-      }
-    ],
-    "best_trial": 1
-  },
-  "coq_letin_n11": {
-    "time_taken": 11.074145589000182,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 11.074145589000182,
-        "success": true
-      },
-      {
-        "time_taken": 11.540520397000364,
-        "success": true
-      }
-    ],
-    "best_trial": 0
-  },
-  "coq_letin_const_n1": {
-    "time_taken": 0.09195254699989164,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.11348455100051069,
-        "success": true
-      },
-      {
-        "time_taken": 0.09195254699989164,
-        "success": true
-      }
-    ],
-    "best_trial": 1
-  },
-  "coq_letin_const_n11": {
-    "time_taken": 0.3919936520014744,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.3919936520014744,
-        "success": true
-      },
-      {
-        "time_taken": 0.5344096799999534,
-        "success": true
-      }
-    ],
-    "best_trial": 0
-  },
-  "coq_letin_n16": {
-    "time_taken": 30.030769295997743,
-    "success": false,
-    "trials": [
-      {
-        "time_taken": 30.030769295997743,
-        "success": false,
-        "timeout": true
-      }
-    ],
-    "timeout": true,
-    "repeat_stopped": "failed"
-  },
-  "coq_letin_const_n22": {
-    "time_taken": 30.029971212999953,
-    "success": false,
-    "trials": [
-      {
-        "time_taken": 30.029971212999953,
-        "success": false,
-        "timeout": true
-      }
-    ],
-    "timeout": true,
-    "repeat_stopped": "failed"
-  },
-  "coq_letin_n18": {
-    "time_taken": 30.032449916005135,
-    "success": false,
-    "trials": [
-      {
-        "time_taken": 30.032449916005135,
-        "success": false,
-        "timeout": true
-      }
-    ],
-    "timeout": true,
-    "repeat_stopped": "failed"
-  },
   "lean_repeat_rw_n1": {
     "time_taken": 0.16691773300408386,
     "success": true,
@@ -2467,5 +2284,147 @@
       }
     ],
     "best_trial": 1
+  },
+  "coq_letin_n1": {
+    "time_taken": 0.07101365600101417,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.10871547400165582,
+        "success": true
+      },
+      {
+        "time_taken": 0.07101365600101417,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_letin_n11": {
+    "time_taken": 8.236903766999603,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 8.435255397998844,
+        "success": true
+      },
+      {
+        "time_taken": 8.236903766999603,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_letin_n16": {
+    "time_taken": 30.086019258000306,
+    "success": false,
+    "trials": [
+      {
+        "time_taken": 30.086019258000306,
+        "success": false,
+        "timeout": true
+      }
+    ],
+    "timeout": true,
+    "repeat_stopped": "failed"
+  },
+  "coq_letin_n13": {
+    "time_taken": 30.007800756000506,
+    "success": false,
+    "trials": [
+      {
+        "time_taken": 30.007800756000506,
+        "success": false,
+        "timeout": true
+      }
+    ],
+    "timeout": true,
+    "repeat_stopped": "failed"
+  },
+  "coq_letin_const_n1": {
+    "time_taken": 0.07477443499738001,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.07477443499738001,
+        "success": true
+      },
+      {
+        "time_taken": 0.07640956099930918,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_letin_const_n11": {
+    "time_taken": 0.24789221500032,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.24789221500032,
+        "success": true
+      },
+      {
+        "time_taken": 0.25396170699968934,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_letin_const_n16": {
+    "time_taken": 3.5937977159992442,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 3.8103558750008233,
+        "success": true
+      },
+      {
+        "time_taken": 3.5937977159992442,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_letin_const_n18": {
+    "time_taken": 13.878702576999785,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 13.878702576999785,
+        "success": true
+      },
+      {
+        "time_taken": 14.427577209000447,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_letin_const_n20": {
+    "time_taken": 30.101134516997263,
+    "success": false,
+    "trials": [
+      {
+        "time_taken": 30.101134516997263,
+        "success": false,
+        "timeout": true
+      }
+    ],
+    "timeout": true,
+    "repeat_stopped": "failed"
+  },
+  "coq_letin_const_n22": {
+    "time_taken": 30.098211702999834,
+    "success": false,
+    "trials": [
+      {
+        "time_taken": 30.098211702999834,
+        "success": false,
+        "timeout": true
+      }
+    ],
+    "timeout": true,
+    "repeat_stopped": "failed"
   }
 }

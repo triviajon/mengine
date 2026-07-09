@@ -1,304 +1,4 @@
 {
-  "coq_native_n10": {
-    "time_taken": 0.04640607299734256,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.048426737001136644,
-        "success": true
-      },
-      {
-        "time_taken": 0.04640607299734256,
-        "success": true
-      }
-    ],
-    "best_trial": 1
-  },
-  "coq_native_n110": {
-    "time_taken": 0.04972761500175693,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.050434927998139756,
-        "success": true
-      },
-      {
-        "time_taken": 0.04972761500175693,
-        "success": true
-      }
-    ],
-    "best_trial": 1
-  },
-  "coq_native_n210": {
-    "time_taken": 0.05242504600028042,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.0576465289996122,
-        "success": true
-      },
-      {
-        "time_taken": 0.05242504600028042,
-        "success": true
-      }
-    ],
-    "best_trial": 1
-  },
-  "coq_native_n310": {
-    "time_taken": 0.06385627000054228,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.0658664279981167,
-        "success": true
-      },
-      {
-        "time_taken": 0.06385627000054228,
-        "success": true
-      }
-    ],
-    "best_trial": 1
-  },
-  "coq_native_n410": {
-    "time_taken": 0.07021602799795801,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.07021602799795801,
-        "success": true
-      },
-      {
-        "time_taken": 0.07070630800080835,
-        "success": true
-      }
-    ],
-    "best_trial": 0
-  },
-  "coq_native_n510": {
-    "time_taken": 0.06756217099973583,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.07001964200026123,
-        "success": true
-      },
-      {
-        "time_taken": 0.06756217099973583,
-        "success": true
-      }
-    ],
-    "best_trial": 1
-  },
-  "coq_native_n710": {
-    "time_taken": 0.0789812279981561,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.08148195900139399,
-        "success": true
-      },
-      {
-        "time_taken": 0.0789812279981561,
-        "success": true
-      }
-    ],
-    "best_trial": 1
-  },
-  "coq_native_n910": {
-    "time_taken": 0.09242578699922888,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.09242578699922888,
-        "success": true
-      },
-      {
-        "time_taken": 0.09424026700071408,
-        "success": true
-      }
-    ],
-    "best_trial": 0
-  },
-  "coq_native_n1110": {
-    "time_taken": 0.10027357800208847,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.10027357800208847,
-        "success": true
-      },
-      {
-        "time_taken": 0.1095354960016266,
-        "success": true
-      }
-    ],
-    "best_trial": 0
-  },
-  "coq_native_n1510": {
-    "time_taken": 0.11929697900268366,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.12465660200177808,
-        "success": true
-      },
-      {
-        "time_taken": 0.11929697900268366,
-        "success": true
-      }
-    ],
-    "best_trial": 1
-  },
-  "coq_native_n2310": {
-    "time_taken": 0.1902378270024201,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.1902378270024201,
-        "success": true
-      },
-      {
-        "time_taken": 0.19639023300260305,
-        "success": true
-      }
-    ],
-    "best_trial": 0
-  },
-  "coq_native_n3110": {
-    "time_taken": 0.2183323239987658,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.2309909499999776,
-        "success": true
-      },
-      {
-        "time_taken": 0.2183323239987658,
-        "success": true
-      }
-    ],
-    "best_trial": 1
-  },
-  "coq_native_n3942": {
-    "time_taken": 0.2769179269998858,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.27837337700111675,
-        "success": true
-      },
-      {
-        "time_taken": 0.2769179269998858,
-        "success": true
-      }
-    ],
-    "best_trial": 1
-  },
-  "coq_native_n4774": {
-    "time_taken": 0.3715077089982515,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.3715077089982515,
-        "success": true
-      },
-      {
-        "time_taken": 0.37216029100090964,
-        "success": true
-      }
-    ],
-    "best_trial": 0
-  },
-  "coq_native_n5606": {
-    "time_taken": 0.5647688739991281,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.5647688739991281,
-        "success": true
-      },
-      {
-        "time_taken": 0.5666288049978903,
-        "success": true
-      }
-    ],
-    "best_trial": 0
-  },
-  "coq_native_n6438": {
-    "time_taken": 0.7187555080017773,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.7340093530001468,
-        "success": true
-      },
-      {
-        "time_taken": 0.7187555080017773,
-        "success": true
-      }
-    ],
-    "best_trial": 1
-  },
-  "coq_native_n7270": {
-    "time_taken": 0.8212008279988368,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.8222241190014756,
-        "success": true
-      },
-      {
-        "time_taken": 0.8212008279988368,
-        "success": true
-      }
-    ],
-    "best_trial": 1
-  },
-  "coq_native_n8102": {
-    "time_taken": 0.8685664849981549,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 0.8955246760015143,
-        "success": true
-      },
-      {
-        "time_taken": 0.8685664849981549,
-        "success": true
-      }
-    ],
-    "best_trial": 1
-  },
-  "coq_native_n8934": {
-    "time_taken": 0.9973293269977148,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 1.0124204960011411,
-        "success": true
-      },
-      {
-        "time_taken": 0.9973293269977148,
-        "success": true
-      }
-    ],
-    "best_trial": 1
-  },
-  "coq_native_n9766": {
-    "time_taken": 1.1355446670022502,
-    "success": true,
-    "trials": [
-      {
-        "time_taken": 1.1505512690018804,
-        "success": true
-      },
-      {
-        "time_taken": 1.1355446670022502,
-        "success": true
-      }
-    ],
-    "best_trial": 1
-  },
   "lean_native_n10": {
     "time_taken": 0.14068578099249862,
     "success": true,
@@ -2173,5 +1873,290 @@
       }
     ],
     "best_trial": 0
+  },
+  "coq_native_n10": {
+    "time_taken": 0.04803847500079428,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.04803847500079428,
+        "success": true
+      },
+      {
+        "time_taken": 0.0522194799996214,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_native_n110": {
+    "time_taken": 0.049187491997145116,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.04958455299856723,
+        "success": true
+      },
+      {
+        "time_taken": 0.049187491997145116,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_native_n310": {
+    "time_taken": 0.06840858299983665,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.07184803799827932,
+        "success": true
+      },
+      {
+        "time_taken": 0.06840858299983665,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_native_n510": {
+    "time_taken": 0.0769253309990745,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.08086092399753397,
+        "success": true
+      },
+      {
+        "time_taken": 0.0769253309990745,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_native_n710": {
+    "time_taken": 0.08690448099878267,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.08690448099878267,
+        "success": true
+      },
+      {
+        "time_taken": 0.09415265700226882,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_native_n910": {
+    "time_taken": 0.09425779999946826,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.09425779999946826,
+        "success": true
+      },
+      {
+        "time_taken": 0.09594471699892893,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_native_n1310": {
+    "time_taken": 0.11997841099946527,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.11997841099946527,
+        "success": true
+      },
+      {
+        "time_taken": 0.12549552600103198,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_native_n1710": {
+    "time_taken": 0.14758609000273282,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.15665807299956214,
+        "success": true
+      },
+      {
+        "time_taken": 0.14758609000273282,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_native_n2110": {
+    "time_taken": 0.18899049200263107,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.18899049200263107,
+        "success": true
+      },
+      {
+        "time_taken": 0.21420435899926815,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_native_n2510": {
+    "time_taken": 0.2275752530003956,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.2491915919999883,
+        "success": true
+      },
+      {
+        "time_taken": 0.2275752530003956,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_native_n2910": {
+    "time_taken": 0.2371693739987677,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.2371693739987677,
+        "success": true
+      },
+      {
+        "time_taken": 0.24662527899999986,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_native_n3710": {
+    "time_taken": 0.286323859996628,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.28857142600099905,
+        "success": true
+      },
+      {
+        "time_taken": 0.286323859996628,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_native_n4542": {
+    "time_taken": 0.3526488919997064,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.35564875899945037,
+        "success": true
+      },
+      {
+        "time_taken": 0.3526488919997064,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_native_n5374": {
+    "time_taken": 0.48160537099829526,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.48160537099829526,
+        "success": true
+      },
+      {
+        "time_taken": 0.503131322999252,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_native_n6206": {
+    "time_taken": 0.6511727859979146,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.6687777050028672,
+        "success": true
+      },
+      {
+        "time_taken": 0.6511727859979146,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_native_n7038": {
+    "time_taken": 0.8307290720003948,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.8486924549979449,
+        "success": true
+      },
+      {
+        "time_taken": 0.8307290720003948,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_native_n7870": {
+    "time_taken": 0.9039364980017126,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.9293154460028745,
+        "success": true
+      },
+      {
+        "time_taken": 0.9039364980017126,
+        "success": true
+      }
+    ],
+    "best_trial": 1
+  },
+  "coq_native_n8702": {
+    "time_taken": 1.0099554210028145,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.0099554210028145,
+        "success": true
+      },
+      {
+        "time_taken": 1.0432234899999457,
+        "success": true
+      }
+    ],
+    "best_trial": 0
+  },
+  "coq_native_n9534": {
+    "time_taken": 1.1595757629984291,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.2141527109997696,
+        "success": true
+      },
+      {
+        "time_taken": 1.1595757629984291,
+        "success": true
+      }
+    ],
+    "best_trial": 1
   }
 }

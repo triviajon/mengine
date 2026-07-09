@@ -121,6 +121,10 @@ def _axis_pad(max_value: float, fraction: float = 0.02) -> float:
     return max(max_value, 1.0) * fraction
 
 
+# Log axes pad multiplicatively, not additively.
+_LOG_MARGIN = 1.15
+
+
 def plot_benchmark(
     benchmark: Benchmark,
     results_dir: str = "results",
@@ -289,30 +293,42 @@ def plot_benchmark(
     if title:
         ax.set_title(title)
 
+    # Scales before limits: matplotlib reinterprets limits against the active scale.
+    if log_y:
+        ax.set_yscale("log")
+    if log_x:
+        ax.set_xscale("log")
+
     if xlim:
         ax.set_xlim(xlim)
-    elif not log_x:
+    elif log_x:
+        # Zero is not representable on a log axis; bound by the positive data.
+        positive_xs = [x for x in plotted_xs if x > 0]
+        if positive_xs:
+            ax.set_xlim(left=min(positive_xs) / _LOG_MARGIN, right=max(positive_xs) * _LOG_MARGIN)
+    elif plotted_xs:
         x_max = max(plotted_xs)
         x_pad = _axis_pad(x_max)
         ax.set_xlim(left=-x_pad, right=x_max + x_pad)
-    else:
-        ax.set_xlim(left=0)
+
     if ylim:
         ax.set_ylim(ylim)
+    elif log_y:
+        positive_ys = [y for y in plotted_ys if y > 0]
+        if positive_ys:
+            y_top = max(positive_ys) * _LOG_MARGIN
+            if timeout_cap:
+                y_top = min(timeout_cap, y_top)
+            ax.set_ylim(bottom=min(positive_ys) / _LOG_MARGIN, top=y_top)
     elif plotted_ys:
         y_max = max(plotted_ys)
         y_pad = _axis_pad(y_max)
         y_top = y_max + y_pad
         if timeout_cap:
             y_top = min(timeout_cap, y_top)
-        bottom = -y_pad if not log_y else 0
-        ax.set_ylim(bottom=bottom, top=y_top)
+        ax.set_ylim(bottom=-y_pad, top=y_top)
     else:
         ax.set_ylim(bottom=0)
-    if log_y:
-        ax.set_yscale("log")
-    if log_x:
-        ax.set_xscale("log")
 
     ax.legend()
     ax.grid(True, which="major", axis="both", linestyle="--", linewidth=0.5)
