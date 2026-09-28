@@ -435,6 +435,7 @@ Expression *init_hole_expression(char *name, Expression *type, Context *gamma) {
                                              /* type */ type);
 
     SET_HOLE_NAME(expr, strdup(name ? name : "_"));
+    expr->as.hole.is_filled = false;
     expr->has_evar = true;  // A hole always contains itself
     return expr;
 }
@@ -1454,7 +1455,7 @@ static bool recompute_has_evar(Expression *expr) {
 
     switch (expr->tag) {
         case HOLE_EXPRESSION:
-            if (!expr->as.hole.is_satisfied) {
+            if (!expr->as.hole.is_filled) {
                 expr->has_evar = true;
             }
             break;
@@ -1656,7 +1657,7 @@ bool fill_hole(Expression *hole, Expression *term) {
         }
     }
 
-    hole->as.hole.is_satisfied = true;
+    hole->as.hole.is_filled = true;
     recompute_has_evar(hole);
 
     // BFS upward through structural uplinks to recompute has_evar on ancestors.

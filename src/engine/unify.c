@@ -172,34 +172,6 @@ UnificationResult *eunify2(Expression *lemma, Expression *goal) {
         current_lemma_app_ty = kernel_expr_type(current_lemma_app);
     }
 
-    // Shelve holes that appear in other holes' types (evar-like arguments).
-    // These will be resolved via cascade fill when a dependent goal is solved.
-    DLLNode *node = remaining_open->head;
-    while (node != NULL) {
-        Expression *hole = (Expression *)node->data;
-        bool appears_in_other = false;
-        DLLNode *other = remaining_open->head;
-        while (other != NULL) {
-            if (other != node) {
-                Expression *other_hole = (Expression *)other->data;
-                Expression *other_type = kernel_expr_type(other_hole);
-                DoublyLinkedList *other_type_holes = list_holes(other_type);
-                if (dll_search(other_type_holes, hole) != NULL) {
-                    appears_in_other = true;
-                }
-                dll_destroy(other_type_holes);
-                if (appears_in_other) {
-                    break;
-                }
-            }
-            other = other->next;
-        }
-        if (appears_in_other) {
-            kernel_hole_mark_satisfied(hole);
-        }
-        node = node->next;
-    }
-
     return init_unification_result(current_lemma_app, remaining_open);
 }
 

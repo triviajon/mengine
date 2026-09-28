@@ -504,7 +504,7 @@ bool kernel_expr_is_match(Expression *expr);
 bool kernel_expr_is_fix(Expression *expr);
 
 /**
- * Check whether a hole has already been filled or shelved.
+ * Check whether a hole has already been filled.
  * Time Complexity: constant
  *
  * Space Complexity:
@@ -512,19 +512,7 @@ bool kernel_expr_is_fix(Expression *expr);
  * @param hole
  * @return
  */
-bool kernel_hole_is_satisfied(Expression *hole);
-
-/**
- * Mark a hole as satisfied without filling it. This is used by the proof
- * engine for dependent evars that will be filled by another open goal.
- * Time Complexity: constant
- *
- * Space Complexity:
- *
- * @param hole
- * @return
- */
-void kernel_hole_mark_satisfied(Expression *hole);
+bool kernel_hole_is_filled(Expression *hole);
 
 /**
  * Check whether an expression contains any holes.

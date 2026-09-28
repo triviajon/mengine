@@ -37,6 +37,36 @@ void test_fill_hole_cyclic_rejected(void) {
     assert_false(result, "filling hole with term containing itself should fail");
 }
 
+// kernel_hole_is_filled is false on a new hole and true only after kernel_hole_fill.
+void test_hole_is_filled(void) {
+    test_start("kernel_hole_is_filled tracks fill_hole only");
+
+    Context *ctx = kernel_context_empty();
+    Expression *A = kernel_var_create("A", kernel_type_create(), ctx);
+    Expression *a = kernel_var_create("a", A, A);
+    Expression *hole = kernel_hole_create("h", A, a);
+
+    assert_false(kernel_hole_is_filled(hole), "new hole should not be filled");
+
+    bool result = kernel_hole_fill(hole, a);
+    assert_true(result, "filling hole with a should succeed");
+    assert_true(kernel_hole_is_filled(hole), "hole should be filled after kernel_hole_fill");
+}
+
+// An unfilled hole counts as having holes, both directly and through a parent term.
+void test_unfilled_hole_has_holes(void) {
+    test_start("unfilled hole counts as having holes");
+
+    Context *ctx = kernel_context_empty();
+    Expression *A = kernel_var_create("A", kernel_type_create(), ctx);
+    Expression *x = kernel_var_create("x", A, A);
+    Expression *hole = kernel_hole_create("h", A, x);
+    Expression *lam = kernel_lambda_create(x, hole);
+
+    assert_true(kernel_expr_has_holes(hole), "unfilled hole should have holes");
+    assert_true(kernel_expr_has_holes(lam), "parent of unfilled hole should have holes");
+}
+
 // has_evar propagates correctly through term constructors.
 void test_evar_refs_propagation(void) {
     test_start("has_evar propagates through term construction");
@@ -86,6 +116,8 @@ void run_evar_refs_tests(void) {
 
     test_fill_hole_evar_free_term();
     test_fill_hole_cyclic_rejected();
+    test_hole_is_filled();
+    test_unfilled_hole_has_holes();
     test_evar_refs_propagation();
     test_evar_refs_propagate_from_types();
     test_fill_hole_clears_evar_refs();

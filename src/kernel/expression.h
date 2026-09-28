@@ -125,8 +125,8 @@ static Expression *PROP = NULL;
 
 // A typed hole to be filled later.
 typedef struct {
-    char *name;         // A user-friendly name for the hole. Not used internally.
-    bool is_satisfied;  // Set to true by fill_hole; proof_state skips these goals.
+    char *name;      // A user-friendly name for the hole. Not used internally.
+    bool is_filled;  // Set to true only by fill_hole; never by shelving.
 } HoleExpression;
 
 // A single branch in a match expression.

@@ -179,14 +179,8 @@ bool kernel_expr_is_match(Expression *expr) { return expr && expr->tag == MATCH_
 
 bool kernel_expr_is_fix(Expression *expr) { return expr && expr->tag == FIX_EXPRESSION; }
 
-bool kernel_hole_is_satisfied(Expression *hole) {
-    return hole && hole->tag == HOLE_EXPRESSION && hole->as.hole.is_satisfied;
-}
-
-void kernel_hole_mark_satisfied(Expression *hole) {
-    if (hole && hole->tag == HOLE_EXPRESSION) {
-        hole->as.hole.is_satisfied = true;
-    }
+bool kernel_hole_is_filled(Expression *hole) {
+    return hole && hole->tag == HOLE_EXPRESSION && hole->as.hole.is_filled;
 }
 
 bool kernel_expr_has_holes(Expression *expr) { return has_holes(expr); }

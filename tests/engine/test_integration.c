@@ -389,6 +389,35 @@ static void test_unfinished_proof_fails(void) {
              "intro.\n");
 }
 
+/* A dependent evar shelved by one apply must be filled before the proof
+ * completes, or the leftover hole would escape into the declared term. */
+static void test_unfilled_shelved_hole_fails(void) {
+    run_fail("proof with an unfilled shelved hole is rejected",
+             "Axiom E : Type.\n"
+             "Axiom False : Prop.\n"
+             "Axiom P : forall (e : E), Prop.\n"
+             "Axiom L : forall (e : E), forall (p : P e), False.\n"
+             "Axiom h : forall (e : E), P e.\n"
+             "Theorem oops : False.\n"
+             "apply L.\n"
+             "apply h.\n");
+}
+
+/* When the goal depending on the shelved evar is solved with a term whose
+ * type pins the evar down (cascade fill), the proof completes normally. */
+static void test_shelved_hole_filled_by_cascade_succeeds(void) {
+    run_ok("proof whose shelved hole is filled by cascade fill completes",
+           "Axiom E : Type.\n"
+           "Axiom e0 : E.\n"
+           "Axiom False : Prop.\n"
+           "Axiom P : forall (e : E), Prop.\n"
+           "Axiom L : forall (e : E), forall (p : P e), False.\n"
+           "Axiom h0 : P e0.\n"
+           "Theorem oops2 : False.\n"
+           "apply L.\n"
+           "exact h0.\n");
+}
+
 /* ── parametric inductive ───────────────────────────────────────────────── */
 
 static void test_parametric_list(void) {
@@ -509,6 +538,8 @@ void run_integration_tests(void) {
     test_forall_proof_chain();
     test_type_error_fails();
     test_unfinished_proof_fails();
+    test_unfilled_shelved_hole_fails();
+    test_shelved_hole_filled_by_cascade_succeeds();
     test_parametric_list();
 
     test_suite_end();

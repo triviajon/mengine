@@ -50,11 +50,19 @@ int mengine_execute_tactic(MEngineRuntime *rt, TacticExpr *tac) {
     // Free the now-orphaned hole expression (shallow - don't cascade into children).
     kernel_free_filled_hole(goal);
 
-    // Advance to the next goal, skipping satisfied evar holes
+    // Advance to the next goal, skipping filled evar holes
     bool has_next = engine_proof_state_next_goal(rt->proof_state);
     Expression *next_active = engine_proof_state_current_goal(rt->proof_state);
     if (!has_next || !next_active) {
         // No more active goals - proof is complete!
+        Expression *unfilled = engine_proof_state_unfilled_shelved(rt->proof_state);
+        if (unfilled) {
+            fprintf(stderr, ERROR "Proof incomplete: unresolved hole ?%s\n" CRESET,
+                    kernel_hole_name(unfilled));
+            timer_pop();
+            return 1;
+        }
+
         Expression *thm = rt->pending_theorem;
         rt->ctx = thm;
 

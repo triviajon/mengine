@@ -144,6 +144,15 @@ bool engine_proof_state_next_goal(ProofState *ps);
  */
 void engine_proof_state_add_goals(ProofState *ps, void *new_goals_list);
 
+/**
+ * Get the first unfilled shelved hole in the proof state, or NULL if every shelved hole is filled.
+ * Time Complexity:
+ *
+ * @param ps
+ * @return
+ */
+Expression *engine_proof_state_unfilled_shelved(ProofState *ps);
+
 /* ============================================================================
  * Unification Operations
  * ============================================================================ */

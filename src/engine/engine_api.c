@@ -47,6 +47,10 @@ void engine_proof_state_add_goals(ProofState *ps, void *new_goals_list) {
     proof_state_add_goals(ps, (DoublyLinkedList *)new_goals_list);
 }
 
+Expression *engine_proof_state_unfilled_shelved(ProofState *ps) {
+    return proof_state_first_unfilled_shelved(ps);
+}
+
 /* UNIFICATION OPERATIONS */
 
 UnificationResult *engine_unify(Context *goal_context, Expression *lemma, Expression *goal) {

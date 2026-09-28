@@ -10,8 +10,9 @@ typedef struct ProofState ProofState;
 
 struct ProofState {
     Expression *pending_theorem;
-    DoublyLinkedList *goals;  // list of Expression* representing proof obligations
-    DLLNode *current_node;    // pointer to current (or last-visited) node; NULL = exhausted
+    DoublyLinkedList *goals;    // list of Expression* representing proof obligations
+    DLLNode *current_node;      // pointer to current (or last-visited) node; NULL = exhausted
+    DoublyLinkedList *shelved;  // holes shelved by proof_state_add_goals; must be filled to finish
 };
 
 /**
@@ -62,5 +63,13 @@ bool proof_state_next(ProofState *ps);
  * obligations
  */
 void proof_state_add_goals(ProofState *ps, DoublyLinkedList *new_goals);
+
+/**
+ * Return the first shelved hole that has not been filled.
+ *
+ * @param ps Pointer to the ProofState.
+ * @return Pointer to an unfilled shelved hole, or NULL if every shelved hole is filled.
+ */
+Expression *proof_state_first_unfilled_shelved(ProofState *ps);
 
 #endif  // PROOF_STATE_H
