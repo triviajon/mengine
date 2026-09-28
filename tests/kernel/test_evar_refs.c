@@ -7,8 +7,8 @@ void test_fill_hole_evar_free_term(void) {
 
     Context *ctx = kernel_context_empty();
     Expression *A = kernel_var_create("A", kernel_type_create(), ctx);
-    Expression *hole = kernel_hole_create("goal", A, A);
     Expression *a = kernel_var_create("a", A, A);
+    Expression *hole = kernel_hole_create("goal", A, a);
 
     assert_false(kernel_expr_has_holes(a), "a should be evar-free");
 
@@ -46,7 +46,7 @@ void test_evar_refs_propagation(void) {
     Expression *hole = kernel_hole_create("h", A, A);
     Expression *arrow_A_A = kernel_arrow_create(A, A, A);
     Expression *id = kernel_var_create("id", arrow_A_A, A);
-    Expression *app = kernel_app_create(id, hole, A);
+    Expression *app = kernel_app_create(id, hole, id);
 
     assert_true(kernel_expr_has_holes(hole), "hole should have holes");
     assert_true(kernel_expr_has_holes(app), "app containing hole should have holes");
@@ -70,8 +70,8 @@ void test_fill_hole_clears_evar_refs(void) {
 
     Context *ctx = kernel_context_empty();
     Expression *A = kernel_var_create("A", kernel_type_create(), ctx);
-    Expression *hole = kernel_hole_create("h", A, A);
     Expression *x = kernel_var_create("x", A, A);
+    Expression *hole = kernel_hole_create("h", A, x);
     Expression *lam = kernel_lambda_create(x, hole);
 
     assert_true(kernel_expr_has_holes(lam), "lambda with hole should have holes");

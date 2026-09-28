@@ -9,9 +9,9 @@ static void test_beta_conversion_evidence(void) {
     Expression *x = kernel_var_create("x", A, A);
     Expression *id = kernel_lambda_create(x, x);
     Expression *a = kernel_var_create("a", A, A);
-    Expression *app = kernel_app_create(id, a, A);
+    Expression *app = kernel_app_create(id, a, a);
 
-    Conversion *conv = kernel_expr_conversion_in_context(A, app, a);
+    Conversion *conv = kernel_expr_conversion_in_context(a, app, a);
     assert_not_null(conv, "beta-redex should convert to its reduct");
 
     kernel_conversion_free(conv);
@@ -25,10 +25,10 @@ static void test_conversion_weakens_to_extension(void) {
     Expression *x = kernel_var_create("x", A, A);
     Expression *id = kernel_lambda_create(x, x);
     Expression *a = kernel_var_create("a", A, A);
-    Expression *app = kernel_app_create(id, a, A);
-    Expression *y = kernel_var_create("y", A, A);
+    Expression *app = kernel_app_create(id, a, a);
+    Expression *y = kernel_var_create("y", A, a);
 
-    Conversion *conv = kernel_expr_conversion_in_context(A, app, a);
+    Conversion *conv = kernel_expr_conversion_in_context(a, app, a);
     assert_not_null(conv, "beta conversion should be available");
     assert_true(kernel_conversion_valid_in_context(conv, y),
                 "conversion over a smaller context should weaken to an extension");

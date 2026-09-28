@@ -106,7 +106,8 @@ Context *context_replace(Context *context, Expression *x, Expression *a) {
 }
 
 bool valid_in_context(Expression *expr, Expression *context) {
-    Expression *curr_expr_ctx = get_expression_context(expr);
+    // A variable node is its own extended context; its stored context is its parent.
+    Expression *curr_expr_ctx = expr->tag == VAR_EXPRESSION ? expr : get_expression_context(expr);
     return context_is_ancestor(curr_expr_ctx, context);
 }
 
