@@ -12,7 +12,6 @@
 #include "src/engine/engine_api.h"
 #include "src/kernel/kernel_api.h"
 #include "src/runtime/runtime.h"
-#include "src/tacticlanguage/compiled_tactics.h"
 #include "src/tacticlanguage/tactic_ast.h"
 #include "src/termlanguage/ast_to_expression.h"
 
@@ -1119,10 +1118,7 @@ static int _handle_tactic_def_command(MEngineRuntime *rt, TacticDefCmd *tc) {
     def->name = tc->name;
     def->params = tc->params;
     def->param_count = tc->param_count;
-    def->fn = NULL;
     def->body = tc->body;
-    def->compiled_env = NULL;
-    tactic_def_attach_compiled(rt, def);
     tactic_env_add(rt->tactic_env, def);
     MPRINT(rt->options->quiet, stdout, UI "Tactic " CRESET "%s defined.\n", tc->name);
     return 0;

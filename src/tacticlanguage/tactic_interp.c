@@ -463,8 +463,7 @@ TacticResult *tactic_interpret(MEngineRuntime *rt, Expression *goal, TacticExpr 
             }
 
             _tac_call_depth++;
-            TacticResult *result = def->fn ? def->fn(rt, goal, def->compiled_env)
-                                           : tactic_interpret(rt, goal, def->body);
+            TacticResult *result = tactic_interpret(rt, goal, def->body);
             _tac_call_depth--;
             env_pop_to(saved);
             return result;

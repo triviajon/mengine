@@ -573,15 +573,11 @@ static inline void free_tactic_expr(TacticExpr *expr) {
  * Tactic definitions (stored in the tactic environment)
  * ============================================================================ */
 
-typedef TacticResult *(*CompiledTactic)(MEngineRuntime *rt, Expression *goal, void *env);
-
 typedef struct {
     char *name;              // tactic name
     char **params;           // parameter names (NULL if none)
     size_t param_count;      // number of parameters
-    CompiledTactic fn;       // NULL if interpreted
-    TacticExpr *body;        // NULL if compiled-only
-    void *compiled_env;      // closed-over data for compiled tactics
+    TacticExpr *body;        // tactic body
 } TacticDef;
 
 typedef struct TacticEnv {
@@ -615,7 +611,6 @@ static inline void tactic_env_add(TacticEnv *env, TacticDef *def) {
             if (old->body) {
                 free_tactic_expr(old->body);
             }
-            free(old->compiled_env);
             free(old);
             return;
         }
@@ -656,7 +651,6 @@ static inline void tactic_env_free(TacticEnv *env) {
             if (def->body) {
                 free_tactic_expr(def->body);
             }
-            free(def->compiled_env);
             free(def);
         }
     }
