@@ -241,6 +241,17 @@ static int _handle_print_command(MEngineRuntime *rt, PrintCmd *print_cmd) {
         return 1;
     }
 
+    if (print_cmd->rocq) {
+        char *export = kernel_rocq_export(expr);
+        if (!export) {
+            return 1;
+        }
+        // Printed even with --quiet, so `mengine -q script.me > out.v` yields just the file.
+        fputs(export, stdout);
+        free(export);
+        return 0;
+    }
+
     Expression *expr_type = kernel_expr_type(expr);
     if (!expr_type) {
         fprintf(stderr, ERROR "Failed to get type of expression in Print command.\n" CRESET);
@@ -863,7 +874,8 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
     }
 
     // Register the inductive type
-    if (!kernel_inductive_register(ind_var, ctor_vars, ctor_count, ind_principle_var)) {
+    if (!kernel_inductive_register(ind_var, (int)param_count, ctor_vars, ctor_count,
+                                   ind_principle_var)) {
         fprintf(stderr, ERROR "Failed to register inductive type %s.\n" CRESET, name);
     } else {
         MPRINT(rt->options->quiet, stdout,

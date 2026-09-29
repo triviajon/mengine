@@ -950,13 +950,15 @@ bool kernel_expr_is_constructor_of(Expression *expr, Expression *inductive_var);
  * Time Complexity: TODO
  *
  * @param inductive_var
+ * @param param_count
  * @param constructors
  * @param constructor_count
  * @param eliminator
  * @return
  */
-bool kernel_inductive_register(Expression *inductive_var, Expression **constructors,
-                               int constructor_count, Expression *eliminator);
+bool kernel_inductive_register(Expression *inductive_var, int param_count,
+                               Expression **constructors, int constructor_count,
+                               Expression *eliminator);
 
 /* ============================================================================
  * String Conversion
@@ -988,5 +990,17 @@ char *kernel_context_to_string(Context *context);
  * @return
  */
 char *kernel_context_to_string_until(Context *context, Context *until);
+
+/**
+ * Render a variable and its context as a Rocq file: the context entries and the variable's
+ * definition, wrapped in a Section. Entries without a body, and proofs, become Axioms.
+ * Returns NULL, after printing an error, if the variable has no body or a printed term
+ * contains a hole.
+ * Time Complexity: O(|context| + sum of the DAG sizes of the printed types and bodies)
+ *
+ * @param var
+ * @return
+ */
+char *kernel_rocq_export(Expression *var);
 
 #endif  // KERNEL_API_H

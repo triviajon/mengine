@@ -313,6 +313,15 @@ Command *command_parse_print(Parser *p) {
     char *name = strdup(ident_token->lexeme);
     lexer_free_token(ident_token);
 
+    // Rocq [identif]
+    bool rocq = strcmp(name, "Rocq") == 0 && parser_expect_no_consume(p, TOK_IDENT);
+    if (rocq) {
+        free(name);
+        Token *target_token = parser_next(p);
+        name = strdup(target_token->lexeme);
+        lexer_free_token(target_token);
+    }
+
     if (!parser_expect_consume(p, TOK_DOT)) {
         parser_error(p, "Expected '.' at end of print command");
     }
@@ -320,6 +329,7 @@ Command *command_parse_print(Parser *p) {
     Command *cmd = malloc(sizeof(Command));
     cmd->tag = CMD_PRINT;
     cmd->as.print.name = name;
+    cmd->as.print.rocq = rocq;
     return cmd;
 }
 

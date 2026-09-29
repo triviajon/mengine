@@ -35,7 +35,7 @@ Similar to Rocq's Vernacular:
 
 <check> ::= "Check" <term> "."
 
-<print> ::= "Print" <identifer> "."
+<print> ::= "Print" [ "Rocq" ] <identifer> "."
 
 <show> ::= "Show" <show_keyword> "."
 <show_keyword> ::= "Context" | "Proof" | "Goal" | "State"

@@ -13,6 +13,7 @@
 #include "src/kernel/inductive.h"
 #include "src/kernel/iota_reduction.h"
 #include "src/kernel/normalize.h"
+#include "src/kernel/rocq_export.h"
 #include "src/kernel/subst.h"
 #include "src/kernel/utils.h"
 
@@ -328,9 +329,11 @@ bool kernel_expr_is_constructor_of(Expression *expr, Expression *inductive_var) 
     return is_constructor_of(expr, inductive_var);
 }
 
-bool kernel_inductive_register(Expression *inductive_var, Expression **constructors,
-                               int constructor_count, Expression *eliminator) {
-    return register_inductive(inductive_var, constructors, constructor_count, eliminator);
+bool kernel_inductive_register(Expression *inductive_var, int param_count,
+                               Expression **constructors, int constructor_count,
+                               Expression *eliminator) {
+    return register_inductive(inductive_var, param_count, constructors, constructor_count,
+                              eliminator);
 }
 
 /* STRING CONVERSION */
@@ -360,3 +363,5 @@ char *kernel_context_to_string(Context *context) {
 char *kernel_context_to_string_until(Context *context, Context *until) {
     return stringify_context_until(context, until, CTX_STRINGIFY_PRETTY_IND2);
 }
+
+char *kernel_rocq_export(Expression *var) { return rocq_export(var); }

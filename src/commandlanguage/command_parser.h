@@ -51,6 +51,7 @@ typedef struct {
 
 typedef struct {
     char *name;
+    bool rocq;  // "Print Rocq <name>." exports name and its context as a Rocq file
 } PrintCmd;
 
 typedef struct {
@@ -218,7 +219,7 @@ Command *command_parse_fixpoint(Parser *p);
 Command *command_parse_check(Parser *p);
 
 /**
- * <print> ::= "Print" <term> "."
+ * <print> ::= "Print" [ "Rocq" ] <identifier> "."
  *
  * @param p Pointer to the Parser.
  * @return Command structure representing the parsed print command.

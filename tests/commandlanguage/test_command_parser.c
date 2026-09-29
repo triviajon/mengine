@@ -271,6 +271,46 @@ void test_parse_definition_identity(void) {
     assert_equal_int(AST_VAR, cmd->as.defn.body->tag, "body should be variable");
 }
 
+static Command *parse_single_command(const char *source) {
+    static MEngineOptions options = {.debug = false};
+    static Lexer lx;
+    static Parser parser;
+    lexer_init(&lx, source, &options);
+    parser_init(&parser, &lx, &options);
+    return command_parse_command(&parser);
+}
+
+// "Print Rocq <name>." selects the Rocq export of name.
+void test_parse_print_rocq(void) {
+    test_start("covers Print Rocq with a target");
+
+    Command *cmd = parse_single_command("Print Rocq foo.\n");
+    assert_not_null(cmd, "command should not be null");
+    assert_equal_int(CMD_PRINT, cmd->tag, "command should be PRINT");
+    assert_true(cmd->as.print.rocq, "Rocq export should be selected");
+    assert_equal_str("foo", cmd->as.print.name, "target should be 'foo'");
+}
+
+// "Print Rocq." prints a symbol named Rocq.
+void test_parse_print_symbol_named_rocq(void) {
+    test_start("covers Print of a symbol named Rocq");
+
+    Command *cmd = parse_single_command("Print Rocq.\n");
+    assert_not_null(cmd, "command should not be null");
+    assert_false(cmd->as.print.rocq, "Rocq export should not be selected");
+    assert_equal_str("Rocq", cmd->as.print.name, "symbol should be 'Rocq'");
+}
+
+// A plain Print does not export.
+void test_parse_print_plain(void) {
+    test_start("covers plain Print");
+
+    Command *cmd = parse_single_command("Print foo.\n");
+    assert_not_null(cmd, "command should not be null");
+    assert_false(cmd->as.print.rocq, "Rocq export should not be selected");
+    assert_equal_str("foo", cmd->as.print.name, "symbol should be 'foo'");
+}
+
 void run_command_parser_tests(void) {
     test_suite_start("Command Parser Test Suite");
 
@@ -296,6 +336,11 @@ void run_command_parser_tests(void) {
     test_parse_lemma();
     test_parse_theorem_simple_type();
     test_parse_lemma_complex();
+
+    // Print
+    test_parse_print_plain();
+    test_parse_print_rocq();
+    test_parse_print_symbol_named_rocq();
 
     test_suite_end();
 }

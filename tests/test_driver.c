@@ -3,6 +3,7 @@
 void run_evar_refs_tests(void);
 void run_order_tests(void);
 void run_conversion_tests(void);
+void run_rocq_export_tests(void);
 void run_command_parser_tests(void);
 void run_parser_tests(void);
 void run_lexer_tests(void);
@@ -13,6 +14,7 @@ int main(void) {
     run_evar_refs_tests();
     run_order_tests();
     run_conversion_tests();
+    run_rocq_export_tests();
     run_command_parser_tests();
     run_parser_tests();
     run_lexer_tests();

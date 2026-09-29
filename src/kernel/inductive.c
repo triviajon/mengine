@@ -31,8 +31,8 @@ void inductive_registry_shutdown(void) {
     inductive_registry = NULL;
 }
 
-bool register_inductive(Expression *inductive_var, Expression **constructors, int constructor_count,
-                        Expression *eliminator) {
+bool register_inductive(Expression *inductive_var, int param_count, Expression **constructors,
+                        int constructor_count, Expression *eliminator) {
     if (inductive_var == NULL || constructors == NULL || constructor_count < 1) {
         fprintf(stderr, ERROR "Invalid arguments to register_inductive.\n" CRESET);
         return false;
@@ -65,6 +65,7 @@ bool register_inductive(Expression *inductive_var, Expression **constructors, in
     }
 
     def->inductive_var = inductive_var;
+    def->param_count = param_count;
     def->constructors = ctor_copy;
     def->constructor_count = constructor_count;
     def->eliminator = eliminator;

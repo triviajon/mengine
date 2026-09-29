@@ -8,6 +8,7 @@
 // Represents a registered inductive type definition
 typedef struct {
     Expression *inductive_var;  // The variable representing the inductive type
+    int param_count;            // Leading binders of every constructor type that are parameters
     Expression **constructors;  // Array of constructor variables (registry owns copy)
     int constructor_count;      // Number of constructors
     Expression *eliminator;     // The eliminator/recursor (can be NULL)
@@ -19,11 +20,11 @@ void inductive_registry_init(void);
 // Clear and free the inductive registry (called at shutdown)
 void inductive_registry_shutdown(void);
 
-// Register a new inductive type with its constructors
+// Register a new inductive type with its constructors and its number of leading parameters
 // Makes a copy of the constructors array (caller retains ownership)
 // Returns true on success, false if already registered
-bool register_inductive(Expression *inductive_var, Expression **constructors, int constructor_count,
-                        Expression *eliminator);
+bool register_inductive(Expression *inductive_var, int param_count, Expression **constructors,
+                        int constructor_count, Expression *eliminator);
 
 // Check if an expression is a registered inductive type
 bool is_inductive(Expression *expr);
