@@ -131,6 +131,17 @@ def _generate_mengine_let_bindings(n):
     return "\n".join(lines)
 
 
+def _generate_mengine_rewritten_let_bindings(n):
+    """The let chain with every `+ O` removed: what rewriting add_r_O leaves."""
+    lines = []
+    for i in range(1, n + 1):
+        wprev = "v0" if i == 1 else f"w{i-1}"
+        lines.append(f"   let w{i}: nat := add {wprev} {wprev} in")
+    last = f"w{n}" if n > 0 else "v0"
+    lines.append(f"   add {last} {last}")
+    return "\n".join(lines)
+
+
 def _generate_let_bindings(n):
     lines = []
     for i in range(1, n + 1):
@@ -182,7 +193,7 @@ class Addr0LetIn(Benchmark):
 
         if strategy.engine == "mengine":
             lets = _generate_mengine_let_bindings(n)
-            last = f"v{n}" if n > 0 else "v0"
+            rewritten = _generate_mengine_rewritten_let_bindings(n)
             content = f"""Axiom nat : Type.
 Axiom add : forall (_: nat), forall (_: nat), nat.
 Axiom O : nat.
@@ -194,9 +205,11 @@ Theorem bench : eq nat
     (
 {lets}
     )
-    v0.
+    (
+{rewritten}
+    ).
 rewrite add_r_O with eq.
-Admitted.
+apply eq_refl.
 """
             path = os.path.join(workdir, "test.me")
             with open(path, "w") as f:
