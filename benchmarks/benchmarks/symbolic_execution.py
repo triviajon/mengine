@@ -212,8 +212,7 @@ Tactic solve_var_eq :=
 
 Tactic solve_op_eq :=
     rewrite eval_op with eq;
-    rewrite eval_var with eq;
-    rewrite eval_var with eq;
+    repeat rewrite eval_var with eq;
     normalize_store;
     normalize_get;
     first [
