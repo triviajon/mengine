@@ -4,21 +4,76 @@ Separation logic predicate reversal.
 Proves: eq M (sep P1 (sep P2 ...Pn)) (sep Pn (...P2 P1))
 i.e., full reversal of a right-associated separation logic predicate chain.
 
-Mengine: Uses sep_swap (three-element rotate) and sep_cong_r to build an
-  explicit bring-to-front eq_trans chain — O(n^2) kernel_app_create calls.
-  The scripted __bring_to_front/__cancel_one definitions below are reference
-  implementations; at runtime tactic_def_attach_compiled() detects the pattern
-  `repeat __cancel_one; try reflexivity` and replaces the `cancel` function
-  pointer with compiled_sep_cancel (src/tacticlanguage/compiled_tactics.c),
-  which builds identical proof terms directly in C without going through the
-  tactic interpreter. The scripted definitions serve as a readable spec and
-  as a fallback when the required axioms are not in scope.
+Mengine: the cancel tactic moves each element of the right-hand side to the front
+  of the left-hand side with sep_swap (three-element rotate) and sep_cong_r, then
+  strips it, chaining the steps with eq_trans: O(n^2) kernel constructions.
 Coq: cancel tactic (requires coqutil library)
-Lean: not yet supported
+Lean: the same cancellation procedure as a custom tactic in the Elab monad
 """
 
 import os
 from framework.benchmark import Benchmark, Strategy, ParamSpec
+
+
+SCRIPTED_CANCEL = """\
+Tactic __bring_to_front target lhs :=
+  first [
+    (expr_eq lhs target;
+     let T := type_of lhs in
+     let refl := constr ((eq_refl T) lhs) in
+     pair lhs refl)
+  |
+    (match lhs with
+     | ((?s ?lhs_head) ?lhs_rest) =>
+     first [
+       (expr_eq lhs_head target;
+        let T := type_of lhs in
+        let refl := constr ((eq_refl T) lhs) in
+        pair lhs refl)
+     |
+       (let sub := __bring_to_front target lhs_rest in
+        let rest' := fst sub in
+        let rest_proof := snd sub in
+        let T := type_of lhs in
+        first [
+          (expr_eq rest' target;
+           let mid     := constr ((sep lhs_head) target) in
+           let cong    := constr ((((sep_cong_r lhs_head) lhs_rest) target) rest_proof) in
+           let swapped := constr ((sep target) lhs_head) in
+           let swap    := constr ((sep_comm lhs_head) target) in
+           let trans   := constr ((((((eq_trans T) lhs) mid) swapped) cong) swap) in
+           pair swapped trans)
+        |
+          (match rest' with
+           | ((?s2 ?x2) ?rest2) =>
+           let mid     := constr ((sep lhs_head) rest') in
+           let cong    := constr ((((sep_cong_r lhs_head) lhs_rest) rest') rest_proof) in
+           let swapped := constr ((sep target) ((sep lhs_head) rest2)) in
+           let swap    := constr (((sep_swap lhs_head) target) rest2) in
+           let trans   := constr ((((((eq_trans T) lhs) mid) swapped) cong) swap) in
+           pair swapped trans
+           end)
+        ])
+     ]
+     end)
+  ].
+Tactic __cancel_one :=
+  match Goal with
+  | [ |- (((eq ?A) ?LHS) ((sep ?B) ?REST_R)) ] =>
+    let rot       := __bring_to_front B LHS in
+    let lhs'      := fst rot in
+    let rot_proof := snd rot in
+    match lhs' with
+    | ((?s3 ?b3) ?lhs'_rest) =>
+    let g         := current_goal in
+    let new_goal_ty := constr (((eq A) lhs'_rest) REST_R) in
+    let h         := mk_hole new_goal_ty in
+    let strip     := constr ((((sep_cong_r B) lhs'_rest) REST_R) h) in
+    let full      := constr ((((((eq_trans A) LHS) lhs') ((sep B) REST_R)) rot_proof) strip) in
+    fill g full
+    end
+  end.
+Tactic cancel := repeat __cancel_one; try reflexivity."""
 
 
 class SeparationLogic(Benchmark):
@@ -82,8 +137,8 @@ class SeparationLogic(Benchmark):
         lines.append("Axiom sep_cong_l : forall (A : M), forall (B : M), forall (C : M),")
         lines.append("    forall (_ : eq M A B), eq M ((sep A) C) ((sep B) C).")
         lines.append("")
-        lines.append("(* cancel: compiled_sep_cancel (compiled_tactics.c) is always active here. *)")
-        lines.append("Tactic cancel := repeat __cancel_one; try reflexivity.")
+        lines.append("(* Cancel tactic: rotate the matching element to the front, strip it with sep_cong_r *)")
+        lines.append(SCRIPTED_CANCEL)
 
         lines.append("(* Predicates *)")
         for p in preds:
