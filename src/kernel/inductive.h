@@ -22,7 +22,7 @@ void inductive_registry_shutdown(void);
 
 // Register a new inductive type with its constructors and its number of leading parameters
 // Makes a copy of the constructors array (caller retains ownership)
-// Returns true on success, false if already registered
+// Returns true on success, false if the registration is not valid
 bool register_inductive(Expression *inductive_var, int param_count, Expression **constructors,
                         int constructor_count, Expression *eliminator);
 

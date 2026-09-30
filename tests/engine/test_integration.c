@@ -84,6 +84,24 @@ static void test_inductive_bool(void) {
            "Check not.\n");
 }
 
+/* An inductive occurring to the left of an arrow in its own constructor would let a
+ * looping term prove False, so the declaration is rejected. */
+static void test_inductive_not_strictly_positive_fails(void) {
+    run_fail("inductive that is not strictly positive is rejected",
+             "Axiom False : Prop.\n"
+             "Inductive Bad : Type :=\n"
+             "| mk : forall (f : forall (_ : Bad), False), Bad.\n");
+}
+
+/* An inductive may occur as the result of a function argument: that is strictly positive. */
+static void test_inductive_positive_function_argument(void) {
+    run_ok("inductive with a function-typed argument returning it is accepted",
+           "Inductive nat : Type := | O : nat | S : forall (_: nat), nat.\n"
+           "Inductive tree : Type :=\n"
+           "| leaf : tree\n"
+           "| node : forall (children : forall (_ : nat), tree), tree.\n");
+}
+
 /* ── fixpoints ──────────────────────────────────────────────────────────── */
 
 static void test_fixpoint_add(void) {
@@ -503,6 +521,8 @@ void run_integration_tests(void) {
     test_parametric_induction_principle();
     test_inductive_match_pred();
     test_inductive_bool();
+    test_inductive_not_strictly_positive_fails();
+    test_inductive_positive_function_argument();
     test_fixpoint_add();
     test_fixpoint_eval();
     test_fix_motive_apply();

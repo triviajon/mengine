@@ -697,6 +697,7 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
     Binder **params = ind_cmd->params;
     size_t param_count = ind_cmd->param_count;
 
+    Context *before = rt->ctx;
     Context *c = rt->ctx;
     Expression **param_vars = malloc(param_count * sizeof(Expression *));
     Context **contexts = malloc((param_count + 1) * sizeof(Context *));
@@ -872,10 +873,13 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
         }
     }
 
-    // Register the inductive type
-    if (!kernel_inductive_register(ind_var, (int)param_count, ctor_vars, ctor_count,
-                                   ind_principle_var)) {
+    // Register the inductive type; if the kernel rejects it, none of its declarations stay in
+    // scope.
+    bool registered = kernel_inductive_register(ind_var, (int)param_count, ctor_vars, ctor_count,
+                                                ind_principle_var);
+    if (!registered) {
         fprintf(stderr, ERROR "Failed to register inductive type %s.\n" CRESET, name);
+        rt->ctx = before;
     } else {
         MPRINT(rt->options->quiet, stdout,
                UI "Registered " CRESET "inductive %s with %zu constructor(s).\n", name, ctor_count);
@@ -885,7 +889,7 @@ static int _handle_inductive_command(MEngineRuntime *rt, InductiveCmd *ind_cmd) 
     free(ind_principle_name);
     free(param_vars);
     free(contexts);
-    return 0;
+    return registered ? 0 : 1;
 }
 
 static int _handle_fixpoint_command(MEngineRuntime *rt, FixpointCmd *fix_cmd) {
