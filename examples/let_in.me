@@ -14,4 +14,4 @@ Fixpoint big (a : nat) (sz : nat) { struct sz } : nat := match sz with
 
 Definition test_term : nat := big (S O) (S (S (S (S O)))).
 
-Theorem test_big : forall (n: nat), eq nat test_term n.
+Check test_term.

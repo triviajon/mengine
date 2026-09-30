@@ -10,3 +10,5 @@ Check nat_ind.
 Fixpoint add (n : nat) (m : nat) {struct n} : nat := match n with | O => m | S n' => S (add n' m) end.
 
 Theorem test1 : eq nat (add (S O) (O)) (S O).
+cbv.
+apply eq_refl.

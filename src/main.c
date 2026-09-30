@@ -137,6 +137,11 @@ int file_mode(MEngineOptions options, char *filename) {
     }
 
     int r = mengine_runtime_exec_file(rt, filename);
+    if (r == 0 && rt->mode == MENGINE_RUNTIME_PROOF_MODE) {
+        fprintf(stderr, ERROR "File ended before the proof of %s was complete.\n" CRESET,
+                kernel_var_name(rt->pending_theorem));
+        r = 1;
+    }
     mengine_runtime_free(rt);
 
     return r;
