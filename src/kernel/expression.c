@@ -364,7 +364,10 @@ Expression *_construct_app_type(Context *context, Expression *func, Expression *
         // If variable does not appear free in return_type (i.e. variable is not in
         // return_type's context chain), the substitution return_type[variable -> arg]
         // is trivially return_type itself.  Skip the new_subst call in that case.
-        if (context_find(get_expression_context(return_type), variable) == NULL) {
+        if (return_type == variable) {
+            // For example, if T : Type and f : forall (A : Type), A, then f T : T.
+            result = arg;
+        } else if (context_find(get_expression_context(return_type), variable) == NULL) {
             result = return_type;
         } else {
             result = new_subst(context, return_type, variable, arg);  // B[x -> arg]

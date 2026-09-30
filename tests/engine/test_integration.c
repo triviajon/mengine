@@ -41,6 +41,14 @@ static void test_definition(void) {
            "Check id.\n");
 }
 
+/* Applying a function whose result type is its own bound variable yields the argument. */
+static void test_application_result_is_bound_variable(void) {
+    run_ok("application whose result type is the bound variable",
+           "Axiom T : Type.\n"
+           "Axiom f : forall (A : Type), A.\n"
+           "Definition w : T := f T.\n");
+}
+
 /* ── inductive types ────────────────────────────────────────────────────── */
 
 static void test_inductive_nat(void) {
@@ -516,6 +524,7 @@ void run_integration_tests(void) {
 
     test_axiom_and_check();
     test_definition();
+    test_application_result_is_bound_variable();
     test_inductive_nat();
     test_induction_principle_has_ih();
     test_parametric_induction_principle();
