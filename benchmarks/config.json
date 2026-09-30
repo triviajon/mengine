@@ -1,6 +1,6 @@
 {
-  "mengine_path": "~/mengine/build/mengine",
-  "mengine_root": "~/mengine",
+  "mengine_path": "../build/mengine",
+  "mengine_root": "..",
   "coq_path": "coqc",
   "lean_path": "lean",
   "coqutil_root": "~/coqutil",
@@ -21,23 +21,23 @@
   },
   "mengine_variants": {
     "baseline": {
-      "path": "~/mengine/build/ablations/mengine-baseline",
-      "root": "~/mengine",
+      "path": "../build/ablations/mengine-baseline",
+      "root": "..",
       "label": "baseline"
     },
     "no_evar_free_fill": {
-      "path": "~/mengine/build/ablations/mengine-no-evar-free-fill",
-      "root": "~/mengine",
+      "path": "../build/ablations/mengine-no-evar-free-fill",
+      "root": "..",
       "label": "no evar-free fill"
     },
     "order_ll": {
-      "path": "~/mengine/build/ablations/mengine-order-ll",
-      "root": "~/mengine",
+      "path": "../build/ablations/mengine-order-ll",
+      "root": "..",
       "label": "order linked list"
     },
     "order_demain": {
-      "path": "~/mengine/build/ablations/mengine-order-demain",
-      "root": "~/mengine",
+      "path": "../build/ablations/mengine-order-demain",
+      "root": "..",
       "label": "order demain"
     }
   }

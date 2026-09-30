@@ -45,8 +45,14 @@ def load_config():
     with open(os.path.join(BENCH_ROOT, "config.json")) as f:
         cfg = json.load(f)
     s = cfg.get("stdlib", {})
+    # Paths are relative to the benchmarks directory; bare command names are looked up on PATH.
     def exp(p):
-        return os.path.expanduser(p) if p else p
+        if not p:
+            return p
+        p = os.path.expanduser(p)
+        if os.path.isabs(p) or os.sep not in p and p not in (".", ".."):
+            return p
+        return os.path.normpath(os.path.join(BENCH_ROOT, p))
     return {
         "mengine_path": exp(cfg["mengine_path"]),
         "mengine_root": exp(cfg.get("mengine_root", "")),

@@ -82,8 +82,8 @@ from framework.runner import RunConfig, run_benchmark, load_results
 DEFAULT_CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
 
 DEFAULT_CONFIG = {
-    "mengine_path": "~/mengine/mengine",
-    "mengine_root": "~/mengine",
+    "mengine_path": "../build/mengine",
+    "mengine_root": "..",
     "coq_path": "coqc",
     "lean_path": "lean",
     "coqutil_root": "~/coqutil",
@@ -120,6 +120,15 @@ def load_config():
             cfg[key] = resolve_path_or_cmd(value)
         else:
             cfg[key] = resolve_path_from_base(value)
+    variants = cfg.get("mengine_variants", {})
+    for name, spec in variants.items():
+        if isinstance(spec, str):
+            variants[name] = resolve_path_or_cmd(spec)
+            continue
+        if spec.get("path"):
+            spec["path"] = resolve_path_or_cmd(spec["path"])
+        if spec.get("root"):
+            spec["root"] = resolve_path_from_base(spec["root"])
 
     return cfg
 
