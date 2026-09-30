@@ -304,10 +304,13 @@ static void gc_free_node(Expression *expr, PtrSet *freed) {
     }
 }
 
+static void app_type_cache_clear(void);
+
 // Walk the arena pages and free every tracked expression.
 void expression_gc_shutdown(void) {
     inductive_registry_shutdown();
     conversion_cache_clear();
+    app_type_cache_clear();
 
     PtrSet freed;
     ptrset_init(&freed);
@@ -343,6 +346,76 @@ Expression *_construct_lambda_type(Expression *bound_variable, Expression *body)
     return init_forall_expression_wc(bound_variable, get_expression_type(body));
 }
 
+// Memo of application result types B[x -> arg], keyed by the Pi node (forall x : A, B) and the
+// argument, so that applying the same function type to the same argument again (e.g. the same
+// lemma instantiated at every candidate subterm) does not redo the substitution. Terms with
+// holes are not cached, since filling a hole mutates them in place. The type is computed in the
+// smallest context holding the Pi and the argument, and a hit is used only where that type is
+// valid.
+static Map *g_app_type_cache = NULL;
+
+static void app_type_cache_free_inner(void *inner) { map_free((Map *)inner); }
+
+static void app_type_cache_clear(void) {
+    if (g_app_type_cache != NULL) {
+        map_clear_apply_free(g_app_type_cache, app_type_cache_free_inner);
+        g_app_type_cache = NULL;
+    }
+}
+
+static Expression *app_type_cache_get(Expression *pi, Expression *arg) {
+    Map *by_arg = g_app_type_cache ? map_get(g_app_type_cache, pi) : NULL;
+    return by_arg ? map_get(by_arg, arg) : NULL;
+}
+
+static void app_type_cache_put(Expression *pi, Expression *arg, Expression *type) {
+    if (!g_app_type_cache) {
+        g_app_type_cache = map_new_with_capacity(64);
+        if (!g_app_type_cache) {
+            return;
+        }
+    }
+    Map *by_arg = map_get(g_app_type_cache, pi);
+    if (!by_arg) {
+        by_arg = map_new_with_capacity(4);
+        if (!by_arg || !map_set(g_app_type_cache, pi, by_arg)) {
+            map_free(by_arg);
+            return;
+        }
+    }
+    map_set(by_arg, arg, type);
+}
+
+// The deeper of two contexts that are both ancestors of context, or context itself otherwise.
+static Context *deeper_ancestor_context(Context *a, Context *b, Context *context) {
+    if (!a || !b || !context_is_ancestor(a, context) || !context_is_ancestor(b, context)) {
+        return context;
+    }
+    return context_is_ancestor(a, b) ? b : a;
+}
+
+// B[x -> arg] for pi = (forall x : A, B), valid in context.
+static Expression *_instantiate_pi(Context *context, Expression *pi, Expression *arg) {
+    Expression *variable = get_forall_bound_variable(pi);
+    Expression *return_type = get_forall_body(pi);
+    if (pi->has_evar || arg->has_evar || context_find(context, variable) != NULL) {
+        return new_subst(context, return_type, variable, arg);
+    }
+
+    Expression *cached = app_type_cache_get(pi, arg);
+    if (cached && valid_in_context(cached, context)) {
+        return cached;
+    }
+    // free(B) \ {x} lies in pi's context; a variable argument is its own context.
+    Context *arg_context = arg->tag == VAR_EXPRESSION ? arg : get_expression_context(arg);
+    Context *minimal = deeper_ancestor_context(get_expression_context(pi), arg_context, context);
+    Expression *result = new_subst(minimal, return_type, variable, arg);
+    if (result) {
+        app_type_cache_put(pi, arg, result);
+    }
+    return result;
+}
+
 // Helper to construct a app type from a function and argument.
 // Assumes all inputs are valid.
 Expression *_construct_app_type(Context *context, Expression *func, Expression *arg) {
@@ -370,7 +443,7 @@ Expression *_construct_app_type(Context *context, Expression *func, Expression *
         } else if (context_find(get_expression_context(return_type), variable) == NULL) {
             result = return_type;
         } else {
-            result = new_subst(context, return_type, variable, arg);  // B[x -> arg]
+            result = _instantiate_pi(context, weak_func_type, arg);  // B[x -> arg]
         }
     } else {
         fprintf(stderr, ERROR "Application does not type check.\n" CRESET);

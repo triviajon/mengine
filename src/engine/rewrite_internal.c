@@ -346,7 +346,9 @@ RewriteResult *rewrite_head(Expression *mid, Expression *lemma, Context *context
     }
 
     // TODO: We shouldn't need to use this function
-    UnificationResult *unif_result = bad_unify_for_eq(context, lemma, mid);
+    UnificationResult *unif_result = allow_unresolved_bindings
+                                         ? bad_unify_for_eq(context, lemma, mid)
+                                         : bad_unify_for_eq_closed(context, lemma, mid);
 
     if (!unif_result) {
         return init_rewrite_result(mid, mid, NULL, NULL);

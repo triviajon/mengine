@@ -175,7 +175,8 @@ UnificationResult *eunify2(Expression *lemma, Expression *goal) {
     return init_unification_result(current_lemma_app, remaining_open);
 }
 
-UnificationResult *bad_unify_for_eq(Context *goal_context, Expression *lemma, Expression *expr) {
+static UnificationResult *unify_for_eq(Context *goal_context, Expression *lemma, Expression *expr,
+                                       bool allow_holes) {
     Expression *current_lemma_app = lemma;
     // Normalize the lemma type before inspecting it: an induction hypothesis arrives
     // as a beta-redex `(motive) x` (the eliminator's `P x`) whose whnf is the actual
@@ -189,6 +190,11 @@ UnificationResult *bad_unify_for_eq(Context *goal_context, Expression *lemma, Ex
         Expression *bound_variable = kernel_forall_var(current_lemma_app_ty);
         Expression *hole_subst = _unify2(current_lemma_ty_lhs, expr, bound_variable);
 
+        if (hole_subst == NULL && !allow_holes) {
+            // Stop before instantiating the remaining binders: the caller would discard it.
+            dll_destroy(remaining_open);
+            return NULL;
+        }
         if (hole_subst == NULL) {
             Expression *hole_to_fill = kernel_hole_create(
                 kernel_var_name(bound_variable), kernel_expr_type(bound_variable), goal_context);
@@ -209,6 +215,16 @@ UnificationResult *bad_unify_for_eq(Context *goal_context, Expression *lemma, Ex
     }
     return init_unification_result(current_lemma_app, remaining_open);
 }
+
+UnificationResult *bad_unify_for_eq(Context *goal_context, Expression *lemma, Expression *expr) {
+    return unify_for_eq(goal_context, lemma, expr, true);
+}
+
+UnificationResult *bad_unify_for_eq_closed(Context *goal_context, Expression *lemma,
+                                           Expression *expr) {
+    return unify_for_eq(goal_context, lemma, expr, false);
+}
+
 UnificationResult *unify_and_instantiate(Context *goal_context, Expression *lemma,
                                          Expression *lemma_ty, Expression *expr) {
     (void)lemma_ty;  // Not used in current implementation

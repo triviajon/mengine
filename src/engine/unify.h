@@ -38,4 +38,9 @@ UnificationResult *eunify2(Expression *lemma, Expression *goal);
 
 UnificationResult *bad_unify_for_eq(Context *goal_context, Expression *lemma, Expression *expr);
 
+// Like bad_unify_for_eq, but returns NULL instead of opening a hole for a lemma binder that
+// unification does not determine.
+UnificationResult *bad_unify_for_eq_closed(Context *goal_context, Expression *lemma,
+                                           Expression *expr);
+
 #endif  // UNIFY_H

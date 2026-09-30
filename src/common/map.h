@@ -23,6 +23,9 @@ bool map_set(Map *m, void *key, void *value);
 // Returns true on success, false if not found.
 bool map_del(Map *m, void *key);
 
+// Number of slots in the table. map_reset and map_for_each cost O(capacity).
+size_t map_capacity(Map *m);
+
 // Free the map structure (does NOT free keys or values)
 void map_free(Map *m);
 

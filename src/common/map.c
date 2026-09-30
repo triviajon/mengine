@@ -55,6 +55,11 @@ static bool map_should_grow(Map *m) {
     return (m->size + m->tombstones + 1) * MAP_LOAD_FACTOR_DEN > m->capacity * MAP_LOAD_FACTOR_NUM;
 }
 
+// Whether the live entries alone, not counting tombstones, need a larger table.
+static bool map_live_entries_need_growth(Map *m) {
+    return (m->size + 1) * 2 * MAP_LOAD_FACTOR_DEN > m->capacity * MAP_LOAD_FACTOR_NUM;
+}
+
 static bool map_resize(Map *m, size_t new_capacity) {
     MapEntry *old_entries = m->entries;
     size_t old_capacity = m->capacity;
@@ -151,7 +156,9 @@ bool map_set(Map *m, void *key, void *value) {
         return false;
     }
     if (map_should_grow(m)) {
-        if (!map_resize(m, m->capacity * 2)) {
+        // Only pressure from live entries doubles the table.
+        size_t capacity = map_live_entries_need_growth(m) ? m->capacity * 2 : m->capacity;
+        if (!map_resize(m, capacity)) {
             return false;
         }
     }
@@ -214,6 +221,8 @@ bool map_del(Map *m, void *key) {
         idx = (idx + 1) & (m->capacity - 1);
     }
 }
+
+size_t map_capacity(Map *m) { return m ? m->capacity : 0; }
 
 void map_free(Map *m) {
     if (!m) {
