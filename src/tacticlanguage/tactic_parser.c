@@ -25,8 +25,6 @@ char *tactic_tag_to_string(TacticTag tag) {
             return "exact";
         case TACTIC_REWRITE:
             return "rewrite";
-        case TACTIC_REWRITE_BACKWARD:
-            return "rewrite <-";
         case TACTIC_REFLEXIVITY:
             return "reflexivity";
         case TACTIC_ASSUMPTION:
@@ -53,11 +51,6 @@ static Tactic *_parse_rewrite(Parser *p) {
         parser_error(p, "expected 'rewrite'");
     }
 
-    bool backward = false;
-    if (parser_expect_consume(p, TOK_LEFT_ARROW)) {
-        backward = true;
-    }
-
     AST *lemma = parse_term(p);
     debug_print_ast(p, lemma);
 
@@ -69,10 +62,9 @@ static Tactic *_parse_rewrite(Parser *p) {
     debug_print_ast(p, equiv_proof);
 
     Tactic *tactic = malloc(sizeof(Tactic));
-    tactic->tag = (int)backward ? TACTIC_REWRITE_BACKWARD : TACTIC_REWRITE;
+    tactic->tag = TACTIC_REWRITE;
     tactic->as.rewrite.lemma = lemma;
     tactic->as.rewrite.equiv_proof = equiv_proof;
-    tactic->as.rewrite.backward = backward;
     return tactic;
 }
 
@@ -81,11 +73,6 @@ static Tactic *_parse_erewrite(Parser *p) {
         parser_error(p, "expected 'erewrite'");
     }
 
-    bool backward = false;
-    if (parser_expect_consume(p, TOK_LEFT_ARROW)) {
-        backward = true;
-    }
-
     AST *lemma = parse_term(p);
     debug_print_ast(p, lemma);
 
@@ -97,10 +84,9 @@ static Tactic *_parse_erewrite(Parser *p) {
     debug_print_ast(p, equiv_proof);
 
     Tactic *tactic = malloc(sizeof(Tactic));
-    tactic->tag = (int)backward ? TACTIC_EREWRITE_BACKWARD : TACTIC_EREWRITE;
+    tactic->tag = TACTIC_EREWRITE;
     tactic->as.rewrite.lemma = lemma;
     tactic->as.rewrite.equiv_proof = equiv_proof;
-    tactic->as.rewrite.backward = backward;
     return tactic;
 }
 
@@ -635,9 +621,7 @@ void free_tactic(Tactic *tac) {
             free_ast(tac->as.exact.proof_term);
             break;
         case TACTIC_REWRITE:
-        case TACTIC_REWRITE_BACKWARD:
         case TACTIC_EREWRITE:
-        case TACTIC_EREWRITE_BACKWARD:
             free_ast(tac->as.rewrite.lemma);
             free_ast(tac->as.rewrite.equiv_proof);
             break;

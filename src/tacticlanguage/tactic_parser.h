@@ -11,9 +11,7 @@ typedef enum {
     TACTIC_EAPPLY,
     TACTIC_EXACT,
     TACTIC_REWRITE,
-    TACTIC_REWRITE_BACKWARD,
     TACTIC_EREWRITE,
-    TACTIC_EREWRITE_BACKWARD,
     TACTIC_REFLEXIVITY,
     TACTIC_ASSUMPTION,
     TACTIC_SPLIT,
@@ -47,7 +45,6 @@ typedef struct {
 typedef struct {
     AST *lemma;
     AST *equiv_proof;  // Proof of Equivalence A R
-    bool backward;     // true if "rewrite <-"
 } RewriteTactic;
 
 typedef struct {

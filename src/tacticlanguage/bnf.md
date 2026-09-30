@@ -33,9 +33,7 @@ Tactic language
                       | "eapply" <term>
                       | "exact" <term>
                       | "rewrite" <term> "with" <term>
-                      | "rewrite" "<-" <term> "with" <term>
                       | "erewrite" <term> "with" <term>
-                      | "erewrite" "<-" <term> "with" <term>
                       | "reflexivity"
                       | "assumption"
                       | "split"

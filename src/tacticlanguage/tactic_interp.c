@@ -196,8 +196,7 @@ static TacticResult *_interpret_primitive(MEngineRuntime *_, Expression *goal, T
     Context *ctx = kernel_expr_context(goal);
 
     switch (tac->tag) {
-        case TACTIC_REWRITE:
-        case TACTIC_REWRITE_BACKWARD: {
+        case TACTIC_REWRITE: {
             Expression *lemma = ast_to_expression_env(tac->as.rewrite.lemma, ctx, env_top_ptr());
             if (!lemma) {
                 return engine_tactic_result_new(false, NULL, "Could not resolve rewrite lemma");
@@ -206,8 +205,7 @@ static TacticResult *_interpret_primitive(MEngineRuntime *_, Expression *goal, T
             return engine_tactic_rewrite(goal, lemma);
         }
 
-        case TACTIC_EREWRITE:
-        case TACTIC_EREWRITE_BACKWARD: {
+        case TACTIC_EREWRITE: {
             Expression *lemma = ast_to_expression_env(tac->as.rewrite.lemma, ctx, env_top_ptr());
             if (!lemma) {
                 return engine_tactic_result_new(false, NULL, "Could not resolve rewrite lemma");
