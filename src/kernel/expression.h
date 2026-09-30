@@ -507,7 +507,6 @@ bool congruence(Expression *a, Expression *b);
 // then substitutes the variables in to_subst with the mapping creating [a ->
 // b].
 Expression *match_and_subst(Expression *a, Expression *b, Expression *to_subst);
-bool congruence2(Expression *a, Expression *b);
 
 extern char c_counter;
 char *get_char();

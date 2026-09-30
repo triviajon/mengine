@@ -1184,6 +1184,9 @@ bool _congruence(Expression *a, Expression *b, Map *mapping) {
         case (FORALL_EXPRESSION): {
             Expression *bv_a = a->as.forall.bound_variable;
             Expression *bv_b = b->as.forall.bound_variable;
+            if (!_congruence(get_expression_type(bv_a), get_expression_type(bv_b), mapping)) {
+                return false;
+            }
             map_set(mapping, bv_a, bv_b);
             bool result = _congruence(a->as.forall.body, b->as.forall.body, mapping);
             map_del(mapping, bv_a);
@@ -1192,6 +1195,9 @@ bool _congruence(Expression *a, Expression *b, Map *mapping) {
         case (LAMBDA_EXPRESSION): {
             Expression *bv_a = a->as.lambda.bound_variable;
             Expression *bv_b = b->as.lambda.bound_variable;
+            if (!_congruence(get_expression_type(bv_a), get_expression_type(bv_b), mapping)) {
+                return false;
+            }
             map_set(mapping, bv_a, bv_b);
             bool result = _congruence(a->as.lambda.body, b->as.lambda.body, mapping);
             map_del(mapping, bv_a);
@@ -1241,6 +1247,9 @@ bool _congruence(Expression *a, Expression *b, Map *mapping) {
         case (FIX_EXPRESSION): {
             Expression *rv_a = a->as.fix.recursive_var;
             Expression *rv_b = b->as.fix.recursive_var;
+            if (!_congruence(get_expression_type(rv_a), get_expression_type(rv_b), mapping)) {
+                return false;
+            }
             map_set(mapping, rv_a, rv_b);
 
             if (a->as.fix.arg_count != b->as.fix.arg_count) {
@@ -1253,13 +1262,21 @@ bool _congruence(Expression *a, Expression *b, Map *mapping) {
                 return false;
             }
 
-            for (int i = 0; i < a->as.fix.arg_count; i++) {
-                map_set(mapping, a->as.fix.args[i], b->as.fix.args[i]);
+            // Each argument's type may mention the arguments before it.
+            int mapped = 0;
+            bool result = true;
+            for (int i = 0; i < a->as.fix.arg_count && result; i++) {
+                result = _congruence(get_expression_type(a->as.fix.args[i]),
+                                     get_expression_type(b->as.fix.args[i]), mapping);
+                if (result) {
+                    map_set(mapping, a->as.fix.args[i], b->as.fix.args[i]);
+                    mapped++;
+                }
             }
 
-            bool result = _congruence(a->as.fix.body, b->as.fix.body, mapping);
+            result = result && _congruence(a->as.fix.body, b->as.fix.body, mapping);
 
-            for (int i = 0; i < a->as.fix.arg_count; i++) {
+            for (int i = 0; i < mapped; i++) {
                 map_del(mapping, a->as.fix.args[i]);
             }
             map_del(mapping, rv_a);
@@ -1706,92 +1723,3 @@ char *get_char() {
     return strdup(temp);
 }
 
-bool _congruence2(Expression *a, Expression *b, LinearMap *mapping) {
-    // Mapping is a map from variables in a to variables in b.
-    if (a == b) {
-        return true;
-    }
-
-    if (a->tag == b->tag) {
-        switch (a->tag) {
-            case (TYPE_EXPRESSION):
-                return true;
-            case (PROP_EXPRESSION):
-                return true;
-            case (APP_EXPRESSION):
-                return (_congruence2(a->as.app.func, b->as.app.func, mapping) &&
-                        _congruence2(a->as.app.arg, b->as.app.arg, mapping)) != 0;
-            case (FORALL_EXPRESSION): {
-                linear_map_set(mapping, a->as.forall.bound_variable, b->as.forall.bound_variable);
-                return _congruence2(a->as.forall.body, b->as.forall.body, mapping);
-            }
-            case (LAMBDA_EXPRESSION): {
-                linear_map_set(mapping, a->as.lambda.bound_variable, b->as.lambda.bound_variable);
-                return _congruence2(a->as.lambda.body, b->as.lambda.body, mapping);
-            }
-            case (VAR_EXPRESSION): {
-                return ((a == b) || (linear_map_get(mapping, a) == b)) != 0;
-            }
-            case (HOLE_EXPRESSION): {
-                return ((a == b) || (linear_map_get(mapping, a) == b)) != 0;
-            }
-            case (MATCH_EXPRESSION): {
-                if (!_congruence2(a->as.match.scrutinee, b->as.match.scrutinee, mapping)) {
-                    return false;
-                }
-                if (a->as.match.branch_count != b->as.match.branch_count) {
-                    return false;
-                }
-                for (int i = 0; i < a->as.match.branch_count; i++) {
-                    MatchBranch *branch_a = a->as.match.branches[i];
-                    MatchBranch *branch_b = b->as.match.branches[i];
-                    if (!_congruence2(branch_a->constructor, branch_b->constructor, mapping)) {
-                        return false;
-                    }
-                    if (branch_a->pattern_var_count != branch_b->pattern_var_count) {
-                        return false;
-                    }
-                    for (int j = 0; j < branch_a->pattern_var_count; j++) {
-                        linear_map_set(mapping, branch_a->pattern_variables[j],
-                                       branch_b->pattern_variables[j]);
-                    }
-                    if (!_congruence2(branch_a->body, branch_b->body, mapping)) {
-                        return false;
-                    }
-                }
-                return true;
-            }
-            case (FIX_EXPRESSION): {
-                linear_map_set(mapping, a->as.fix.recursive_var, b->as.fix.recursive_var);
-                if (a->as.fix.arg_count != b->as.fix.arg_count) {
-                    return false;
-                }
-                if (a->as.fix.decreasing_arg_index != b->as.fix.decreasing_arg_index) {
-                    return false;
-                }
-                for (int i = 0; i < a->as.fix.arg_count; i++) {
-                    linear_map_set(mapping, a->as.fix.args[i], b->as.fix.args[i]);
-                }
-                return _congruence2(a->as.fix.body, b->as.fix.body, mapping);
-            }
-            default:
-                fprintf(stderr, ERROR "Unknown expression type in _congruence2.\n" CRESET);
-                return false;
-        }
-    } else {
-        if (a->tag == HOLE_EXPRESSION || b->tag == HOLE_EXPRESSION) {
-            linear_map_set(mapping, a, b);
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool congruence2(Expression *a, Expression *b) {
-    LinearMap *mapping = linear_map_new();
-    bool result = _congruence2(a, b, mapping);
-    free(mapping->items);
-    free(mapping);
-    return result;
-}

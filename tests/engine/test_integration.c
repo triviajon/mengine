@@ -49,6 +49,15 @@ static void test_application_result_is_bound_variable(void) {
            "Definition w : T := f T.\n");
 }
 
+/* Two binders are equal only if their domain types are: fun (x : B) is not a forall (x : A). */
+static void test_definition_binder_type_mismatch_fails(void) {
+    run_fail("definition whose binder type differs from the declared one is rejected",
+             "Axiom A : Type.\n"
+             "Axiom B : Type.\n"
+             "Axiom t : A.\n"
+             "Definition d : forall (x : A), A := fun (x : B) => t.\n");
+}
+
 /* ── inductive types ────────────────────────────────────────────────────── */
 
 static void test_inductive_nat(void) {
@@ -525,6 +534,7 @@ void run_integration_tests(void) {
     test_axiom_and_check();
     test_definition();
     test_application_result_is_bound_variable();
+    test_definition_binder_type_mismatch_fails();
     test_inductive_nat();
     test_induction_principle_has_ih();
     test_parametric_induction_principle();
