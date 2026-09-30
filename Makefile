@@ -25,7 +25,10 @@ ifeq ($(TUNE_EVAR_FREE_FILL), 0)
 	override TUNE_FLAGS += -DMENGINE_EVAR_FREE_FILL=0
 endif
 
-CFLAGS = -Wall -Wextra -O0 -g -march=native -I. $(TUNE_FLAGS)
+OPT_FLAGS ?= -O0 -g -march=native
+RELEASE_OPT_FLAGS = -O2
+
+CFLAGS = -Wall -Wextra $(OPT_FLAGS) -I. $(TUNE_FLAGS)
 LDFLAGS =
 
 ENGINE_SRC := $(shell find src -name '*.c' ! -name 'main.c')
@@ -60,6 +63,10 @@ ifeq ($(UNAME), Darwin)
 endif
 
 all: $(ENGINE_LIB) $(MENGINE_BIN)
+
+release:
+	$(MAKE) clean
+	$(MAKE) all OPT_FLAGS="$(RELEASE_OPT_FLAGS)"
 
 .clangd: .clangd.template
 	@echo "Generating .clangd..."
@@ -145,4 +152,4 @@ ablation-binaries:
 	$(MAKE) clean
 	$(MAKE) TUNE_SUBST_MEMO=1 TUNE_EVAR_FREE_FILL=1
 
-.PHONY: all clean tests check install uninstall clangd install-tools ablation-binaries
+.PHONY: all release clean tests check install uninstall clangd install-tools ablation-binaries
