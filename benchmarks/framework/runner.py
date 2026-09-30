@@ -206,7 +206,6 @@ def run_single(
             engine_path = config.engine_path(strategy.engine, strategy.variant)
             cmd = benchmark.get_command(strategy, params, engine_path, generated_file, config=config)
 
-            # mengine needs to run from its root dir to find prelude/tactics.me
             cwd = config.engine_cwd(strategy.engine, strategy.variant, workdir)
 
             start = time.perf_counter()

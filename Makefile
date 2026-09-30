@@ -36,6 +36,10 @@ ENGINE_OBJ := $(ENGINE_SRC:.c=.o)
 BUILD_DIR := build
 ENGINE_LIB := $(BUILD_DIR)/libmengine.a
 
+PRELUDE := prelude/tactics.me
+PRELUDE_SRC := $(BUILD_DIR)/prelude.c
+PRELUDE_OBJ := $(BUILD_DIR)/prelude.o
+
 MENGINE_NAME := mengine
 MENGINE_BIN := $(BUILD_DIR)/$(MENGINE_NAME)
 MENGINE_SRC := src/main.c
@@ -84,8 +88,14 @@ endif
 $(BUILD_DIR):
 	mkdir -p $@
 
-$(ENGINE_LIB): $(ENGINE_OBJ) | $(BUILD_DIR)
+$(ENGINE_LIB): $(ENGINE_OBJ) $(PRELUDE_OBJ) | $(BUILD_DIR)
 	ar rcs $@ $^
+
+# This is a clever way to convert the tactics.me text into a string literal that is compiled into the binary as mengine_prelude
+$(PRELUDE_SRC): $(PRELUDE) | $(BUILD_DIR)
+	printf '#include "src/runtime/prelude.h"\n\nconst char mengine_prelude[] =\n' > $@
+	sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/^/    "/' -e 's/$$/\\n"/' $< >> $@
+	printf '    "";\n' >> $@
 
 $(MENGINE_BIN): $(MENGINE_OBJ) $(ENGINE_LIB) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
@@ -119,7 +129,7 @@ $(TEST_DRIVER): $(TEST_DRIVER_SRC) $(TEST_OBJ) $(HELPERS_OBJ) $(ENGINE_LIB)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(ENGINE_OBJ) $(MENGINE_OBJ) $(HELPERS_OBJ) $(TEST_OBJ) $(ENGINE_LIB) $(MENGINE_BIN) $(TEST_DRIVER)
+	rm -f $(ENGINE_OBJ) $(PRELUDE_SRC) $(PRELUDE_OBJ) $(MENGINE_OBJ) $(HELPERS_OBJ) $(TEST_OBJ) $(ENGINE_LIB) $(MENGINE_BIN) $(TEST_DRIVER)
 	if [ "$(UNAME)" = "Darwin" ]; then \
 		find . -name "*.dSYM" -type d -exec rm -rf {} +; \
 	fi

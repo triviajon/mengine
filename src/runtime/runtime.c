@@ -11,6 +11,7 @@
 #include "src/engine/engine_api.h"
 #include "src/kernel/kernel_api.h"
 #include "src/runtime/core.h"
+#include "src/runtime/prelude.h"
 #include "src/tacticlanguage/tactic_ast.h"
 #include "src/tacticlanguage/tactic_exec.h"
 
@@ -87,10 +88,10 @@ MEngineRuntime *mengine_runtime_new(MEngineOptions *options) {
         /* Load prelude (tactic definitions, relation registration) quietly */
         bool saved_quiet = rt->options->quiet;
         rt->options->quiet = true;
-        int prelude_rc = mengine_runtime_exec_file(rt, "prelude/tactics.me");
+        int prelude_rc = mengine_runtime_exec_string(rt, mengine_prelude);
         rt->options->quiet = saved_quiet;
         if (prelude_rc != 0) {
-            fprintf(stderr, "Warning: could not load prelude/tactics.me\n");
+            fprintf(stderr, "Warning: could not load the prelude\n");
         }
     }
 
