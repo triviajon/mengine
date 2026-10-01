@@ -85,6 +85,11 @@ void engine_rewrite_set_debug(bool enabled);
  */
 void engine_rewrite_print_cumulative_stats(void);
 
+/**
+ * Drop every rewrite result kept across rewrite calls.
+ */
+void engine_rewrite_cache_clear(void);
+
 /* ============================================================================
  * Proof State Operations
  * ============================================================================ */

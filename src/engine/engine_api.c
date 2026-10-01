@@ -29,6 +29,8 @@ void engine_rewrite_set_debug(bool enabled) { rewrite_set_debug(enabled); }
 
 void engine_rewrite_print_cumulative_stats(void) { rewrite_print_cumulative_stats(); }
 
+void engine_rewrite_cache_clear(void) { rewrite_cache_clear(); }
+
 ProofState *engine_proof_state_create(Expression *pending_theorem) {
     return proof_state_new(pending_theorem);
 }

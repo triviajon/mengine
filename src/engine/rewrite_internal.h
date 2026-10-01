@@ -51,6 +51,8 @@ DoublyLinkedList *rewrite_result_get_new_goals(RewriteResult *result);
 RewriteResult *rewrite(Expression *expr, Expression *lemma, Context *context);
 RewriteResult *erewrite(Expression *expr, Expression *lemma, Context *context);
 
+void rewrite_cache_clear(void);
+
 /* Debug stats */
 void rewrite_set_debug(bool enabled);
 void rewrite_print_cumulative_stats(void);

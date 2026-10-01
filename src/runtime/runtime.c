@@ -121,6 +121,7 @@ void mengine_runtime_free(MEngineRuntime *rt) {
     engine_relation_registry_free(rt->relation_registry);
 
     engine_rewrite_print_cumulative_stats();
+    engine_rewrite_cache_clear();
 
     kernel_context_free(rt->ctx);
     free(rt->options);

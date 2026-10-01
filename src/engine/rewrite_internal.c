@@ -44,17 +44,47 @@ static RewriteCacheStats g_rwr_stats = {0};
 static Expression *s_lemma_lhs_head = NULL;
 static int s_lemma_lhs_arity = -1;
 
-// Persistent noop cache keyed by lemma and context, split by mode:
-// rewrite()  (allow_unresolved_bindings=false): s_noop_by_lemma
-// erewrite() (allow_unresolved_bindings=true):  s_enoop_by_lemma
+// Persistent rewrite cache keyed by lemma and context, split by mode:
+// rewrite()  (allow_unresolved_bindings=false): s_persistent_by_lemma
+// erewrite() (allow_unresolved_bindings=true):  s_epersistent_by_lemma
 //
-// Layout: outer map lemma* -> middle map context* -> inner map expr* -> NOOP_SEEN
-// If an expr is known noop for the same lemma+context+mode, future calls can skip
-// traversal and unification entirely.
-static Map *s_noop_by_lemma = NULL;
-static Map *s_enoop_by_lemma = NULL;
-static Map *s_active_noop_cache = NULL;  // inner map for current call
-#define NOOP_SEEN ((void *)(intptr_t)1)
+// outer map lemma* -> middle map context* -> inner map expr* -> RewriteResult*
+static Map *s_persistent_by_lemma = NULL;
+static Map *s_epersistent_by_lemma = NULL;
+static Map *s_active_persistent_cache = NULL;  // inner map for current call
+
+static Map *_persistent_cache_for(Map **by_lemma, Expression *lemma, Context *context) {
+    if (*by_lemma == NULL) {
+        *by_lemma = map_new_with_capacity(16);
+    }
+    Map *by_context = map_get(*by_lemma, (void *)lemma);
+    if (by_context == NULL) {
+        by_context = map_new_with_capacity(16);
+        map_set(*by_lemma, (void *)lemma, by_context);
+    }
+    Map *by_expr = map_get(by_context, (void *)context);
+    if (by_expr == NULL) {
+        by_expr = map_new_with_capacity(256);
+        map_set(by_context, (void *)context, by_expr);
+    }
+    return by_expr;
+}
+
+static void _free_persistent_by_expr(void *by_expr) {
+    map_clear_apply_free((Map *)by_expr, (void (*)(void *))free_rewrite_result);
+}
+
+static void _free_persistent_by_context(void *by_context) {
+    map_clear_apply_free((Map *)by_context, _free_persistent_by_expr);
+}
+
+void rewrite_cache_clear(void) {
+    map_clear_apply_free(s_persistent_by_lemma, _free_persistent_by_context);
+    map_clear_apply_free(s_epersistent_by_lemma, _free_persistent_by_context);
+    s_persistent_by_lemma = NULL;
+    s_epersistent_by_lemma = NULL;
+    s_active_persistent_cache = NULL;
+}
 
 // Extract the rigid head of the LHS of a lemma's equality type.
 // Returns NULL if the head cannot be determined or is a VAR (non-rigid).
@@ -500,6 +530,23 @@ RewriteResult *rewrite_var(Expression *expr, Expression *lemma, Context *context
     return head_rwr;
 }
 
+// Filling a hole mutates its parents in place, so only hole-free results are reused.
+// erewrite() keeps only noops, since its rewrites may open goals.
+static bool _rewrite_result_is_persistable(Expression *expr, Expression *lemma,
+                                           RewriteResult *result,
+                                           bool allow_unresolved_bindings) {
+    if (kernel_expr_has_holes(lemma) || kernel_expr_has_holes(expr)) {
+        return false;
+    }
+    if (rewrite_is_noop(result)) {
+        return true;
+    }
+    return !allow_unresolved_bindings && result->original_to_rewritten_proof != NULL &&
+           (result->new_goals == NULL || result->new_goals->head == NULL) &&
+           !kernel_expr_has_holes(result->rewritten) &&
+           !kernel_expr_has_holes(result->original_to_rewritten_proof);
+}
+
 RewriteResult *_rewrite(Expression *expr, Expression *lemma, Context *context, Map *cached_rwr,
                         bool allow_unresolved_bindings) {
 #ifndef DISABLE_REWRITE_CACHE
@@ -511,15 +558,18 @@ RewriteResult *_rewrite(Expression *expr, Expression *lemma, Context *context, M
     g_rwr_stats.misses++;
 #endif
 
-    // Cross-call noop cache: same lemma+context+mode previously proved this expr
-    // is a noop, so skip subtree traversal and head unification immediately.
-    if (s_active_noop_cache != NULL && map_get(s_active_noop_cache, (void *)expr) == NOOP_SEEN) {
-        g_rwr_stats.lemma_noop_hits++;
-        RewriteResult *noop = init_rewrite_result(expr, expr, NULL, NULL);
+    RewriteResult *persisted =
+        s_active_persistent_cache ? map_get(s_active_persistent_cache, (void *)expr) : NULL;
+    if (persisted) {
+        if (rewrite_is_noop(persisted)) {
+            g_rwr_stats.lemma_noop_hits++;
+        }
+        RewriteResult *hit = init_rewrite_result(expr, persisted->rewritten, NULL,
+                                                 persisted->original_to_rewritten_proof);
 #ifndef DISABLE_REWRITE_CACHE
-        map_set(cached_rwr, (void *)expr, noop);
+        map_set(cached_rwr, (void *)expr, hit);
 #endif
-        return noop;
+        return hit;
     }
 
     RewriteResult *result;
@@ -534,9 +584,11 @@ RewriteResult *_rewrite(Expression *expr, Expression *lemma, Context *context, M
         result = init_rewrite_result(expr, expr, NULL, NULL);
     }
 
-    // Persist noop for this exact lemma+context+mode across calls.
-    if (rewrite_is_noop(result) && s_active_noop_cache != NULL) {
-        map_set(s_active_noop_cache, (void *)expr, NOOP_SEEN);
+    if (s_active_persistent_cache != NULL &&
+        _rewrite_result_is_persistable(expr, lemma, result, allow_unresolved_bindings)) {
+        map_set(s_active_persistent_cache, (void *)expr,
+                init_rewrite_result(expr, result->rewritten, NULL,
+                                    result->original_to_rewritten_proof));
     }
 
 #ifndef DISABLE_REWRITE_CACHE
@@ -548,20 +600,7 @@ RewriteResult *_rewrite(Expression *expr, Expression *lemma, Context *context, M
 
 RewriteResult *rewrite(Expression *expr, Expression *lemma, Context *context) {
     _rwr_stats_begin_call();
-    // Bind the active per-lemma/per-context noop cache for rewrite() mode.
-    if (s_noop_by_lemma == NULL) {
-        s_noop_by_lemma = map_new_with_capacity(16);
-    }
-    Map *noop_by_context = map_get(s_noop_by_lemma, (void *)lemma);
-    if (noop_by_context == NULL) {
-        noop_by_context = map_new_with_capacity(16);
-        map_set(s_noop_by_lemma, (void *)lemma, noop_by_context);
-    }
-    s_active_noop_cache = map_get(noop_by_context, (void *)context);
-    if (s_active_noop_cache == NULL) {
-        s_active_noop_cache = map_new_with_capacity(256);
-        map_set(noop_by_context, (void *)context, s_active_noop_cache);
-    }
+    s_active_persistent_cache = _persistent_cache_for(&s_persistent_by_lemma, lemma, context);
 
     s_lemma_lhs_head = _compute_lemma_lhs_head(lemma);
     s_lemma_lhs_arity = _compute_lemma_lhs_arity(lemma);
@@ -575,20 +614,7 @@ RewriteResult *rewrite(Expression *expr, Expression *lemma, Context *context) {
 
 RewriteResult *erewrite(Expression *expr, Expression *lemma, Context *context) {
     _rwr_stats_begin_call();
-    // Bind the active per-lemma/per-context noop cache for erewrite() mode.
-    if (s_enoop_by_lemma == NULL) {
-        s_enoop_by_lemma = map_new_with_capacity(16);
-    }
-    Map *noop_by_context = map_get(s_enoop_by_lemma, (void *)lemma);
-    if (noop_by_context == NULL) {
-        noop_by_context = map_new_with_capacity(16);
-        map_set(s_enoop_by_lemma, (void *)lemma, noop_by_context);
-    }
-    s_active_noop_cache = map_get(noop_by_context, (void *)context);
-    if (s_active_noop_cache == NULL) {
-        s_active_noop_cache = map_new_with_capacity(256);
-        map_set(noop_by_context, (void *)context, s_active_noop_cache);
-    }
+    s_active_persistent_cache = _persistent_cache_for(&s_epersistent_by_lemma, lemma, context);
 
     s_lemma_lhs_head = _compute_lemma_lhs_head(lemma);
     s_lemma_lhs_arity = _compute_lemma_lhs_arity(lemma);
