@@ -1,0 +1,3959 @@
+{
+  "_runs": {
+    "2026-10-01T01:36:24+00:00": {
+      "host": {
+        "cpu": "12th Gen Intel(R) Core(TM) i7-12700K",
+        "cores": 20,
+        "os": "Linux-6.6.87.1-microsoft-standard-WSL2-x86_64-with-glibc2.39"
+      },
+      "python": "3.12.3",
+      "timeout": 20,
+      "trials": 2,
+      "mengine": {
+        "baseline": {
+          "commit": "f14b7a1",
+          "compiler": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+          "cflags": "-Wall -Wextra -O2 -I."
+        },
+        "no_evar_free_fill": {
+          "commit": "f14b7a1",
+          "compiler": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+          "cflags": "-Wall -Wextra -O2 -I. -DMENGINE_EVAR_FREE_FILL=0"
+        },
+        "order_demain": {
+          "commit": "f14b7a1",
+          "compiler": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+          "cflags": "-Wall -Wextra -O2 -I."
+        },
+        "order_ll": {
+          "commit": "f14b7a1",
+          "compiler": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+          "cflags": "-Wall -Wextra -O2 -I. -DORDER_USE_LL=1"
+        }
+      },
+      "coq": "The Rocq Prover, version 9.1.1",
+      "coq_timeout_multiplier": 1.5,
+      "lean": "Lean (version 4.32.0-rc1, x86_64-unknown-linux-gnu, commit b4812ae53eea93439ad5dce5a5c26591c31cb697, Release)"
+    }
+  },
+  "mengine_native_baseline_n1": {
+    "time_taken": 0.0009983960189856589,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.0010996470227837563,
+        "success": true
+      },
+      {
+        "time_taken": 0.0009983960189856589,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n16": {
+    "time_taken": 0.0015818890242371708,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.0015818890242371708,
+        "success": true
+      },
+      {
+        "time_taken": 0.0016215729992836714,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n31": {
+    "time_taken": 0.0022627669968642294,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.0023451239976566285,
+        "success": true
+      },
+      {
+        "time_taken": 0.0022627669968642294,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n46": {
+    "time_taken": 0.002825314993970096,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.002825314993970096,
+        "success": true
+      },
+      {
+        "time_taken": 0.0028471169935073704,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n61": {
+    "time_taken": 0.003447322000283748,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.003447322000283748,
+        "success": true
+      },
+      {
+        "time_taken": 0.003596781985834241,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n76": {
+    "time_taken": 0.003986575989983976,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.003986575989983976,
+        "success": true
+      },
+      {
+        "time_taken": 0.0040575829916633666,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n91": {
+    "time_taken": 0.00464751900290139,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.00464751900290139,
+        "success": true
+      },
+      {
+        "time_taken": 0.00475241697859019,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n106": {
+    "time_taken": 0.005285575985908508,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.005286642990540713,
+        "success": true
+      },
+      {
+        "time_taken": 0.005285575985908508,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n121": {
+    "time_taken": 0.005999380984576419,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.005999380984576419,
+        "success": true
+      },
+      {
+        "time_taken": 0.006044180016033351,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n136": {
+    "time_taken": 0.006375472992658615,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.006375472992658615,
+        "success": true
+      },
+      {
+        "time_taken": 0.006817221990786493,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n151": {
+    "time_taken": 0.007444421004038304,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.0076289220014587045,
+        "success": true
+      },
+      {
+        "time_taken": 0.007444421004038304,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n166": {
+    "time_taken": 0.00746524499845691,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.00748753797961399,
+        "success": true
+      },
+      {
+        "time_taken": 0.00746524499845691,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n196": {
+    "time_taken": 0.009218501014402136,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.009218501014402136,
+        "success": true
+      },
+      {
+        "time_taken": 0.009575017989845946,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n226": {
+    "time_taken": 0.010395385004812852,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.010395385004812852,
+        "success": true
+      },
+      {
+        "time_taken": 0.01054467199719511,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n256": {
+    "time_taken": 0.01092232100199908,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.01164424599846825,
+        "success": true
+      },
+      {
+        "time_taken": 0.01092232100199908,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n316": {
+    "time_taken": 0.01324821900925599,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.01324821900925599,
+        "success": true
+      },
+      {
+        "time_taken": 0.014472619019215927,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n376": {
+    "time_taken": 0.015945229009957984,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.01678698498290032,
+        "success": true
+      },
+      {
+        "time_taken": 0.015945229009957984,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n436": {
+    "time_taken": 0.018657243985217065,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.018716284015681595,
+        "success": true
+      },
+      {
+        "time_taken": 0.018657243985217065,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n519": {
+    "time_taken": 0.02211460200487636,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.02211460200487636,
+        "success": true
+      },
+      {
+        "time_taken": 0.022424656024668366,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n602": {
+    "time_taken": 0.025042442022822797,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.025042442022822797,
+        "success": true
+      },
+      {
+        "time_taken": 0.025212806998752058,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n685": {
+    "time_taken": 0.02921092600445263,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.029560808005044237,
+        "success": true
+      },
+      {
+        "time_taken": 0.02921092600445263,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n768": {
+    "time_taken": 0.032321302976924926,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.032321302976924926,
+        "success": true
+      },
+      {
+        "time_taken": 0.033170943992445245,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n851": {
+    "time_taken": 0.03684456300106831,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.03751210399786942,
+        "success": true
+      },
+      {
+        "time_taken": 0.03684456300106831,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_baseline_n934": {
+    "time_taken": 0.03919295300147496,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.040721249009948224,
+        "success": true
+      },
+      {
+        "time_taken": 0.03919295300147496,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n1": {
+    "time_taken": 0.000947472988627851,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.0010526920086704195,
+        "success": true
+      },
+      {
+        "time_taken": 0.000947472988627851,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n16": {
+    "time_taken": 0.0017185889882966876,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.0017185889882966876,
+        "success": true
+      },
+      {
+        "time_taken": 0.0018247110128868371,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n31": {
+    "time_taken": 0.0025652869953773916,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.0025652869953773916,
+        "success": true
+      },
+      {
+        "time_taken": 0.0027980569866485894,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n46": {
+    "time_taken": 0.0038129320018924773,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.0038129320018924773,
+        "success": true
+      },
+      {
+        "time_taken": 0.0040063530032057315,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n61": {
+    "time_taken": 0.004812409984879196,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.004914659017231315,
+        "success": true
+      },
+      {
+        "time_taken": 0.004812409984879196,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n76": {
+    "time_taken": 0.00563894200604409,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.005972946004476398,
+        "success": true
+      },
+      {
+        "time_taken": 0.00563894200604409,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n91": {
+    "time_taken": 0.006378838996170089,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.006380751001415774,
+        "success": true
+      },
+      {
+        "time_taken": 0.006378838996170089,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n106": {
+    "time_taken": 0.006949633010663092,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.006949633010663092,
+        "success": true
+      },
+      {
+        "time_taken": 0.007189705007476732,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n121": {
+    "time_taken": 0.007723253016592935,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.008274837979115546,
+        "success": true
+      },
+      {
+        "time_taken": 0.007723253016592935,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n136": {
+    "time_taken": 0.008374309982173145,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.008374309982173145,
+        "success": true
+      },
+      {
+        "time_taken": 0.008469176013022661,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n151": {
+    "time_taken": 0.009539729973766953,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.010002600989537314,
+        "success": true
+      },
+      {
+        "time_taken": 0.009539729973766953,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n166": {
+    "time_taken": 0.009856593009317294,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.010243991011520848,
+        "success": true
+      },
+      {
+        "time_taken": 0.009856593009317294,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n196": {
+    "time_taken": 0.011296430020593107,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.011296430020593107,
+        "success": true
+      },
+      {
+        "time_taken": 0.011368106992449611,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n226": {
+    "time_taken": 0.012410325987730175,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.012502536992542446,
+        "success": true
+      },
+      {
+        "time_taken": 0.012410325987730175,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n256": {
+    "time_taken": 0.013867529982235283,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.013867529982235283,
+        "success": true
+      },
+      {
+        "time_taken": 0.015382090001367033,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n286": {
+    "time_taken": 0.017454393004300073,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.01790798202273436,
+        "success": true
+      },
+      {
+        "time_taken": 0.017454393004300073,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n316": {
+    "time_taken": 0.021067973983008415,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.021067973983008415,
+        "success": true
+      },
+      {
+        "time_taken": 0.022781161009334028,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n346": {
+    "time_taken": 0.022425232018576935,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.023146009974880144,
+        "success": true
+      },
+      {
+        "time_taken": 0.022425232018576935,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n406": {
+    "time_taken": 0.02497557899914682,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.02497557899914682,
+        "success": true
+      },
+      {
+        "time_taken": 0.026006437023170292,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n489": {
+    "time_taken": 0.032485842995811254,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.03365506901172921,
+        "success": true
+      },
+      {
+        "time_taken": 0.032485842995811254,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n572": {
+    "time_taken": 0.03885880499728955,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.03946208898560144,
+        "success": true
+      },
+      {
+        "time_taken": 0.03885880499728955,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n655": {
+    "time_taken": 0.0467879060015548,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.051620476006064564,
+        "success": true
+      },
+      {
+        "time_taken": 0.0467879060015548,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n738": {
+    "time_taken": 0.048606460011797026,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.052686483977595344,
+        "success": true
+      },
+      {
+        "time_taken": 0.048606460011797026,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n821": {
+    "time_taken": 0.052930951002053916,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.052930951002053916,
+        "success": true
+      },
+      {
+        "time_taken": 0.05545409698970616,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n904": {
+    "time_taken": 0.05964830098673701,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.05964830098673701,
+        "success": true
+      },
+      {
+        "time_taken": 0.06329453099169768,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_no_evar_free_fill_n987": {
+    "time_taken": 0.06597545900149271,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.06597545900149271,
+        "success": true
+      },
+      {
+        "time_taken": 0.07161717399139889,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n1": {
+    "time_taken": 0.0010766939958557487,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.001211722003063187,
+        "success": true
+      },
+      {
+        "time_taken": 0.0010766939958557487,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n16": {
+    "time_taken": 0.0018311239837203175,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.0018423559959046543,
+        "success": true
+      },
+      {
+        "time_taken": 0.0018311239837203175,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n31": {
+    "time_taken": 0.0027419830148573965,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.0028660249954555184,
+        "success": true
+      },
+      {
+        "time_taken": 0.0027419830148573965,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n46": {
+    "time_taken": 0.003600030002417043,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.003600030002417043,
+        "success": true
+      },
+      {
+        "time_taken": 0.003652215003967285,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n61": {
+    "time_taken": 0.004341210995335132,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.004500387993175536,
+        "success": true
+      },
+      {
+        "time_taken": 0.004341210995335132,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n76": {
+    "time_taken": 0.005262487975414842,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.0052735600038431585,
+        "success": true
+      },
+      {
+        "time_taken": 0.005262487975414842,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n91": {
+    "time_taken": 0.005910309992032126,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.005910309992032126,
+        "success": true
+      },
+      {
+        "time_taken": 0.006047778995707631,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n106": {
+    "time_taken": 0.007029345986666158,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.007029345986666158,
+        "success": true
+      },
+      {
+        "time_taken": 0.007398885994916782,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n121": {
+    "time_taken": 0.008545504999347031,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.008545504999347031,
+        "success": true
+      },
+      {
+        "time_taken": 0.008726999018108472,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n136": {
+    "time_taken": 0.008812938001938164,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.00911488599376753,
+        "success": true
+      },
+      {
+        "time_taken": 0.008812938001938164,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n166": {
+    "time_taken": 0.010463686019647866,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.010893202997976914,
+        "success": true
+      },
+      {
+        "time_taken": 0.010463686019647866,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n196": {
+    "time_taken": 0.011804069014033303,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.012155702977906913,
+        "success": true
+      },
+      {
+        "time_taken": 0.011804069014033303,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n226": {
+    "time_taken": 0.01364057301543653,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.013673125009518117,
+        "success": true
+      },
+      {
+        "time_taken": 0.01364057301543653,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n256": {
+    "time_taken": 0.015925393992802128,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.0160906620149035,
+        "success": true
+      },
+      {
+        "time_taken": 0.015925393992802128,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n286": {
+    "time_taken": 0.016572193999309093,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.016910454985918477,
+        "success": true
+      },
+      {
+        "time_taken": 0.016572193999309093,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n346": {
+    "time_taken": 0.018801779981004074,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.0188892440055497,
+        "success": true
+      },
+      {
+        "time_taken": 0.018801779981004074,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n429": {
+    "time_taken": 0.02194229600718245,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.02214049900067039,
+        "success": true
+      },
+      {
+        "time_taken": 0.02194229600718245,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n512": {
+    "time_taken": 0.026525927998591214,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.026754211983643472,
+        "success": true
+      },
+      {
+        "time_taken": 0.026525927998591214,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n595": {
+    "time_taken": 0.030900498008122668,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.030900498008122668,
+        "success": true
+      },
+      {
+        "time_taken": 0.031079007021617144,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n678": {
+    "time_taken": 0.03432386301574297,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.03432386301574297,
+        "success": true
+      },
+      {
+        "time_taken": 0.03469941401272081,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n761": {
+    "time_taken": 0.041981349990237504,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.044284650997724384,
+        "success": true
+      },
+      {
+        "time_taken": 0.041981349990237504,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n844": {
+    "time_taken": 0.044935326994163916,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.044935326994163916,
+        "success": true
+      },
+      {
+        "time_taken": 0.045376016991212964,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_ll_n927": {
+    "time_taken": 0.04916126301395707,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.04916126301395707,
+        "success": true
+      },
+      {
+        "time_taken": 0.04917987002409063,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n1": {
+    "time_taken": 0.001042235002387315,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.0012798130046576262,
+        "success": true
+      },
+      {
+        "time_taken": 0.001042235002387315,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n16": {
+    "time_taken": 0.0017978950054384768,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.0017978950054384768,
+        "success": true
+      },
+      {
+        "time_taken": 0.0018437860126141459,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n31": {
+    "time_taken": 0.0025059410254471004,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.0025670379982329905,
+        "success": true
+      },
+      {
+        "time_taken": 0.0025059410254471004,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n46": {
+    "time_taken": 0.0031292630010284483,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.0031587760022375733,
+        "success": true
+      },
+      {
+        "time_taken": 0.0031292630010284483,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n61": {
+    "time_taken": 0.003926145989680663,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.003984095994383097,
+        "success": true
+      },
+      {
+        "time_taken": 0.003926145989680663,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n76": {
+    "time_taken": 0.004389411013107747,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.004864382994128391,
+        "success": true
+      },
+      {
+        "time_taken": 0.004389411013107747,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n91": {
+    "time_taken": 0.005388836987549439,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.005388836987549439,
+        "success": true
+      },
+      {
+        "time_taken": 0.005469208990689367,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n106": {
+    "time_taken": 0.005606924009043723,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.005793638993054628,
+        "success": true
+      },
+      {
+        "time_taken": 0.005606924009043723,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n136": {
+    "time_taken": 0.006179970019729808,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.006670897011645138,
+        "success": true
+      },
+      {
+        "time_taken": 0.006179970019729808,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n166": {
+    "time_taken": 0.007575530995381996,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.007724814000539482,
+        "success": true
+      },
+      {
+        "time_taken": 0.007575530995381996,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n196": {
+    "time_taken": 0.009515375015325844,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.010003564995713532,
+        "success": true
+      },
+      {
+        "time_taken": 0.009515375015325844,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n226": {
+    "time_taken": 0.011094561021309346,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.011094561021309346,
+        "success": true
+      },
+      {
+        "time_taken": 0.011228453979128972,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n256": {
+    "time_taken": 0.01161464600590989,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.011937531002331525,
+        "success": true
+      },
+      {
+        "time_taken": 0.01161464600590989,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n316": {
+    "time_taken": 0.014085970993619412,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.014085970993619412,
+        "success": true
+      },
+      {
+        "time_taken": 0.014168260007863864,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n376": {
+    "time_taken": 0.01638874999480322,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.017001217987854034,
+        "success": true
+      },
+      {
+        "time_taken": 0.01638874999480322,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n459": {
+    "time_taken": 0.022527599008753896,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.02281962800770998,
+        "success": true
+      },
+      {
+        "time_taken": 0.022527599008753896,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n542": {
+    "time_taken": 0.02733940098551102,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.02733940098551102,
+        "success": true
+      },
+      {
+        "time_taken": 0.028358882991597056,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n625": {
+    "time_taken": 0.033143356995424256,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.03545604899409227,
+        "success": true
+      },
+      {
+        "time_taken": 0.033143356995424256,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n708": {
+    "time_taken": 0.034084460989106447,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.03518316600820981,
+        "success": true
+      },
+      {
+        "time_taken": 0.034084460989106447,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n791": {
+    "time_taken": 0.03924913299852051,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.03924913299852051,
+        "success": true
+      },
+      {
+        "time_taken": 0.040613842982565984,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n874": {
+    "time_taken": 0.043335661001037806,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.043335661001037806,
+        "success": true
+      },
+      {
+        "time_taken": 0.044568426004843786,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "mengine_native_order_demain_n957": {
+    "time_taken": 0.04579411700251512,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.04904889999306761,
+        "success": true
+      },
+      {
+        "time_taken": 0.04579411700251512,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n1": {
+    "time_taken": 0.06837113300571218,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.07308999501401559,
+        "success": true
+      },
+      {
+        "time_taken": 0.06837113300571218,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n16": {
+    "time_taken": 0.07809680697391741,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.07809680697391741,
+        "success": true
+      },
+      {
+        "time_taken": 0.08253767000860535,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n31": {
+    "time_taken": 0.1039406010240782,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.1039406010240782,
+        "success": true
+      },
+      {
+        "time_taken": 0.11557947300025262,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n38": {
+    "time_taken": 0.10633030699682422,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.12427900801412761,
+        "success": true
+      },
+      {
+        "time_taken": 0.10633030699682422,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n45": {
+    "time_taken": 0.12037148399394937,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.12079332998837344,
+        "success": true
+      },
+      {
+        "time_taken": 0.12037148399394937,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n48": {
+    "time_taken": 0.11880697897868231,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.12221592399873771,
+        "success": true
+      },
+      {
+        "time_taken": 0.11880697897868231,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n63": {
+    "time_taken": 0.12894246299401857,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.12923011698876508,
+        "success": true
+      },
+      {
+        "time_taken": 0.12894246299401857,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n78": {
+    "time_taken": 0.136124959011795,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.13788059900980443,
+        "success": true
+      },
+      {
+        "time_taken": 0.136124959011795,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n93": {
+    "time_taken": 0.16597654999350198,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.17781497299438342,
+        "success": true
+      },
+      {
+        "time_taken": 0.16597654999350198,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n108": {
+    "time_taken": 0.16914132199599408,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.17561521800234914,
+        "success": true
+      },
+      {
+        "time_taken": 0.16914132199599408,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n138": {
+    "time_taken": 0.2913935789838433,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.2913935789838433,
+        "success": true
+      },
+      {
+        "time_taken": 0.3039781630213838,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n153": {
+    "time_taken": 0.3258149860193953,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.344322868011659,
+        "success": true
+      },
+      {
+        "time_taken": 0.3258149860193953,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n168": {
+    "time_taken": 0.313631851982791,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.32245101800072007,
+        "success": true
+      },
+      {
+        "time_taken": 0.313631851982791,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n198": {
+    "time_taken": 0.36117402199306525,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.36117402199306525,
+        "success": true
+      },
+      {
+        "time_taken": 0.3633320250082761,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n228": {
+    "time_taken": 0.3814586859953124,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.3814586859953124,
+        "success": true
+      },
+      {
+        "time_taken": 0.4022329069848638,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n288": {
+    "time_taken": 0.563677814003313,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.5638420959876385,
+        "success": true
+      },
+      {
+        "time_taken": 0.563677814003313,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n348": {
+    "time_taken": 0.8215733619872481,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.8215733619872481,
+        "success": true
+      },
+      {
+        "time_taken": 1.024490463983966,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n408": {
+    "time_taken": 1.139933511003619,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.3277754659939092,
+        "success": true
+      },
+      {
+        "time_taken": 1.139933511003619,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n468": {
+    "time_taken": 1.2066845720109995,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.2566838769998867,
+        "success": true
+      },
+      {
+        "time_taken": 1.2066845720109995,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n551": {
+    "time_taken": 1.5832665829802863,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.5832665829802863,
+        "success": true
+      },
+      {
+        "time_taken": 1.8098194889898878,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n634": {
+    "time_taken": 1.966049539973028,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.966049539973028,
+        "success": true
+      },
+      {
+        "time_taken": 2.0912413829937577,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n717": {
+    "time_taken": 2.128860689001158,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.4051440299954265,
+        "success": true
+      },
+      {
+        "time_taken": 2.128860689001158,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n800": {
+    "time_taken": 2.9913992839865386,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.9913992839865386,
+        "success": true
+      },
+      {
+        "time_taken": 3.1044907909817994,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n883": {
+    "time_taken": 3.5729700090014376,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 4.027982526022242,
+        "success": true
+      },
+      {
+        "time_taken": 3.5729700090014376,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_rewrite_n966": {
+    "time_taken": 4.029019570996752,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 4.029019570996752,
+        "success": true
+      },
+      {
+        "time_taken": 4.3029833100154065,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n1": {
+    "time_taken": 0.0785600489762146,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.0785600489762146,
+        "success": true
+      },
+      {
+        "time_taken": 0.07929837598931044,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n16": {
+    "time_taken": 0.08721315499860793,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.08721315499860793,
+        "success": true
+      },
+      {
+        "time_taken": 0.08889976498903707,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n31": {
+    "time_taken": 0.10202435599057935,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.10632755499682389,
+        "success": true
+      },
+      {
+        "time_taken": 0.10202435599057935,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n46": {
+    "time_taken": 0.10797891500988044,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.10797891500988044,
+        "success": true
+      },
+      {
+        "time_taken": 0.12205125400214456,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n61": {
+    "time_taken": 0.15799089998472482,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.15799089998472482,
+        "success": true
+      },
+      {
+        "time_taken": 0.1613544499850832,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n68": {
+    "time_taken": 0.1397926399949938,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.1564989940088708,
+        "success": true
+      },
+      {
+        "time_taken": 0.1397926399949938,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n83": {
+    "time_taken": 0.153817464975873,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.153817464975873,
+        "success": true
+      },
+      {
+        "time_taken": 0.16418720097863115,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n98": {
+    "time_taken": 0.16861510500893928,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.1713386680057738,
+        "success": true
+      },
+      {
+        "time_taken": 0.16861510500893928,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n113": {
+    "time_taken": 0.1936943939945195,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.19383219099836424,
+        "success": true
+      },
+      {
+        "time_taken": 0.1936943939945195,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n128": {
+    "time_taken": 0.1999706330243498,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.1999706330243498,
+        "success": true
+      },
+      {
+        "time_taken": 0.21189688201411627,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n158": {
+    "time_taken": 0.26260475799790584,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.26260475799790584,
+        "success": true
+      },
+      {
+        "time_taken": 0.2688444280065596,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n188": {
+    "time_taken": 0.29042578299413435,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.3033673540048767,
+        "success": true
+      },
+      {
+        "time_taken": 0.29042578299413435,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n218": {
+    "time_taken": 0.3392115989990998,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.3392115989990998,
+        "success": true
+      },
+      {
+        "time_taken": 0.35657483400427736,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n248": {
+    "time_taken": 0.39968185700126924,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.39968185700126924,
+        "success": true
+      },
+      {
+        "time_taken": 0.4033360229805112,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n278": {
+    "time_taken": 0.4395698900043499,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.4395698900043499,
+        "success": true
+      },
+      {
+        "time_taken": 0.4515990410000086,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n308": {
+    "time_taken": 0.4996345100225881,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.5265759080066346,
+        "success": true
+      },
+      {
+        "time_taken": 0.4996345100225881,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n338": {
+    "time_taken": 0.570433162007248,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.570433162007248,
+        "success": true
+      },
+      {
+        "time_taken": 0.5771673679992091,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n368": {
+    "time_taken": 0.6260484950034879,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.6465330699866172,
+        "success": true
+      },
+      {
+        "time_taken": 0.6260484950034879,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n398": {
+    "time_taken": 0.7256364899803884,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.7256364899803884,
+        "success": true
+      },
+      {
+        "time_taken": 0.7315091799828224,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n428": {
+    "time_taken": 0.8082930329837836,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.8197225589829031,
+        "success": true
+      },
+      {
+        "time_taken": 0.8082930329837836,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n458": {
+    "time_taken": 0.8604725320183206,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.9579969340120442,
+        "success": true
+      },
+      {
+        "time_taken": 0.8604725320183206,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n518": {
+    "time_taken": 0.9914200590283144,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.9914200590283144,
+        "success": true
+      },
+      {
+        "time_taken": 0.9971576889802236,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n601": {
+    "time_taken": 1.364840035996167,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.364840035996167,
+        "success": true
+      },
+      {
+        "time_taken": 1.443933898000978,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n684": {
+    "time_taken": 1.573506026994437,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.7711577299924102,
+        "success": true
+      },
+      {
+        "time_taken": 1.573506026994437,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n767": {
+    "time_taken": 2.0513202840229496,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.239676564000547,
+        "success": true
+      },
+      {
+        "time_taken": 2.0513202840229496,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n850": {
+    "time_taken": 2.4671268070233054,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.4671268070233054,
+        "success": true
+      },
+      {
+        "time_taken": 2.785722421016544,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_repeat_setoid_rewrite_n933": {
+    "time_taken": 2.7866275559936184,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.7866275559936184,
+        "success": true
+      },
+      {
+        "time_taken": 2.990578032011399,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n1": {
+    "time_taken": 0.06860588499694131,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.06860588499694131,
+        "success": true
+      },
+      {
+        "time_taken": 0.06864318501902744,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n16": {
+    "time_taken": 0.08351646398659796,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.08351646398659796,
+        "success": true
+      },
+      {
+        "time_taken": 0.08387662400491536,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n31": {
+    "time_taken": 0.0981955740135163,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.10116054501850158,
+        "success": true
+      },
+      {
+        "time_taken": 0.0981955740135163,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n46": {
+    "time_taken": 0.11186042899498716,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.11186042899498716,
+        "success": true
+      },
+      {
+        "time_taken": 0.15209297902765684,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n61": {
+    "time_taken": 0.15295682099531405,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.15755351999541745,
+        "success": true
+      },
+      {
+        "time_taken": 0.15295682099531405,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n68": {
+    "time_taken": 0.16262727000867017,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.16262727000867017,
+        "success": true
+      },
+      {
+        "time_taken": 0.17072335199918598,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n75": {
+    "time_taken": 0.1826334249926731,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.18351098799030297,
+        "success": true
+      },
+      {
+        "time_taken": 0.1826334249926731,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n78": {
+    "time_taken": 0.1842535980104003,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.1842535980104003,
+        "success": true
+      },
+      {
+        "time_taken": 0.18520841500139795,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n81": {
+    "time_taken": 0.1880079960101284,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.1880079960101284,
+        "success": true
+      },
+      {
+        "time_taken": 0.18949642800725996,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n84": {
+    "time_taken": 0.18549922000966035,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.18763446199591272,
+        "success": true
+      },
+      {
+        "time_taken": 0.18549922000966035,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n99": {
+    "time_taken": 0.21604588598711416,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.22673151100752875,
+        "success": true
+      },
+      {
+        "time_taken": 0.21604588598711416,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n114": {
+    "time_taken": 0.2321236289863009,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.2455399419995956,
+        "success": true
+      },
+      {
+        "time_taken": 0.2321236289863009,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n129": {
+    "time_taken": 0.26466524600982666,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.26466524600982666,
+        "success": true
+      },
+      {
+        "time_taken": 0.26632466597948223,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n144": {
+    "time_taken": 0.31497360998764634,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.31497360998764634,
+        "success": true
+      },
+      {
+        "time_taken": 0.32462984998710454,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n159": {
+    "time_taken": 0.3778568900015671,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.3778568900015671,
+        "success": true
+      },
+      {
+        "time_taken": 0.40587683900957927,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n174": {
+    "time_taken": 0.44876989800832234,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.44876989800832234,
+        "success": true
+      },
+      {
+        "time_taken": 0.462577150989091,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n189": {
+    "time_taken": 0.48030943400226533,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.48030943400226533,
+        "success": true
+      },
+      {
+        "time_taken": 0.5019944300001953,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n204": {
+    "time_taken": 0.5294495380076114,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.5294495380076114,
+        "success": true
+      },
+      {
+        "time_taken": 0.5379619129817002,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n219": {
+    "time_taken": 0.536324810993392,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.5703287159849424,
+        "success": true
+      },
+      {
+        "time_taken": 0.536324810993392,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n249": {
+    "time_taken": 0.6538466490164865,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.6538466490164865,
+        "success": true
+      },
+      {
+        "time_taken": 0.6948452059878036,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n279": {
+    "time_taken": 0.8172067909908947,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.8277828179998323,
+        "success": true
+      },
+      {
+        "time_taken": 0.8172067909908947,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n309": {
+    "time_taken": 0.9465701779990923,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.9712768100143876,
+        "success": true
+      },
+      {
+        "time_taken": 0.9465701779990923,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n339": {
+    "time_taken": 1.0533680880034808,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.0533680880034808,
+        "success": true
+      },
+      {
+        "time_taken": 1.102734453015728,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n369": {
+    "time_taken": 1.2779890099773183,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.3045222809887491,
+        "success": true
+      },
+      {
+        "time_taken": 1.2779890099773183,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n399": {
+    "time_taken": 1.4318672129884362,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.4610237239976414,
+        "success": true
+      },
+      {
+        "time_taken": 1.4318672129884362,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n429": {
+    "time_taken": 1.6048467250075191,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.6048467250075191,
+        "success": true
+      },
+      {
+        "time_taken": 1.639779315009946,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n459": {
+    "time_taken": 1.7581750199897215,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.7581750199897215,
+        "success": true
+      },
+      {
+        "time_taken": 1.7660233229980804,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n489": {
+    "time_taken": 1.9421925350034144,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.1267691219982225,
+        "success": true
+      },
+      {
+        "time_taken": 1.9421925350034144,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n519": {
+    "time_taken": 2.2074718459916767,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.2074718459916767,
+        "success": true
+      },
+      {
+        "time_taken": 2.285486155014951,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n549": {
+    "time_taken": 2.610443885991117,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.610443885991117,
+        "success": true
+      },
+      {
+        "time_taken": 2.7422521030239295,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n579": {
+    "time_taken": 2.707170665002195,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.707170665002195,
+        "success": true
+      },
+      {
+        "time_taken": 2.8284606439992785,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n639": {
+    "time_taken": 3.5085812530014664,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 3.7549863409949467,
+        "success": true
+      },
+      {
+        "time_taken": 3.5085812530014664,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n699": {
+    "time_taken": 4.227631549991202,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 4.227631549991202,
+        "success": true
+      },
+      {
+        "time_taken": 4.490154977014754,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n759": {
+    "time_taken": 4.496680437005125,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 4.789427984011127,
+        "success": true
+      },
+      {
+        "time_taken": 4.496680437005125,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n842": {
+    "time_taken": 5.439580027014017,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 5.439580027014017,
+        "success": true
+      },
+      {
+        "time_taken": 5.580346929986263,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bottomup_n925": {
+    "time_taken": 6.723711329017533,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 6.80858260000241,
+        "success": true
+      },
+      {
+        "time_taken": 6.723711329017533,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_topdown_n1": {
+    "time_taken": 0.06861885800026357,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.07239306101109833,
+        "success": true
+      },
+      {
+        "time_taken": 0.06861885800026357,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_topdown_n16": {
+    "time_taken": 0.06996345400693826,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.07068974900175817,
+        "success": true
+      },
+      {
+        "time_taken": 0.06996345400693826,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_topdown_n46": {
+    "time_taken": 0.08813491801265627,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.08813491801265627,
+        "success": true
+      },
+      {
+        "time_taken": 0.09089615900302306,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_topdown_n76": {
+    "time_taken": 0.10751276201335713,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.11366104998160154,
+        "success": true
+      },
+      {
+        "time_taken": 0.10751276201335713,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_topdown_n106": {
+    "time_taken": 0.13459091100958176,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.1371451639861334,
+        "success": true
+      },
+      {
+        "time_taken": 0.13459091100958176,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_topdown_n136": {
+    "time_taken": 0.15369868400739506,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.15369868400739506,
+        "success": true
+      },
+      {
+        "time_taken": 0.15451778599526733,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_topdown_n166": {
+    "time_taken": 0.18060566499480046,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.18060566499480046,
+        "success": true
+      },
+      {
+        "time_taken": 0.19431655597873032,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_topdown_n196": {
+    "time_taken": 0.24607988001662306,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.2506043809989933,
+        "success": true
+      },
+      {
+        "time_taken": 0.24607988001662306,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_topdown_n226": {
+    "time_taken": 0.32908048399258405,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.3411352889961563,
+        "success": true
+      },
+      {
+        "time_taken": 0.32908048399258405,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_topdown_n256": {
+    "time_taken": 0.35268773799180053,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.35268773799180053,
+        "success": true
+      },
+      {
+        "time_taken": 0.43313230999046937,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_topdown_n316": {
+    "time_taken": 0.3968647970177699,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.3968647970177699,
+        "success": true
+      },
+      {
+        "time_taken": 0.4153247050126083,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_topdown_n399": {
+    "time_taken": 0.5224368989875074,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.5565823560173158,
+        "success": true
+      },
+      {
+        "time_taken": 0.5224368989875074,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_topdown_n482": {
+    "time_taken": 0.6346185560105368,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.6416490779956803,
+        "success": true
+      },
+      {
+        "time_taken": 0.6346185560105368,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_topdown_n565": {
+    "time_taken": 0.8123095690098125,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.8123095690098125,
+        "success": true
+      },
+      {
+        "time_taken": 0.8542660480015911,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_topdown_n648": {
+    "time_taken": 1.2056539870100096,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.2060058049974032,
+        "success": true
+      },
+      {
+        "time_taken": 1.2056539870100096,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_topdown_n731": {
+    "time_taken": 1.4320862849999685,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.4320862849999685,
+        "success": true
+      },
+      {
+        "time_taken": 1.461550084000919,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_topdown_n814": {
+    "time_taken": 1.6757302669866476,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.6768132679862902,
+        "success": true
+      },
+      {
+        "time_taken": 1.6757302669866476,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_topdown_n897": {
+    "time_taken": 1.980917053995654,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.980917053995654,
+        "success": true
+      },
+      {
+        "time_taken": 1.9844507569796406,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_topdown_n980": {
+    "time_taken": 2.274037489987677,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.3726384789915755,
+        "success": true
+      },
+      {
+        "time_taken": 2.274037489987677,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n1": {
+    "time_taken": 0.06476957802078687,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.06476957802078687,
+        "success": true
+      },
+      {
+        "time_taken": 0.06479155298438855,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n16": {
+    "time_taken": 0.07584770600078627,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.07584770600078627,
+        "success": true
+      },
+      {
+        "time_taken": 0.07823471599840559,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n31": {
+    "time_taken": 0.0947837800194975,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.09502120700199157,
+        "success": true
+      },
+      {
+        "time_taken": 0.0947837800194975,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n46": {
+    "time_taken": 0.12149706899072044,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.12149706899072044,
+        "success": true
+      },
+      {
+        "time_taken": 0.12216782500036061,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n53": {
+    "time_taken": 0.1265563879860565,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.1290166840190068,
+        "success": true
+      },
+      {
+        "time_taken": 0.1265563879860565,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n60": {
+    "time_taken": 0.12304889899678528,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.12333910400047898,
+        "success": true
+      },
+      {
+        "time_taken": 0.12304889899678528,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n75": {
+    "time_taken": 0.13247273600427434,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.13247273600427434,
+        "success": true
+      },
+      {
+        "time_taken": 0.16363510300288908,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n90": {
+    "time_taken": 0.18258355700527318,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.18258355700527318,
+        "success": true
+      },
+      {
+        "time_taken": 0.1920683500065934,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n97": {
+    "time_taken": 0.1694723039981909,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.18919098697369918,
+        "success": true
+      },
+      {
+        "time_taken": 0.1694723039981909,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n112": {
+    "time_taken": 0.19975621701451018,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.19975621701451018,
+        "success": true
+      },
+      {
+        "time_taken": 0.21484412302379496,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n127": {
+    "time_taken": 0.24583481100853533,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.24583481100853533,
+        "success": true
+      },
+      {
+        "time_taken": 0.26877103600418195,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n142": {
+    "time_taken": 0.25438820899580605,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.25438820899580605,
+        "success": true
+      },
+      {
+        "time_taken": 0.29698222602019086,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n172": {
+    "time_taken": 0.2785635160107631,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.3022534449992236,
+        "success": true
+      },
+      {
+        "time_taken": 0.2785635160107631,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n202": {
+    "time_taken": 0.31622250500367954,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.31622250500367954,
+        "success": true
+      },
+      {
+        "time_taken": 0.3536696940136608,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n232": {
+    "time_taken": 0.38654457399388775,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.4088967219868209,
+        "success": true
+      },
+      {
+        "time_taken": 0.38654457399388775,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n262": {
+    "time_taken": 0.46198271901812404,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.46198271901812404,
+        "success": true
+      },
+      {
+        "time_taken": 0.4722394740092568,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n292": {
+    "time_taken": 0.4880763099936303,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.542198865005048,
+        "success": true
+      },
+      {
+        "time_taken": 0.4880763099936303,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n352": {
+    "time_taken": 0.6468404079787433,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.6508764710160904,
+        "success": true
+      },
+      {
+        "time_taken": 0.6468404079787433,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n412": {
+    "time_taken": 0.810657211986836,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.8223371180065442,
+        "success": true
+      },
+      {
+        "time_taken": 0.810657211986836,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n472": {
+    "time_taken": 0.9814915790047962,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.01470620802138,
+        "success": true
+      },
+      {
+        "time_taken": 0.9814915790047962,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n532": {
+    "time_taken": 1.1859824089915492,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.271661689010216,
+        "success": true
+      },
+      {
+        "time_taken": 1.1859824089915492,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n592": {
+    "time_taken": 1.5328898050065618,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.5328898050065618,
+        "success": true
+      },
+      {
+        "time_taken": 1.6293556739983615,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n652": {
+    "time_taken": 1.6730727030080743,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 1.6730727030080743,
+        "success": true
+      },
+      {
+        "time_taken": 1.6968865980161354,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n735": {
+    "time_taken": 2.041513442993164,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.2156519969867077,
+        "success": true
+      },
+      {
+        "time_taken": 2.041513442993164,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n818": {
+    "time_taken": 2.568473532999633,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 2.777432999020675,
+        "success": true
+      },
+      {
+        "time_taken": 2.568473532999633,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n901": {
+    "time_taken": 3.0770107949792873,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 3.079340480006067,
+        "success": true
+      },
+      {
+        "time_taken": 3.0770107949792873,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "coq_rewrite_bang_n984": {
+    "time_taken": 3.548832519998541,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 3.713809634995414,
+        "success": true
+      },
+      {
+        "time_taken": 3.548832519998541,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "lean_repeat_rw_n1": {
+    "time_taken": 0.14753531001042575,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.5942484959959984,
+        "success": true
+      },
+      {
+        "time_taken": 0.14753531001042575,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "lean_repeat_rw_n16": {
+    "time_taken": 0.16042197399656288,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.16042197399656288,
+        "success": true
+      },
+      {
+        "time_taken": 0.18444272901979275,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "lean_repeat_rw_n31": {
+    "time_taken": 0.16520611598389223,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.16672537600970827,
+        "success": true
+      },
+      {
+        "time_taken": 0.16520611598389223,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "lean_repeat_rw_n61": {
+    "time_taken": 0.18451937101781368,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.18991747600375675,
+        "success": true
+      },
+      {
+        "time_taken": 0.18451937101781368,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "lean_repeat_rw_n91": {
+    "time_taken": 0.19395030199666508,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.19828014797531068,
+        "success": true
+      },
+      {
+        "time_taken": 0.19395030199666508,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "lean_repeat_rw_n151": {
+    "time_taken": 0.19870593398809433,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.21133272600127384,
+        "success": true
+      },
+      {
+        "time_taken": 0.19870593398809433,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "lean_repeat_rw_n234": {
+    "time_taken": 0.23038130201166496,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.23038130201166496,
+        "success": true
+      },
+      {
+        "time_taken": 0.24006349200499244,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "lean_repeat_rw_n317": {
+    "time_taken": 0.27012014397769235,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.27012014397769235,
+        "success": true
+      },
+      {
+        "time_taken": 0.2783678119885735,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "lean_repeat_rw_n400": {
+    "time_taken": 0.3167100040009245,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.3511121949995868,
+        "success": true
+      },
+      {
+        "time_taken": 0.3167100040009245,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "lean_repeat_rw_n483": {
+    "time_taken": 0.36945491400547326,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.3806669340119697,
+        "success": true
+      },
+      {
+        "time_taken": 0.36945491400547326,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "lean_repeat_rw_n566": {
+    "time_taken": 0.44033940401277505,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.44033940401277505,
+        "success": true
+      },
+      {
+        "time_taken": 0.4489999240031466,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "lean_repeat_rw_n649": {
+    "time_taken": 0.4949348329973873,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.5023578960099258,
+        "success": true
+      },
+      {
+        "time_taken": 0.4949348329973873,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "lean_repeat_rw_n732": {
+    "time_taken": 0.5448196389770601,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.5647738480183762,
+        "success": true
+      },
+      {
+        "time_taken": 0.5448196389770601,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "lean_repeat_rw_n815": {
+    "time_taken": 0.5626053620071616,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.5626053620071616,
+        "success": true
+      },
+      {
+        "time_taken": 0.589831745979609,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "lean_repeat_rw_n898": {
+    "time_taken": 0.5920174680068158,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.5920174680068158,
+        "success": true
+      },
+      {
+        "time_taken": 0.623811339988606,
+        "success": true
+      }
+    ],
+    "best_trial": 0,
+    "run": "2026-10-01T01:36:24+00:00"
+  },
+  "lean_repeat_rw_n981": {
+    "time_taken": 0.6988033820234705,
+    "success": true,
+    "trials": [
+      {
+        "time_taken": 0.7030801700020675,
+        "success": true
+      },
+      {
+        "time_taken": 0.6988033820234705,
+        "success": true
+      }
+    ],
+    "best_trial": 1,
+    "run": "2026-10-01T01:36:24+00:00"
+  }
+}
