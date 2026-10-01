@@ -1,15 +1,8 @@
 """
 Rewriting with cascading let-bindings and n-ary function applications.
 
-Three variants controlled by which parameter is fixed:
-  - rewrite_nm_fixedm3: fix m=3, vary n
-  - rewrite_nm_fixedm5: fix m=5, vary n
-  - rewrite_nm_fixedn3: fix n=3, vary m
-
-This benchmark uses a single two-parameter definition.
-The old suite split these into 3 separate directories with duplicated code.
-Here we define one benchmark class with both n and m as parameters,
-and let the plotter handle showing slices with one param fixed.
+One benchmark with two parameters, n and m. Each plot is a slice with one parameter fixed:
+`bench.py plot rewrite_nm --fixed m=3` writes plots/rewrite_nm_m3.png.
 
 Mengine: native engine
 Coq: multiple strategies
@@ -33,13 +26,8 @@ class RewriteNM(Benchmark):
     """
     Two-parameter benchmark: n (arity of f) and m (depth of let-nesting).
     
-    To reproduce the old fixed-m=3, fixed-m=5, fixed-n=3 plots, use:
-      bench.py plot rewrite_nm --fixed m=3
-      bench.py plot rewrite_nm --fixed m=5
-      bench.py plot rewrite_nm --fixed n=3
-    
-    Or run specific slices:
-      bench.py run rewrite_nm --override n=1:4000:25 --override m=3:4:1
+    Plot a slice with one parameter fixed, e.g. `bench.py plot rewrite_nm --fixed m=3`, or run one
+    slice with `bench.py run rewrite_nm --override n=1:4000:25 --override m=3:4:1`.
     """
 
     @property
