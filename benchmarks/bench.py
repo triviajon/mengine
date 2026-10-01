@@ -76,7 +76,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 from benchmarks.registry import ALL_BENCHMARKS
 from framework.benchmark import ParamSpec
-from framework.runner import RunConfig, run_benchmark, load_results
+from framework.runner import RunConfig, run_benchmark, load_results, result_entries
 
 
 DEFAULT_CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
@@ -230,8 +230,8 @@ def cmd_status(args):
 
     for name, bench in benchmarks.items():
         results_path = os.path.join(results_dir, f"{bench.name}.json")
-        results = load_results(results_path)
-        
+        results = result_entries(load_results(results_path))
+
         total = len(results)
         success = sum(1 for v in results.values() if v.get("success"))
         timeout = sum(1 for v in results.values() if v.get("timeout"))
@@ -546,7 +546,7 @@ def cmd_purge(args):
             continue
 
         to_remove = [
-            k for k in results
+            k for k in result_entries(results)
             if (prefix and k.startswith(prefix))
             or (prefix is None and f"_{strategy}_" in k)
         ]

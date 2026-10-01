@@ -9,12 +9,14 @@ timeouts. Results are stored incrementally so runs can be resumed.
 import itertools
 import json
 import os
+import platform
 import signal
 import subprocess
 import sys
 import tempfile
 import time
 from dataclasses import replace
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .benchmark import Benchmark, Strategy, ParamSpec
@@ -74,11 +76,81 @@ _DEFAULT_VARIANT_STYLES = {
 }
 
 
+# The entry in a results file that holds one provenance record per run, keyed by the run's UTC
+# start time. Each result names the run that produced it in its "run" field.
+RUNS_KEY = "_runs"
+
+
 def load_results(path: str) -> dict:
     if os.path.exists(path):
         with open(path, "r") as f:
             return json.load(f)
     return {}
+
+
+def result_entries(results: dict) -> dict:
+    """The results of a results file, without the run provenance records."""
+    return {key: value for key, value in results.items() if key != RUNS_KEY}
+
+
+def _first_output_line(cmd: list[str]) -> str | None:
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    lines = (proc.stdout or proc.stderr).strip().splitlines()
+    return lines[0] if proc.returncode == 0 and lines else None
+
+
+def _mengine_version(binary: str) -> dict | None:
+    """The fields printed by `mengine version`, or None for a binary without that command."""
+    try:
+        proc = subprocess.run([binary, "version"], capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    lines = proc.stdout.strip().splitlines()
+    if proc.returncode != 0 or not lines or not lines[0].startswith("mengine "):
+        return None
+    fields = {"commit": lines[0].removeprefix("mengine ")}
+    for line in lines[1:]:
+        name, _, value = line.partition(": ")
+        fields[name] = value
+    return fields
+
+
+def _cpu_model() -> str:
+    try:
+        with open("/proc/cpuinfo") as f:
+            for line in f:
+                if line.startswith("model name"):
+                    return line.split(":", 1)[1].strip()
+    except OSError:
+        pass
+    return (_first_output_line(["sysctl", "-n", "machdep.cpu.brand_string"])
+            or platform.processor() or "unknown")
+
+
+def run_provenance(config: "RunConfig", strategies: list[Strategy], timeout: float) -> dict:
+    """What a run depends on: tool versions, build flags, host, and harness settings."""
+    engines = {s.engine for s in strategies}
+    record = {
+        "host": {"cpu": _cpu_model(), "cores": os.cpu_count(), "os": platform.platform()},
+        "python": platform.python_version(),
+        "timeout": timeout,
+        "trials": config.trials,
+    }
+    if "mengine" in engines:
+        variants = sorted({s.variant or "" for s in strategies if s.engine == "mengine"})
+        record["mengine"] = {
+            variant or "default": _mengine_version(config.engine_path("mengine", variant or None))
+            for variant in variants
+        }
+    if "coq" in engines:
+        record["coq"] = _first_output_line([config.coq_path, "--version"])
+        record["coq_timeout_multiplier"] = config.coq_timeout_multiplier
+    if "lean" in engines:
+        record["lean"] = _first_output_line([config.lean_path, "--version"])
+    return record
 
 
 def save_results(results: dict, path: str):
@@ -368,6 +440,7 @@ def run_benchmark(
 
     run_count = 0
     skip_count = 0
+    run_id = None
 
     for strategy in strategies:
         strat_id = f"{strategy.engine}:{strategy.name}"
@@ -444,7 +517,12 @@ def run_benchmark(
                     x += current_step
                     continue
 
+                if run_id is None:
+                    run_id = datetime.now(timezone.utc).isoformat(timespec="seconds")
+                    runs = results.setdefault(RUNS_KEY, {})
+                    runs[run_id] = run_provenance(config, strategies, timeout)
                 result = run_single(benchmark, strategy, params, config, timeout)
+                result["run"] = run_id
                 results[key] = result
                 save_results(results, results_path)
                 run_count += 1

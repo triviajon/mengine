@@ -17,6 +17,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from .benchmark import Benchmark, Strategy
+from .runner import result_entries
 
 
 # Paper-quality defaults
@@ -39,7 +40,7 @@ def load_results(path: str) -> dict:
     if not os.path.exists(path):
         return {}
     with open(path, "r") as f:
-        return json.load(f)
+        return result_entries(json.load(f))
 
 
 def _parse_params(param_str: str) -> dict[str, int]:
