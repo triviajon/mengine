@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/resource.h>
 
+#include "build/version.h"
 #include "src/common/color.h"
 #include "src/common/options.h"
 #include "src/common/timing.h"
@@ -13,8 +14,8 @@ enum { OPT_PRINT_TOKENS = 256, OPT_PRINT_AST, OPT_PRINT_MODE, OPT_TIME };
 
 static char doc[] =
     "MEngine - A theorem prover\n\nCommands:\n  config    Print compile-time configuration and "
-    "exit";
-static char args_doc[] = "[FILENAME|config]";
+    "exit\n  version   Print the commit and build flags and exit";
+static char args_doc[] = "[FILENAME|config|version]";
 static struct argp_option options[] = {
     {"load", 'l', "FILE", 0, "Load and execute FILE, then enter REPL", 0},
     {"quiet", 'q', 0, 0, "Suppress text output", 0},
@@ -147,6 +148,12 @@ int file_mode(MEngineOptions options, char *filename) {
     return r;
 }
 
+static void version_mode(void) {
+    printf("mengine %s\n", MENGINE_VERSION);
+    printf("compiler: %s\n", MENGINE_COMPILER);
+    printf("cflags: %s\n", MENGINE_CFLAGS);
+}
+
 static void config_mode(void) {
     printf("mengine compile-time configuration\n");
     printf("----------------------------------\n");
@@ -231,6 +238,11 @@ int main(int argc, char **argv) {
 
     if (strcmp(arguments.filename, "config") == 0) {
         config_mode();
+        return 0;
+    }
+
+    if (strcmp(arguments.filename, "version") == 0) {
+        version_mode();
         return 0;
     }
 

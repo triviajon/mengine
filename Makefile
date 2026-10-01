@@ -36,6 +36,10 @@ ENGINE_OBJ := $(ENGINE_SRC:.c=.o)
 BUILD_DIR := build
 ENGINE_LIB := $(BUILD_DIR)/libmengine.a
 
+VERSION_HEADER := $(BUILD_DIR)/version.h
+GIT_VERSION := $(shell git describe --always --dirty 2>/dev/null || echo unknown)
+COMPILER_VERSION := $(shell $(CC) --version | head -n 1)
+
 PRELUDE := prelude/tactics.me
 PRELUDE_SRC := $(BUILD_DIR)/prelude.c
 PRELUDE_OBJ := $(BUILD_DIR)/prelude.o
@@ -97,6 +101,13 @@ $(PRELUDE_SRC): $(PRELUDE) | $(BUILD_DIR)
 	sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/^/    "/' -e 's/$$/\\n"/' $< >> $@
 	printf '    "";\n' >> $@
 
+$(VERSION_HEADER): FORCE | $(BUILD_DIR)
+	@printf '#define MENGINE_VERSION "%s"\n#define MENGINE_COMPILER "%s"\n#define MENGINE_CFLAGS "%s"\n' \
+		'$(GIT_VERSION)' '$(COMPILER_VERSION)' '$(subst ",\",$(strip $(CFLAGS)))' > $@.tmp
+	@cmp -s $@.tmp $@ && rm -f $@.tmp || mv $@.tmp $@
+
+$(MENGINE_OBJ): $(VERSION_HEADER)
+
 $(MENGINE_BIN): $(MENGINE_OBJ) $(ENGINE_LIB) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
@@ -129,7 +140,7 @@ $(TEST_DRIVER): $(TEST_DRIVER_SRC) $(TEST_OBJ) $(HELPERS_OBJ) $(ENGINE_LIB)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(ENGINE_OBJ) $(PRELUDE_SRC) $(PRELUDE_OBJ) $(MENGINE_OBJ) $(HELPERS_OBJ) $(TEST_OBJ) $(ENGINE_LIB) $(MENGINE_BIN) $(TEST_DRIVER)
+	rm -f $(ENGINE_OBJ) $(VERSION_HEADER) $(PRELUDE_SRC) $(PRELUDE_OBJ) $(MENGINE_OBJ) $(HELPERS_OBJ) $(TEST_OBJ) $(ENGINE_LIB) $(MENGINE_BIN) $(TEST_DRIVER)
 	if [ "$(UNAME)" = "Darwin" ]; then \
 		find . -name "*.dSYM" -type d -exec rm -rf {} +; \
 	fi
@@ -162,4 +173,6 @@ ablation-binaries:
 	$(MAKE) clean
 	$(MAKE) TUNE_SUBST_MEMO=1 TUNE_EVAR_FREE_FILL=1
 
-.PHONY: all release clean tests check install uninstall clangd install-tools ablation-binaries
+FORCE:
+
+.PHONY: FORCE all release clean tests check install uninstall clangd install-tools ablation-binaries
