@@ -103,7 +103,7 @@ COLOR_GREEN = "\033[32m"
 COLOR_RED = "\033[31m"
 COLOR_RESET = "\033[0m"
 
-def load_config():
+def load_config(args=None):
     cfg = dict(DEFAULT_CONFIG)
     if os.path.exists(DEFAULT_CONFIG_PATH):
         with open(DEFAULT_CONFIG_PATH) as f:
@@ -129,6 +129,12 @@ def load_config():
             spec["path"] = resolve_path_or_cmd(spec["path"])
         if spec.get("root"):
             spec["root"] = resolve_path_from_base(spec["root"])
+
+    # --results-dir and --plots-dir are relative to the current directory.
+    for key in ("results_dir", "plots_dir"):
+        value = getattr(args, key, None)
+        if value:
+            cfg[key] = os.path.abspath(os.path.expanduser(value))
 
     return cfg
 
@@ -218,7 +224,7 @@ def cmd_list(args):
 
 
 def cmd_status(args):
-    cfg = load_config()
+    cfg = load_config(args)
     benchmarks = get_benchmarks(args)
     results_dir = cfg["results_dir"]
 
@@ -254,7 +260,7 @@ def cmd_status(args):
 
 
 def cmd_run(args):
-    cfg = load_config()
+    cfg = load_config(args)
     
     if not os.path.exists(DEFAULT_CONFIG_PATH):
         save_default_config()
@@ -334,7 +340,7 @@ def _smoke_test_single(benchmark, strategy, params, config, timeout):
 
 
 def cmd_test(args):
-    cfg = load_config()
+    cfg = load_config(args)
     run_cfg = make_run_config(cfg, args)
     benchmarks = get_benchmarks(args)
     engines = set(args.engine.split(",")) if args.engine else None
@@ -385,7 +391,7 @@ def cmd_test(args):
 def cmd_plot(args):
     from framework.plotter import plot_benchmark, plot_all_variants
 
-    cfg = load_config()
+    cfg = load_config(args)
     run_cfg = make_run_config(cfg, args)
     benchmarks = get_benchmarks(args)
     engines = args.engine.split(",") if args.engine else None
@@ -512,7 +518,7 @@ def cmd_init(args):
 
 
 def cmd_purge(args):
-    cfg = load_config()
+    cfg = load_config(args)
     benchmarks = get_benchmarks(args)
     results_dir = cfg["results_dir"]
 
@@ -582,6 +588,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
+    parser.add_argument("--results-dir", help="Read and write results here instead of the config's results_dir")
+    parser.add_argument("--plots-dir", help="Write plots here instead of the config's plots_dir")
     subparsers = parser.add_subparsers(dest="command")
 
     # list
