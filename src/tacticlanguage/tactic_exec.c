@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "src/common/color.h"
+#include "src/common/doubly_linked_list.h"
 #include "src/common/timing.h"
 #include "src/engine/engine_api.h"
 #include "src/kernel/kernel_api.h"
@@ -42,13 +43,21 @@ int mengine_execute_tactic(MEngineRuntime *rt, TacticExpr *tac) {
         return 1;
     }
 
-    // Add any new subgoals to the proof state
-    engine_proof_state_add_goals(rt->proof_state, engine_tactic_result_take_goals(result));
+    DoublyLinkedList *new_goals = engine_tactic_result_take_goals(result);
     engine_tactic_result_free(result);
 
-    // The tactic filled the current goal, detaching it from the expression tree.
-    // Free the now-orphaned hole expression (shallow - don't cascade into children).
-    kernel_free_filled_hole(goal);
+    if (kernel_hole_is_filled(goal)) {
+        kernel_free_filled_hole(goal);
+    } else if (kernel_expr_is_hole(goal) && (!new_goals || !dll_search(new_goals, goal))) {
+        // The tactic succeeded without solving the goal, e.g. by filling another hole.
+        if (!new_goals) {
+            new_goals = dll_create();
+        }
+        dll_insert_at_head(new_goals, dll_new_node(goal));
+    }
+
+    // Add any new subgoals to the proof state
+    engine_proof_state_add_goals(rt->proof_state, new_goals);
 
     // Advance to the next goal, skipping filled evar holes
     bool has_next = engine_proof_state_next_goal(rt->proof_state);

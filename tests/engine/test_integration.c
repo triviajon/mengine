@@ -453,6 +453,45 @@ static void test_shelved_hole_filled_by_cascade_succeeds(void) {
            "exact h0.\n");
 }
 
+/* Filling a hole other than the current goal must not discard the goal: here it
+ * would leave Q proved with the unprovable eq A a b still open. */
+static void test_filling_other_hole_keeps_goal(void) {
+    test_start("filling another hole does not solve the current goal");
+    MEngineRuntime *rt = make_rt();
+    int rc = mengine_runtime_exec_string(rt,
+                                         "Axiom A : Type.\n"
+                                         "Axiom a : A.\n"
+                                         "Axiom b : A.\n"
+                                         "Axiom Q : Prop.\n"
+                                         "Axiom L : forall (x : A), forall (_ : eq A x b), Q.\n"
+                                         "Tactic fill_x := match Goal with\n"
+                                         "| [ |- (((eq ?T) ?y) ?z) ] => fill y a\n"
+                                         "end.\n"
+                                         "Theorem oops3 : Q.\n"
+                                         "eapply L.\n"
+                                         "fill_x.\n");
+    bool still_proving = rt->proof_state != NULL;
+    mengine_runtime_free(rt);
+    assert_equal_int(0, rc, "expected the tactics to succeed");
+    assert_true(still_proving, "expected the goal to remain open");
+}
+
+/* The kept goal can still be solved after its evar is filled. */
+static void test_goal_solved_after_filling_other_hole_succeeds(void) {
+    run_ok("goal kept after filling another hole can be solved",
+           "Axiom A : Type.\n"
+           "Axiom b : A.\n"
+           "Axiom Q : Prop.\n"
+           "Axiom L : forall (x : A), forall (_ : eq A x b), Q.\n"
+           "Tactic fill_x := match Goal with\n"
+           "| [ |- (((eq ?T) ?y) ?z) ] => fill y b\n"
+           "end.\n"
+           "Theorem ok3 : Q.\n"
+           "eapply L.\n"
+           "fill_x.\n"
+           "reflexivity.\n");
+}
+
 /* ── parametric inductive ───────────────────────────────────────────────── */
 
 static void test_parametric_list(void) {
@@ -579,6 +618,8 @@ void run_integration_tests(void) {
     test_unfinished_proof_fails();
     test_unfilled_shelved_hole_fails();
     test_shelved_hole_filled_by_cascade_succeeds();
+    test_filling_other_hole_keeps_goal();
+    test_goal_solved_after_filling_other_hole_succeeds();
     test_parametric_list();
 
     test_suite_end();
