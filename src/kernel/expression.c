@@ -1594,7 +1594,7 @@ static bool recompute_has_evar(Expression *expr) {
 }
 
 bool fill_hole(Expression *hole, Expression *term) {
-    if (hole->tag != HOLE_EXPRESSION) {
+    if (hole->tag != HOLE_EXPRESSION || hole->as.hole.is_filled) {
         return false;
     }
 

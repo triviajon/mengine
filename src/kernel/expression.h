@@ -495,7 +495,8 @@ bool has_holes(Expression *expr);
 bool is_hole(Expression *expr);
 
 // Fills a hole with a term by rewriting uplinks. Checks preconditions
-// (type match, context validity, evar-ref membership) and returns false if any fail.
+// (hole not already filled, type match, context validity, evar-ref membership) and
+// returns false if any fail.
 bool fill_hole(Expression *hole, Expression *term);
 
 // Returns true if the expressions are alpha-congruent.
