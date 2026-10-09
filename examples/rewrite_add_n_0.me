@@ -13,7 +13,7 @@ Axiom add_n_0 : forall (n: nat), eq nat (add n zero) (n).
 Theorem rewrite_zeros_tree : eq nat 
     (add (add (add (add v0 zero) zero) zero) zero)
     (v0).
-(* Note: This notation is temporary *)
+(* Note: This notation 'rewrite _ with eq.' is temporary, currently has no bearing on the proof, and will be removed in the future. *)
 rewrite add_n_0 with eq.
 apply eq_refl.
 
@@ -25,6 +25,8 @@ Theorem rewrite_zeros_let : eq nat
      v3
     )
     (v0).
-(* Note: This notation is temporary *)
+(* Note: This notation 'rewrie _ with eq.' is temporary, currently has no bearing on the proof, and will be removed in the future. *)
 rewrite add_n_0 with eq.
 apply eq_refl.
+
+Print Rocq rewrite_zeros_let.

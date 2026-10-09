@@ -52,7 +52,7 @@ python3 bench.py plot rewrite_nm --fixed m=3
 
 ## Adding a Benchmark
 
-Create `benchmarks/my_benchmark.py` with a class extending `Benchmark`. The registry, CLI, and plotter pick it up automatically.
+Copy `benchmarks/benchmarks/_template.py` to `benchmarks/benchmarks/my_benchmark.py`, rename the class, and set the `name` property. The registry, CLI, and plotter pick it up automatically. The template file explains each step and provides the required skeleton.
 
 ## Rocq standard-library benchmark
 

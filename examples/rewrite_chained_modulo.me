@@ -16,6 +16,6 @@ Theorem chained_modulo : forall (b: nat), forall (p: nat), eq nat
     (mod b p).
 intro b.
 intro p.
-(* Note: This notation is temporary *)
+(* Note: This notation 'rewrite _ with eq.' is temporary, currently has no bearing on the proof, and will be removed in the future. *)
 rewrite mod_mod with eq.
 apply eq_refl.
