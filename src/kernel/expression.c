@@ -1795,4 +1795,3 @@ char *get_char() {
     }
     return strdup(temp);
 }
-
