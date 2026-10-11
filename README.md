@@ -1,6 +1,8 @@
-## MENgine
+## MEngine
 
 MEngine is a dependently typed kernel and proof engine with explicit context management, a tactic language, and a theorem prover, optimized for highly automated proof scripts. 
+
+The artifact (VM images and source) is available at https://doi.org/10.5281/zenodo.23197497.
 
 ### Claims 
 
@@ -17,16 +19,28 @@ The paper makes the following claims:
 | 7 | Subsection 4.3, Figure 9  | `cancel`: MEngine, Lean, Rocq (Bedrock2/Coqutil) comparable       | `separation_logic.py`                 |
 | 8 | Subsection 4.4, Figure 10 | `symbolic_execution`: MEngine and SymM completes n = 241 in < 1s  | `symbolic_execution.py`               |
 
+*By ~linear we mean the trend of the curves over the range of n in which Rocq's strategies do not time out.*
+
 ### Installation Instructions
 
-Assuming you are on the VM image provided by the authors, no installation is required for MEngine, Rocq 9.1.1 with coqutil, or Lean v4.32.0-rc1. 
+#### Using the VM image
 
-Without the VM image, you will need to install a few dependencies. On Ubuntu-like systems, you can run the following commands to build MEngine:
+To use the [provided](https://doi.org/10.5281/zenodo.23197497) VM image, import ``mengine-ae-{amd64, arm64}.ova` into VirtualBox with File > Import Appliance. You should have about 9 GiB of free disk. The VM logs in as user `artifact` (password `artifact`). It has 4 CPUs and 8 GB of RAM by default and opens  No further installation is required for MEngine, Rocq 9.1.1 with coqutil, or Lean v4.32.0-rc1. 
+
+To use the VM image, import `mengine-ae-amd64.ova` (or `mengine-ae-arm64.ova` on Apple Silicon) into VirtualBox 7.1 or later with File > Import Appliance; this needs about 10 GB of free disk. The VM boots into a desktop logged in as `artifact` (password `artifact`), with the repository in `~/mengine`. It has 4 CPUs and 8 GB of RAM by default, and attempts to port-forward `localhost:2222` to port `22` on the VM so that files and plots can be copied out by you or your favorite AI assistant.
+
+Once the desktop envirnoment is running, you can start by opening the terminal and `cd ~/mengine`. 
+
+#### Without the VM image
+
+Without the VM image, `scripts/ae/provision-ubuntu.sh` installs everything the VM has on Ubuntu 24.04 (run it from the repository root). If you only need MEngine, the following commands are enough:
 ```shell
 apt update
 apt install clang make python3-matplotlib
 make release
 ```
+
+#### Sanity check
 
 You can sanity check that MEngine is built correctly by running:
 ```shell
@@ -72,7 +86,11 @@ apply eq_refl.
 Print Rocq rewrite_zeros_let.
 ```
 
-Running MEngine on this file (in quiet mode) will print to stdout a fully parseable Rocq file that contains a term which has the same type as `rewrite_zeros_let` and the same context as `rewrite_zeros_let`.
+Running MEngine on this file (in quiet mode) will print to stdout a fully parseable Rocq file that contains a term which has the same type as `rewrite_zeros_let` and the same context as `rewrite_zeros_let`. To check it with the Rocq kernel:
+```shell
+./build/mengine -q examples/rewrite_add_n_0.me > export.v
+coqc export.v
+```
 
 Note that all of the variables in the exported Rocq file are named by their memory address. This is because the MEngine kernel only uses the user-friendly name of a variable for printing, but it is not considered part of the identity of a variable.
 
@@ -80,10 +98,10 @@ Note that all of the variables in the exported Rocq file are named by their memo
 
 To evaluate this claim, you can run the following commands in the `benchmarks` directory:
 ```shell
-python3 stdlib/stdlib_bench.py regen     # rebuild every generated file, in dependency order
-python3 stdlib/stdlib_bench.py clean     # remove every generated file (keep sources)
 python3 stdlib/stdlib_bench.py test      # faithfulness gate (see below)
 python3 stdlib/stdlib_bench.py fidelity  # check each statement vs the real stdlib
+python3 stdlib/stdlib_bench.py regen     # rebuild every generated file, in dependency order
+python3 stdlib/stdlib_bench.py clean     # remove every generated file (keep sources)
 ```
 
 More details about the `stdlib_bench.py` script can be found in the `benchmarks/stdlib/README.md` file.
@@ -92,31 +110,29 @@ More details about the `stdlib_bench.py` script can be found in the `benchmarks/
 
 We provide a suite of benchmarks in the `benchmarks` directory that showcase the performance of MEngine compared to Rocq and Lean. These benchmarks are designed to be runnable on the VM image provided by the authors. Otherwise, you may need to edit `benchmarks/config.json` to point to the correct paths. 
 
-Once configured, you can smoke test everything is installed correctly by running:
+Once configured, you can smoke test everything is installed correctly by running, from the `benchmarks` directory:
 ```shell
 python3 bench.py test
 ```
-This runs each benchmark with small inputs once to check that everything is installed correctly.
+This runs each benchmark with small inputs once to check that everything is installed correctly. In a VM, the first Lean run after boot can take a minute while Lean's library is read from disk.
 
 To run a specific benchmark, list existing benchmarks with `python3 bench.py list` and then run `python3 bench.py run <benchmark_name>`. Each benchmark is implemented for MEngine, Rocq, and Lean, referred to as engines. Some benchmarks have multiple proof strategies for a particular engine (e.g., using `rewrite` vs `rewrite_strat` for Rocq). To use a particular engine, use the `--engine` flag and all strategies for that engine will be run.
 
 ```shell
-python3 benchmarks/bench.py run rewrite_nm
-python3 benchmarks/bench.py run rewrite_nm --engine mengine
+python3 bench.py run rewrite_nm
+python3 bench.py run rewrite_nm --engine mengine
 ```
 
-To run the full benchmark suite as ran for the paper, run:
+The paper's results and plots are in `benchmarks/results/final-2026-09-30` and `benchmarks/plots/final-2026-09-30` (i7-12700K, 16 GB RAM, WSL2). To rerun the six benchmarks of the paper into a separate directory and plot them, run:
 ```shell
-python3 benchmarks/bench.py run --force
+for b in rewrite_fa repeat_mod addr0_let_in separation_logic symbolic_execution rewrite_nm; do
+    python3 bench.py --results-dir results/mine run $b
+done
+python3 bench.py --results-dir results/mine --plots-dir plots/mine plot
 ```
-Using the force flag will overwrite any existing results. Please note that this will take a while (in our experience, about 4-5 hours with a peak memory usage of 2GiB). 
+Please note that this will take a while (in our experience, about 4 hours, with MEngine peaking at about 2 GiB of memory). Expect absolute times to differ from the paper, especially in a VM; the claims are about how each engine scales with n.
 
-By default, the results will be written to the `benchmarks/results` directory in JSON files. To plot the results, run:
-```shell
-python3 benchmarks/bench.py plot
-python3 benchmarks/bench.py plot [benchmark_name] # just a single benchmark
-
-```
+Without `--results-dir`, results are written as JSON files to `benchmarks/results`, and `run --force` overwrites existing results. `python3 bench.py plot [benchmark_name]` plots a single benchmark.
 
 More detailed instructions for running the benchmarks can be found in the `benchmarks/README.md` file. For those interested in adding a new benchmark, we recommend copying `benchmarks/benchmarks/_template.py` as a template and modifying it to fit your needs.
 
@@ -128,9 +144,9 @@ The file structure of the repository is as follows:
 ```
 .
 ├── benchmarks # contains the suite of benchmarks
-├── examples # examples of supported MEngine language syntax and 
+├── examples # examples of supported MEngine language syntax
 ├── prelude/tactics.me # file that is imported by default on every mengine invocation
-├── scripts # development scripts
+├── scripts # development scripts and artifact evaluation scripts
 ├── src # source code of MEngine
 ├── tests # test suite for MEngine
 ├── Makefile 
@@ -156,7 +172,7 @@ The `src/` directory is separated into the following subdirectories:
 
 **`engine/`**: The proof engine described in Section 3. A `ProofState` holds the pending theorem and the list of open goals, where each goal is a hole with an expected type. `tactics.c` implements the primitive tactics, for example `intro`, `apply`, `exact`, `rewrite`, and `reflexivity`. `unify.c` unifies the type of a lemma with the type of a goal, instantiates the lemma, and returns the new subgoals.
 
-**`kernel/`**: The kernel implements the dependently typed core described in Section 2. `expression.h` contains the key data structures used for the kernel. Each expression constructed using the constructor is treated as trusted. `context.c` manages explicit contexts, with two interchangeable backends for order maintenance (`order_demain.c`, `order_linkedlist.c`). 
+**`kernel/`**: The kernel implements the dependently typed core described in Section 2. `expression.h` contains the key data structures used for the kernel. Each expression constructed using the constructor is treated as trusted. `context.c` manages explicit contexts, with two interchangeable backends for order maintenance (`order_tagrange.c`, the default, and `order_linkedlist.c`). 
 
 **`runtime/`**: `runtime.c` defines the `MEngineRuntime`, which holds the global context, the proof state, and the environment of user-defined tactics. The runtime switches between command mode (which is used to make declarations) and proof mode (which is used to apply tactics to solve a goal). The runtime is also responsible for handling the REPL and loading the prelude. 
 
