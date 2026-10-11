@@ -22,7 +22,7 @@ Run options:
 
 Test options:
   --engine ENGINE[,ENGINE,...]   Only test these engines
-  --timeout SECONDS              Override default timeout
+  --timeout SECONDS              Timeout (default: none)
 
 Plot options:
   --engine ENGINE[,ENGINE,...]   Only plot these engines
@@ -344,7 +344,7 @@ def cmd_test(args):
     run_cfg = make_run_config(cfg, args)
     benchmarks = get_benchmarks(args)
     engines = set(args.engine.split(",")) if args.engine else None
-    timeout = args.timeout or cfg["default_timeout"]
+    timeout = args.timeout
 
     total = 0
     failed = 0
@@ -637,7 +637,7 @@ def main():
     p_test.add_argument("--engine", help="Engines to test (comma-separated)")
     p_test.add_argument("--mengine-variant", action="append",
                         help="Add/override an MEngine binary variant: NAME=PATH[:ROOT]")
-    p_test.add_argument("--timeout", type=float, help="Timeout in seconds")
+    p_test.add_argument("--timeout", type=float, help="Timeout in seconds (default: none)")
     p_test.add_argument("--no-variants", action="store_true", help="Skip ablation variants, run only the base mengine binary")
     p_test.add_argument("--no-ablations", action="store_true", help="Keep only the baseline MEngine variant (drop ablation variants)")
 
