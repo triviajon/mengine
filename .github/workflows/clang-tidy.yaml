@@ -17,6 +17,9 @@ jobs:
           sudo apt update
           sudo apt install -y clang clang-tidy
 
+      - name: Generate build/version.h
+        run: make build/version.h
+
       - name: Run clang-tidy
         run: |
           clang-tidy $(git ls-files '*.c') --warnings-as-errors=* --header-filter=.*
