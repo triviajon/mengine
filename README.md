@@ -116,23 +116,25 @@ python3 bench.py test
 ```
 This runs each benchmark with small inputs once to check that everything is installed correctly. In a VM, the first Lean run after boot can take a minute while Lean's library is read from disk.
 
-To run a specific benchmark, list existing benchmarks with `python3 bench.py list` and then run `python3 bench.py run <benchmark_name>`. Each benchmark is implemented for MEngine, Rocq, and Lean, referred to as engines. Some benchmarks have multiple proof strategies for a particular engine (e.g., using `rewrite` vs `rewrite_strat` for Rocq). To use a particular engine, use the `--engine` flag and all strategies for that engine will be run.
+To run a specific benchmark, list existing benchmarks with `python3 bench.py list` and then run `python3 bench.py run <benchmark_name>`. Each benchmark is implemented for MEngine, Rocq, and Lean, referred to as engines. Some benchmarks have multiple proof strategies for a particular engine (e.g., using `rewrite` vs `rewrite_strat` for Rocq). To use a particular engine, use the `--engine` flag and all strategies for that engine will be run. To not overwrite the existing results, use the `--results-dir` flag:
 
 ```shell
-python3 bench.py run rewrite_nm
-python3 bench.py run rewrite_nm --engine mengine
+python3 bench.py --results-dir results/mine run rewrite_nm
+python3 bench.py --results-dir results/mine run rewrite_nm --engine mengine
 ```
 
-The paper's results and plots are in `benchmarks/results/final-2026-09-30` and `benchmarks/plots/final-2026-09-30` (i7-12700K, 16 GB RAM, WSL2). To rerun the six benchmarks of the paper into a separate directory and plot them, run:
+The paper's results and plots are in  `benchmarks/results` and `benchmarks/plots` (i7-12700K, 16 GB RAM, WSL2). To rerun the six benchmarks of the paper into a separate directory and plot them, run:
 ```shell
 for b in rewrite_fa repeat_mod addr0_let_in separation_logic symbolic_execution rewrite_nm; do
     python3 bench.py --results-dir results/mine run $b
 done
+
+# Plot the results of `results/mine` into `plots/mine`
 python3 bench.py --results-dir results/mine --plots-dir plots/mine plot
 ```
-Please note that this will take a while (in our experience, about 4 hours, with MEngine peaking at about 2 GiB of memory). Expect absolute times to differ from the paper, especially in a VM; the claims are about how each engine scales with n.
+Please note that this will take a while (in our experience, about 4 hours, with MEngine peaking at about 2 GiB of memory). The absolute times will likely differ from the paper when in the VM.
 
-Without `--results-dir`, results are written as JSON files to `benchmarks/results`, and `run --force` overwrites existing results. `python3 bench.py plot [benchmark_name]` plots a single benchmark.
+Without `--results-dir`, `run` results attempts to write JSON files to `benchmarks/results`, but it will skip points already measured unless you use `run --force`. 
 
 More detailed instructions for running the benchmarks can be found in the `benchmarks/README.md` file. For those interested in adding a new benchmark, we recommend copying `benchmarks/benchmarks/_template.py` as a template and modifying it to fit your needs.
 
@@ -153,7 +155,7 @@ The file structure of the repository is as follows:
 └── README.md
 ```
 
-The `src/` directory is separated into the following subdirectories:
+The `src/` directory is further separated into the following subdirectories:
 ```
 .
 ├── commandlanguage # parser and executor for top-level commands
@@ -166,18 +168,24 @@ The `src/` directory is separated into the following subdirectories:
 └── main.c # CLI entry point
 ```
 
-**`commandlanguage/`**: The parser and executor for the top-level command language, which is similar to the vernacular of Rocq. `commandlanguage/bnf.md` contains the grammar of the command language.
-
-**`common/`**: Shared infrastructure reused by all layers.
+#### Kernel and Engine
 
 **`engine/`**: The proof engine described in Section 3. A `ProofState` holds the pending theorem and the list of open goals, where each goal is a hole with an expected type. `tactics.c` implements the primitive tactics, for example `intro`, `apply`, `exact`, `rewrite`, and `reflexivity`. `unify.c` unifies the type of a lemma with the type of a goal, instantiates the lemma, and returns the new subgoals.
 
 **`kernel/`**: The kernel implements the dependently typed core described in Section 2. `expression.h` contains the key data structures used for the kernel. Each expression constructed using the constructor is treated as trusted. `context.c` manages explicit contexts, with two interchangeable backends for order maintenance (`order_tagrange.c`, the default, and `order_linkedlist.c`). 
 
-**`runtime/`**: `runtime.c` defines the `MEngineRuntime`, which holds the global context, the proof state, and the environment of user-defined tactics. The runtime switches between command mode (which is used to make declarations) and proof mode (which is used to apply tactics to solve a goal). The runtime is also responsible for handling the REPL and loading the prelude. 
+#### Lanaguage
+
+**`commandlanguage/`**: The parser and executor for the top-level command language, which is similar to the vernacular of Rocq. `commandlanguage/bnf.md` contains the grammar of the command language.
 
 **`tacticlanguage/`**: The parser and interpreter for the tactic language, which runs during proof mode. The language provides some primitive combinators `;`, `||`, `try`, `repeat`, `first`, and `match Goal`, and a `Tactic name := ...` command defines new tactics (grammar is fully described in `tacticlanguage/bnf.md`). The tactic interpreter only implements the necessary primitives to support the benchmarks in the paper, and is not currently intended to be a full-featured tactic language.
 
 **`termlanguage/`**: The parser for the term/expression language. The grammar covers `fun`, `forall`, `let`, `match`, and `fix` expressions, and applications. `parser.c` parses a term into a generic AST, and `ast_to_expression.c` converts the AST into a kernel expression.
+
+#### Other
+
+**`common/`**: Shared infrastructure reused by all layers.
+
+**`runtime/`**: `runtime.c` defines the `MEngineRuntime`, which holds the global context, the proof state, and the environment of user-defined tactics. The runtime switches between command mode (which is used to make declarations) and proof mode (which is used to apply tactics to solve a goal). The runtime is also responsible for handling the REPL and loading the prelude. 
 
 **`main.c`**: The CLI entry point.
