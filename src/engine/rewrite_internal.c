@@ -533,8 +533,7 @@ RewriteResult *rewrite_var(Expression *expr, Expression *lemma, Context *context
 // Filling a hole mutates its parents in place, so only hole-free results are reused.
 // erewrite() keeps only noops, since its rewrites may open goals.
 static bool _rewrite_result_is_persistable(Expression *expr, Expression *lemma,
-                                           RewriteResult *result,
-                                           bool allow_unresolved_bindings) {
+                                           RewriteResult *result, bool allow_unresolved_bindings) {
     if (kernel_expr_has_holes(lemma) || kernel_expr_has_holes(expr)) {
         return false;
     }
