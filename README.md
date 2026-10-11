@@ -6,7 +6,7 @@
 
 MEngine is a dependently typed kernel with explicit context management, a proof engine, a tactic language, and a theorem prover, optimized for highly automated proof scripts. 
 
-The original ideas and design of MEngine were detailed in my master's thesis[^1], but have since been refined.
+The original ideas and design of MEngine were detailed in my master's thesis[^1], but have since been refined. The paper "Efficient Proof Engines with Lambda-DAGs" is expected to appear at POPL 2027 with `mengine` and the benchmark suite being shipped as an artifact (https://doi.org/10.5281/zenodo.23197497).
 
 ## How it works
 
@@ -22,8 +22,10 @@ The intended workflow: write proofs in MEngine's scripting language (`.me` files
 ```bash
 # Install dependencies (if on macOS)
 make install-tools
-# Build CLI `mengine` and library `libmengine.a`
+# Build CLI `build/mengine` and library `build/libmengine.a`
 make
+# Or build with -O2, as the benchmarks and the paper do
+make release
 # Run examples
 make examples
 ```
@@ -36,9 +38,9 @@ make clangd
 **Usage:**
 
 ```bash
-./mengine
-./mengine path/to/script.me
-./mengine --help  # for options
+./build/mengine
+./build/mengine path/to/script.me
+./build/mengine --help  # for options
 ```
 
 Check out `examples/` for scripts showing the syntax.
@@ -47,7 +49,7 @@ Check out `examples/` for scripts showing the syntax.
 
 This is a prototype! My goals include:
 - examples of verifying large imperative programs
-- all proofs continue to generate Coq-checkable proof terms
+- all proofs continue to generate Rocq-checkable proof terms (`Print Rocq <ident>.` exports one, checked against Rocq 9.1.1)
 - a tactic scripting language for writing new tactics
 
 ## Benchmark Results
@@ -57,14 +59,17 @@ This is a prototype! My goals include:
 | Benchmark | Description | Plot |
 | --- | --- | --- |
 | `addr0_let_in` | Rewriting add_r_O inside nested let-bindings | <img src="benchmarks/plots/addr0_let_in.png" alt="addr0_let_in" width="320"><br><sub>overview</sub> |
-| `context_order_validity` | Deep-context valid_in_context queries for order-backend comparison | <img src="benchmarks/plots/context_order_validity.png" alt="context_order_validity" width="320"><br><sub>overview</sub> |
-| `evar_free_filling` | Hole filling with a large evar-free proof term | <img src="benchmarks/plots/evar_free_filling.png" alt="evar_free_filling" width="320"><br><sub>overview</sub> |
-| `list_fold` | Reducing sum_list of n ones to n by fixpoint evaluation | <img src="benchmarks/plots/list_fold.png" alt="list_fold" width="320"><br><sub>overview</sub> |
 | `repeat_mod` | Rewriting nested modulo chains (mod (mod ... b p) p) = (mod b p) | <img src="benchmarks/plots/repeat_mod.png" alt="repeat_mod" width="320"><br><sub>overview</sub> |
 | `rewrite_fa` | Rewriting f(f(...f(a))) = a with n nested applications | <img src="benchmarks/plots/rewrite_fa.png" alt="rewrite_fa" width="320"><br><sub>overview</sub> |
 | `rewrite_nm` | Rewriting f(x,...,x)=x in let x1:=f x0..x0 in ... let xm:=f x(m-1)..x(m-1) in xm=x0 | <img src="benchmarks/plots/rewrite_nm_m1.png" alt="rewrite_nm_m1" width="320"><br><sub>m1</sub><br><br><img src="benchmarks/plots/rewrite_nm_m6.png" alt="rewrite_nm_m6" width="320"><br><sub>m6</sub><br><br><img src="benchmarks/plots/rewrite_nm_m10.png" alt="rewrite_nm_m10" width="320"><br><sub>m10</sub><br><br><sub>7 more plot(s) omitted</sub> |
 | `separation_logic` | Separation logic predicate cancellation (reordering sep predicates) | <img src="benchmarks/plots/separation_logic.png" alt="separation_logic" width="320"><br><sub>overview</sub> |
-| `substitution_sharing` | Substitution through a dependent type with repeated references to one shared let-bound subtree | <img src="benchmarks/plots/substitution_sharing.png" alt="substitution_sharing" width="320"><br><sub>overview</sub> |
 | `symbolic_execution` | Symbolic execution of imperative programs with partial maps | <img src="benchmarks/plots/symbolic_execution.png" alt="symbolic_execution" width="320"><br><sub>overview</sub> |
+
+<!-- Results for these benchmarks predate the 2026-09-30 run:
+| `context_order_validity` | Deep-context valid_in_context queries for order-backend comparison | <img src="benchmarks/plots/context_order_validity.png" alt="context_order_validity" width="320"><br><sub>overview</sub> |
+| `evar_free_filling` | Hole filling with a large evar-free proof term | <img src="benchmarks/plots/evar_free_filling.png" alt="evar_free_filling" width="320"><br><sub>overview</sub> |
+| `list_fold` | Reducing sum_list of n ones to n by fixpoint evaluation | <img src="benchmarks/plots/list_fold.png" alt="list_fold" width="320"><br><sub>overview</sub> |
+| `substitution_sharing` | Substitution through a dependent type with repeated references to one shared let-bound subtree | <img src="benchmarks/plots/substitution_sharing.png" alt="substitution_sharing" width="320"><br><sub>overview</sub> |
+-->
 
 <!-- BENCHMARK_RESULTS_END -->
