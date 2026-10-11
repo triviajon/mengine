@@ -2,8 +2,6 @@
 
 MEngine is a dependently typed kernel and proof engine with explicit context management, a tactic language, and a theorem prover, optimized for highly automated proof scripts. 
 
-The artifact (VM images and source) is available at https://doi.org/10.5281/zenodo.23197497.
-
 ### Claims 
 
 The paper makes the following claims:
@@ -25,15 +23,13 @@ The paper makes the following claims:
 
 #### Using the VM image
 
-To use the [provided](https://doi.org/10.5281/zenodo.23197497) VM image, import ``mengine-ae-{amd64, arm64}.ova` into VirtualBox with File > Import Appliance. You should have about 9 GiB of free disk. The VM logs in as user `artifact` (password `artifact`). It has 4 CPUs and 8 GB of RAM by default and opens  No further installation is required for MEngine, Rocq 9.1.1 with coqutil, or Lean v4.32.0-rc1. 
-
-To use the VM image, import `mengine-ae-amd64.ova` (or `mengine-ae-arm64.ova` on Apple Silicon) into VirtualBox 7.1 or later with File > Import Appliance; this needs about 10 GB of free disk. The VM boots into a desktop logged in as `artifact` (password `artifact`), with the repository in `~/mengine`. It has 4 CPUs and 8 GB of RAM by default, and attempts to port-forward `localhost:2222` to port `22` on the VM so that files and plots can be copied out by you or your favorite AI assistant.
+To use the [provided](https://doi.org/10.5281/zenodo.23197497) VM image, import `mengine-ae-amd64.ova` (or `mengine-ae-arm64.ova` on Apple Silicon) into VirtualBox 7.1 or later with File > Import Appliance. You should have about 9 GiB of free disk. The VM boots into a desktop logged in as user `artifact` (password `artifact`). It has 4 CPUs and 8 GB of RAM by default, and attempts to port-forward `localhost:2222` to port `22` on the VM so that files and plots can be copied out by you or your favorite AI assistant. No further installation is required for MEngine, Rocq 9.1.1 with coqutil, or Lean v4.32.0-rc1.
 
 Once the desktop envirnoment is running, you can start by opening the terminal and `cd ~/mengine`. 
 
 #### Without the VM image
 
-Without the VM image, `scripts/ae/provision-ubuntu.sh` installs everything the VM has on Ubuntu 24.04 (run it from the repository root). If you only need MEngine, the following commands are enough:
+`scripts/ae/provision-ubuntu.sh` installs everything the VM has on Ubuntu 24.04 (run it from the repository root). If you only need MEngine, the following commands are enough:
 ```shell
 apt update
 apt install clang make python3-matplotlib
@@ -116,7 +112,7 @@ python3 bench.py test
 ```
 This runs each benchmark with small inputs once to check that everything is installed correctly. In a VM, the first Lean run after boot can take a minute while Lean's library is read from disk.
 
-To run a specific benchmark, list existing benchmarks with `python3 bench.py list` and then run `python3 bench.py run <benchmark_name>`. Each benchmark is implemented for MEngine, Rocq, and Lean, referred to as engines. Some benchmarks have multiple proof strategies for a particular engine (e.g., using `rewrite` vs `rewrite_strat` for Rocq). To use a particular engine, use the `--engine` flag and all strategies for that engine will be run. To not overwrite the existing results, use the `--results-dir` flag:
+To run a specific benchmark, list existing benchmarks with `python3 bench.py list` and then run `python3 bench.py run <benchmark_name>`. Each benchmark is implemented for MEngine, Rocq, and Lean, referred to as engines. Some benchmarks have multiple proof strategies for a particular engine (e.g., using `rewrite` vs `rewrite_strat` for Rocq). To use a particular engine, use the `--engine` flag and all strategies for that engine will be run.
 
 ```shell
 python3 bench.py --results-dir results/mine run rewrite_nm
