@@ -72,7 +72,6 @@ _DEFAULT_VARIANT_STYLES = {
     "baseline":          {"color": "steelblue",   "marker": "o"},
     "no_evar_free_fill": {"color": "deepskyblue",  "marker": "^"},
     "order_ll":          {"color": "royalblue",   "marker": "D"},
-    "order_demain":      {"color": "navy",        "marker": "v"},
 }
 
 

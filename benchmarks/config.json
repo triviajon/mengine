@@ -34,11 +34,6 @@
       "path": "../build/ablations/mengine-order-ll",
       "root": "..",
       "label": "order linked list"
-    },
-    "order_demain": {
-      "path": "../build/ablations/mengine-order-demain",
-      "root": "..",
-      "label": "order demain"
     }
   }
 }
