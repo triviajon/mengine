@@ -1,9 +1,9 @@
 # Rocq standard-library benchmark for MEngine
 
-Per-module benchmark comparing **MEngine** against **Rocq** on a curated,
-mechanically-translated subset of the Rocq standard library. Each unit is one
-stdlib **module** — a `.v` file grouping that module's lemmas, mirroring the
-library's own file structure.
+In order to demonstrate that our tactics work in broadly the same way as Rocq's, we compare tactic scripts for 77 selected lemmas from the Bool, Lists, Logic, Nat, and Peano modules of the Rocq standard library. We use a basic Python script to translate Rocq proofs of these lemmas into MEngine's very similar notation and demonstrate that essentially the same proof scripts successfully prove these lemmas in both tools. The lemmas we test are relatively simple but do include some lemmas with nontrivial proofs like map fusion and the distributivity of list reversal.
+
+Each unit is one stdlib **module** — a `.v` file grouping that module's lemmas,
+mirroring the library's own file structure.
 
 | Module  | Source                                              |
 |---------|-----------------------------------------------------|
@@ -35,18 +35,15 @@ benchmarks/stdlib/
 
 ```bash
 cd benchmarks
-python3 stdlib/stdlib_bench.py regen     # rebuild every generated file, in dependency order
-python3 stdlib/stdlib_bench.py clean     # remove every generated file (keep sources)
 python3 stdlib/stdlib_bench.py test      # faithfulness gate (see below)
 python3 stdlib/stdlib_bench.py fidelity  # check each statement vs the real stdlib
+python3 stdlib/stdlib_bench.py regen     # rebuild every generated file, in dependency order
+python3 stdlib/stdlib_bench.py clean     # remove every generated file (keep sources)
 ```
 
 `regen` rebuilds every generated file from source in order (mengine.me ->
 manifest -> run -> report); `clean` removes them. Hand-authored sources
-(`rocq.v`, `stdlib_map.json`, the compat prelude) are never touched. `test` and
-`fidelity` check that the benchmarks are consistent between Rocq and MEngine
-and relate to the actual standard library, respectively.
-
+(`rocq.v`, `stdlib_map.json`, the compat prelude) are never touched.
 
 ## Translation (`Set Printing All`)
 
@@ -112,25 +109,9 @@ missing/absent ref, or a non-convertible match all fail (non-zero exit). Because
 it shells out to `coqc` once per lemma it is slower than `test` and kept separate;
 run it after editing any statement or the map.
 
-## Scope
-
-The computational/structural corner reachable by MEngine + the compat prelude:
-
-- **Bool** — identities by ground reduction and single-variable `destruct`.
-- **Nat** — `add`/`mul`/`sub` reductions and computational induction over the
-  `add`/`mul` fixpoints (the full additive/multiplicative theory up to
-  `mul_assoc` and both distributive laws), plus the `max`/`min` identities.
-- **Lists** — parametric `list` induction: `app`/`length` plus the `map`/`rev`
-  theory (`map_app`, `map_map`, `rev_app_distr`, `rev_involutive`, …).
-- **`le` / order** — structural induction with a fixpoint-free motive.
-- **Logic** — propositional introduction (`split`/`left`/`right`/`apply`).
-- **Polymorphic `eq` / `ex`** — over an arbitrary type, unlocked by the
-  `Set Printing All` elaboration supplying the implicit type argument.
-
 ## Why not verbatim stdlib files
 
 Running the translator over the installed stdlib per file, essentially none
 translate whole, even in `Coq.Init`: real files are saturated with
 `Notation`/`Ltac`/`Variant`/`Register`/multi-scrutinee `match`/qualified names.
-Hence the corpus is curated lemmas drawn from stdlib content, grouped one file
-per module to mirror the library's structure.
+Hence the corpus is curated lemmas drawn from stdlib content.
