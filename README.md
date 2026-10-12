@@ -85,7 +85,7 @@ Print Rocq rewrite_zeros_let.
 Running MEngine on this file (in quiet mode) will print to stdout a fully parseable Rocq file that contains a term which has the same type as `rewrite_zeros_let` and the same context as `rewrite_zeros_let`. To check it with the Rocq kernel:
 ```shell
 ./build/mengine -q examples/rewrite_add_n_0.me > export.v
-coqc export.v
+coqc export.v; echo $?
 ```
 
 Note that all of the variables in the exported Rocq file are named by their memory address. This is because the MEngine kernel only uses the user-friendly name of a variable for printing, but it is not considered part of the identity of a variable.
