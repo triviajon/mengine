@@ -6,6 +6,9 @@ export DEBIAN_FRONTEND=noninteractive
 # Disable updates
 apt-get purge -y snapd unattended-upgrades
 
+# this was causing the VM to hang
+apt-get purge -y mdadm btrfs-progs
+
 # Setup artifact
 cd /home/artifact/mengine
 sudo -u artifact -H scripts/ae/provision-ubuntu.sh

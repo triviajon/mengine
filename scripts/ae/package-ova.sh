@@ -11,11 +11,13 @@ case $ARCH in
     arm64) OS="--ostype Ubuntu_arm64 --firmware efi"; CONTROLLER=virtio ;;
 esac
 
-"$VBOX" createvm --name "$VM" --basefolder vbox --register
-"$VBOX" modifyvm "$VM" $OS --cpus 4 --memory 8192 --clipboard-mode bidirectional \
+# Refer to the VM by its UUID: an imported copy of an earlier OVA may have the same name.
+ID=$("$VBOX" createvm --name "$VM" --basefolder vbox --register | sed -n 's/^UUID: //p' | tr -d '\r')
+"$VBOX" modifyvm "$ID" $OS --cpus 4 --memory 8192 --vram 64 --clipboard-mode bidirectional \
+    --mouse usbtablet --usb-ohci on --audio-enabled off \
     --nic1 nat --nat-pf1 "ssh,tcp,127.0.0.1,2222,,22"
-"$VBOX" storagectl "$VM" --name Disk --add $CONTROLLER
-"$VBOX" storageattach "$VM" --storagectl Disk --port 0 --type hdd --medium "$VM.vmdk"
-"$VBOX" export "$VM" --output "$VM.ova"
+"$VBOX" storagectl "$ID" --name Disk --add $CONTROLLER --portcount 1
+"$VBOX" storageattach "$ID" --storagectl Disk --port 0 --type hdd --medium "$VM.vmdk"
+"$VBOX" export "$ID" --output "$VM.ova"
 # Also deletes the VMDK; build-vm.sh's disk.qcow2 remains.
-"$VBOX" unregistervm "$VM" --delete
+"$VBOX" unregistervm "$ID" --delete
