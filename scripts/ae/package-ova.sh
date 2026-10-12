@@ -8,7 +8,7 @@ VBOX=${VBOXMANAGE:-VBoxManage}
 
 case $ARCH in
     amd64) OS="--ostype Ubuntu_64 --graphicscontroller vboxsvga"; CONTROLLER=sata ;;
-    arm64) OS="--ostype Ubuntu_arm64 --firmware efi"; CONTROLLER=virtio ;;
+    arm64) OS="--ostype Ubuntu_arm64 --firmware efi --graphicscontroller vmsvga"; CONTROLLER=virtio ;;
 esac
 
 # Refer to the VM by its UUID: an imported copy of an earlier OVA may have the same name.
